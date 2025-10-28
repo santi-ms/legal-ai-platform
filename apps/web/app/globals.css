@@ -1,50 +1,132 @@
+/* apps/web/app/globals.css */
+
+/* Tailwind directives (se quedan, no hacen daño) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos globales en CSS puro para evitar errores con @apply */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0b0b0b;       /* fondo general */
+  --panel: #0f1720;    /* color de tarjetas */
+  --muted: #94a3b8;    /* labels / texto secundario */
+  --text: #e6eef8;     /* texto principal */
+  --input-bg: #0f1720; /* fondo inputs */
+  --input-border: #1f2937;
+  --accent: #10b981;   /* verde */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-}
-
+/* Reset básico */
 * {
   box-sizing: border-box;
-  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Body / layout */
+html, body, #__next {
+  height: 100%;
+}
+body {
   margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  line-height: 1.4;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* Contenedores, tarjetas */
+.card {
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 12px;
+  padding: 0.75rem;
+  color: var(--text);
 }
 
-.imgDark {
-  display: none;
+/* Labels */
+label, .label {
+  display: inline-block;
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+/* Inputs / textarea / select */
+input[type="text"],
+input[type="date"],
+input[type="number"],
+input[type="email"],
+textarea,
+select {
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+  min-height: 2.4rem;
+  outline: none;
+  font-size: 0.95rem;
+}
 
-  .imgLight {
-    display: none;
-  }
-  .imgDark {
-    display: unset;
-  }
+textarea {
+  min-height: 4.2rem;
+  resize: vertical;
+}
+
+/* Focus */
+input:focus,
+textarea:focus,
+select:focus {
+  box-shadow: 0 0 0 3px rgba(16,185,129,0.12); /* verde suave */
+  border-color: var(--accent);
+}
+
+/* Buttons */
+button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(2,6,23,0.35);
+}
+
+/* Small helpers */
+.container {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
+/* Preformatted contrato box */
+.contract-pre {
+  background: #071018;
+  border: 1px solid rgba(255,255,255,0.03);
+  padding: 1rem;
+  border-radius: 8px;
+  color: #dbeafe;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  overflow: auto;
+  max-height: 420px;
+}
+
+/* Ajustes responsive simples */
+@media (max-width: 640px) {
+  .container { padding: 0.75rem; }
+  .card { padding: 0.6rem; }
 }

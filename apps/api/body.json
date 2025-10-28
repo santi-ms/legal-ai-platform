@@ -1,0 +1,22 @@
+﻿{
+  "type": "contrato_servicios",
+  "jurisdiccion": "corrientes_capital",
+  "tono": "comercial_claro",
+  "partes": {
+    "proveedor_nombre": "Estudio Contable Pérez",
+    "proveedor_doc": "CUIT 20-12345678-9",
+    "proveedor_domicilio": "San Martín 123, Corrientes Capital",
+    "cliente_nombre": "Transporte Gomez SRL",
+    "cliente_doc": "CUIT 30-99999999-7",
+    "cliente_domicilio": "Av. Costanera 500, Posadas, Misiones"
+  },
+  "condiciones": {
+    "descripcion_servicio": "Asesoramiento contable mensual, liquidación de impuestos, presentaciones AFIP y Rentas provinciales.",
+    "monto_mensual": "ARS 180000",
+    "forma_pago": "Transferencia bancaria",
+    "inicio_vigencia": "2025-11-01",
+    "plazo_minimo_meses": "3",
+    "penalizacion_rescision": true
+  },
+  "preferencias_fiscales": "precio_mas_impuestos"
+}
