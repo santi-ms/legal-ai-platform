@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+/* Configuración de Tailwind v4 */
+@theme {
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  
+  --font-family-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-card-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Estilos globales estilo Docupilot - tema claro y profesional */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  body {
+    background-color: #f9fafb;
+    color: #111827;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  /* Scrollbar personalizada para elementos con scroll */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background-color: rgb(243 244 246);
+    border-radius: 0.25rem;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgb(209 213 219);
+    border-radius: 0.25rem;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(156 163 175);
+  }
+  
+  /* Animaciones suaves */
+  .smooth-transition {
+    transition: all 200ms ease-in-out;
+  }
+  
+  /* Sombras de tarjetas profesionales */
+  .shadow-card {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+  
+  .shadow-card-hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+}
