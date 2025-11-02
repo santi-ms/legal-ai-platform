@@ -2,49 +2,64 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+const protectedRoutes = ["/documents"];
+const authRoutes = ["/auth/login", "/auth/register"];
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Rutas que requieren autenticación
-  const protectedRoutes = ["/documents"];
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route)
   );
-
-  // Rutas de autenticación que NO deben ser accesibles si ya estás logueado
-  const authRoutes = ["/auth/login", "/auth/register"];
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
 
-  try {
-    const token = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET || "dev-secret",
-    });
+  // si no es ni protegida ni de auth, dejá pasar y listo
+  if (!isProtectedRoute && !isAuthRoute) {
+    return NextResponse.next();
+  }
 
-    // Si intenta acceder a una ruta protegida sin estar autenticado
-    if (isProtectedRoute && !token) {
-      const loginUrl = new URL("/auth/login", request.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    // Si ya está autenticado e intenta acceder a login/register, redirigir al dashboard
-    if (isAuthRoute && token) {
-      return NextResponse.redirect(new URL("/documents", request.url));
-    }
-  } catch (error) {
-    // Si falla el getToken, redirigir a login si es ruta protegida
+  // si no hay secret en runtime (por si en Vercel se olvida)
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    // las protegidas mandalas a login
     if (isProtectedRoute) {
       const loginUrl = new URL("/auth/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }
+    return NextResponse.next();
+  }
+
+  // acá sí necesitamos saber si está logueado
+  let token = null;
+  try {
+    token = await getToken({ req: request, secret });
+  } catch (err) {
+    // si falló leer el token y la ruta es protegida -> login
+    if (isProtectedRoute) {
+      const loginUrl = new URL("/auth/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    return NextResponse.next();
+  }
+
+  // 1) no logueado y quiere entrar a /documents -> login
+  if (isProtectedRoute && !token) {
+    const loginUrl = new URL("/auth/login", request.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // 2) logueado y quiere ir a /auth/login o /auth/register -> mandalo al dashboard
+  if (isAuthRoute && token) {
+    return NextResponse.redirect(new URL("/documents", request.url));
   }
 
   return NextResponse.next();
 }
 
-// Configurar qué rutas aplican el middleware
+// 👇 importante: ahora el middleware SOLO corre en lo que nos importa
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/documents/:path*", "/auth/:path*"],
 };
