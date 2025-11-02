@@ -3,11 +3,6 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
-
   const pathname = request.nextUrl.pathname;
 
   // Rutas que requieren autenticación
@@ -20,16 +15,30 @@ export async function middleware(request: NextRequest) {
   const authRoutes = ["/auth/login", "/auth/register"];
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
 
-  // Si intenta acceder a una ruta protegida sin estar autenticado
-  if (isProtectedRoute && !token) {
-    const loginUrl = new URL("/auth/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
+  try {
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET || "dev-secret",
+    });
 
-  // Si ya está autenticado e intenta acceder a login/register, redirigir al dashboard
-  if (isAuthRoute && token) {
-    return NextResponse.redirect(new URL("/documents", request.url));
+    // Si intenta acceder a una ruta protegida sin estar autenticado
+    if (isProtectedRoute && !token) {
+      const loginUrl = new URL("/auth/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Si ya está autenticado e intenta acceder a login/register, redirigir al dashboard
+    if (isAuthRoute && token) {
+      return NextResponse.redirect(new URL("/documents", request.url));
+    }
+  } catch (error) {
+    // Si falla el getToken, redirigir a login si es ruta protegida
+    if (isProtectedRoute) {
+      const loginUrl = new URL("/auth/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   return NextResponse.next();
@@ -39,4 +48,3 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
-
