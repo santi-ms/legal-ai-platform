@@ -1,6 +1,8 @@
+import { config } from "./config";
+
 export async function getDocuments() {
   try {
-    const response = await fetch("http://localhost:4001/documents", { 
+    const response = await fetch(`${config.apiUrl}/documents`, { 
       cache: "no-store",
       headers: {
         'Content-Type': 'application/json',
@@ -21,7 +23,7 @@ export async function getDocuments() {
 
 export async function getDocument(id: string) {
   try {
-    const response = await fetch(`http://localhost:4001/documents/${id}`, { 
+    const response = await fetch(`${config.apiUrl}/documents/${id}`, { 
       cache: "no-store",
       headers: {
         'Content-Type': 'application/json',
@@ -42,7 +44,7 @@ export async function getDocument(id: string) {
 
 export async function generateDocument(formData: any) {
   try {
-    const response = await fetch("http://localhost:4001/documents/generate", {
+    const response = await fetch(`${config.apiUrl}/documents/generate`, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json" 

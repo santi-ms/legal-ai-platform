@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { getDocuments } from "@/app/lib/api";
 import { formatDate, formatDocumentType } from "@/app/lib/format";
 import { FileText, Download, Eye, Plus } from "lucide-react";
+import { config } from "@/app/lib/config";
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -141,7 +142,7 @@ export default async function DocumentsPage() {
 
                         {document.lastVersion?.pdfUrl && (
                           <a
-                            href={`http://localhost:4001/documents/${document.id}/pdf`}
+                            href={`${config.apiUrl}/documents/${document.id}/pdf`}
                             target="_blank"
                             rel="noopener noreferrer"
                           >

@@ -223,7 +223,8 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
       // 6️⃣ Llamar microservicio PDF
       let pdfUrl: string | null = null;
       try {
-        const pdfResponse = await fetch("http://localhost:4100/pdf/generate", {
+        const pdfServiceUrl = process.env.PDF_SERVICE_URL || "http://localhost:4100";
+        const pdfResponse = await fetch(`${pdfServiceUrl}/pdf/generate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

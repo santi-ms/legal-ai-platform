@@ -41,7 +41,8 @@ export default function DocumentDetailPage() {
       if (!id) return;
 
       try {
-        const res = await fetch(`http://localhost:4001/documents/${id}`, {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
+        const res = await fetch(`${apiUrl}/documents/${id}`, {
           cache: "no-store",
         });
 
@@ -65,8 +66,9 @@ export default function DocumentDetailPage() {
 
   function handleDownload() {
     if (!id) return;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
     window.open(
-      `http://localhost:4001/documents/${id}/pdf`,
+      `${apiUrl}/documents/${id}/pdf`,
       "_blank",
       "noopener,noreferrer"
     );

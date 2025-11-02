@@ -9,8 +9,8 @@ async function main() {
   // registrar endpoints PDF
   await registerPdfRoutes(fastify);
 
-  const PORT = process.env.PDF_SERVICE_PORT
-    ? Number(process.env.PDF_SERVICE_PORT)
+  const PORT = process.env.PORT
+    ? Number(process.env.PORT)
     : 4100;
 
   try {

@@ -17,8 +17,13 @@ async function buildServer() {
   });
 
   // permitir que Next.js (puerto 3000) llame a la API (puerto 4000)
+  const allowedOrigins = [
+    "http://localhost:3000",
+    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+  ];
+  
   await app.register(cors, {
-    origin: ["http://localhost:3000"],
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
   });
 
@@ -42,7 +47,7 @@ async function buildServer() {
 // inicializamos y escuchamos
 const app = await buildServer();
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 4001;
 
 try {
   await app.listen({

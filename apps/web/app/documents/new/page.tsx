@@ -198,7 +198,8 @@ export default function NewDocumentPage() {
       setLoadingProgress(25);
       setLoadingStep("Generando contenido con IA...");
 
-      const res = await fetch("http://localhost:4001/documents/generate", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
+      const res = await fetch(`${apiUrl}/documents/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -616,7 +617,7 @@ export default function NewDocumentPage() {
                 {result.pdfUrl && (
                   <div>
                     <a
-                      href={`http://localhost:4001/documents/${result.documentId}/pdf`}
+                      href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001"}/documents/${result.documentId}/pdf`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm ring-1 ring-inset ring-teal-700/30 hover:bg-teal-500 hover:shadow-md transition-all"
