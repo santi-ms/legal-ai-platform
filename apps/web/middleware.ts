@@ -59,7 +59,7 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// 👇 importante: ahora el middleware SOLO corre en lo que nos importa
+// Middleware se aplica a todas las rutas excepto estáticos
 export const config = {
-  matcher: ["/documents/:path*", "/auth/:path*"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
