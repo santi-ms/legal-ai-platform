@@ -18,21 +18,20 @@ export async function middleware(request: NextRequest) {
   }
 
   // Verificar si tiene cookie de sesión de NextAuth
-  const sessionCookie = request.cookies.get(
-    request.cookies.getAll().find((c) => c.name.startsWith("next-auth.session-token"))?.name || 
-    request.cookies.getAll().find((c) => c.name.startsWith("__Secure-next-auth.session-token"))?.name || 
-    ""
+  const hasSession = request.cookies.getAll().some((c) => 
+    c.name.startsWith("next-auth.session-token") || 
+    c.name.startsWith("__Secure-next-auth.session-token")
   );
 
   // Si no hay cookie pero la ruta es protegida, redirigir a login
-  if (isProtectedRoute && !sessionCookie) {
+  if (isProtectedRoute && !hasSession) {
     const loginUrl = new URL("/auth/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
   // Si hay cookie pero intenta acceder a auth routes, redirigir al dashboard
-  if (isAuthRoute && sessionCookie) {
+  if (isAuthRoute && hasSession) {
     return NextResponse.redirect(new URL("/documents", request.url));
   }
 
