@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
 
 const protectedRoutes = ["/documents"];
 const authRoutes = ["/auth/login", "/auth/register"];
@@ -18,41 +17,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // si no hay secret en runtime (por si en Vercel se olvida)
-  const secret = process.env.NEXTAUTH_SECRET;
-  if (!secret) {
-    // las protegidas mandalas a login
-    if (isProtectedRoute) {
-      const loginUrl = new URL("/auth/login", request.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-    return NextResponse.next();
-  }
+  // Verificar si tiene cookie de sesión de NextAuth
+  const sessionCookie = request.cookies.get(
+    request.cookies.getAll().find((c) => c.name.startsWith("next-auth.session-token"))?.name || 
+    request.cookies.getAll().find((c) => c.name.startsWith("__Secure-next-auth.session-token"))?.name || 
+    ""
+  );
 
-  // acá sí necesitamos saber si está logueado
-  let token = null;
-  try {
-    token = await getToken({ req: request, secret });
-  } catch (err) {
-    // si falló leer el token y la ruta es protegida -> login
-    if (isProtectedRoute) {
-      const loginUrl = new URL("/auth/login", request.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-    return NextResponse.next();
-  }
-
-  // 1) no logueado y quiere entrar a /documents -> login
-  if (isProtectedRoute && !token) {
+  // Si no hay cookie pero la ruta es protegida, redirigir a login
+  if (isProtectedRoute && !sessionCookie) {
     const loginUrl = new URL("/auth/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // 2) logueado y quiere ir a /auth/login o /auth/register -> mandalo al dashboard
-  if (isAuthRoute && token) {
+  // Si hay cookie pero intenta acceder a auth routes, redirigir al dashboard
+  if (isAuthRoute && sessionCookie) {
     return NextResponse.redirect(new URL("/documents", request.url));
   }
 
