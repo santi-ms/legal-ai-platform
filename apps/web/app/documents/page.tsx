@@ -6,6 +6,10 @@ import { getDocuments } from "@/app/lib/api";
 import { formatDate, formatDocumentType } from "@/app/lib/format";
 import { FileText, Download, Eye, Plus } from "lucide-react";
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const mockDocuments = [
   {
     id: "3047ae32-b143-4d3f-8b26-b942b03a4155",
