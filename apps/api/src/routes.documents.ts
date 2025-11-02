@@ -1,9 +1,11 @@
 import { FastifyInstance } from "fastify";
 import { GenerateDocumentSchema } from "./types.js";
 import OpenAI from "openai";
-import { prisma } from "db";
+import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import fs from "node:fs";
+
+const prisma = new PrismaClient();
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
