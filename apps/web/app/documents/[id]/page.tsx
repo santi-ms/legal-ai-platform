@@ -2,6 +2,10 @@
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { DashboardShell } from "@/app/components/DashboardShell";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import { SkeletonDocumentDetail } from "@/components/ui/skeleton";
 
 type LastVersion = {
   id: string;
@@ -31,7 +35,7 @@ export default function DocumentDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // cargar el documento
+  // carga el documento
   useEffect(() => {
     async function load() {
       if (!id) return;
@@ -59,7 +63,6 @@ export default function DocumentDetailPage() {
     load();
   }, [id]);
 
-  // abrir el PDF en nueva pestaña usando el endpoint público de la API
   function handleDownload() {
     if (!id) return;
     window.open(
@@ -69,38 +72,42 @@ export default function DocumentDetailPage() {
     );
   }
 
-  // estados iniciales
+  // distintos estados
+
   if (!id) {
     return (
-      <main className="p-8 flex justify-center text-sm text-neutral-400 bg-black min-h-screen">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center text-sm text-gray-500">
         Cargando id…
-      </main>
+      </div>
     );
   }
 
   if (loading) {
     return (
-      <main className="p-8 flex justify-center text-sm text-neutral-400 bg-black min-h-screen">
-        Cargando documento...
-      </main>
+      <DashboardShell
+        title="Cargando documento"
+        description="Obteniendo información del documento..."
+      >
+        <SkeletonDocumentDetail />
+      </DashboardShell>
     );
   }
 
   if (error) {
     return (
-      <main className="p-8 flex justify-center bg-black min-h-screen">
-        <div className="max-w-md w-full rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-400 text-sm">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
           {error}
         </div>
-      </main>
+      </div>
     );
   }
 
   if (!data?.document) {
     return (
-      <main className="p-8 flex justify-center text-sm text-neutral-400 bg-black min-h-screen">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center text-sm text-gray-500">
         Documento no encontrado.
-      </main>
+      </div>
     );
   }
 
@@ -108,124 +115,149 @@ export default function DocumentDetailPage() {
   const doc = data.document;
   const last = doc.lastVersion;
 
-  return (
-    <main className="p-6 md:p-10 max-w-4xl mx-auto flex flex-col gap-8 text-neutral-100 bg-black min-h-screen">
-      {/* HEADER / TITULO */}
-      <section className="flex flex-col gap-2">
-        <div className="flex items-start justify-between flex-wrap gap-4">
-          <div className="space-y-1">
-            <h1 className="text-xl md:text-2xl font-semibold text-white tracking-tight">
-              Documento #{doc.id.slice(0, 8)}
-            </h1>
-            <p className="text-xs text-neutral-500">
-              Última actualización:{" "}
-              {last
-                ? new Date(last.createdAt).toLocaleString()
-                : "— sin versiones —"}
-            </p>
-          </div>
+  // armamos los textos que van al header
+  const headerDescription = `${doc.type} • ${doc.jurisdiccion} • ${
+    last
+      ? `Actualizado ${new Date(last.createdAt).toLocaleString("es-AR")}`
+      : "Sin versión generada"
+  }`;
 
-          {/* Botón Descargar */}
-          {last && (
+  return (
+    <DashboardShell
+      title={`Documento #${doc.id.slice(0, 8)}`}
+      description={headerDescription}
+      action={
+        <div className="flex flex-col sm:flex-row gap-2">
+          {last?.pdfUrl && (
             <button
               onClick={handleDownload}
-              className="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-black hover:bg-emerald-400 active:bg-emerald-300 transition-colors shadow-[0_0_20px_rgba(16,185,129,0.4)]"
+              className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm ring-1 ring-inset ring-teal-700/30 hover:bg-teal-500 hover:shadow-md transition-all"
             >
+              <Download className="h-4 w-4" />
               Descargar PDF
             </button>
           )}
+
+          {/* Podrías agregar acá un botón Volver a /documents si querés */}
+          {/* <Link href="/documents">
+            <Button className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-gray-900">
+              Volver
+            </Button>
+          </Link> */}
         </div>
-      </section>
-
-      {/* META CARD */}
-      <section className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4 md:p-5 shadow-[0_20px_80px_rgba(0,0,0,0.8)]">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-          <div className="flex flex-col">
-            <span className="text-neutral-500 text-[11px] uppercase font-medium">
-              Tipo de documento
-            </span>
-            <span className="text-neutral-200 font-medium">{doc.type}</span>
-          </div>
-
-          <div className="flex flex-col">
-            <span className="text-neutral-500 text-[11px] uppercase font-medium">
-              Jurisdicción
-            </span>
-            <span className="text-neutral-200 font-medium">
-              {doc.jurisdiccion}
-            </span>
-          </div>
-
-          <div className="flex flex-col">
-            <span className="text-neutral-500 text-[11px] uppercase font-medium">
-              Estado
-            </span>
-            <span
-              className={`text-neutral-200 font-medium ${
+      }
+    >
+      <div className="flex flex-col gap-8">
+        {/* CARD DE METADATOS */}
+        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm ring-1 ring-black/[0.02]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+            <MetaField
+              label="Tipo de documento"
+              value={doc.type}
+            />
+            <MetaField
+              label="Jurisdicción"
+              value={doc.jurisdiccion}
+            />
+            <MetaField
+              label="Estado"
+              value={doc.estado}
+              valueClassName={
                 doc.estado === "GENERATED"
-                  ? "text-emerald-400"
+                  ? "text-emerald-700"
                   : doc.estado === "DRAFT"
-                  ? "text-yellow-400"
-                  : ""
-              }`}
-            >
-              {doc.estado}
-            </span>
+                  ? "text-amber-700"
+                  : "text-gray-700"
+              }
+            />
+            <MetaField
+              label="Tono"
+              value={doc.tono || "—"}
+            />
+            <MetaField
+              label="Costo estimado (USD)"
+              value={
+                doc.costUsd !== null ? `$${doc.costUsd}` : "—"
+              }
+            />
+            {last?.pdfUrl && (
+              <MetaField
+                label="Ruta interna PDF"
+                value={last.pdfUrl}
+                mono
+                small
+              />
+            )}
           </div>
+        </section>
 
-          <div className="flex flex-col">
-            <span className="text-neutral-500 text-[11px] uppercase font-medium">
-              Tono
-            </span>
-            <span className="text-neutral-200 font-medium">{doc.tono}</span>
-          </div>
+        {/* CONTENIDO LEGAL */}
+        <section className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div className="space-y-1">
+              <h2 className="text-sm font-semibold text-gray-900 tracking-tight">
+                Contenido legal
+              </h2>
+              <p className="text-xs text-gray-500">
+                Texto generado automáticamente listo para revisión.
+              </p>
+            </div>
 
-          <div className="flex flex-col">
-            <span className="text-neutral-500 text-[11px] uppercase font-medium">
-              Costo estimado (USD)
-            </span>
-            <span className="text-neutral-200 font-medium">
-              {doc.costUsd !== null ? `$${doc.costUsd}` : "—"}
-            </span>
-          </div>
-
-          {last?.pdfUrl && (
-            <div className="flex flex-col">
-              <span className="text-neutral-500 text-[11px] uppercase font-medium">
-                Ruta interna PDF
+            {last && (
+              <span className="text-[11px] text-gray-500">
+                Versión #{last.id.slice(0, 6)}
               </span>
-              <span className="text-neutral-400 text-[11px] break-all leading-normal">
-                {last.pdfUrl}
-              </span>
+            )}
+          </div>
+
+          {last ? (
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm ring-1 ring-black/[0.02] text-sm leading-relaxed text-gray-800 whitespace-pre-wrap max-h-[70vh] overflow-y-auto">
+              {last.rawText}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 shadow-sm">
+              Todavía no hay una versión generada para este documento.
             </div>
           )}
-        </div>
-      </section>
+        </section>
+      </div>
+    </DashboardShell>
+  );
+}
 
-      {/* CONTENIDO DEL CONTRATO */}
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="text-sm font-medium text-neutral-300 uppercase tracking-wide">
-            Contenido legal
-          </h2>
-
-          {last && (
-            <span className="text-[11px] text-neutral-500">
-              Versión #{last.id.slice(0, 6)}
-            </span>
-          )}
-        </div>
-
-        {last ? (
-          <div className="rounded-xl border border-neutral-800 bg-neutral-950/60 p-4 text-sm leading-relaxed text-neutral-200 font-mono whitespace-pre-wrap max-h-[70vh] overflow-y-auto shadow-inner shadow-black/40">
-            {last.rawText}
-          </div>
-        ) : (
-          <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-4 text-sm text-yellow-300">
-            Todavía no hay una versión generada para este documento.
-          </div>
-        )}
-      </section>
-    </main>
+/**
+ * Campo reutilizable de metadatos
+ */
+function MetaField({
+  label,
+  value,
+  valueClassName,
+  mono,
+  small,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+  mono?: boolean;
+  small?: boolean;
+}) {
+  return (
+    <div className="flex flex-col">
+      <span className="text-[11px] uppercase font-medium text-gray-500 tracking-wide">
+        {label}
+      </span>
+      <span
+        className={[
+          "font-medium text-gray-900",
+          mono ? "font-mono break-words" : "",
+          small ? "text-[11px] leading-normal text-gray-500" : "text-sm",
+          valueClassName || "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
+        {value || "—"}
+      </span>
+    </div>
   );
 }

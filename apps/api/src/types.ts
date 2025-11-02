@@ -24,6 +24,7 @@ export const GenerateDocumentSchema = z.object({
 
   plazo_minimo_meses: z.number().int().positive(),
   penalizacion_rescision: z.boolean(),
+  penalizacion_monto: z.string().optional(),
 
   // Fiscal / facturación
   preferencias_fiscales: z.string().min(1), // ej "Monotributo", "Responsable Inscripto", etc.

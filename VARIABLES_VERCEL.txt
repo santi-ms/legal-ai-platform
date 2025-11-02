@@ -1,0 +1,37 @@
+VARIABLES DE ENTORNO PARA VERCEL
+===================================
+
+Copia y pega estas variables en:
+Vercel Dashboard > Tu Proyecto > Settings > Environment Variables
+
+-------------------------------------------------------------------
+
+DATABASE_URL=postgresql://postgres.xtlmuqbsliszxcpwawgd:Ltqkmmx635@aws-1-us-east-1.pooler.supabase.com:5432/postgres
+
+-------------------------------------------------------------------
+
+NEXTAUTH_URL=https://tu-proyecto.vercel.app
+(Por ahora dejar vacio o poner http://localhost:3000)
+(Luego actualizar con la URL real de Vercel)
+
+-------------------------------------------------------------------
+
+NEXTAUTH_SECRET=nfxP4jqJVsUf4dQJJvnOmCR6ypKYQifnUFvhYZH1Kf0=
+
+-------------------------------------------------------------------
+
+OPENAI_API_KEY=sk-tu-key-aqui
+(Reemplazar con tu OpenAI API Key real)
+
+-------------------------------------------------------------------
+
+NEXT_PUBLIC_API_URL=https://tu-backend.railway.app
+(Por ahora dejar vacio)
+(Configurar despues de desplegar el backend)
+
+-------------------------------------------------------------------
+
+IMPORTANTE:
+1. Reemplazar OPENAI_API_KEY con tu key real de OpenAI
+2. Actualizar NEXTAUTH_URL despues del primer deploy
+3. Actualizar NEXT_PUBLIC_API_URL despues de desplegar el backend

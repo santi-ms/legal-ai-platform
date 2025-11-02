@@ -1,135 +1,231 @@
-# Turborepo starter
+# ⚖️ Legal AI Platform
 
-This Turborepo starter is maintained by the Turborepo core team.
+> Plataforma de generación de documentos legales con Inteligencia Artificial
 
-## Using this example
+Generá contratos, NDAs y cartas documento listos para firmar en minutos. Cumplimiento total con normativa argentina.
 
-Run the following command:
+---
 
-```sh
-npx create-turbo@latest
+## 🚀 Inicio Rápido
+
+### Prerrequisitos
+- Node.js 18+
+- npm
+- Docker Desktop (opcional, para PostgreSQL)
+
+### Instalación Rápida
+
+**Opción 1: Con SQLite (más rápido)**
+```bash
+# Clonar repositorio
+git clone [tu-repo]
+cd legal-ai-platform
+
+# Instalar dependencias
+npm install
+
+# Iniciar desarrollo
+npm run dev
 ```
 
-## What's inside?
-
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+**Opción 2: Con PostgreSQL + Docker (producción)**
+```bash
+# Ver README_DOCKER.md para setup completo
+docker-compose up -d
+npm install
+npm run dev
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+### Acceder
+- **Frontend**: http://localhost:3000
+- **API**: http://localhost:4001
+- **PDF Service**: http://localhost:4100
+
+---
+
+## ✨ Características Principales
+
+### 🎯 Generación Inteligente
+- IA GPT-4o-mini para generación de documentos
+- Cláusulas específicas por jurisdicción argentina
+- Tonos: formal y comercial
+- Fallback automático a GPT-3.5-turbo
+- Listo para firmar
+
+### 👥 Multi-Tenant
+- Soporte de múltiples empresas
+- Roles: owner, admin, editor, viewer
+- Aislamiento de datos
+- Escalable
+
+### 📄 Gestión de Documentos
+- Versionado automático
+- Historial de cambios
+- Download de PDFs
+- Tracking de costos
+
+### 🔐 Seguridad
+- Autenticación con NextAuth
+- Contraseñas hasheadas (bcrypt)
+- JWT sessions
+- Protección de rutas
+
+---
+
+## 🏗️ Arquitectura
 
 ```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+legal-ai-platform/
+├── apps/
+│   ├── api/          # Backend Fastify
+│   ├── web/          # Frontend Next.js 16
+│   └── docs/         # Documentación
+├── packages/
+│   ├── db/           # Prisma + SQLite/PostgreSQL
+│   └── ui/           # Componentes compartidos
+└── services/
+    └── pdf/          # Generación PDFs
 ```
 
-### Develop
+---
 
-To develop all apps and packages, run the following command:
+## 🛠️ Stack Tecnológico
 
-```
-cd my-turborepo
+### Frontend
+- **Next.js 16** - Framework React
+- **React 19** - UI library
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **NextAuth** - Autenticación
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
+### Backend
+- **Fastify** - API server
+- **Prisma** - ORM
+- **SQLite** - Base de datos (dev)
+- **PostgreSQL** - Base de datos (prod)
+- **OpenAI** - Generación IA
+- **PDFKit** - Generación PDFs
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
+---
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+## 📚 Documentación
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
+- **README.md** - Este archivo
+- **INICIO_RAPIDO.md** - Setup rápido con Docker (recomendado)
+- **README_DOCKER.md** - Setup detallado de PostgreSQL
+- **GUIA_POSTGRESQL.md** - Guía completa de migración
+- **CHECKLIST_PRODUCCION.md** - Lista de tareas pre-producción
+- **RESUMEN_CRITICO_COMPLETADO.md** - Mejoras implementadas
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+---
 
-### Remote Caching
+## 🔧 Comandos
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+```bash
+# Desarrollo
+npm run dev              # Iniciar todos los servicios
+npm run build            # Build de producción
+npm run lint             # Linting
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+# Base de datos
+cd packages/db
+npx prisma studio        # UI de base de datos
+npx prisma migrate dev   # Nueva migración
+npx prisma generate      # Regenerar client
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+---
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+## 🎯 Roadmap
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
+### ✅ Completado
+- [x] Sistema de autenticación
+- [x] Generación de documentos con IA
+- [x] Descarga de PDFs
+- [x] Dashboard de documentos
+- [x] Mejoras de UX/UI
+- [x] Multi-tenant
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
+### 🔄 En Progreso
+- [ ] Deploy a producción
+- [ ] Integración de pagos
+- [ ] Android App (React Native)
 
-## Useful Links
+### 📅 Planificado
+- [ ] Recuperación de contraseña
+- [ ] Verificación de email
+- [ ] Roles avanzados
+- [ ] API pública
+- [ ] Analytics avanzado
 
-Learn more about the power of Turborepo:
+---
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+## 💰 Pricing
+
+### Planes Sugeridos
+- **Starter**: $49/mes - 10 documentos
+- **Pro**: $149/mes - 100 documentos
+- **Enterprise**: $399/mes - Ilimitado
+
+---
+
+## 📖 Uso
+
+### 1. Registro
+1. Ir a http://localhost:3000
+2. Click "Registrarse Gratis"
+3. Completar formulario
+4. Iniciar sesión automáticamente
+
+### 2. Crear Documento
+1. Click "Nuevo documento"
+2. Completar wizard (4 pasos)
+3. Generar con IA
+4. Descargar PDF
+
+### 3. Gestionar
+- Ver lista de documentos
+- Editar detalles
+- Descargar PDFs
+- Ver histórico
+
+---
+
+## 🔒 Seguridad
+
+- Contraseñas encriptadas
+- JWT tokens
+- CORS configurado
+- Validación de inputs
+- Rate limiting (pendiente)
+- HTTPS en producción
+
+---
+
+## 🌐 Producción
+
+### Para Deploy
+Opciones recomendadas:
+- **Frontend**: Vercel, Netlify
+- **Backend**: Railway, Render
+- **Database**: Supabase (PostgreSQL), Neon
+- **Storage**: Cloudflare R2, AWS S3
+
+---
+
+## 📞 Soporte
+
+¿Problemas? Revisa:
+1. Logs del servidor
+2. Variables de entorno (.env.example)
+3. Prisma migrations
+
+---
+
+## 📄 Licencia
+
+Propietario - Todos los derechos reservados
+
+---
+
+**Hecho con ❤️ en Argentina** 🇦🇷

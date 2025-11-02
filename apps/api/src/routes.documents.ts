@@ -11,6 +11,48 @@ const openai = new OpenAI({
 
 export async function registerDocumentRoutes(app: FastifyInstance) {
   // ==========================================
+  // GET /documents
+  // ==========================================
+  app.get("/documents", async (request, reply) => {
+    try {
+      const documents = await prisma.document.findMany({
+        include: {
+          versions: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: {
+              id: true,
+              rawText: true,
+              pdfUrl: true,
+              createdAt: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      return reply.send({
+        ok: true,
+        documents: documents.map(doc => ({
+          id: doc.id,
+          type: doc.type,
+          jurisdiccion: doc.jurisdiccion,
+          tono: doc.tono,
+          estado: doc.estado,
+          costUsd: doc.costUsd,
+          createdAt: doc.createdAt,
+          lastVersion: doc.versions[0] ?? null,
+        })),
+      });
+    } catch (err) {
+      request.log.error(err, "INTERNAL ERROR /documents");
+      return reply
+        .status(500)
+        .send({ ok: false, error: "INTERNAL_SERVER_ERROR" });
+    }
+  });
+
+  // ==========================================
   // POST /documents/generate
   // ==========================================
   app.post("/documents/generate", async (request, reply) => {
@@ -27,56 +69,102 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
 
       const data = parsed.data;
 
-      // 2️⃣ Construir prompt legal con el body plano
-      const prompt = `
-Quiero que actúes como un asistente legal especializado en redacción de contratos en Argentina.
-Generá un documento completo, numerado en cláusulas, listo para ser entregado al cliente para revisar y firmar.
+      // 2️⃣ Construir prompt legal mejorado
+      const systemMessage = `Eres un abogado senior argentino especializado en derecho comercial con 20 años de experiencia. Generas documentos legales válidos, profesionales y completos según la normativa argentina vigente.`;
 
-Tipo de documento: ${data.type}
-Jurisdicción/Fuero aplicable: ${data.jurisdiccion}
-Tono deseado: ${data.tono}
+      const prompt = `GENERA UN ${data.type.toUpperCase()} PROFESIONAL
 
-Parte Proveedora:
+ESPECIFICACIONES LEGALES:
+- Jurisdicción/Fuero: ${data.jurisdiccion}
+- Legislación: Código de Comercio Argentino, Código Civil y Comercial
+- Jurisdicción competente: ${data.jurisdiccion} (renuncia expresa a cualquier otro fuero)
+
+PARTES CONTRATANTES:
+
+PROVEEDOR:
 - Nombre/Razón Social: ${data.proveedor_nombre}
 - Documento/CUIT: ${data.proveedor_doc}
 - Domicilio: ${data.proveedor_domicilio}
 
-Parte Cliente:
+CLIENTE:
 - Nombre/Razón Social: ${data.cliente_nombre}
 - Documento/CUIT: ${data.cliente_doc}
 - Domicilio: ${data.cliente_domicilio}
 
-Condiciones comerciales:
-- Servicio/Objeto: ${data.descripcion_servicio}
+OBJETO Y CONDICIONES:
+- Servicio/Objeto del contrato: ${data.descripcion_servicio}
 - Monto mensual: ${data.monto_mensual}
 - Forma de pago: ${data.forma_pago}
 - Inicio de vigencia: ${data.inicio_vigencia}
-- Plazo mínimo (meses): ${data.plazo_minimo_meses}
-- Penalización por rescisión anticipada: ${
-        data.penalizacion_rescision ? "Sí" : "No"
-      }
-
-Tema impuestos/fiscal:
+- Plazo mínimo: ${data.plazo_minimo_meses} meses
+- Penalización por rescisión anticipada: ${data.penalizacion_rescision ? "SÍ" : "NO"}${data.penalizacion_rescision && data.penalizacion_monto ? ` - Monto de penalización: ${data.penalizacion_monto}` : ""}
 - Modalidad facturación: ${data.preferencias_fiscales}
 
-Instrucciones:
-1. Usar normativa argentina vigente.
-2. Incluir cláusula de competencia exclusiva en ${data.jurisdiccion}, renunciando a cualquier otro fuero.
-3. Incluir cláusula de domicilio constituido en esa jurisdicción para notificaciones.
-4. Si el tono es "comercial_claro", usar lenguaje entendible para PyMEs; si es "formal", usar redacción jurídica técnica.
-5. Numerar las cláusulas claramente.
-6. Cerrar con sección de firmas con lugar y fecha en blanco.
-7. NO agregues explicaciones fuera del contrato. Solo devolver el texto del contrato final.
-`.trim();
+INSTRUCCIONES DE REDACCIÓN:
+1. TONO: ${data.tono === "formal" ? "Formal y técnico legal. Usar terminología jurídica precisa y cláusulas técnicas." : "Comercial y claro. Lenguaje entendible para PyMEs sin sacrificar validez legal."}
+2. ESTRUCTURA: Encabezado con datos completos de partes, luego cláusulas numeradas (PRIMERA, SEGUNDA, etc.)
+3. MÍNIMOS LEGALES: Incluir cláusulas obligatorias según tipo de contrato y normativa argentina
+4. VALIDEZ: El documento debe ser legalmente válido y ejecutable en Argentina
+5. ESPECIFICIDAD: Usar los datos concretos proporcionados (montos, fechas, domicilios)
 
-      // 3️⃣ Generar contrato con IA
-      const completion = await openai.chat.completions.create({
-        model: "gpt-5",
-        messages: [{ role: "user", content: prompt }],
-      });
+CLÁUSULAS OBLIGATORIAS A INCLUIR:
+- Identificación completa de partes con CUIT/documento
+- Domicilio constituido en ${data.jurisdiccion}
+- Foro de competencia exclusivo en ${data.jurisdiccion}
+- Ley aplicable (leyes argentinas)
+- Medios de resolución de disputas
+- Plazo de vigencia y condiciones de rescisión
+- Modalidades de pago y facturación
+- Objeto del contrato claramente definido
 
-      const contratoRaw = completion.choices?.[0]?.message?.content ?? "";
-      const contrato = contratoRaw.trim();
+FORMATO DE SALIDA:
+- SOLO el texto del contrato legal
+- SIN explicaciones, comentarios o contexto adicional
+- Numeración de cláusulas en mayúsculas (PRIMERA, SEGUNDA, etc.)
+- Sección final para FIRMAS con espacios en blanco:
+  * Firma y aclaración del Proveedor
+  * Firma y aclaración del Cliente
+  * Lugar y fecha
+
+IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
+
+      // 3️⃣ Generar contrato con IA (con fallback)
+      let contratoRaw = "";
+      let contrato = "";
+      
+      try {
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: systemMessage },
+            { role: "user", content: prompt }
+          ],
+          temperature: 0.3,
+          max_tokens: 4000,
+          top_p: 0.9,
+          frequency_penalty: 0.1,
+          presence_penalty: 0.1,
+        });
+
+        contratoRaw = completion.choices?.[0]?.message?.content ?? "";
+        contrato = contratoRaw.trim();
+      } catch (primaryError) {
+        // Fallback a GPT-3.5 si falla
+        request.log.warn(primaryError, "Primary model failed, falling back to GPT-3.5");
+        
+        const fallbackCompletion = await openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: systemMessage },
+            { role: "user", content: prompt }
+          ],
+          temperature: 0.3,
+          max_tokens: 3000,
+        });
+
+        contratoRaw = fallbackCompletion.choices?.[0]?.message?.content ?? "";
+        contrato = contratoRaw.trim();
+      }
 
       // 4️⃣ IDs mock (auth vendrá luego)
       const tenantId = "demo-tenant";

@@ -1,6 +1,8 @@
 import "dotenv/config"; // carga .env ANTES de usar process.env
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
+import helmet from "@fastify/helmet";
 import { registerDocumentRoutes } from "./routes.documents.js";
 
 async function buildServer() {
@@ -8,10 +10,27 @@ async function buildServer() {
     logger: true,
   });
 
+  // Helmet para headers de seguridad
+  await app.register(helmet, {
+    contentSecurityPolicy: false, // Desactivar CSP para Next.js
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  });
+
   // permitir que Next.js (puerto 3000) llame a la API (puerto 4000)
   await app.register(cors, {
     origin: ["http://localhost:3000"],
     methods: ["GET", "POST"],
+  });
+
+  // Rate limiting para protección contra abuso
+  await app.register(rateLimit, {
+    max: 100, // máximo 100 requests
+    timeWindow: 60000, // por minuto (60 segundos)
+    errorResponseBuilder: (request, context) => ({
+      ok: false,
+      error: "too_many_requests",
+      message: "Demasiadas solicitudes. Por favor, intentá de nuevo en unos momentos.",
+    }),
   });
 
   // registrar endpoints /documents/*
