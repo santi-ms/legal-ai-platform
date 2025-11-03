@@ -3,7 +3,20 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
+// Singleton para Prisma Client (compatible con Vercel Serverless)
+const globalForPrisma = globalThis as unknown as {
+  prisma?: PrismaClient;
+};
+
+const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: ["error", "warn"],
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
 
 const authOptions: NextAuthOptions = {
   providers: [
