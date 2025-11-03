@@ -3,6 +3,14 @@ import { z } from "zod";
 import { generatePdfFromContract } from "./pdfGenerator.js";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// ESM safe __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Usar el mismo OUTPUT_DIR que pdfGenerator.ts
+const OUTPUT_DIR = process.env.PDF_OUTPUT_DIR || path.resolve(__dirname, "../generated");
 
 const BodySchema = z.object({
   title: z.string().min(1),
@@ -23,7 +31,6 @@ export async function registerPdfRoutes(app: FastifyInstance) {
       });
     }
 
-    const OUTPUT_DIR = process.env.PDF_OUTPUT_DIR || path.resolve(process.cwd(), "generated");
     const filePath = path.join(OUTPUT_DIR, fileName);
     
     app.log.info(`[pdf] Reading PDF with fileName: ${fileName}`);
