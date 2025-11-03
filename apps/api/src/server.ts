@@ -11,21 +11,23 @@ async function buildServer() {
     logger: true,
   });
 
-  // Helmet para headers de seguridad
+  // CORS: DEBE ir antes de las rutas y antes de helmet
+  await app.register(cors, {
+    origin: [
+      "http://localhost:3000", // local dev
+      "https://legal-ai-platform-orcin.vercel.app", // producción
+      /\.vercel\.app$/, // previews
+      ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+    ],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  });
+
+  // Seguridad (después de CORS)
   await app.register(helmet, {
     contentSecurityPolicy: false, // Desactivar CSP para Next.js
     crossOriginResourcePolicy: { policy: "cross-origin" },
-  });
-
-  // permitir que Next.js (puerto 3000) llame a la API (puerto 4000)
-  const allowedOrigins = [
-    "http://localhost:3000",
-    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
-  ];
-  
-  await app.register(cors, {
-    origin: allowedOrigins,
-    methods: ["GET", "POST"],
   });
 
   // Rate limiting para protección contra abuso
