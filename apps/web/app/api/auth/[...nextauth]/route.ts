@@ -1,22 +1,10 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
 
-// Singleton para Prisma Client (compatible con Vercel Serverless)
-const globalForPrisma = globalThis as unknown as {
-  prisma?: PrismaClient;
-};
-
-const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: ["error", "warn"],
-  });
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+const API_BASE =
+  process.env.API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://api-production-8cad.up.railway.app";
 
 const authOptions: NextAuthOptions = {
   providers: [
@@ -35,36 +23,31 @@ const authOptions: NextAuthOptions = {
 
           console.log("🔐 NextAuth authorize called with:", { email: credentials.email });
 
-          const user = await prisma.user.findUnique({
-            where: { email: credentials.email as string }
+          // llamar a mi backend en Railway
+          const res = await fetch(`${API_BASE}/api/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
           });
 
-          if (!user) {
-            console.log("❌ Usuario no encontrado");
+          if (!res.ok) {
+            console.log("❌ Login failed:", res.status);
+            // devolver null para que NextAuth responda 401
             return null;
           }
 
-          const isPasswordValid = await bcrypt.compare(
-            credentials.password as string,
-            user.password
-          );
-
-          if (!isPasswordValid) {
-            console.log("❌ Contraseña incorrecta");
-            return null;
-          }
+          // el backend debe devolver { id, name, email, role }
+          const user = await res.json();
 
           console.log("✅ User authorized:", {
             id: user.id,
             email: user.email
           });
 
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name || "",
-            role: user.role,
-          };
+          return user;
         } catch (error) {
           console.error("❌ Error en authorize:", error);
           return null;
@@ -110,4 +93,3 @@ const authOptions: NextAuthOptions = {
 const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
-

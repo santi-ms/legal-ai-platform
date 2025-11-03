@@ -5,6 +5,65 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 export async function registerAuthRoutes(app: FastifyInstance) {
+  // POST /api/auth/login
+  app.post("/api/auth/login", async (request, reply) => {
+    try {
+      const { email, password } = request.body as {
+        email: string;
+        password: string;
+      };
+
+      // Validaciones
+      if (!email || !password) {
+        return reply.status(400).send({
+          ok: false,
+          error: "validation_error",
+          message: "Email y contraseña son requeridos",
+        });
+      }
+
+      // Buscar usuario
+      const user = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (!user) {
+        return reply.status(401).send({
+          ok: false,
+          error: "invalid_credentials",
+          message: "Email o contraseña incorrectos",
+        });
+      }
+
+      // Verificar contraseña
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+
+      if (!isPasswordValid) {
+        return reply.status(401).send({
+          ok: false,
+          error: "invalid_credentials",
+          message: "Email o contraseña incorrectos",
+        });
+      }
+
+      // Devolver usuario (sin password)
+      return reply.status(200).send({
+        id: user.id,
+        email: user.email,
+        name: user.name || "",
+        role: user.role,
+      });
+    } catch (error: any) {
+      app.log.error("Error en login:", error);
+      return reply.status(500).send({
+        ok: false,
+        error: "internal_error",
+        message: "Error al iniciar sesión",
+        details: error.message || "Unknown error",
+      });
+    }
+  });
+
   // POST /api/register
   app.post("/api/register", async (request, reply) => {
     try {
