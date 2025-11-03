@@ -14,6 +14,7 @@ const OUTPUT_DIR = process.env.PDF_OUTPUT_DIR || path.resolve(__dirname, "../gen
 export type GeneratePdfInput = {
   title: string;
   rawText: string;
+  fileName?: string; // opcional: si viene, usarlo; si no, generar uno único
 };
 
 export type GeneratePdfResult = {
@@ -23,16 +24,20 @@ export type GeneratePdfResult = {
 
 export async function generatePdfFromContract({
   title,
-  rawText
+  rawText,
+  fileName: providedFileName
 }: GeneratePdfInput): Promise<GeneratePdfResult> {
   // asegurar carpeta
   if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   }
 
-  // nombre �nico
-  const fileName = `${Date.now()}-${randomUUID()}.pdf`;
+  // usar fileName proporcionado o generar uno único
+  const fileName = providedFileName || `${Date.now()}-${randomUUID()}.pdf`;
   const absolutePath = path.join(OUTPUT_DIR, fileName);
+  
+  console.log(`[pdf] Generating PDF with fileName: ${fileName}`);
+  console.log(`[pdf] Output path: ${absolutePath}`);
 
   const writeStream = fs.createWriteStream(absolutePath);
 
@@ -48,7 +53,7 @@ export async function generatePdfFromContract({
 
   doc.pipe(writeStream);
 
-  // t�tulo
+  // título
   doc
     .font("Times-Bold")
     .fontSize(16)
@@ -66,7 +71,7 @@ export async function generatePdfFromContract({
 
   // bloque de firma
   doc.fontSize(11).text("__________________________", { align: "left" });
-  doc.text("Firma / Aclaraci�n / DNI", { align: "left" });
+  doc.text("Firma / Aclaración / DNI", { align: "left" });
 
   doc.end();
 

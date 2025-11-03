@@ -221,8 +221,12 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
         }
       );
 
-      // 6️⃣ Llamar microservicio PDF
-      let pdfUrl: string | null = null;
+      // 6️⃣ Definir fileName único basado en versionId
+      const fileName = `${versionRecord.id}.pdf`;
+      app.log.info(`[api] Generating PDF with fileName: ${fileName}`);
+
+      // 7️⃣ Llamar microservicio PDF
+      let pdfGenerated = false;
       try {
         const pdfServiceUrl = process.env.PDF_SERVICE_URL || "http://localhost:4100";
         const pdfResponse = await fetch(`${pdfServiceUrl}/pdf/generate`, {
@@ -231,35 +235,35 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
           body: JSON.stringify({
             title: data.type.toUpperCase(),
             rawText: contrato,
+            fileName: fileName,
           }),
         });
 
         if (pdfResponse.ok) {
           const pdfJson = await pdfResponse.json();
-          if (pdfJson.ok && pdfJson.fileName) {
-            // guardamos solo el nombre del archivo (no el path completo)
-            // ej: "1761519643358-bb806efd-3ae8-4e36-8705-8526d5f75a14.pdf"
-            pdfUrl = pdfJson.fileName;
+          if (pdfJson.ok && pdfJson.fileName === fileName) {
+            pdfGenerated = true;
+            app.log.info(`[api] PDF generated successfully: ${fileName}`);
           }
         }
       } catch (err) {
         app.log.error(err, "Error al llamar al pdf-service");
       }
 
-      // 7️⃣ Guardar PDF si se generó bien
-      if (pdfUrl) {
+      // 8️⃣ Guardar fileName en DB
+      if (pdfGenerated) {
         await prisma.documentVersion.update({
           where: { id: versionRecord.id },
-          data: { pdfUrl },
+          data: { pdfUrl: fileName },
         });
       }
 
-      // 8️⃣ Responder al cliente
+      // 9️⃣ Responder al cliente
       return reply.status(200).send({
         ok: true,
         documentId: documentRecord.id,
         contrato,
-        pdfUrl,
+        pdfUrl: pdfGenerated ? fileName : null,
       });
     } catch (err) {
       request.log.error(err, "INTERNAL ERROR /documents/generate");
@@ -364,10 +368,14 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
       return reply.status(404).send({ ok: false, error: "PDF_NOT_FOUND" });
     }
 
+    app.log.info(`[api] Fetching PDF with fileName: ${fileName}`);
+
     // 2️⃣ Hacer proxy al PDF service
     try {
       const PDF_BASE = process.env.PDF_SERVICE_URL || "http://localhost:4100";
-      const pdfResponse = await fetch(`${PDF_BASE}/pdf/${fileName}`);
+      const pdfUrl = `${PDF_BASE}/pdf/${encodeURIComponent(fileName)}`;
+      app.log.info(`[api] PDF service URL: ${pdfUrl}`);
+      const pdfResponse = await fetch(pdfUrl);
 
       if (!pdfResponse.ok) {
         return reply
