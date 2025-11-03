@@ -1,6 +1,8 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { generatePdfFromContract } from "./pdfGenerator.js";
+import fs from "node:fs";
+import path from "node:path";
 
 const BodySchema = z.object({
   title: z.string().min(1),
@@ -8,6 +10,34 @@ const BodySchema = z.object({
 });
 
 export async function registerPdfRoutes(app: FastifyInstance) {
+  // GET /pdf/:fileName - Descargar PDF por nombre
+  app.get("/pdf/:fileName", async (request, reply) => {
+    const { fileName } = request.params as { fileName: string };
+    
+    // Sanitizar fileName para evitar path traversal
+    if (fileName.includes("..") || fileName.includes("/")) {
+      return reply.status(400).send({
+        ok: false,
+        error: "invalid_file_name"
+      });
+    }
+
+    const OUTPUT_DIR = process.env.PDF_OUTPUT_DIR || path.resolve(process.cwd(), "generated");
+    const filePath = path.join(OUTPUT_DIR, fileName);
+
+    try {
+      await fs.promises.access(filePath);
+      reply.header("Content-Type", "application/pdf");
+      reply.header("Content-Disposition", `attachment; filename="${fileName}"`);
+      return reply.send(fs.createReadStream(filePath));
+    } catch {
+      return reply.status(404).send({
+        ok: false,
+        error: "PDF_NOT_FOUND"
+      });
+    }
+  });
+
   app.post("/pdf/generate", async (request, reply) => {
     const parsed = BodySchema.safeParse(request.body);
 

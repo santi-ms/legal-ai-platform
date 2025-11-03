@@ -3,7 +3,6 @@ import { GenerateDocumentSchema } from "./types.js";
 import OpenAI from "openai";
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
-import fs from "node:fs";
 
 const prisma = new PrismaClient();
 
@@ -237,10 +236,10 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
 
         if (pdfResponse.ok) {
           const pdfJson = await pdfResponse.json();
-          if (pdfJson.ok && pdfJson.filePath) {
-            // esto suele ser algo tipo
-            // C:\Users\santi\Desktop\legal-ai-platform\services\pdf\generated\CONTRATO_1234.pdf
-            pdfUrl = pdfJson.filePath;
+          if (pdfJson.ok && pdfJson.fileName) {
+            // guardamos solo el nombre del archivo (no el path completo)
+            // ej: "1761519643358-bb806efd-3ae8-4e36-8705-8526d5f75a14.pdf"
+            pdfUrl = pdfJson.fileName;
           }
         }
       } catch (err) {
@@ -341,6 +340,7 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
 
     const { id } = parsed.data;
 
+    // 1️⃣ Buscar documento para obtener el fileName del PDF
     const document = await prisma.document.findUnique({
       where: { id },
       include: {
@@ -358,16 +358,33 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
         .send({ ok: false, error: "DOCUMENT_NOT_FOUND" });
     }
 
-    const pdfPath = document.versions[0]?.pdfUrl;
+    const fileName = document.versions[0]?.pdfUrl;
 
-    // si no hay pdf o el archivo en disco no existe => 404 controlado
-    if (!pdfPath || !fs.existsSync(pdfPath)) {
+    if (!fileName) {
       return reply.status(404).send({ ok: false, error: "PDF_NOT_FOUND" });
     }
 
-    // stream del archivo físico al browser
-    reply.header("Content-Type", "application/pdf");
-    reply.header("Content-Disposition", `inline; filename="${id}.pdf"`);
-    return reply.send(fs.createReadStream(pdfPath));
+    // 2️⃣ Hacer proxy al PDF service
+    try {
+      const PDF_BASE = process.env.PDF_SERVICE_URL || "http://localhost:4100";
+      const pdfResponse = await fetch(`${PDF_BASE}/pdf/${fileName}`);
+
+      if (!pdfResponse.ok) {
+        return reply
+          .status(pdfResponse.status)
+          .send({ ok: false, error: "PDF_NOT_FOUND" });
+      }
+
+      // 3️⃣ Stream el PDF al cliente
+      const arrayBuffer = await pdfResponse.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      reply.header("Content-Type", "application/pdf");
+      reply.header("Content-Disposition", `attachment; filename="${fileName}"`);
+      return reply.send(buffer);
+    } catch (err) {
+      request.log.error(err, "Error fetching PDF from service");
+      return reply.status(500).send({ ok: false, error: "INTERNAL_SERVER_ERROR" });
+    }
   });
 }
