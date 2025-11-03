@@ -4,6 +4,7 @@ import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import helmet from "@fastify/helmet";
 import { registerDocumentRoutes } from "./routes.documents.js";
+import { registerAuthRoutes } from "./routes.auth.js";
 
 async function buildServer() {
   const app = Fastify({
@@ -40,6 +41,9 @@ async function buildServer() {
 
   // registrar endpoints /documents/*
   await registerDocumentRoutes(app);
+
+  // registrar endpoints /api/auth/*
+  await registerAuthRoutes(app);
 
   return app;
 }

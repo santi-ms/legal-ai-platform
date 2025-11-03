@@ -1,87 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
 
-// Singleton para Prisma Client (compatible con Vercel Serverless)
-const globalForPrisma = globalThis as unknown as {
-  prisma?: PrismaClient;
-};
-
-const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: ["error", "warn"],
-  });
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+const API_BASE =
+  process.env.API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://api-production-8cad.up.railway.app"; // backend real
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password, companyName } = await req.json();
+    const body = await req.json();
 
-    // Validaciones
-    if (!name || !email || !password || !companyName) {
-      return NextResponse.json(
-        { error: "Todos los campos son requeridos" },
-        { status: 400 }
-      );
+    const res = await fetch(`${API_BASE}/api/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await res.text();
+
+    if (!res.ok) {
+      return new NextResponse(data, { status: res.status });
     }
 
-    // Verificar si el usuario ya existe
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      return NextResponse.json(
-        { error: "El email ya está registrado" },
-        { status: 400 }
-      );
-    }
-
-    // Hashear contraseña
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Crear tenant
-    const tenant = await prisma.tenant.create({
-      data: {
-        name: companyName,
-      },
-    });
-
-    // Crear usuario
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        role: "owner", // Primer usuario de un tenant es owner
-        tenantId: tenant.id,
-      },
-    });
-
-    return NextResponse.json(
-      {
-        message: "Usuario creado exitosamente",
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        },
-      },
-      { status: 201 }
-    );
-  } catch (error: any) {
-    console.error("Error en registro:", error);
-    return NextResponse.json(
-      { 
-        error: "Error al crear usuario",
-        details: error.message || "Unknown error"
-      },
+    return NextResponse.json(JSON.parse(data));
+  } catch (err: any) {
+    console.error("Proxy /api/register error:", err);
+    return new NextResponse(
+      JSON.stringify({ message: "Error proxying to API", error: err?.message }),
       { status: 500 }
     );
   }
 }
-
