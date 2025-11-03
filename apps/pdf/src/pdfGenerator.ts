@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Carpeta donde vamos a guardar los PDFs generados
-const OUTPUT_DIR = path.resolve(__dirname, "../generated");
+const OUTPUT_DIR = process.env.PDF_OUTPUT_DIR || path.resolve(__dirname, "../generated");
 
 export type GeneratePdfInput = {
   title: string;
@@ -30,7 +30,7 @@ export async function generatePdfFromContract({
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   }
 
-  // nombre único
+  // nombre ï¿½nico
   const fileName = `${Date.now()}-${randomUUID()}.pdf`;
   const absolutePath = path.join(OUTPUT_DIR, fileName);
 
@@ -48,7 +48,7 @@ export async function generatePdfFromContract({
 
   doc.pipe(writeStream);
 
-  // título
+  // tï¿½tulo
   doc
     .font("Times-Bold")
     .fontSize(16)
@@ -66,7 +66,7 @@ export async function generatePdfFromContract({
 
   // bloque de firma
   doc.fontSize(11).text("__________________________", { align: "left" });
-  doc.text("Firma / Aclaración / DNI", { align: "left" });
+  doc.text("Firma / Aclaraciï¿½n / DNI", { align: "left" });
 
   doc.end();
 
