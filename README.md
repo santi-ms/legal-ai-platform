@@ -128,10 +128,12 @@ npm run build            # Build de producción
 npm run lint             # Linting
 
 # Base de datos
-cd packages/db
-npx prisma studio        # UI de base de datos
-npx prisma migrate dev   # Nueva migración
-npx prisma generate      # Regenerar client
+# ⚠️ Schema único en packages/db/prisma/schema.prisma
+cd apps/api
+npm run migrate:dev      # Nueva migración (usa schema de packages/db)
+npm run migrate:deploy   # Deploy de migraciones en producción
+npx prisma studio --schema=../../packages/db/prisma/schema.prisma  # UI de base de datos
+npx prisma generate --schema=../../packages/db/prisma/schema.prisma  # Regenerar client
 ```
 
 ---
@@ -211,16 +213,89 @@ Opciones recomendadas:
 - **Database**: Supabase (PostgreSQL), Neon
 - **Storage**: Cloudflare R2, AWS S3
 
-### Variables de Entorno Importantes
+### Variables de Entorno
 
-**⚠️ Importante para el build:**
-- `NEXTAUTH_URL` debe estar configurado durante el build de producción. Si no está presente, NextAuth puede fallar durante la compilación.
-- En Vercel, asegurate de configurar `NEXTAUTH_URL` con tu dominio de producción antes del primer deploy.
+#### Frontend (Vercel/Netlify)
 
-**Variables requeridas:**
-- `NEXTAUTH_URL` - URL base de tu aplicación (ej: https://tu-app.vercel.app)
-- `NEXTAUTH_SECRET` - Secret aleatorio seguro para JWT (generar con `openssl rand -base64 32`)
-- `NEXT_PUBLIC_API_URL` - URL de tu backend API
+| Variable | Descripción | Ejemplo |
+|----------|-------------|---------|
+| `NEXTAUTH_URL` | ⚠️ **Requerida para build** - URL base de la app | `https://tu-app.vercel.app` |
+| `NEXTAUTH_SECRET` | Secret para JWT (generar con `openssl rand -base64 32`) | `tu-secret-aqui` |
+| `NEXT_PUBLIC_API_URL` | URL del backend API | `https://tu-api.railway.app` |
+| `NEXT_PUBLIC_INACTIVITY_MINUTES` | Minutos de inactividad para logout (opcional, default: 30) | `30` |
+
+#### Backend (Railway/Render)
+
+| Variable | Descripción | Ejemplo |
+|----------|-------------|---------|
+| `DATABASE_URL` | Connection string de PostgreSQL | `postgresql://user:pass@host:5432/db` |
+| `EMAIL_SERVER_HOST` | SMTP server host | `smtp.gmail.com` |
+| `EMAIL_SERVER_PORT` | SMTP port | `587` |
+| `EMAIL_SERVER_USER` | Usuario SMTP | `tu-email@gmail.com` |
+| `EMAIL_SERVER_PASSWORD` | Password SMTP (App Password para Gmail) | `tu-app-password` |
+| `EMAIL_FROM` | Email remitente | `Legal AI <noreply@tu-dominio.com>` |
+| `FRONTEND_URL` | URL del frontend (para links en emails) | `https://tu-app.vercel.app` |
+| `PORT` | Puerto del servidor (opcional, default: 4001) | `4001` |
+| `OPENAI_API_KEY` | API key de OpenAI | `sk-...` |
+
+### Deploy en Railway (Backend API)
+
+#### Post-Deploy Scripts
+
+Después de cada deploy en Railway, ejecutar:
+
+```bash
+cd apps/api
+npm run migrate:deploy
+npm run db:seed
+```
+
+**Configurar en Railway:**
+1. Ve a tu proyecto en Railway
+2. Settings → Deploy → Post-Deploy Command
+3. Agregar: `cd apps/api && npm run migrate:deploy && npm run db:seed`
+
+#### Healthcheck
+
+Railway puede usar el endpoint `/healthz` para health checks:
+- **Path**: `/healthz`
+- **Interval**: 30s
+- **Timeout**: 5s
+
+### Seed de Base de Datos
+
+El seed crea automáticamente:
+- **Tenant por defecto**: "Default Tenant"
+- **Usuario admin demo**: `admin@legal-ai.local` / `KodoAdmin123`
+
+```bash
+cd apps/api
+npm run db:seed
+```
+
+### E2E Tests (Playwright)
+
+#### Localmente
+
+```bash
+# Levantar servicios
+npm run dev
+
+# En otra terminal, ejecutar tests
+npm run e2e
+
+# Con UI interactiva
+npm run e2e:headed
+npm run e2e:ui
+```
+
+#### En CI
+
+Los tests E2E se ejecutan automáticamente en GitHub Actions en cada PR/push.
+
+**Variables de entorno para E2E:**
+- `E2E_BASE_URL` - URL base del frontend (default: http://localhost:3000)
+- `E2E_API_URL` - URL del API backend (default: http://localhost:4001)
 
 ---
 

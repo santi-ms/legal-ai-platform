@@ -6,7 +6,10 @@
     "dev": "tsx src/server.ts",
     "build": "tsc && npm run postinstall",
     "start": "node dist/server.js",
-    "postinstall": "npx prisma generate"
+    "postinstall": "prisma generate --schema=../../packages/db/prisma/schema.prisma",
+    "migrate:dev": "prisma migrate dev --schema=../../packages/db/prisma/schema.prisma",
+    "migrate:deploy": "prisma migrate deploy --schema=../../packages/db/prisma/schema.prisma",
+    "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
     "@fastify/cors": "^8.5.0",

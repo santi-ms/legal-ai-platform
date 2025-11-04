@@ -63,6 +63,13 @@ model User {
 
 ## 📝 Migración de Base de Datos
 
+### ⚠️ Importante: Schema único en `packages/db/prisma/schema.prisma`
+
+**Convención del proyecto:**
+- ✅ **Único schema**: `packages/db/prisma/schema.prisma` es la fuente de verdad
+- ✅ Todos los scripts Prisma usan `--schema=../../packages/db/prisma/schema.prisma`
+- ✅ Las migraciones se ejecutan desde `apps/api` pero apuntan al schema centralizado
+
 ### Paso 1: Generar migración segura
 
 La migración solo agregará los campos nuevos (`emailVerified`, `updatedAt`) sin tocar la columna `password` existente:
@@ -73,8 +80,16 @@ cd apps/api
 # Asegurar que DATABASE_URL esté configurado
 # Luego ejecutar:
 
-npx prisma migrate dev --name auth_rename_password_to_passwordHash_add_emailVerified
+npm run migrate:dev -- --name auth_rename_password_to_passwordHash_add_emailVerified
+
+# O directamente:
+npx prisma migrate dev --schema=../../packages/db/prisma/schema.prisma --name auth_rename_password_to_passwordHash_add_emailVerified
 ```
+
+**Scripts disponibles en `apps/api/package.json`:**
+- `npm run migrate:dev` - Ejecuta `prisma migrate dev` con el schema correcto
+- `npm run migrate:deploy` - Ejecuta `prisma migrate deploy` con el schema correcto
+- `npm run postinstall` - Genera Prisma Client automáticamente después de `npm install`
 
 Esta migración:
 - ✅ **NO** renombra la columna `password` (usamos `@map` para mantenerla)
@@ -350,7 +365,9 @@ Confirma reset de contraseña con token.
 
 ### Base de Datos
 
-- `packages/db/prisma/schema.prisma` - User actualizado con passwordHash y emailVerified
+- `packages/db/prisma/schema.prisma` - **Único schema del proyecto** (fuente de verdad)
+  - User actualizado con passwordHash y emailVerified
+  - Todos los scripts Prisma en `apps/api` apuntan a este schema usando `--schema=../../packages/db/prisma/schema.prisma`
 
 ## 🚧 Tareas Pendientes
 
@@ -407,14 +424,79 @@ export default function ProtectedLayout({ children }) {
 
 Ver archivo `docs/auth-qa.md` para checklist completo de pruebas.
 
+## 🧪 E2E Tests con Playwright
+
+### Configuración
+
+Los tests E2E están configurados con Playwright y cubren los flujos completos de autenticación:
+
+**Archivos:**
+- `playwright.config.ts` - Configuración de Playwright
+- `e2e/auth.spec.ts` - Tests E2E de autenticación
+
+### Tests Incluidos
+
+1. **Flujo completo: Registro → Verificación → Login**
+   - Registra un nuevo usuario
+   - Obtiene token de verificación desde DB
+   - Verifica email
+   - Inicia sesión exitosamente
+
+2. **Login falla con credenciales incorrectas**
+   - Verifica que el login rechaza credenciales inválidas
+
+3. **Reset de contraseña: request + confirm**
+   - Solicita reset
+   - Obtiene token desde DB
+   - Confirma reset con nueva contraseña
+   - Verifica que puede loguear con nueva contraseña
+
+4. **Rutas protegidas redirigen a login sin sesión**
+   - Verifica que `/documents` redirige a `/auth/login` sin autenticación
+
+### Ejecutar Tests
+
+#### Localmente
+
+```bash
+# 1. Levantar servicios
+npm run dev
+
+# 2. En otra terminal, ejecutar tests
+npm run e2e
+
+# Con navegador visible
+npm run e2e:headed
+
+# Con UI interactiva de Playwright
+npm run e2e:ui
+```
+
+#### Variables de Entorno
+
+```bash
+E2E_BASE_URL=http://localhost:3000  # URL del frontend
+E2E_API_URL=http://localhost:4001   # URL del API backend
+DATABASE_URL=...                    # DB para obtener tokens de test
+```
+
+### CI/CD
+
+Los tests E2E se ejecutan automáticamente en GitHub Actions:
+- Build y migraciones de DB
+- Seed de datos de prueba
+- Servidores levantados en background
+- Tests ejecutados con retry (2 intentos en CI)
+- Reportes subidos como artifacts
+
+Ver `.github/workflows/ci.yml` para detalles.
+
 ## 🔄 Cambios Recientes - Fix Prisma/User (passwordHash + emailVerified)
 
 ### ✅ Cambios Aplicados
 
 1. **Schema Prisma actualizado:**
-   - ✅ Campo `passwordHash` con `@map("password")` en ambos schemas:
-     - `packages/db/prisma/schema.prisma`
-     - `apps/api/prisma/schema.prisma`
+   - ✅ Campo `passwordHash` con `@map("password")` en `packages/db/prisma/schema.prisma` (único schema)
    - ✅ Campo `emailVerified DateTime?` agregado
    - ✅ Campo `updatedAt DateTime @updatedAt` agregado
 
@@ -427,11 +509,16 @@ Ver archivo `docs/auth-qa.md` para checklist completo de pruebas.
      - Demo user: cambio de `password` a `passwordHash`
 
 3. **Prisma Client regenerado:**
-   - ✅ Ejecutado `npx prisma generate` en `apps/api`
+   - ✅ Ejecutado `npx prisma generate --schema=../../packages/db/prisma/schema.prisma` en `apps/api`
+
+4. **Schema consolidado:**
+   - ✅ Eliminado `apps/api/prisma/schema.prisma` (drift eliminado)
+   - ✅ Único schema en `packages/db/prisma/schema.prisma`
+   - ✅ Scripts en `apps/api/package.json` actualizados para usar `--schema=../../packages/db/prisma/schema.prisma`
 
 ### 📋 Pendiente (requiere DATABASE_URL)
 
-- ⏳ Generar migración: `npx prisma migrate dev --name auth_rename_password_to_passwordHash_add_emailVerified`
+- ⏳ Generar migración: `npm run migrate:dev -- --name auth_rename_password_to_passwordHash_add_emailVerified`
   - Ejecutar desde `apps/api` con `DATABASE_URL` configurado
   - Esta migración solo agregará `emailVerified` y `updatedAt`, sin tocar `password`
 

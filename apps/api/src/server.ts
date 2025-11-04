@@ -41,6 +41,16 @@ async function buildServer() {
     }),
   });
 
+  // Healthcheck endpoint (sin rate limiting para monitoreo)
+  app.get("/healthz", async (request, reply) => {
+    const startTime = process.uptime();
+    return reply.send({
+      ok: true,
+      uptime: Math.floor(startTime),
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   // registrar endpoints /documents/*
   await registerDocumentRoutes(app);
 
