@@ -211,6 +211,17 @@ Opciones recomendadas:
 - **Database**: Supabase (PostgreSQL), Neon
 - **Storage**: Cloudflare R2, AWS S3
 
+### Variables de Entorno Importantes
+
+**⚠️ Importante para el build:**
+- `NEXTAUTH_URL` debe estar configurado durante el build de producción. Si no está presente, NextAuth puede fallar durante la compilación.
+- En Vercel, asegurate de configurar `NEXTAUTH_URL` con tu dominio de producción antes del primer deploy.
+
+**Variables requeridas:**
+- `NEXTAUTH_URL` - URL base de tu aplicación (ej: https://tu-app.vercel.app)
+- `NEXTAUTH_SECRET` - Secret aleatorio seguro para JWT (generar con `openssl rand -base64 32`)
+- `NEXT_PUBLIC_API_URL` - URL de tu backend API
+
 ---
 
 ## 📞 Soporte

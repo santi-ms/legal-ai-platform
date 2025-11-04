@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
@@ -13,7 +13,7 @@ import Link from "next/link";
 import { Scale, Mail, Lock } from "lucide-react";
 import { loginSchema, type LoginInput } from "@/app/lib/validation/auth";
 
-export default function LoginPage() {
+function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
   const router = useRouter();
@@ -196,5 +196,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
