@@ -23,7 +23,7 @@ const authOptions: NextAuthOptions = {
 
           console.log("🔐 NextAuth authorize called with:", { email: credentials.email });
 
-          // llamar a mi backend en Railway
+          // Llamar al backend en Railway
           const res = await fetch(`${API_BASE}/api/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -34,17 +34,20 @@ const authOptions: NextAuthOptions = {
           });
 
           if (!res.ok) {
-            console.log("❌ Login failed:", res.status);
-            // devolver null para que NextAuth responda 401
+            const errorData = await res.json().catch(() => ({}));
+            console.log("❌ Login failed:", res.status, errorData);
+            // Devolver null para que NextAuth responda 401
             return null;
           }
 
-          // el backend debe devolver { id, name, email, role }
-          const user = await res.json();
+          // El backend debe devolver { ok: true, data: { id, email, name, role, tenantId } }
+          const response = await res.json();
+          const user = response.data || response;
 
           console.log("✅ User authorized:", {
             id: user.id,
-            email: user.email
+            email: user.email,
+            tenantId: user.tenantId
           });
 
           return user;
@@ -61,20 +64,28 @@ const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 días
+    maxAge: 60 * 60 * 2, // 2 horas
+    updateAge: 10 * 60,  // Refresca cada 10 min de actividad (opcional)
+  },
+  jwt: {
+    maxAge: 60 * 60 * 2, // 2 horas - debe coincidir con session.maxAge
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.role = (user as any).role;
+        token.user = {
+          id: user.id as string,
+          email: user.email as string,
+          name: (user as any).name || "",
+          role: (user as any).role || "viewer",
+          tenantId: (user as any).tenantId as string,
+        };
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).id = token.id as string;
-        (session.user as any).role = token.role;
+      if (token.user) {
+        session.user = token.user as any;
       }
       return session;
     },
@@ -83,8 +94,45 @@ const authOptions: NextAuthOptions = {
       if (url.startsWith("/")) return `${baseUrl}${url}`;
       // Si la URL es de nuestro dominio, permitir
       if (new URL(url).origin === baseUrl) return url;
-      // Por defecto, redirigir a dashboard
+      // Por defecto, redirigir a documentos
       return `${baseUrl}/documents`;
+    },
+  },
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === 'production'
+        ? '__Secure-next-auth.session-token'
+        : 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        // ⬇️ sin maxAge => cookie de sesión (se elimina al cerrar navegador)
+        // maxAge: undefined, // Ya es undefined por defecto
+      },
+    },
+    callbackUrl: {
+      name: process.env.NODE_ENV === 'production'
+        ? '__Secure-next-auth.callback-url'
+        : 'next-auth.callback-url',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+    csrfToken: {
+      name: process.env.NODE_ENV === 'production'
+        ? '__Host-next-auth.csrf-token'
+        : 'next-auth.csrf-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
     },
   },
   secret: process.env.NEXTAUTH_SECRET || "dev-secret-change-in-production",

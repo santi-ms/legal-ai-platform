@@ -17,11 +17,12 @@ model Tenant {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String?
-  password  String
-  role      String   // "owner" | "admin" | "editor" | "viewer"
+  id            String   @id @default(uuid())
+  email         String   @unique
+  name          String?
+  passwordHash  String   // Cambiado de password a passwordHash para mayor claridad
+  role          String   // "owner" | "admin" | "editor" | "viewer"
+  emailVerified DateTime? // Fecha de verificación del email
 
   tenantId  String
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
@@ -31,6 +32,7 @@ model User {
   sessions         Session[]
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Document {

@@ -1,44 +1,35 @@
+import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
-const protectedRoutes = ["/documents"];
-const authRoutes = ["/auth/login", "/auth/register"];
-
-export async function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
-
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
-  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
-
-  // si no es ni protegida ni de auth, dejá pasar y listo
-  if (!isProtectedRoute && !isAuthRoute) {
+export default withAuth(
+  function middleware(req) {
+    // Aquí puedes agregar lógica adicional si es necesario
+    // Por ejemplo, verificar roles, permisos, etc.
     return NextResponse.next();
+  },
+  {
+    callbacks: {
+      authorized: ({ token, req }) => {
+        // Si no hay token, no está autorizado
+        if (!token) {
+          return false;
+        }
+
+        // Verificar que el token no haya expirado
+        // NextAuth ya maneja esto, pero podemos agregar verificaciones adicionales
+        return true;
+      },
+    },
+    pages: {
+      signIn: "/auth/login",
+    },
   }
+);
 
-  // Verificar si tiene cookie de sesión de NextAuth
-  const sessionToken = request.cookies.get("next-auth.session-token")?.value 
-    || request.cookies.get("__Secure-next-auth.session-token")?.value;
-
-  const hasSession = !!sessionToken;
-
-  // Si no hay cookie pero la ruta es protegida, redirigir a login
-  if (isProtectedRoute && !hasSession) {
-    const loginUrl = new URL("/auth/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // Si hay cookie pero intenta acceder a auth routes, redirigir al dashboard
-  if (isAuthRoute && hasSession) {
-    return NextResponse.redirect(new URL("/documents", request.url));
-  }
-
-  return NextResponse.next();
-}
-
-// Middleware se aplica a todas las rutas excepto estáticos
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/dashboard/:path*",
+    "/documents/:path*",
+    // Agregar otras rutas protegidas aquí
+  ],
 };
