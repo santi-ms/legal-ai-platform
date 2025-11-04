@@ -230,6 +230,11 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       // Buscar usuario por email
       const user = await prisma.user.findUnique({
         where: { email: verificationToken.identifier },
+        select: {
+          id: true,
+          email: true,
+          emailVerified: true, // Necesario para verificar estado
+        },
       });
 
       if (!user) {
@@ -307,10 +312,25 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 
       const { email, password } = parsed.data;
 
-      // Buscar usuario
+      // Buscar usuario con campos necesarios para validación
       const user = await prisma.user.findUnique({
         where: { email },
-        include: { tenant: true },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          tenantId: true,
+          passwordHash: true, // Necesario para comparar contraseña
+          emailVerified: true, // Necesario para verificar email
+          tenant: {
+            select: {
+              id: true,
+              name: true,
+              createdAt: true,
+            },
+          },
+        },
       });
 
       if (!user) {

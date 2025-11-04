@@ -20,7 +20,7 @@ model User {
   id            String   @id @default(uuid())
   email         String   @unique
   name          String?
-  passwordHash  String   // Cambiado de password a passwordHash para mayor claridad
+  passwordHash  String   @map("password") // Mapeado a columna "password" existente en DB
   role          String   // "owner" | "admin" | "editor" | "viewer"
   emailVerified DateTime? // Fecha de verificación del email
 

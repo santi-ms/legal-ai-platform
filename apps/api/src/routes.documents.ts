@@ -188,9 +188,10 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
             create: {
               id: userId,
               email: "demo@example.com",
-              password: "dev-placeholder",
+              passwordHash: "dev-placeholder", // Usar passwordHash en lugar de password
               role: "owner",
               tenantId: tenant.id,
+              emailVerified: null, // Demo user no verificado
             },
           });
 

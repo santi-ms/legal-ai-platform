@@ -40,7 +40,7 @@ model User {
   id            String   @id @default(uuid())
   email         String   @unique
   name          String?
-  passwordHash  String   // Cambiado de password
+  passwordHash  String   @map("password") // Mapeado a columna "password" existente en DB
   role          String
   emailVerified DateTime? // Nuevo campo
   tenantId      String
@@ -49,37 +49,94 @@ model User {
 }
 ```
 
+### ⚠️ Importante: Mapeo de `passwordHash` a `password`
+
+**Motivo del cambio:**
+- El schema Prisma usa `passwordHash` (nombre más descriptivo)
+- Pero la columna real en la base de datos se llama `password`
+- Usamos `@map("password")` para mantener compatibilidad sin perder datos
+
+**¿Por qué no renombrar la columna?**
+- Evita migraciones destructivas que pueden perder datos
+- Permite mantener la estructura existente de la DB
+- El código TypeScript usa `passwordHash` (más claro), pero Prisma mapea a `password` en la DB
+
 ## 📝 Migración de Base de Datos
 
-### Paso 1: Renombrar campo password
+### Paso 1: Generar migración segura
 
-⚠️ **IMPORTANTE**: Antes de ejecutar la migración, necesitas migrar los datos existentes.
+La migración solo agregará los campos nuevos (`emailVerified`, `updatedAt`) sin tocar la columna `password` existente:
 
 ```bash
-cd packages/db
+cd apps/api
 
-# Crear migración
-npx prisma migrate dev --name add_email_verification
+# Asegurar que DATABASE_URL esté configurado
+# Luego ejecutar:
 
-# O si prefieres hacerlo manualmente:
-# 1. Renombrar columna password -> passwordHash
-# 2. Agregar columna emailVerified (nullable)
-# 3. Agregar columna updatedAt (nullable, luego NOT NULL)
+npx prisma migrate dev --name auth_rename_password_to_passwordHash_add_emailVerified
 ```
 
-### Script SQL Manual (si es necesario)
+Esta migración:
+- ✅ **NO** renombra la columna `password` (usamos `@map` para mantenerla)
+- ✅ Agrega columna `emailVerified` (nullable)
+- ✅ Agrega columna `updatedAt` (con `@updatedAt`)
+
+### Script SQL Manual (si prefieres hacerlo manualmente)
 
 ```sql
--- Renombrar password a passwordHash
-ALTER TABLE "User" RENAME COLUMN "password" TO "passwordHash";
+-- Agregar emailVerified (si no existe)
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "emailVerified" TIMESTAMP;
 
--- Agregar emailVerified
-ALTER TABLE "User" ADD COLUMN "emailVerified" TIMESTAMP;
-
--- Agregar updatedAt
-ALTER TABLE "User" ADD COLUMN "updatedAt" TIMESTAMP DEFAULT NOW();
-ALTER TABLE "User" ALTER COLUMN "updatedAt" SET NOT NULL;
+-- Agregar updatedAt (si no existe)
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP DEFAULT NOW();
+-- No es necesario hacer NOT NULL porque Prisma lo maneja automáticamente con @updatedAt
 ```
+
+**Nota:** La columna `password` en la DB se mantiene con ese nombre. El código TypeScript usa `passwordHash` gracias al `@map("password")`.
+
+## 🔍 Uso en el Código
+
+### ✅ Correcto: Usar `passwordHash` en TypeScript
+
+```typescript
+// Crear usuario
+await prisma.user.create({
+  data: {
+    email,
+    passwordHash, // ✅ Usar passwordHash (Prisma mapea a "password" en DB)
+    emailVerified: null,
+  },
+});
+
+// Buscar usuario para login
+const user = await prisma.user.findUnique({
+  where: { email },
+  select: {
+    id: true,
+    passwordHash: true, // ✅ Seleccionar passwordHash
+    emailVerified: true,
+  },
+});
+
+// Actualizar contraseña
+await prisma.user.update({
+  where: { id: userId },
+  data: { passwordHash: newHashedPassword }, // ✅ Actualizar passwordHash
+});
+```
+
+### ❌ Incorrecto: Usar `password` en TypeScript
+
+```typescript
+// ❌ ERROR: Este campo no existe en el schema
+await prisma.user.create({
+  data: {
+    password: "...", // ❌ NO usar "password"
+  },
+});
+```
+
+**Recordatorio:** Cualquier consulta que necesite comparar contraseñas debe incluir `passwordHash` en el `select`.
 
 ## 🔐 Variables de Entorno
 
@@ -350,10 +407,46 @@ export default function ProtectedLayout({ children }) {
 
 Ver archivo `docs/auth-qa.md` para checklist completo de pruebas.
 
+## 🔄 Cambios Recientes - Fix Prisma/User (passwordHash + emailVerified)
+
+### ✅ Cambios Aplicados
+
+1. **Schema Prisma actualizado:**
+   - ✅ Campo `passwordHash` con `@map("password")` en ambos schemas:
+     - `packages/db/prisma/schema.prisma`
+     - `apps/api/prisma/schema.prisma`
+   - ✅ Campo `emailVerified DateTime?` agregado
+   - ✅ Campo `updatedAt DateTime @updatedAt` agregado
+
+2. **Código actualizado:**
+   - ✅ `apps/api/src/routes.auth.ts`:
+     - Login: `select` explícito con `passwordHash` y `emailVerified`
+     - Verify email: `select` con `emailVerified`
+     - Reset confirm: uso de `passwordHash` en update
+   - ✅ `apps/api/src/routes.documents.ts`:
+     - Demo user: cambio de `password` a `passwordHash`
+
+3. **Prisma Client regenerado:**
+   - ✅ Ejecutado `npx prisma generate` en `apps/api`
+
+### 📋 Pendiente (requiere DATABASE_URL)
+
+- ⏳ Generar migración: `npx prisma migrate dev --name auth_rename_password_to_passwordHash_add_emailVerified`
+  - Ejecutar desde `apps/api` con `DATABASE_URL` configurado
+  - Esta migración solo agregará `emailVerified` y `updatedAt`, sin tocar `password`
+
+### ✅ Criterios de Aceptación Cumplidos
+
+- ✅ No quedan referencias a `user.password` (solo `user.passwordHash`)
+- ✅ `emailVerified` existe en el modelo y en selects donde se usa
+- ✅ Migración preparada sin pérdida de datos (gracias a `@map("password")`)
+- ✅ Prisma Client generado correctamente
+
 ## 📚 Referencias
 
 - [NextAuth.js Documentation](https://next-auth.js.org/)
 - [React Hook Form](https://react-hook-form.com/)
 - [Zod Documentation](https://zod.dev/)
 - [Prisma Migrations](https://www.prisma.io/docs/concepts/components/prisma-migrate)
+- [Prisma Field Mapping](https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#map)
 
