@@ -6,9 +6,9 @@
     "dev": "tsx src/server.ts",
     "build": "tsc && npm run postinstall",
     "start": "node dist/server.js",
-    "postinstall": "prisma generate --schema=../../packages/db/prisma/schema.prisma",
-    "migrate:dev": "prisma migrate dev --schema=../../packages/db/prisma/schema.prisma",
-    "migrate:deploy": "prisma migrate deploy --schema=../../packages/db/prisma/schema.prisma",
+    "postinstall": "node ./scripts/prisma-generate.js",
+    "migrate:dev": "node ./scripts/prisma-migrate.js dev",
+    "migrate:deploy": "node ./scripts/prisma-migrate.js deploy",
     "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
@@ -19,6 +19,7 @@
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.6.1",
     "fastify": "^4.28.0",
+    "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.9.15",
     "openai": "^4.0.0",
     "prisma": "^5.22.0",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.5",
     "@types/nodemailer": "^6.4.14",
     "@types/node": "^22.0.0",
     "tsx": "^4.16.0",

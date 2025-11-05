@@ -3,6 +3,7 @@ import { GenerateDocumentSchema } from "./types.js";
 import OpenAI from "openai";
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
+import { getUserFromRequest, requireAuth } from "./utils/auth.js";
 
 const prisma = new PrismaClient();
 
@@ -10,13 +11,100 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Schema para query params de GET /documents
+const DocumentsQuerySchema = z.object({
+  query: z.string().optional(), // búsqueda de texto
+  type: z.string().optional(),
+  jurisdiccion: z.string().optional(),
+  from: z.string().datetime().optional(), // ISO date
+  to: z.string().datetime().optional(),
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).default(20),
+  sort: z.enum(["createdAt:asc", "createdAt:desc"]).default("createdAt:desc"),
+});
+
 export async function registerDocumentRoutes(app: FastifyInstance) {
   // ==========================================
-  // GET /documents
+  // GET /documents - Paginado con filtros
   // ==========================================
   app.get("/documents", async (request, reply) => {
     try {
+      // Extraer usuario (si hay token)
+      const user = getUserFromRequest(request);
+      
+      // Parsear query params
+      const queryParams = DocumentsQuerySchema.safeParse(request.query);
+      if (!queryParams.success) {
+        return reply.status(400).send({
+          ok: false,
+          error: "INVALID_QUERY_PARAMS",
+          details: queryParams.error.format(),
+        });
+      }
+
+      const {
+        query,
+        type,
+        jurisdiccion,
+        from,
+        to,
+        page,
+        pageSize,
+        sort,
+      } = queryParams.data;
+
+      // Construir filtros
+      const where: any = {};
+      
+      // Multi-tenant: solo documentos del tenant del usuario
+      if (user) {
+        where.tenantId = user.tenantId;
+      } else {
+        // Sin autenticación, no mostrar documentos (o devolver 401)
+        return reply.status(401).send({
+          ok: false,
+          error: "UNAUTHORIZED",
+          message: "Autenticación requerida",
+        });
+      }
+
+      // Filtro por tipo
+      if (type) {
+        where.type = type;
+      }
+
+      // Filtro por jurisdicción
+      if (jurisdiccion) {
+        where.jurisdiccion = jurisdiccion;
+      }
+
+      // Filtro por rango de fechas
+      if (from || to) {
+        where.createdAt = {};
+        if (from) where.createdAt.gte = new Date(from);
+        if (to) where.createdAt.lte = new Date(to);
+      }
+
+      // Búsqueda de texto (en type, jurisdiccion)
+      if (query) {
+        where.OR = [
+          { type: { contains: query, mode: "insensitive" } },
+          { jurisdiccion: { contains: query, mode: "insensitive" } },
+        ];
+      }
+
+      // Orden
+      const [sortField, sortDirection] = sort.split(":");
+      const orderBy: any = {};
+      orderBy[sortField] = sortDirection;
+
+      // Contar total (antes de paginar)
+      const total = await prisma.document.count({ where });
+
+      // Obtener documentos paginados
+      const skip = (page - 1) * pageSize;
       const documents = await prisma.document.findMany({
+        where,
         include: {
           versions: {
             orderBy: { createdAt: "desc" },
@@ -29,21 +117,26 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
             },
           },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy,
+        skip,
+        take: pageSize,
       });
 
       return reply.send({
         ok: true,
-        documents: documents.map(doc => ({
+        items: documents.map(doc => ({
           id: doc.id,
           type: doc.type,
           jurisdiccion: doc.jurisdiccion,
           tono: doc.tono,
           estado: doc.estado,
           costUsd: doc.costUsd,
-          createdAt: doc.createdAt,
+          createdAt: doc.createdAt.toISOString(),
           lastVersion: doc.versions[0] ?? null,
         })),
+        total,
+        page,
+        pageSize,
       });
     } catch (err) {
       request.log.error(err, "INTERNAL ERROR /documents");
@@ -167,39 +260,64 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
         contrato = contratoRaw.trim();
       }
 
-      // 4️⃣ IDs mock (auth vendrá luego)
-      const tenantId = "demo-tenant";
-      const userId = "demo-user";
+      // 4️⃣ Autenticación
+      const user = getUserFromRequest(request);
+      
+      // Si no hay usuario autenticado, usar demo (compatibilidad temporal)
+      const tenantId = user?.tenantId || "demo-tenant";
+      const userId = user?.userId || "demo-user";
 
       // 5️⃣ Guardar documento y versión en la base
       const { documentRecord, versionRecord } = await prisma.$transaction(
         async (tx) => {
-          // Aseguramos tenant
-          const tenant = await tx.tenant.upsert({
-            where: { id: tenantId },
-            update: {},
-            create: { id: tenantId, name: "Demo Tenant" },
-          });
+          // Aseguramos tenant (o usar el existente si hay usuario)
+          let tenant;
+          if (user?.tenantId) {
+            tenant = await tx.tenant.findUnique({
+              where: { id: user.tenantId },
+            });
+            if (!tenant) {
+              throw new Error("Tenant no encontrado");
+            }
+          } else {
+            // Modo demo
+            tenant = await tx.tenant.upsert({
+              where: { id: tenantId },
+              update: {},
+              create: { id: tenantId, name: "Demo Tenant" },
+            });
+          }
 
-          // Aseguramos usuario
-          const user = await tx.user.upsert({
-            where: { id: userId },
-            update: {},
-            create: {
-              id: userId,
-              email: "demo@example.com",
-              passwordHash: "dev-placeholder", // Usar passwordHash en lugar de password
-              role: "owner",
-              tenantId: tenant.id,
-              emailVerified: null, // Demo user no verificado
-            },
-          });
+          // Si hay usuario autenticado, usar ese usuario
+          let finalUser;
+          if (user?.userId) {
+            finalUser = await tx.user.findUnique({
+              where: { id: user.userId },
+            });
+            if (!finalUser) {
+              throw new Error("Usuario no encontrado");
+            }
+          } else {
+            // Modo demo
+            finalUser = await tx.user.upsert({
+              where: { id: userId },
+              update: {},
+              create: {
+                id: userId,
+                email: "demo@example.com",
+                passwordHash: "dev-placeholder",
+                role: "owner",
+                tenantId: tenant.id,
+                emailVerified: null,
+              },
+            });
+          }
 
           // Creamos el documento
           const doc = await tx.document.create({
             data: {
               tenantId: tenant.id,
-              createdById: user.id,
+              createdById: finalUser.id,
               type: data.type,
               jurisdiccion: data.jurisdiccion,
               tono: data.tono,
@@ -275,6 +393,238 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
   });
 
   // ==========================================
+  // POST /documents/:id/duplicate
+  // ==========================================
+  app.post("/documents/:id/duplicate", async (request, reply) => {
+    try {
+      const user = requireAuth(request);
+      
+      const ParamsSchema = z.object({ id: z.string().uuid() });
+      const parsed = ParamsSchema.safeParse(request.params);
+
+      if (!parsed.success) {
+        return reply.status(400).send({ ok: false, error: "INVALID_ID" });
+      }
+
+      const { id } = parsed.data;
+
+      // Obtener documento original
+      const original = await prisma.document.findFirst({
+        where: {
+          id,
+          tenantId: user.tenantId, // Verificar tenant
+        },
+        include: {
+          versions: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
+        },
+      });
+
+      if (!original) {
+        return reply.status(404).send({
+          ok: false,
+          error: "DOCUMENT_NOT_FOUND",
+        });
+      }
+
+      // Crear duplicado
+      const duplicated = await prisma.$transaction(async (tx) => {
+        // Crear nuevo documento
+        const newDoc = await tx.document.create({
+          data: {
+            tenantId: user.tenantId,
+            createdById: user.userId,
+            type: original.type,
+            jurisdiccion: original.jurisdiccion,
+            tono: original.tono,
+            estado: "generated_text",
+            costUsd: null,
+          },
+        });
+
+        // Copiar última versión si existe
+        if (original.versions[0]) {
+          await tx.documentVersion.create({
+            data: {
+              documentId: newDoc.id,
+              versionNumber: 1,
+              rawText: original.versions[0].rawText,
+              pdfUrl: null, // PDF no se duplica, se debe regenerar
+              generatedBy: original.versions[0].generatedBy,
+            },
+          });
+        }
+
+        return newDoc;
+      });
+
+      return reply.status(201).send({
+        ok: true,
+        message: "Documento duplicado exitosamente",
+        data: {
+          id: duplicated.id,
+        },
+      });
+    } catch (err: any) {
+      if (err.message === "UNAUTHORIZED") {
+        return reply.status(401).send({
+          ok: false,
+          error: "UNAUTHORIZED",
+          message: "Autenticación requerida",
+        });
+      }
+      request.log.error(err, "INTERNAL ERROR /documents/:id/duplicate");
+      return reply
+        .status(500)
+        .send({ ok: false, error: "INTERNAL_SERVER_ERROR" });
+    }
+  });
+
+  // ==========================================
+  // DELETE /documents/:id
+  // ==========================================
+  app.delete("/documents/:id", async (request, reply) => {
+    try {
+      const user = requireAuth(request);
+      
+      const ParamsSchema = z.object({ id: z.string().uuid() });
+      const parsed = ParamsSchema.safeParse(request.params);
+
+      if (!parsed.success) {
+        return reply.status(400).send({ ok: false, error: "INVALID_ID" });
+      }
+
+      const { id } = parsed.data;
+
+      // Verificar que el documento existe y pertenece al tenant
+      const document = await prisma.document.findFirst({
+        where: {
+          id,
+          tenantId: user.tenantId,
+        },
+      });
+
+      if (!document) {
+        return reply.status(404).send({
+          ok: false,
+          error: "DOCUMENT_NOT_FOUND",
+        });
+      }
+
+      // Verificar RBAC: solo admin puede eliminar
+      if (user.role !== "admin" && user.role !== "owner") {
+        return reply.status(403).send({
+          ok: false,
+          error: "FORBIDDEN",
+          message: "No tienes permiso para eliminar documentos",
+        });
+      }
+
+      // Eliminar (cascade elimina versiones)
+      await prisma.document.delete({
+        where: { id },
+      });
+
+      return reply.status(200).send({
+        ok: true,
+        message: "Documento eliminado exitosamente",
+      });
+    } catch (err: any) {
+      if (err.message === "UNAUTHORIZED") {
+        return reply.status(401).send({
+          ok: false,
+          error: "UNAUTHORIZED",
+          message: "Autenticación requerida",
+        });
+      }
+      request.log.error(err, "INTERNAL ERROR /documents/:id DELETE");
+      return reply
+        .status(500)
+        .send({ ok: false, error: "INTERNAL_SERVER_ERROR" });
+    }
+  });
+
+  // ==========================================
+  // PATCH /documents/:id
+  // ==========================================
+  app.patch("/documents/:id", async (request, reply) => {
+    try {
+      const user = requireAuth(request);
+      
+      const ParamsSchema = z.object({ id: z.string().uuid() });
+      const BodySchema = z.object({
+        type: z.string().optional(),
+        jurisdiccion: z.string().optional(),
+        tono: z.string().optional(),
+      });
+
+      const paramsParsed = ParamsSchema.safeParse(request.params);
+      const bodyParsed = BodySchema.safeParse(request.body);
+
+      if (!paramsParsed.success) {
+        return reply.status(400).send({ ok: false, error: "INVALID_ID" });
+      }
+
+      if (!bodyParsed.success) {
+        return reply.status(400).send({
+          ok: false,
+          error: "INVALID_BODY",
+          details: bodyParsed.error.format(),
+        });
+      }
+
+      const { id } = paramsParsed.data;
+      const updateData = bodyParsed.data;
+
+      // Verificar que el documento existe y pertenece al tenant
+      const document = await prisma.document.findFirst({
+        where: {
+          id,
+          tenantId: user.tenantId,
+        },
+      });
+
+      if (!document) {
+        return reply.status(404).send({
+          ok: false,
+          error: "DOCUMENT_NOT_FOUND",
+        });
+      }
+
+      // Actualizar
+      const updated = await prisma.document.update({
+        where: { id },
+        data: updateData,
+      });
+
+      return reply.status(200).send({
+        ok: true,
+        message: "Documento actualizado exitosamente",
+        data: {
+          id: updated.id,
+          type: updated.type,
+          jurisdiccion: updated.jurisdiccion,
+          tono: updated.tono,
+        },
+      });
+    } catch (err: any) {
+      if (err.message === "UNAUTHORIZED") {
+        return reply.status(401).send({
+          ok: false,
+          error: "UNAUTHORIZED",
+          message: "Autenticación requerida",
+        });
+      }
+      request.log.error(err, "INTERNAL ERROR /documents/:id PATCH");
+      return reply
+        .status(500)
+        .send({ ok: false, error: "INTERNAL_SERVER_ERROR" });
+    }
+  });
+
+  // ==========================================
   // GET /documents/:id
   // ==========================================
   app.get("/documents/:id", async (request, reply) => {
@@ -324,7 +674,14 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
           lastVersion,
         },
       });
-    } catch (err) {
+    } catch (err: any) {
+      if (err.message === "UNAUTHORIZED") {
+        return reply.status(401).send({
+          ok: false,
+          error: "UNAUTHORIZED",
+          message: "Autenticación requerida",
+        });
+      }
       request.log.error(err, "INTERNAL ERROR /documents/:id");
       return reply
         .status(500)
@@ -336,18 +693,24 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
   // GET /documents/:id/pdf
   // ==========================================
   app.get("/documents/:id/pdf", async (request, reply) => {
-    const ParamsSchema = z.object({ id: z.string().uuid() });
-    const parsed = ParamsSchema.safeParse(request.params);
+    try {
+      const user = requireAuth(request);
+      
+      const ParamsSchema = z.object({ id: z.string().uuid() });
+      const parsed = ParamsSchema.safeParse(request.params);
 
-    if (!parsed.success) {
-      return reply.status(400).send({ ok: false, error: "INVALID_ID" });
-    }
+      if (!parsed.success) {
+        return reply.status(400).send({ ok: false, error: "INVALID_ID" });
+      }
 
-    const { id } = parsed.data;
+      const { id } = parsed.data;
 
-    // 1️⃣ Buscar documento para obtener el fileName del PDF
-    const document = await prisma.document.findUnique({
-      where: { id },
+      // 1️⃣ Buscar documento para obtener el fileName del PDF (solo del tenant)
+      const document = await prisma.document.findFirst({
+        where: {
+          id,
+          tenantId: user.tenantId,
+        },
       include: {
         versions: {
           orderBy: { createdAt: "desc" },
@@ -391,7 +754,14 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
       reply.header("Content-Type", "application/pdf");
       reply.header("Content-Disposition", `attachment; filename="${fileName}"`);
       return reply.send(buffer);
-    } catch (err) {
+    } catch (err: any) {
+      if (err.message === "UNAUTHORIZED") {
+        return reply.status(401).send({
+          ok: false,
+          error: "UNAUTHORIZED",
+          message: "Autenticación requerida",
+        });
+      }
       request.log.error(err, "Error fetching PDF from service");
       return reply.status(500).send({ ok: false, error: "INTERNAL_SERVER_ERROR" });
     }

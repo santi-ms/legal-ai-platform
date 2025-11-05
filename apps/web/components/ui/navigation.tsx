@@ -13,6 +13,10 @@ const navigation = [
     href: "/",
   },
   {
+    name: "Dashboard",
+    href: "/dashboard",
+  },
+  {
     name: "Documentos",
     href: "/documents",
   },

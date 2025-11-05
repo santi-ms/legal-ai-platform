@@ -1,4 +1,5 @@
 import { config } from "./config";
+import { getSession } from "next-auth/react";
 
 export interface ApiResponse<T = any> {
   ok: boolean;
@@ -9,11 +10,28 @@ export interface ApiResponse<T = any> {
 }
 
 /**
+ * Helper para obtener el token de NextAuth (client-side)
+ */
+async function getAuthToken(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  
+  try {
+    const session = await getSession();
+    // NextAuth no expone el token directamente, así que lo obtenemos desde la cookie
+    // O usamos el sessionToken de NextAuth
+    return session ? (session as any).token || null : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Helper para hacer fetch al backend con manejo homogéneo de errores
+ * Incluye autenticación automática si hay sesión
  */
 export async function apiFetch<T = any>(
   path: string,
-  options?: RequestInit
+  options?: RequestInit & { includeAuth?: boolean }
 ): Promise<ApiResponse<T>> {
   const baseUrl = config.apiUrl;
 
@@ -21,21 +39,29 @@ export async function apiFetch<T = any>(
     throw new Error("NEXT_PUBLIC_API_URL is not defined");
   }
 
-  // Normalizar path (remover / inicial si existe, agregar /api si no está)
+  // Normalizar path (remover / inicial si existe)
   const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
-  const fullPath = normalizedPath.startsWith("api/") 
-    ? normalizedPath 
-    : `api/${normalizedPath}`;
   
-  const url = `${baseUrl}/${fullPath}`;
+  // NO agregar /api porque el path ya viene completo
+  const url = `${baseUrl}/${normalizedPath}`;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options?.headers as Record<string, string> || {}),
+  };
+
+  // Agregar token de autenticación si está disponible (client-side)
+  if (options?.includeAuth !== false && typeof window !== "undefined") {
+    const token = await getAuthToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
 
   try {
     const response = await fetch(url, {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options?.headers,
-      },
+      headers,
     });
 
     const data: ApiResponse<T> = await response.json().catch(() => ({

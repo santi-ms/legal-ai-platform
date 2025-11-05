@@ -129,9 +129,16 @@ npm run lint             # Linting
 
 # Base de datos
 # ⚠️ Schema único en packages/db/prisma/schema.prisma
+# Los scripts autodetectan el schema desde cualquier CWD (local/CI/deploy)
 cd apps/api
-npm run migrate:dev      # Nueva migración (usa schema de packages/db)
-npm run migrate:deploy   # Deploy de migraciones en producción
+npm run migrate:dev      # Nueva migración (autodetecta schema)
+npm run migrate:deploy   # Deploy de migraciones (autodetecta schema)
+npm run db:seed          # Seed de base de datos
+
+# Desde el root del repo también funciona:
+npm --workspace apps/api run migrate:deploy
+
+# Comandos directos de Prisma (si necesitas especificar el schema manualmente):
 npx prisma studio --schema=../../packages/db/prisma/schema.prisma  # UI de base de datos
 npx prisma generate --schema=../../packages/db/prisma/schema.prisma  # Regenerar client
 ```
