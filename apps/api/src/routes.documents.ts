@@ -31,7 +31,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
     try {
       // Extraer usuario (si hay token)
       const user = getUserFromRequest(request);
-      
+
       // Parsear query params
       const queryParams = DocumentsQuerySchema.safeParse(request.query);
       if (!queryParams.success) {
@@ -42,20 +42,12 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         });
       }
 
-      const {
-        query,
-        type,
-        jurisdiccion,
-        from,
-        to,
-        page,
-        pageSize,
-        sort,
-      } = queryParams.data;
+      const { query, type, jurisdiccion, from, to, page, pageSize, sort } =
+        queryParams.data;
 
       // Construir filtros
       const where: any = {};
-      
+
       // Multi-tenant: solo documentos del tenant del usuario
       if (user) {
         where.tenantId = user.tenantId;
@@ -124,7 +116,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
 
       return reply.send({
         ok: true,
-        items: documents.map(doc => ({
+        items: documents.map((doc) => ({
           id: doc.id,
           type: doc.type,
           jurisdiccion: doc.jurisdiccion,
@@ -139,10 +131,8 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         pageSize,
       });
     } catch (err) {
-      request.log.error(err, "INTERNAL ERROR /documents");
-      return reply
-        .status(500)
-        .send({ ok: false, error: "INTERNAL_SERVER_ERROR" });
+      request.log?.error({ err }, "documents route error");
+      return reply.status(500).send({ ok: false, message: "Internal error" });
     }
   });
 
@@ -225,13 +215,13 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
       // 3️⃣ Generar contrato con IA (con fallback)
       let contratoRaw = "";
       let contrato = "";
-      
+
       try {
         const completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
           messages: [
             { role: "system", content: systemMessage },
-            { role: "user", content: prompt }
+            { role: "user", content: prompt },
           ],
           temperature: 0.3,
           max_tokens: 4000,
@@ -244,13 +234,16 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
         contrato = contratoRaw.trim();
       } catch (primaryError) {
         // Fallback a GPT-3.5 si falla
-        request.log.warn(primaryError, "Primary model failed, falling back to GPT-3.5");
-        
+        request.log.warn(
+          primaryError,
+          "Primary model failed, falling back to GPT-3.5",
+        );
+
         const fallbackCompletion = await openai.chat.completions.create({
           model: "gpt-3.5-turbo",
           messages: [
             { role: "system", content: systemMessage },
-            { role: "user", content: prompt }
+            { role: "user", content: prompt },
           ],
           temperature: 0.3,
           max_tokens: 3000,
@@ -262,7 +255,7 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
 
       // 4️⃣ Autenticación
       const user = getUserFromRequest(request);
-      
+
       // Si no hay usuario autenticado, usar demo (compatibilidad temporal)
       const tenantId = user?.tenantId || "demo-tenant";
       const userId = user?.userId || "demo-user";
@@ -337,7 +330,7 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
           });
 
           return { documentRecord: doc, versionRecord: ver };
-        }
+        },
       );
 
       // 6️⃣ Definir fileName único basado en versionId
@@ -347,7 +340,8 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
       // 7️⃣ Llamar microservicio PDF
       let pdfGenerated = false;
       try {
-        const pdfServiceUrl = process.env.PDF_SERVICE_URL || "http://localhost:4100";
+        const pdfServiceUrl =
+          process.env.PDF_SERVICE_URL || "http://localhost:4100";
         const pdfResponse = await fetch(`${pdfServiceUrl}/pdf/generate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -385,10 +379,8 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
         pdfUrl: pdfGenerated ? fileName : null,
       });
     } catch (err) {
-      request.log.error(err, "INTERNAL ERROR /documents/generate");
-      return reply
-        .status(500)
-        .send({ ok: false, error: "INTERNAL_SERVER_ERROR" });
+      request.log?.error({ err }, "documents route error");
+      return reply.status(500).send({ ok: false, message: "Internal error" });
     }
   });
 
@@ -398,7 +390,7 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
   app.post("/documents/:id/duplicate", async (request, reply) => {
     try {
       const user = requireAuth(request);
-      
+
       const ParamsSchema = z.object({ id: z.string().uuid() });
       const parsed = ParamsSchema.safeParse(request.params);
 
@@ -475,10 +467,8 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
           message: "Autenticación requerida",
         });
       }
-      request.log.error(err, "INTERNAL ERROR /documents/:id/duplicate");
-      return reply
-        .status(500)
-        .send({ ok: false, error: "INTERNAL_SERVER_ERROR" });
+      request.log?.error({ err }, "documents route error");
+      return reply.status(500).send({ ok: false, message: "Internal error" });
     }
   });
 
@@ -488,7 +478,7 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
   app.delete("/documents/:id", async (request, reply) => {
     try {
       const user = requireAuth(request);
-      
+
       const ParamsSchema = z.object({ id: z.string().uuid() });
       const parsed = ParamsSchema.safeParse(request.params);
 
@@ -539,10 +529,8 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
           message: "Autenticación requerida",
         });
       }
-      request.log.error(err, "INTERNAL ERROR /documents/:id DELETE");
-      return reply
-        .status(500)
-        .send({ ok: false, error: "INTERNAL_SERVER_ERROR" });
+      request.log?.error({ err }, "documents route error");
+      return reply.status(500).send({ ok: false, message: "Internal error" });
     }
   });
 
@@ -552,7 +540,7 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
   app.patch("/documents/:id", async (request, reply) => {
     try {
       const user = requireAuth(request);
-      
+
       const ParamsSchema = z.object({ id: z.string().uuid() });
       const BodySchema = z.object({
         type: z.string().optional(),
@@ -617,10 +605,8 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
           message: "Autenticación requerida",
         });
       }
-      request.log.error(err, "INTERNAL ERROR /documents/:id PATCH");
-      return reply
-        .status(500)
-        .send({ ok: false, error: "INTERNAL_SERVER_ERROR" });
+      request.log?.error({ err }, "documents route error");
+      return reply.status(500).send({ ok: false, message: "Internal error" });
     }
   });
 
@@ -682,10 +668,8 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
           message: "Autenticación requerida",
         });
       }
-      request.log.error(err, "INTERNAL ERROR /documents/:id");
-      return reply
-        .status(500)
-        .send({ ok: false, error: "INTERNAL_SERVER_ERROR" });
+      request.log?.error({ err }, "documents route error");
+      return reply.status(500).send({ ok: false, message: "Internal error" });
     }
   });
 
@@ -695,7 +679,7 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
   app.get("/documents/:id/pdf", async (request, reply) => {
     try {
       const user = requireAuth(request);
-      
+
       const ParamsSchema = z.object({ id: z.string().uuid() });
       const parsed = ParamsSchema.safeParse(request.params);
 
@@ -711,49 +695,56 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
           id,
           tenantId: user.tenantId,
         },
-      include: {
-        versions: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { pdfUrl: true },
+        include: {
+          versions: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { pdfUrl: true },
+          },
         },
-      },
-    });
+      });
 
-    if (!document) {
-      return reply
-        .status(404)
-        .send({ ok: false, error: "DOCUMENT_NOT_FOUND" });
-    }
-
-    const fileName = document.versions[0]?.pdfUrl;
-
-    if (!fileName) {
-      return reply.status(404).send({ ok: false, error: "PDF_NOT_FOUND" });
-    }
-
-    app.log.info(`[api] Fetching PDF with fileName: ${fileName}`);
-
-    // 2️⃣ Hacer proxy al PDF service
-    try {
-      const PDF_BASE = process.env.PDF_SERVICE_URL || "http://localhost:4100";
-      const pdfUrl = `${PDF_BASE}/pdf/${encodeURIComponent(fileName)}`;
-      app.log.info(`[api] PDF service URL: ${pdfUrl}`);
-      const pdfResponse = await fetch(pdfUrl);
-
-      if (!pdfResponse.ok) {
+      if (!document) {
         return reply
-          .status(pdfResponse.status)
-          .send({ ok: false, error: "PDF_NOT_FOUND" });
+          .status(404)
+          .send({ ok: false, error: "DOCUMENT_NOT_FOUND" });
       }
 
-      // 3️⃣ Stream el PDF al cliente
-      const arrayBuffer = await pdfResponse.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
+      const fileName = document.versions[0]?.pdfUrl;
 
-      reply.header("Content-Type", "application/pdf");
-      reply.header("Content-Disposition", `attachment; filename="${fileName}"`);
-      return reply.send(buffer);
+      if (!fileName) {
+        return reply.status(404).send({ ok: false, error: "PDF_NOT_FOUND" });
+      }
+
+      app.log.info(`[api] Fetching PDF with fileName: ${fileName}`);
+
+      // 2️⃣ Hacer proxy al PDF service
+      try {
+        const PDF_BASE = process.env.PDF_SERVICE_URL || "http://localhost:4100";
+        const pdfUrl = `${PDF_BASE}/pdf/${encodeURIComponent(fileName)}`;
+        app.log.info(`[api] PDF service URL: ${pdfUrl}`);
+        const pdfResponse = await fetch(pdfUrl);
+
+        if (!pdfResponse.ok) {
+          return reply
+            .status(pdfResponse.status)
+            .send({ ok: false, error: "PDF_NOT_FOUND" });
+        }
+
+        // 3️⃣ Stream el PDF al cliente
+        const arrayBuffer = await pdfResponse.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        reply.header("Content-Type", "application/pdf");
+        reply.header(
+          "Content-Disposition",
+          `attachment; filename="${fileName}"`,
+        );
+        return reply.send(buffer);
+      } catch (err: any) {
+        request.log?.error({ err }, "Error fetching PDF from service");
+        return reply.status(500).send({ ok: false, message: "Internal error" });
+      }
     } catch (err: any) {
       if (err.message === "UNAUTHORIZED") {
         return reply.status(401).send({
@@ -762,8 +753,8 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
           message: "Autenticación requerida",
         });
       }
-      request.log.error(err, "Error fetching PDF from service");
-      return reply.status(500).send({ ok: false, error: "INTERNAL_SERVER_ERROR" });
+      request.log?.error({ err }, "documents route error");
+      return reply.status(500).send({ ok: false, message: "Internal error" });
     }
   });
 }
