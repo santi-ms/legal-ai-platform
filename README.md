@@ -130,6 +130,7 @@ npm run lint             # Linting
 # Base de datos
 # ⚠️ Schema único en packages/db/prisma/schema.prisma
 # Los scripts autodetectan el schema desde cualquier CWD (local/CI/deploy)
+
 cd apps/api
 npm run migrate:dev      # Nueva migración (autodetecta schema)
 npm run migrate:deploy   # Deploy de migraciones (autodetecta schema)
@@ -141,6 +142,16 @@ npm --workspace apps/api run migrate:deploy
 # Comandos directos de Prisma (si necesitas especificar el schema manualmente):
 npx prisma studio --schema=../../packages/db/prisma/schema.prisma  # UI de base de datos
 npx prisma generate --schema=../../packages/db/prisma/schema.prisma  # Regenerar client
+
+# ⚠️ Entornos sin monorepo completo (Railway)
+# Si el deploy no incluye packages/, los scripts no fallan:
+# - Si ya existe @prisma/client, omite generate
+# - Si no existe, genera warning pero no rompe el build
+# - migrate:deploy generará el cliente cuando el schema esté disponible
+# 
+# Opciones:
+# (A) Recomendado: Configurar Root Directory en Railway a la raíz del repo
+# (B) Alternativa: Definir PRISMA_SCHEMA_PATH en variables de entorno
 ```
 
 ---
@@ -247,20 +258,52 @@ Opciones recomendadas:
 
 ### Deploy en Railway (Backend API)
 
+#### Configuración del Servicio
+
+**Opción A (Recomendada): Deploy desde raíz del monorepo**
+
+1. En Railway, configurar el **Root Directory** del servicio API a la raíz del repo:
+   - Settings → Service → Root Directory: `/` (raíz del repo)
+   - Esto asegura que `packages/db/prisma/schema.prisma` esté disponible
+
+2. Configurar el **Start Command**:
+   ```
+   cd apps/api && npm start
+   ```
+
+**Opción B: Deploy desde `apps/api` (sin monorepo completo)**
+
+Si Railway deploya solo desde `apps/api` (sin `packages/`):
+
+1. Agregar variable de entorno en Railway:
+   ```
+   PRISMA_SCHEMA_PATH=/app/packages/db/prisma/schema.prisma
+   ```
+   (Ajustar la ruta según la estructura real del deploy)
+
+2. O dejar que el script omita generate si no hay schema:
+   - El `postinstall` no fallará si no hay schema
+   - `migrate:deploy` generará el cliente cuando el schema esté disponible
+
 #### Post-Deploy Scripts
 
 Después de cada deploy en Railway, ejecutar:
 
 ```bash
 cd apps/api
-npm run migrate:deploy
-npm run db:seed
+npm run migrate:deploy  # Genera cliente y aplica migraciones
+npm run db:seed         # Seed de datos iniciales
 ```
 
 **Configurar en Railway:**
 1. Ve a tu proyecto en Railway
 2. Settings → Deploy → Post-Deploy Command
 3. Agregar: `cd apps/api && npm run migrate:deploy && npm run db:seed`
+
+**Nota**: Si el schema no está disponible en el entorno de build:
+- `postinstall` no falla (warning pero exit code 0)
+- `migrate:deploy` generará el cliente cuando el schema esté presente
+- Si el schema nunca está disponible, asegurate de tener `@prisma/client` en `node_modules` (incluido en el build)
 
 #### Healthcheck
 

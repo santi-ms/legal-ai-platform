@@ -4,6 +4,17 @@
 
 ### Backend (Railway)
 
+- [ ] **Configuración del servicio (elegir una opción):**
+
+  **Opción A (Recomendada): Deploy desde raíz del monorepo**
+  - [ ] Root Directory configurado a `/` (raíz del repo)
+  - [ ] Start Command: `cd apps/api && npm start`
+  - [ ] Esto asegura que `packages/db/prisma/schema.prisma` esté disponible
+
+  **Opción B: Deploy desde `apps/api` (sin monorepo completo)**
+  - [ ] Variable de entorno `PRISMA_SCHEMA_PATH` configurada (si el schema está en otra ubicación)
+  - [ ] O dejar que los scripts omitan generate (no fallan si no hay schema)
+
 - [ ] Variables de entorno configuradas:
   - `DATABASE_URL` (PostgreSQL)
   - `EMAIL_SERVER_HOST`, `EMAIL_SERVER_PORT`, `EMAIL_SERVER_USER`, `EMAIL_SERVER_PASSWORD`, `EMAIL_FROM`
@@ -11,13 +22,19 @@
   - `NEXTAUTH_SECRET` (mismo que en frontend)
   - `OPENAI_API_KEY`
   - `PDF_SERVICE_URL`
+  - `PRISMA_SCHEMA_PATH` (opcional, solo si Opción B)
 
 - [ ] Post-deploy scripts ejecutados:
   ```bash
   cd apps/api
-  npm run migrate:deploy
-  npm run db:seed
+  npm run migrate:deploy  # Genera cliente y aplica migraciones
+  npm run db:seed         # Seed de datos iniciales
   ```
+
+  **Nota**: Los scripts de Prisma no fallan si no encuentran el schema:
+  - Si ya existe `@prisma/client`, omite generate
+  - Si no existe, genera warning pero no rompe el build
+  - `migrate:deploy` generará el cliente cuando el schema esté disponible
 
 - [ ] Healthcheck configurado:
   - URL: `https://your-api.railway.app/healthz`
