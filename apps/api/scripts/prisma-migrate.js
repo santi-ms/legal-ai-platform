@@ -11,13 +11,16 @@ const here = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
 const mode = process.argv[2] || "deploy"; // "dev" o "deploy"
 const args = mode === "dev" ? ["migrate", "dev"] : ["migrate", "deploy"];
 
+// Candidatos: PRISMA_SCHEMA_PATH, schema central (monorepo), fallback local
 const candidates = [
   process.env.PRISMA_SCHEMA_PATH,
+  // Schema central (monorepo)
   p(here, "../..", "packages/db/prisma/schema.prisma"),
   p(here, "../../..", "packages/db/prisma/schema.prisma"),
   process.env.INIT_CWD && p(process.env.INIT_CWD, "packages/db/prisma/schema.prisma"),
   p("/app", "packages/db/prisma/schema.prisma"),
   p(cwd, "packages/db/prisma/schema.prisma"),
+  // Fallback local (service-only deploy)
   p(here, "..", "prisma/schema.prisma"),
   p(cwd, "prisma/schema.prisma"),
 ].filter(Boolean);

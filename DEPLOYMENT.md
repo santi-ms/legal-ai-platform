@@ -116,9 +116,17 @@ Configurar en: **Variables tab**
 
 ## 🚧 Entornos sin Monorepo Completo (Railway)
 
-Si el deploy de `apps/api` se ejecuta desde un subdirectorio sin acceso a `packages/`, el script `postinstall` puede fallar al no encontrar `packages/db/prisma/schema.prisma`.
+Si el deploy de `apps/api` se ejecuta desde un subdirectorio sin acceso a `packages/`, el sistema usa un **schema de fallback** ubicado en `apps/api/prisma/schema.prisma`.
 
-### Soluciones Recomendadas
+### Sistema de Fallback Automático
+
+El proyecto incluye un **schema de fallback** en `apps/api/prisma/schema.prisma` que es idéntico al schema central. Los scripts de Prisma buscan el schema en este orden:
+
+1. **`PRISMA_SCHEMA_PATH`** (si está definida como variable de entorno)
+2. **Schema central** (`packages/db/prisma/schema.prisma`) - cuando el monorepo está presente
+3. **Schema fallback** (`apps/api/prisma/schema.prisma`) - cuando solo está el servicio
+
+### Modos de Deploy
 
 #### Opción A: Deploy desde la Raíz del Monorepo (Recomendada) ⭐
 
@@ -132,44 +140,62 @@ Si el deploy de `apps/api` se ejecuta desde un subdirectorio sin acceso a `packa
 
 2. Esto asegura que:
    - El monorepo completo esté disponible durante el build
-   - El script `postinstall` pueda encontrar `packages/db/prisma/schema.prisma`
+   - El script `postinstall` usa el schema central `packages/db/prisma/schema.prisma`
+   - El `prestart` genera el cliente antes de iniciar el servidor
    - No necesitas configurar variables adicionales
 
-#### Opción B: Usar PRISMA_SCHEMA_PATH
+#### Opción B: Service-Only Deploy (Railway sin monorepo completo)
 
-Si no puedes cambiar el Root Directory, puedes definir la ruta del schema manualmente:
+Cuando Railway solo construye el subdirectorio `apps/api`:
+
+1. **Schema de fallback automático:**
+   - El sistema detecta que no existe `packages/db/`
+   - Usa automáticamente `apps/api/prisma/schema.prisma`
+   - El `prestart` garantiza que `prisma generate` se ejecuta antes de iniciar
+
+2. **Configuración en Railway:**
+   - Root Directory: `apps/api` (o dejar que Railway lo detecte)
+   - Build Command: `npm run build`
+   - Start Command: `npm start` (el `prestart` ejecuta `prisma generate` automáticamente)
+
+3. **Ventajas:**
+   - ✅ No requiere configuración adicional
+   - ✅ El schema fallback está incluido en el repo
+   - ✅ `prestart` garantiza que el cliente Prisma esté generado antes de iniciar
+
+#### Opción C: Usar PRISMA_SCHEMA_PATH (Override Manual)
+
+Si necesitas forzar una ruta específica del schema:
 
 1. En Railway, agregar variable de entorno:
    - Variables → Add Variable
    - Name: `PRISMA_SCHEMA_PATH`
-   - Value: `/app/packages/db/prisma/schema.prisma` (ajusta según tu estructura)
+   - Value: `/app/packages/db/prisma/schema.prisma` (o la ruta que necesites)
 
 2. El script `prisma-generate.js` buscará el schema en esta ruta primero.
 
-### Comportamiento del Script
+### Comportamiento del Sistema
 
-Los scripts `prisma-generate.js` y `prisma-migrate.js` ahora:
+Los scripts `prisma-generate.js` y `prisma-migrate.js`:
 
-- ✅ **No rompen el build** si no encuentran el schema
-- ✅ Respeta `PRISMA_SCHEMA_PATH` si está definida
-- ✅ Si no hay schema pero ya existe `@prisma/client` generado, omite el generate
-- ✅ Si no hay schema y no hay client, omite el generate sin error (se generará en `migrate:deploy`)
+- ✅ **Priorizan `PRISMA_SCHEMA_PATH`** si está definida
+- ✅ **Buscan el schema central** cuando el monorepo está presente
+- ✅ **Usan el schema fallback** cuando solo está el servicio
+- ✅ **No rompen el build** si no encuentran ningún schema (pero el fallback siempre debería estar presente)
+- ✅ **`prestart` garantiza** que `prisma generate` se ejecuta antes de `npm start`
 
-### Qué Esperar
+### Sincronización de Schemas (Desarrollo/CI)
 
-**Escenario 1: Schema no encontrado pero `@prisma/client` existe**
-```
-[prisma-generate] ⚠️ No se encontró schema.prisma en el entorno de build.
-[prisma-generate] ℹ️ @prisma/client ya existe; omito generate para no romper el build.
-```
+Para mantener ambos schemas sincronizados:
 
-**Escenario 2: Schema no encontrado y no hay client**
-```
-[prisma-generate] ⚠️ No se encontró schema.prisma en el entorno de build.
-[prisma-generate] ℹ️ Omitiendo generate. Generá el cliente cuando el schema esté disponible (p.ej., en migrate:deploy).
+```bash
+# En desarrollo local o CI
+npm --workspace apps/api run schema:sync
 ```
 
-El build continúa sin errores. El cliente se generará cuando ejecutes `migrate:deploy` (si el schema está disponible en ese momento).
+Este comando copia `packages/db/prisma/schema.prisma` a `apps/api/prisma/schema.prisma` si el schema central existe.
+
+**Nota:** En CI, puedes ejecutar `schema:sync` antes del build para asegurar que ambos schemas están alineados.
 
 ---
 

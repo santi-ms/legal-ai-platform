@@ -5,8 +5,10 @@
   "scripts": {
     "dev": "tsx src/server.ts",
     "build": "tsc && npm run postinstall",
+    "prestart": "node ./scripts/prisma-generate.js",
     "start": "node dist/server.js",
     "postinstall": "node ./scripts/prisma-generate.js",
+    "schema:sync": "node ./scripts/schema-sync.js",
     "migrate:dev": "node ./scripts/prisma-migrate.js dev",
     "migrate:deploy": "node ./scripts/prisma-migrate.js deploy",
     "db:seed": "tsx scripts/seed.ts"

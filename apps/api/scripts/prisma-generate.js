@@ -14,15 +14,16 @@ const here = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
 // 1) Env override explícito
 const envSchema = process.env.PRISMA_SCHEMA_PATH;
 
-// 2) Candidatos habituales (monorepo)
+// 2) Candidatos habituales (monorepo central primero, luego fallback local)
 const candidates = [
   envSchema,
+  // Schema central (monorepo)
   p(here, "../..", "packages/db/prisma/schema.prisma"),
   p(here, "../../..", "packages/db/prisma/schema.prisma"),
   process.env.INIT_CWD && p(process.env.INIT_CWD, "packages/db/prisma/schema.prisma"),
   p("/app", "packages/db/prisma/schema.prisma"),
   p(cwd, "packages/db/prisma/schema.prisma"),
-  // fallback local si existiera (poco probable)
+  // Fallback local (service-only deploy)
   p(here, "..", "prisma/schema.prisma"),
   p(cwd, "prisma/schema.prisma"),
 ].filter(Boolean);
