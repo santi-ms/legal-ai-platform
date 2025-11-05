@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { GenerateDocumentSchema } from "./types.js";
 import OpenAI from "openai";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma, Document } from "@prisma/client";
 import { z } from "zod";
 import { getUserFromRequest, requireAuth } from "./utils/auth.js";
 
@@ -10,6 +10,16 @@ const prisma = new PrismaClient();
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// Tipo para documentos con versión incluida (usado en GET /documents)
+type DocumentWithVersion = Document & {
+  versions: Array<{
+    id: string;
+    rawText: string;
+    pdfUrl: string | null;
+    createdAt: Date;
+  }>;
+};
 
 // Schema para query params de GET /documents
 const DocumentsQuerySchema = z.object({
@@ -116,7 +126,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
 
       return reply.send({
         ok: true,
-        items: documents.map((doc) => ({
+        items: documents.map((doc: DocumentWithVersion) => ({
           id: doc.id,
           type: doc.type,
           jurisdiccion: doc.jurisdiccion,
@@ -262,7 +272,7 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
 
       // 5️⃣ Guardar documento y versión en la base
       const { documentRecord, versionRecord } = await prisma.$transaction(
-        async (tx) => {
+        async (tx: Prisma.TransactionClient) => {
           // Aseguramos tenant (o usar el existente si hay usuario)
           let tenant;
           if (user?.tenantId) {
@@ -422,35 +432,37 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
       }
 
       // Crear duplicado
-      const duplicated = await prisma.$transaction(async (tx) => {
-        // Crear nuevo documento
-        const newDoc = await tx.document.create({
-          data: {
-            tenantId: user.tenantId,
-            createdById: user.userId,
-            type: original.type,
-            jurisdiccion: original.jurisdiccion,
-            tono: original.tono,
-            estado: "generated_text",
-            costUsd: null,
-          },
-        });
-
-        // Copiar última versión si existe
-        if (original.versions[0]) {
-          await tx.documentVersion.create({
+      const duplicated = await prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+          // Crear nuevo documento
+          const newDoc = await tx.document.create({
             data: {
-              documentId: newDoc.id,
-              versionNumber: 1,
-              rawText: original.versions[0].rawText,
-              pdfUrl: null, // PDF no se duplica, se debe regenerar
-              generatedBy: original.versions[0].generatedBy,
+              tenantId: user.tenantId,
+              createdById: user.userId,
+              type: original.type,
+              jurisdiccion: original.jurisdiccion,
+              tono: original.tono,
+              estado: "generated_text",
+              costUsd: null,
             },
           });
-        }
 
-        return newDoc;
-      });
+          // Copiar última versión si existe
+          if (original.versions[0]) {
+            await tx.documentVersion.create({
+              data: {
+                documentId: newDoc.id,
+                versionNumber: 1,
+                rawText: original.versions[0].rawText,
+                pdfUrl: null, // PDF no se duplica, se debe regenerar
+                generatedBy: original.versions[0].generatedBy,
+              },
+            });
+          }
+
+          return newDoc;
+        },
+      );
 
       return reply.status(201).send({
         ok: true,

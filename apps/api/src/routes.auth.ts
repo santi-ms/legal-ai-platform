@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import rateLimit from "@fastify/rate-limit";
 import {
@@ -34,7 +34,7 @@ function sendError(
   statusCode: number,
   message: string,
   error?: string,
-  fieldErrors?: Record<string, string[]>
+  fieldErrors?: Record<string, string[]>,
 ) {
   return reply.status(statusCode).send({
     ok: false,
@@ -54,7 +54,11 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     },
     skipOnError: false,
     errorResponseBuilder: (request, context) => {
-      return sendError(request, 429, "Demasiados intentos. Por favor espera 5 minutos.");
+      return sendError(
+        request,
+        429,
+        "Demasiados intentos. Por favor espera 5 minutos.",
+      );
     },
   });
 
@@ -77,7 +81,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           400,
           "Errores de validación",
           "validation_error",
-          fieldErrors
+          fieldErrors,
         );
       }
 
@@ -93,7 +97,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           reply,
           400,
           "El email ya está registrado",
-          "user_exists"
+          "user_exists",
         );
       }
 
@@ -101,45 +105,46 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       const passwordHash = await bcrypt.hash(password, 10);
 
       // Crear tenant y usuario en transacción
-      const result = await prisma.$transaction(async (tx) => {
-        // Crear tenant
-        const tenant = await tx.tenant.create({
-          data: {
-            name: companyName,
-          },
-        });
+      const result = await prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+          // Crear tenant
+          const tenant = await tx.tenant.create({
+            data: {
+              name: companyName,
+            },
+          });
 
-        // Crear usuario (sin verificar aún)
-        const user = await tx.user.create({
-          data: {
-            name,
-            email,
-            passwordHash,
-            role: "owner", // Primer usuario de un tenant es owner
-            tenantId: tenant.id,
-            emailVerified: null, // No verificado aún
-          },
-        });
+          // Crear usuario (sin verificar aún)
+          const user = await tx.user.create({
+            data: {
+              name,
+              email,
+              passwordHash,
+              role: "owner", // Primer usuario de un tenant es owner
+              tenantId: tenant.id,
+              emailVerified: null, // No verificado aún
+            },
+          });
 
-        // Generar token de verificación
-        const token = generateToken();
-        const expires = new Date();
-        expires.setHours(expires.getHours() + 24); // Expira en 24 horas
+          // Generar token de verificación
+          const token = generateToken();
+          const expires = new Date();
+          expires.setHours(expires.getHours() + 24); // Expira en 24 horas
 
-        await tx.verificationToken.create({
-          data: {
-            identifier: email,
-            token,
-            expires,
-          },
-        });
+          await tx.verificationToken.create({
+            data: {
+              identifier: email,
+              token,
+              expires,
+            },
+          });
 
-        return { user, tenant, token };
-      });
+          return { user, tenant, token };
+        },
+      );
 
       // Enviar email de verificación
-      const frontendUrl =
-        process.env.FRONTEND_URL || "http://localhost:3000";
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
       const verificationUrl = `${frontendUrl}/auth/verify-email?token=${result.token}`;
 
       try {
@@ -160,16 +165,11 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         {
           userId: result.user.id,
           email: result.user.email,
-        }
+        },
       );
     } catch (error: any) {
       app.log.error("Error en registro:", error);
-      return sendError(
-        reply,
-        500,
-        "Error al crear usuario",
-        "internal_error"
-      );
+      return sendError(reply, 500, "Error al crear usuario", "internal_error");
     }
   });
 
@@ -179,23 +179,13 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       const { token } = request.query as { token?: string };
 
       if (!token) {
-        return sendError(
-          reply,
-          400,
-          "Token requerido",
-          "token_required"
-        );
+        return sendError(reply, 400, "Token requerido", "token_required");
       }
 
       // Validar con Zod
       const parsed = verifyEmailSchema.safeParse({ token });
       if (!parsed.success) {
-        return sendError(
-          reply,
-          400,
-          "Token inválido",
-          "invalid_token"
-        );
+        return sendError(reply, 400, "Token inválido", "invalid_token");
       }
 
       // Buscar token en la base de datos
@@ -208,7 +198,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           reply,
           400,
           "Token inválido o expirado",
-          "invalid_token"
+          "invalid_token",
         );
       }
 
@@ -223,7 +213,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           reply,
           400,
           "El token de verificación ha expirado",
-          "token_expired"
+          "token_expired",
         );
       }
 
@@ -238,12 +228,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       });
 
       if (!user) {
-        return sendError(
-          reply,
-          404,
-          "Usuario no encontrado",
-          "user_not_found"
-        );
+        return sendError(reply, 404, "Usuario no encontrado", "user_not_found");
       }
 
       // Si ya está verificado, no hacer nada pero retornar éxito
@@ -252,15 +237,13 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           where: { token },
         });
 
-        return sendSuccess(
-          reply,
-          "Email ya estaba verificado",
-          { email: user.email }
-        );
+        return sendSuccess(reply, "Email ya estaba verificado", {
+          email: user.email,
+        });
       }
 
       // Marcar email como verificado y eliminar token
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         await tx.user.update({
           where: { id: user.id },
           data: { emailVerified: new Date() },
@@ -271,18 +254,16 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         });
       });
 
-      return sendSuccess(
-        reply,
-        "Email verificado exitosamente",
-        { email: user.email }
-      );
+      return sendSuccess(reply, "Email verificado exitosamente", {
+        email: user.email,
+      });
     } catch (error: any) {
       app.log.error("Error verificando email:", error);
       return sendError(
         reply,
         500,
         "Error al verificar email",
-        "internal_error"
+        "internal_error",
       );
     }
   });
@@ -306,7 +287,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           400,
           "Errores de validación",
           "validation_error",
-          fieldErrors
+          fieldErrors,
         );
       }
 
@@ -338,7 +319,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           reply,
           401,
           "Email o contraseña incorrectos",
-          "invalid_credentials"
+          "invalid_credentials",
         );
       }
 
@@ -350,7 +331,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           reply,
           401,
           "Email o contraseña incorrectos",
-          "invalid_credentials"
+          "invalid_credentials",
         );
       }
 
@@ -360,7 +341,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           reply,
           403,
           "Debes verificar tu email antes de iniciar sesión",
-          "email_not_verified"
+          "email_not_verified",
         );
       }
 
@@ -374,12 +355,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       });
     } catch (error: any) {
       app.log.error("Error en login:", error);
-      return sendError(
-        reply,
-        500,
-        "Error al iniciar sesión",
-        "internal_error"
-      );
+      return sendError(reply, 500, "Error al iniciar sesión", "internal_error");
     }
   });
 
@@ -402,7 +378,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           400,
           "Errores de validación",
           "validation_error",
-          fieldErrors
+          fieldErrors,
         );
       }
 
@@ -418,7 +394,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       if (!user) {
         return sendSuccess(
           reply,
-          "Si el email existe, recibirás un enlace para restablecer tu contraseña"
+          "Si el email existe, recibirás un enlace para restablecer tu contraseña",
         );
       }
 
@@ -445,8 +421,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       });
 
       // Enviar email de reset
-      const frontendUrl =
-        process.env.FRONTEND_URL || "http://localhost:3000";
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
       const resetUrl = `${frontendUrl}/auth/reset/${token}`;
 
       try {
@@ -463,7 +438,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 
       return sendSuccess(
         reply,
-        "Si el email existe, recibirás un enlace para restablecer tu contraseña"
+        "Si el email existe, recibirás un enlace para restablecer tu contraseña",
       );
     } catch (error: any) {
       app.log.error("Error en reset request:", error);
@@ -471,7 +446,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         reply,
         500,
         "Error al procesar solicitud",
-        "internal_error"
+        "internal_error",
       );
     }
   });
@@ -495,7 +470,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           400,
           "Errores de validación",
           "validation_error",
-          fieldErrors
+          fieldErrors,
         );
       }
 
@@ -511,7 +486,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           reply,
           400,
           "Token inválido o expirado",
-          "invalid_token"
+          "invalid_token",
         );
       }
 
@@ -525,7 +500,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           reply,
           400,
           "El token de reset ha expirado",
-          "token_expired"
+          "token_expired",
         );
       }
 
@@ -535,19 +510,14 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       });
 
       if (!user) {
-        return sendError(
-          reply,
-          404,
-          "Usuario no encontrado",
-          "user_not_found"
-        );
+        return sendError(reply, 404, "Usuario no encontrado", "user_not_found");
       }
 
       // Hashear nueva contraseña
       const passwordHash = await bcrypt.hash(password, 10);
 
       // Actualizar contraseña y eliminar token
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         await tx.user.update({
           where: { id: user.id },
           data: { passwordHash },
@@ -558,19 +528,15 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         });
       });
 
-      return sendSuccess(
-        reply,
-        "Contraseña actualizada exitosamente"
-      );
+      return sendSuccess(reply, "Contraseña actualizada exitosamente");
     } catch (error: any) {
       app.log.error("Error en reset confirm:", error);
       return sendError(
         reply,
         500,
         "Error al restablecer contraseña",
-        "internal_error"
+        "internal_error",
       );
     }
   });
 }
-
