@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { GenerateDocumentSchema } from "./types.js";
 import OpenAI from "openai";
-import { PrismaClient, Prisma, Document } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import { z } from "zod";
 import { getUserFromRequest, requireAuth } from "./utils/auth.js";
 
@@ -12,14 +12,21 @@ const openai = new OpenAI({
 });
 
 // Tipo para documentos con versión incluida (usado en GET /documents)
-type DocumentWithVersion = Document & {
+interface DocumentWithVersion {
+  id: string;
+  type: string | null;
+  jurisdiccion: string | null;
+  tono: string | null;
+  estado: string | null;
+  costUsd: number | null;
+  createdAt: Date;
   versions: Array<{
     id: string;
     rawText: string;
     pdfUrl: string | null;
     createdAt: Date;
   }>;
-};
+}
 
 // Schema para query params de GET /documents
 const DocumentsQuerySchema = z.object({
