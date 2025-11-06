@@ -1,6 +1,6 @@
 import "dotenv/config"; // carga .env ANTES de usar process.env
 import Fastify from "fastify";
-import cors from "@fastify/cors";
+import fastifyCors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import helmet from "@fastify/helmet";
 import { registerDocumentRoutes } from "./routes.documents.js";
@@ -12,15 +12,28 @@ async function buildServer() {
   });
 
   // CORS: DEBE ir antes de las rutas y antes de helmet
-  await app.register(cors, {
-    origin: [
-      process.env.FRONTEND_URL,
-      "http://localhost:3000",
-      ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
-    ].filter(Boolean),
+  const isDev = process.env.NODE_ENV !== "production";
+  
+  // Lista de orígenes permitidos con type guard
+  const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    "http://localhost:3000",
+  ].filter((v): v is string => Boolean(v));
+  
+  const allowedSet = new Set<string>(allowedOrigins);
+
+  await app.register(fastifyCors, {
+    credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
+    origin: isDev ? true : (origin, cb) => {
+      // permitir no-browser requests (origin null) y los de la whitelist
+      if (!origin || allowedSet.has(origin)) {
+        cb(null, true);
+      } else {
+        cb(new Error("CORS not allowed"), false);
+      }
+    },
   });
 
   // Seguridad (después de CORS)
