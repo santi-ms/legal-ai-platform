@@ -2,7 +2,7 @@ import Link from "next/link";
 import { DashboardShell } from "@/app/components/DashboardShell";
 import { DocumentStatusBadge } from "@/app/components/DocumentStatusBadge";
 import { Button } from "@/components/ui/button";
-import { getDocuments } from "@/app/lib/api";
+import { listDocuments } from "@/app/lib/webApi";
 import { formatDate, formatDocumentType } from "@/app/lib/format";
 import { FileText, Download, Eye, Plus } from "lucide-react";
 import { config } from "@/app/lib/config";
@@ -29,13 +29,14 @@ export default async function DocumentsPage() {
   let error: string | null = null;
 
   try {
-    const data = await getDocuments();
-    // El proxy devuelve { ok: true, items: [...], total: ..., page: ..., pageSize: ... }
+    // Usar listDocuments que maneja correctamente el proxy server-side
+    const data = await listDocuments({});
+    // listDocuments devuelve { ok: true, items: [...], total: ..., page: ..., pageSize: ... }
     if (data.ok && data.items) {
       documents = data.items;
     } else {
       documents = mockDocuments;
-      error = data.message || "No se pudieron cargar los documentos";
+      error = data.message || data.error || "No se pudieron cargar los documentos";
     }
   } catch (err: any) {
     console.error("Error loading documents:", err);

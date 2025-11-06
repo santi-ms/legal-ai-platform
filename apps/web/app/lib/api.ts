@@ -135,11 +135,24 @@ export async function apiGet<T = any>(
 
 /**
  * Obtener todos los documentos (compatibilidad)
+ * Funciona tanto en Server Components como en Client Components
  */
 export async function getDocuments() {
   try {
-    // Usar el proxy server-side que maneja la autenticación automáticamente
-    const response = await fetch(`/api/_proxy/documents`, { 
+    // En Server Components, necesitamos usar la URL absoluta
+    // En Client Components, podemos usar la ruta relativa
+    const isServer = typeof window === "undefined";
+    const baseUrl = isServer 
+      ? (process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
+          ? `https://${process.env.VERCEL_URL}` 
+          : "http://localhost:3000")
+      : "";
+    
+    const proxyUrl = isServer 
+      ? `${baseUrl}/api/_proxy/documents`
+      : `/api/_proxy/documents`;
+    
+    const response = await fetch(proxyUrl, { 
       cache: "no-store",
       headers: {
         'Content-Type': 'application/json',

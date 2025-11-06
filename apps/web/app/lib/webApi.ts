@@ -51,6 +51,7 @@ export interface DocumentsParams {
 
 /**
  * Lista documentos con filtros y paginación
+ * Funciona tanto en Server Components como en Client Components
  */
 export async function listDocuments(
   params: DocumentsParams = {}
@@ -67,7 +68,19 @@ export async function listDocuments(
   if (params.sort) searchParams.set("sort", params.sort);
 
   const queryString = searchParams.toString();
-  const url = `/api/_proxy/documents${queryString ? `?${queryString}` : ""}`;
+  
+  // En Server Components, necesitamos usar la URL absoluta
+  // En Client Components, podemos usar la ruta relativa
+  const isServer = typeof window === "undefined";
+  const baseUrl = isServer 
+    ? (process.env.NEXTAUTH_URL || (process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : "http://localhost:3000"))
+    : "";
+  
+  const url = isServer
+    ? `${baseUrl}/api/_proxy/documents${queryString ? `?${queryString}` : ""}`
+    : `/api/_proxy/documents${queryString ? `?${queryString}` : ""}`;
 
   const response = await fetch(url, {
     method: "GET",
@@ -76,6 +89,14 @@ export async function listDocuments(
     },
     cache: "no-store",
   });
+
+  // Verificar que la respuesta sea JSON
+  const contentType = response.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    const text = await response.text();
+    console.error("[listDocuments] Respuesta no es JSON:", text.substring(0, 200));
+    throw new Error("El servidor devolvió una respuesta inválida");
+  }
 
   const data = await response.json();
 
