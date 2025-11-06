@@ -134,18 +134,22 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       }
 
       // Armamos el payload según si existe la relación Tenant en el cliente Prisma
-      const dataBase: Prisma.UserCreateInput = {
-        name,
-        email: normEmail,
-        passwordHash,
-        emailVerified: new Date(),
-        role: "user",
-        ...(tenantId
-          ? {
-              tenant: { connect: { id: tenantId } },
-            }
-          : {}),
-      };
+      const dataBase: Prisma.UserCreateInput = tenantId
+        ? {
+            name,
+            email: normEmail,
+            passwordHash,
+            emailVerified: new Date(),
+            role: "user",
+            tenant: { connect: { id: tenantId } },
+          }
+        : {
+            name,
+            email: normEmail,
+            passwordHash,
+            emailVerified: new Date(),
+            role: "user",
+          };
 
       const created = await prisma.user.create({
         data: dataBase,
