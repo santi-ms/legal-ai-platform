@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { apiUrl, generateJWT } from "../../utils";
 
 function jsonError(status: number, message: string, detail?: any) {
   return NextResponse.json({ ok: false, message, detail }, { status });
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const jwt = await generateJWT();
+    const jwt = await generateJWT(req);
     const url = apiUrl("/documents/generate");
     const body = await req.json().catch(() => ({}));
 

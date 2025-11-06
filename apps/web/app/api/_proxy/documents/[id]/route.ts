@@ -38,7 +38,7 @@ async function handleRequest(
   method: "GET" | "PATCH" | "DELETE"
 ) {
   try {
-    const jwt = await generateJWT();
+    const jwt = await generateJWT(request);
     const url = apiUrl(`/documents/${id}`);
 
     const options: RequestInit = {

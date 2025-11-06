@@ -14,7 +14,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const jwt = await generateJWT();
+    const jwt = await generateJWT(request);
     const url = apiUrl(`/documents/${params.id}/pdf`);
 
     const response = await fetch(url, {

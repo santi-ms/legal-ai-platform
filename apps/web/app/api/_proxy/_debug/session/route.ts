@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSessionSafe } from "../../utils";
 
-export async function GET() {
-  const session = await getSessionSafe();
+export async function GET(req: NextRequest) {
+  const session = await getSessionSafe(req);
   return NextResponse.json({
     ok: true,
     session: {

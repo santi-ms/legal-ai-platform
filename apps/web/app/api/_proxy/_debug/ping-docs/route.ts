@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { apiUrl, generateJWT } from "../../utils";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const jwt = await generateJWT();
+    const jwt = await generateJWT(req);
     const url = apiUrl("/documents");
     const r = await fetch(url, {
       headers: { Authorization: `Bearer ${jwt}`, Accept: "application/json" },

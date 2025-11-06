@@ -13,7 +13,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const jwt = await generateJWT();
+    const jwt = await generateJWT(request);
     const url = apiUrl(`/documents/${params.id}/duplicate`);
 
     const response = await fetch(url, {

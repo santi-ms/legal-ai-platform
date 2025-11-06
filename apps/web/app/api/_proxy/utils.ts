@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import { getServerSession } from "next-auth";
+import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { NextRequest } from "next/server";
 
 type JwtAlgo = "HS256" | "RS256";
 
@@ -10,17 +12,41 @@ function getApiBase() {
   return base.replace(/\/+$/, "");
 }
 
-export async function getSessionSafe() {
+export async function getSessionSafe(req?: NextRequest) {
   try {
+    if (req) {
+      // En Route Handlers, usar getToken directamente
+      const token = await getToken({
+        req,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+      if (!token) {
+        console.warn("[getSessionSafe] No se encontró token en Route Handler");
+        return null;
+      }
+      console.log("[getSessionSafe] Token encontrado, user:", token.user?.id || token.sub);
+      // Convertir token a formato de sesión
+      return {
+        user: {
+          id: token.user?.id || token.sub,
+          email: token.user?.email || token.email,
+          name: token.user?.name || token.name,
+          role: token.user?.role || token.role,
+          tenantId: token.user?.tenantId || token.tenantId,
+        },
+      } as any;
+    }
+    // En Server Components, usar getServerSession
     const session = await getServerSession(authOptions);
     return session;
-  } catch {
+  } catch (err: any) {
+    console.error("[getSessionSafe] Error:", err?.message, err?.stack);
     return null;
   }
 }
 
-export async function generateJWT() {
-  const session = await getSessionSafe();
+export async function generateJWT(req?: NextRequest) {
+  const session = await getSessionSafe(req);
   if (!session?.user?.email || !session?.user?.id) {
     // sin sesión => no generamos token
     throw new Error("No hay sesión de usuario. Iniciá sesión e intentá de nuevo.");
