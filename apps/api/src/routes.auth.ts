@@ -117,13 +117,13 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       try {
         if (company && company.trim().length > 0) {
           // crea tenant solo si no existe uno con ese nombre
-          const existingTenant = await prisma.tenant.findFirst({
+          const existingTenant = await prisma.tenant?.findFirst?.({
             where: { name: company },
           });
-          const tenant = existingTenant
-            ? existingTenant
-            : await prisma.tenant.create({ data: { name: company } });
-          tenantId = tenant.id;
+          const tenant =
+            existingTenant ??
+            (await prisma.tenant?.create?.({ data: { name: company } }));
+          tenantId = tenant?.id;
         }
       } catch (e) {
         request.log.warn({
@@ -133,15 +133,22 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         // si falla la creación del tenant, seguimos sin bloquear el alta de usuario
       }
 
+      // Armamos el payload según si existe la relación Tenant en el cliente Prisma
+      const dataBase: Prisma.UserCreateInput = {
+        name,
+        email: normEmail,
+        passwordHash,
+        emailVerified: new Date(),
+        role: "user",
+        ...(tenantId
+          ? {
+              tenant: { connect: { id: tenantId } },
+            }
+          : {}),
+      };
+
       const created = await prisma.user.create({
-        data: {
-          name,
-          email: normEmail,
-          passwordHash,
-          emailVerified: new Date(), // temporalmente verificado
-          role: "user",
-          ...(tenantId ? { tenantId } : {}),
-        },
+        data: dataBase,
         select: {
           id: true,
           email: true,
