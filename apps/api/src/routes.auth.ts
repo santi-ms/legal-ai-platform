@@ -80,24 +80,33 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     },
   });
 
-  // POST /api/register - Registro con verificación de email
-  type RegisterBody = z.infer<typeof registerSchema>;
+  // POST /api/register - Registro con email verificado por defecto
+  const RegisterSchema = z.object({
+    name: z.string().min(1),
+    email: z.string().email(),
+    company: z.string().optional().nullable(),
+    password: z.string().min(6),
+  });
+
+  type RegisterBody = z.infer<typeof RegisterSchema>;
   app.post<{ Body: RegisterBody }>("/api/register", async (request, reply) => {
     try {
-      const { name, email, password, companyName } = registerSchema.parse(request.body);
+      const { name, email, password, company } = RegisterSchema.parse(request.body);
+      const normEmail = email.trim().toLowerCase();
+
+      request.log.info({ event: "register:incoming", email: normEmail });
 
       // Verificar si el usuario ya existe
-      const existingUser = await prisma.user.findUnique({
-        where: { email },
+      const existing = await prisma.user.findFirst({
+        where: { email: normEmail },
       });
 
-      if (existingUser) {
-        return sendError(
-          reply,
-          400,
-          "El email ya está registrado",
-          "user_exists",
-        );
+      if (existing) {
+        request.log.warn({ event: "register:email_exists", email: normEmail });
+        return reply.code(409).send({
+          ok: false,
+          message: "El email ya está registrado",
+        });
       }
 
       // Hashear contraseña
@@ -106,76 +115,64 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       // Crear tenant y usuario en transacción
       const result = await prisma.$transaction(
         async (tx: Prisma.TransactionClient) => {
-          // Crear tenant
+          // Crear tenant (usar company o nombre por defecto)
           const tenant = await tx.tenant.create({
             data: {
-              name: companyName,
+              name: company || name || "Default Tenant",
             },
           });
 
-          // Crear usuario (sin verificar aún)
-          const user = await tx.user.create({
+          // Crear usuario con email verificado por defecto
+          const newUser = await tx.user.create({
             data: {
               name,
-              email,
+              email: normEmail,
               passwordHash,
+              emailVerified: new Date(), // Marcar verificado por ahora
               role: "owner", // Primer usuario de un tenant es owner
               tenantId: tenant.id,
-              emailVerified: null, // No verificado aún
             },
           });
 
-          // Generar token de verificación
-          const token = generateToken();
-          const expires = new Date();
-          expires.setHours(expires.getHours() + 24); // Expira en 24 horas
-
-          await tx.verificationToken.create({
-            data: {
-              identifier: email,
-              token,
-              expires,
-            },
-          });
-
-          return { user, tenant, token };
+          return { user: newUser, tenant };
         },
       );
 
-      // Enviar email de verificación
-      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-      const verificationUrl = `${frontendUrl}/auth/verify-email?token=${result.token}`;
+      request.log.info({
+        event: "register:success",
+        userId: result.user.id,
+        email: normEmail,
+      });
 
-      try {
-        await sendEmail({
-          to: email,
-          subject: "Verifica tu cuenta - Legal AI Platform",
-          html: getVerificationEmailHtml(verificationUrl),
-          text: getVerificationEmailText(verificationUrl),
-        });
-      } catch (emailError: any) {
-        app.log.error("Error enviando email de verificación:", emailError);
-        // No fallar el registro si el email falla, solo loguear
-      }
-
-      return sendSuccess(
-        reply,
-        "Usuario creado exitosamente. Revisa tu email para verificar tu cuenta.",
-        {
-          userId: result.user.id,
+      return reply.send({
+        ok: true,
+        user: {
+          id: result.user.id,
           email: result.user.email,
+          name: result.user.name,
+          role: result.user.role,
+          tenantId: result.user.tenantId,
         },
-      );
-    } catch (error: any) {
-      request.log.error({ event: "register:exception", error: error?.message, stack: error?.stack });
-      if (error?.name === "ZodError") {
+      });
+    } catch (err: any) {
+      request.log.error({
+        event: "register:exception",
+        error: err?.message || err,
+        stack: err?.stack,
+      });
+
+      if (err?.name === "ZodError") {
         return reply.code(400).send({
           ok: false,
           message: "Body inválido",
-          issues: error.issues,
+          issues: err.issues,
         });
       }
-      return sendError(reply, 500, "Error al crear usuario", "internal_error");
+
+      return reply.code(500).send({
+        ok: false,
+        message: "Error interno al registrar usuario",
+      });
     }
   });
 
