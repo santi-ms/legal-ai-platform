@@ -18,8 +18,9 @@ export async function GET(request: NextRequest) {
     });
 
     if (!token) {
+      console.warn("[proxy/documents] No se encontró token de NextAuth");
       return NextResponse.json(
-        { ok: false, message: "Unauthorized" },
+        { ok: false, message: "Unauthorized", error: "NO_TOKEN" },
         { 
           status: 401,
           headers: {
@@ -36,6 +37,8 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const queryString = searchParams.toString();
     const backendUrl = `${config.apiUrl}/documents${queryString ? `?${queryString}` : ""}`;
+    
+    console.log("[proxy/documents] Llamando al backend:", backendUrl);
 
     // Reenviar request al backend con Authorization header
     const response = await fetch(backendUrl, {
@@ -47,7 +50,35 @@ export async function GET(request: NextRequest) {
       cache: "no-store",
     });
 
-    const data = await response.json();
+    // Verificar que la respuesta sea JSON antes de parsearla
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      console.error("[proxy/documents] Backend devolvió HTML en lugar de JSON:", text.substring(0, 200));
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "El servidor devolvió una respuesta inválida",
+          error: "INVALID_RESPONSE",
+        },
+        { status: 500 }
+      );
+    }
+
+    let data: any;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      console.error("[proxy/documents] Error parseando JSON:", parseError);
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "Error al procesar respuesta del servidor",
+          error: "PARSE_ERROR",
+        },
+        { status: 500 }
+      );
+    }
 
     // Retornar respuesta sin exponer el token
     return NextResponse.json(data, {

@@ -26,14 +26,21 @@ const mockDocuments = [
 
 export default async function DocumentsPage() {
   let documents = [];
+  let error: string | null = null;
 
   try {
     const data = await getDocuments();
     // El proxy devuelve { ok: true, items: [...], total: ..., page: ..., pageSize: ... }
-    documents = data.items || data.documents || mockDocuments;
-  } catch (error) {
-    console.error("Error loading documents:", error);
+    if (data.ok && data.items) {
+      documents = data.items;
+    } else {
+      documents = mockDocuments;
+      error = data.message || "No se pudieron cargar los documentos";
+    }
+  } catch (err: any) {
+    console.error("Error loading documents:", err);
     documents = mockDocuments;
+    error = err?.message || "Error al cargar documentos";
   }
 
   return (
@@ -51,7 +58,19 @@ export default async function DocumentsPage() {
     >
       {/* Contenedor principal */}
       <div className="rounded-2xl border border-gray-200 bg-white shadow-sm ring-1 ring-black/[0.02] overflow-hidden">
-        {documents.length === 0 ? (
+        {error ? (
+          <div className="p-16 text-center space-y-4">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-xl bg-red-50 ring-1 ring-inset ring-red-200">
+              <span className="text-2xl">⚠️</span>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Error al cargar documentos
+            </h3>
+            <p className="text-sm text-gray-500 max-w-md mx-auto">
+              {error}
+            </p>
+          </div>
+        ) : documents.length === 0 ? (
           <div className="p-16 text-center space-y-4">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-xl bg-gray-50 ring-1 ring-inset ring-gray-200">
               <FileText className="h-8 w-8 text-teal-600" />

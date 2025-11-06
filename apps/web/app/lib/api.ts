@@ -146,12 +146,20 @@ export async function getDocuments() {
       }
     });
     
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
+    // Verificar que la respuesta sea JSON
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      console.error("[getDocuments] Respuesta no es JSON:", text.substring(0, 200));
+      throw new Error("El servidor devolvió una respuesta inválida");
     }
     
     const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || data.error || `HTTP error! status: ${response.status}`);
+    }
+    
     return data;
   } catch (error) {
     console.error('Error fetching documents:', error);
