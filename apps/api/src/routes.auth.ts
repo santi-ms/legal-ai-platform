@@ -20,6 +20,23 @@ import {
 
 const prisma = new PrismaClient();
 
+// AUTH_DEBUG flag para logs detallados
+const AUTH_DEBUG = process.env.AUTH_DEBUG === "true";
+
+// Helper para logs seguros (sin credenciales)
+function safeLog(obj: any) {
+  try {
+    const sanitized = { ...obj };
+    // Remover campos sensibles
+    if (sanitized.password) delete sanitized.password;
+    if (sanitized.passwordHash) delete sanitized.passwordHash;
+    if (sanitized.body?.password) delete sanitized.body.password;
+    return JSON.stringify(sanitized);
+  } catch {
+    return String(obj);
+  }
+}
+
 // Helper para respuestas homogéneas
 function sendSuccess(reply: any, message: string, data?: any) {
   return reply.status(200).send({
@@ -271,8 +288,16 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   // POST /api/auth/login - Login con validación de email verificado
   app.post("/api/auth/login", async (request, reply) => {
     try {
+      // Log de entrada (sin password)
+      const body = request.body as any;
+      request.log.info({
+        path: "/api/auth/login",
+        bodyKeys: Object.keys(body || {}),
+        email: body?.email,
+      }, "login:incoming");
+
       // Validar con Zod
-      const parsed = loginSchema.safeParse(request.body);
+      const parsed = loginSchema.safeParse(body);
 
       if (!parsed.success) {
         const fieldErrors: Record<string, string[]> = {};
@@ -281,6 +306,14 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           if (!fieldErrors[path]) fieldErrors[path] = [];
           fieldErrors[path].push(err.message);
         });
+
+        if (AUTH_DEBUG) {
+          request.log.warn({
+            reason: "validation_error",
+            email: body?.email,
+            errors: fieldErrors,
+          }, "login:fail");
+        }
 
         return sendError(
           reply,
@@ -304,58 +337,91 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           tenantId: true,
           passwordHash: true, // Necesario para comparar contraseña
           emailVerified: true, // Necesario para verificar email
-          tenant: {
-            select: {
-              id: true,
-              name: true,
-              createdAt: true,
-            },
-          },
         },
       });
 
       if (!user) {
-        return sendError(
-          reply,
-          401,
-          "Email o contraseña incorrectos",
-          "invalid_credentials",
-        );
+        if (AUTH_DEBUG) {
+          request.log.warn({
+            reason: "user_not_found",
+            email,
+            hasUser: false,
+          }, "login:fail");
+        }
+
+        return reply.status(401).send({
+          ok: false,
+          code: "INVALID_CREDENTIALS",
+          message: "Email o contraseña inválidos",
+        });
       }
 
       // Verificar contraseña (usando passwordHash)
-      const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+      const isPasswordValid = user.passwordHash
+        ? await bcrypt.compare(password, user.passwordHash)
+        : false;
 
       if (!isPasswordValid) {
-        return sendError(
-          reply,
-          401,
-          "Email o contraseña incorrectos",
-          "invalid_credentials",
-        );
+        if (AUTH_DEBUG) {
+          request.log.warn({
+            reason: "invalid_password",
+            email,
+            hasUser: true,
+            hasPasswordHash: !!user.passwordHash,
+          }, "login:fail");
+        }
+
+        return reply.status(401).send({
+          ok: false,
+          code: "INVALID_CREDENTIALS",
+          message: "Email o contraseña inválidos",
+        });
       }
 
       // Verificar si el email está verificado
       if (!user.emailVerified) {
-        return sendError(
-          reply,
-          403,
-          "Debes verificar tu email antes de iniciar sesión",
-          "email_not_verified",
-        );
+        if (AUTH_DEBUG) {
+          request.log.warn({
+            reason: "email_not_verified",
+            email,
+            hasUser: true,
+          }, "login:fail");
+        }
+
+        return reply.status(403).send({
+          ok: false,
+          code: "EMAIL_NOT_VERIFIED",
+          message: "Debes verificar tu email antes de iniciar sesión",
+        });
       }
 
-      // Devolver usuario (sin passwordHash)
-      return sendSuccess(reply, "Login exitoso", {
-        id: user.id,
-        email: user.email,
-        name: user.name || "",
-        role: user.role,
-        tenantId: user.tenantId,
+      // Login exitoso
+      if (AUTH_DEBUG) {
+        request.log.info({
+          reason: "success",
+          email,
+          userId: user.id,
+        }, "login:success");
+      }
+
+      return reply.status(200).send({
+        ok: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name || "",
+          role: user.role,
+          tenantId: user.tenantId,
+        },
       });
     } catch (error: any) {
-      app.log.error("Error en login:", error);
-      return sendError(reply, 500, "Error al iniciar sesión", "internal_error");
+      request.log.error({ err: safeLog(error) }, "login:exception");
+      return reply.status(500).send({
+        ok: false,
+        code: "INTERNAL",
+        message: "Error al iniciar sesión",
+        ...(AUTH_DEBUG ? { detail: String(error) } : {}),
+      });
     }
   });
 
@@ -537,6 +603,43 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         "Error al restablecer contraseña",
         "internal_error",
       );
+    }
+  });
+
+  // GET /api/_diagnostics/auth - Endpoint de diagnóstico para auth
+  app.get("/api/_diagnostics/auth", async (request, reply) => {
+    try {
+      const one = await prisma.user.findFirst({
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          tenantId: true,
+          emailVerified: true,
+          passwordHash: true,
+        },
+      });
+      return reply.send({
+        ok: true,
+        db: true,
+        sampleUser: one
+          ? {
+              id: one.id,
+              email: one.email,
+              role: one.role,
+              tenantId: one.tenantId,
+              emailVerified: !!one.emailVerified,
+              hasPasswordHash: !!one.passwordHash,
+            }
+          : null,
+      });
+    } catch (err) {
+      request.log.error({ err: safeLog(err) }, "diag:auth");
+      return reply.status(500).send({
+        ok: false,
+        db: false,
+        message: "DB error",
+      });
     }
   });
 }

@@ -23,8 +23,9 @@ const authOptions: NextAuthOptions = {
 
           console.log("🔐 NextAuth authorize called with:", { email: credentials.email });
 
-          // Llamar al proxy server-side (o directo al backend)
-          const res = await fetch(`${API_BASE}/api/auth/login`, {
+          // Llamar al proxy local (server-side)
+          const nextAuthUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+          const res = await fetch(`${nextAuthUrl}/api/_auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -42,8 +43,8 @@ const authOptions: NextAuthOptions = {
             return null; // dispara CredentialsSignin error genérico
           }
 
-          // data.user o data.data debería contener: id, email, name, role, tenantId
-          const user = data.data || data.user || data;
+          // data.user debería contener: id, email, name, role, tenantId
+          const user = data.user || data.data;
           
           if (!user || !user.id) {
             console.error("❌ User data missing in response", data);
