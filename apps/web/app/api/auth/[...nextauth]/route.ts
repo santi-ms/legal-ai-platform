@@ -3,10 +3,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 
 // Helper para obtener baseURL robusto
 function getBaseUrl() {
-  // En Vercel/Prod
-  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL; // prod/vercel
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  // Local
   return "http://localhost:3000";
 }
 
@@ -21,12 +19,13 @@ const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         try {
           if (!credentials?.email || !credentials?.password) {
-            console.log("[authorize] missing credentials");
             return null;
           }
 
           const base = getBaseUrl();
-          const res = await fetch(`${base}/api/_auth/login`, {
+
+          // 1) Intento via proxy local (POST)
+          let res = await fetch(`${base}/api/_auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -36,11 +35,27 @@ const authOptions: NextAuthOptions = {
             cache: "no-store",
           });
 
+          // 2) Fallback directo al backend si 405/404
+          if (res.status === 405 || res.status === 404) {
+            console.warn("[authorize] proxy 405/404, fallback to API");
+            const api = process.env.NEXT_PUBLIC_API_URL;
+            if (!api) return null;
+            res = await fetch(`${api}/api/auth/login`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email: credentials.email,
+                password: credentials.password,
+              }),
+              cache: "no-store",
+            });
+          }
+
           let data: any = {};
           try {
             data = await res.json();
           } catch {}
-          
+
           console.log("[authorize] login resp", { status: res.status, ok: data?.ok });
 
           if (!res.ok || !data?.ok || !data?.user) {
