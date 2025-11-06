@@ -29,7 +29,7 @@ export default function ResetRequestPage() {
     setLoading(true);
 
     try {
-      const response = await apiPost("/auth/reset/request", {
+      const response = await apiPost("/api/_auth/reset/request", {
         email: data.email,
       });
 

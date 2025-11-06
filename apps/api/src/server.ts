@@ -14,11 +14,10 @@ async function buildServer() {
   // CORS: DEBE ir antes de las rutas y antes de helmet
   await app.register(cors, {
     origin: [
-      "http://localhost:3000", // local dev
-      "https://legal-ai-platform-orcin.vercel.app", // producción
-      /\.vercel\.app$/, // previews
+      process.env.FRONTEND_URL,
+      "http://localhost:3000",
       ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
-    ],
+    ].filter(Boolean),
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,

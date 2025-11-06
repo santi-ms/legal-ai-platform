@@ -33,17 +33,24 @@ export async function apiFetch<T = any>(
   path: string,
   options?: RequestInit & { includeAuth?: boolean }
 ): Promise<ApiResponse<T>> {
-  const baseUrl = config.apiUrl;
+  // Si el path empieza con /api/, es una ruta relativa (proxy interno)
+  // No usar baseUrl para estas rutas
+  let url: string;
+  if (path.startsWith("/api/")) {
+    url = path;
+  } else {
+    const baseUrl = config.apiUrl;
 
-  if (!baseUrl) {
-    throw new Error("NEXT_PUBLIC_API_URL is not defined");
+    if (!baseUrl) {
+      throw new Error("NEXT_PUBLIC_API_URL is not defined");
+    }
+
+    // Normalizar path (remover / inicial si existe)
+    const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
+    
+    // NO agregar /api porque el path ya viene completo
+    url = `${baseUrl}/${normalizedPath}`;
   }
-
-  // Normalizar path (remover / inicial si existe)
-  const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
-  
-  // NO agregar /api porque el path ya viene completo
-  const url = `${baseUrl}/${normalizedPath}`;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -51,7 +58,8 @@ export async function apiFetch<T = any>(
   };
 
   // Agregar token de autenticación si está disponible (client-side)
-  if (options?.includeAuth !== false && typeof window !== "undefined") {
+  // Solo para rutas que no son proxies internos
+  if (options?.includeAuth !== false && typeof window !== "undefined" && !path.startsWith("/api/")) {
     const token = await getAuthToken();
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;

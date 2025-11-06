@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -18,7 +19,15 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { data: session, status } = useSession();
   const { success, error: showError } = useToast();
+
+  // Redirigir si ya está autenticado
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/dashboard");
+    }
+  }, [status, router]);
 
   const {
     register,
@@ -32,8 +41,8 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // Registrar usuario
-      const response = await apiPost("/register", {
+      // Registrar usuario usando proxy
+      const response = await apiPost("/api/_auth/register", {
         name: data.name,
         email: data.email,
         password: data.password,

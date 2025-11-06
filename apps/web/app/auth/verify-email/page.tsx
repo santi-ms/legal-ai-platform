@@ -37,7 +37,7 @@ function VerifyEmailForm() {
     setState("verifying");
 
     try {
-      const response = await apiGet("/auth/verify-email", {
+      const response = await apiGet("/api/_auth/verify-email", {
         token,
       });
 

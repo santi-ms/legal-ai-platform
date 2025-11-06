@@ -4,15 +4,15 @@ import CredentialsProvider from "next-auth/providers/credentials";
 const API_BASE =
   process.env.API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://api-production-8cad.up.railway.app";
+  "http://localhost:4001";
 
 const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      name: "Credentials",
+      name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         try {
@@ -23,7 +23,7 @@ const authOptions: NextAuthOptions = {
 
           console.log("🔐 NextAuth authorize called with:", { email: credentials.email });
 
-          // Llamar al backend en Railway
+          // Llamar al proxy server-side (o directo al backend)
           const res = await fetch(`${API_BASE}/api/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -31,18 +31,24 @@ const authOptions: NextAuthOptions = {
               email: credentials.email,
               password: credentials.password,
             }),
+            // @ts-ignore
+            cache: "no-store",
           });
 
-          if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
-            console.log("❌ Login failed:", res.status, errorData);
-            // Devolver null para que NextAuth responda 401
-            return null;
+          const data = await res.json().catch(() => ({}));
+          
+          if (!res.ok || !data?.ok) {
+            console.error("❌ authorize login failed", { status: res.status, data });
+            return null; // dispara CredentialsSignin error genérico
           }
 
-          // El backend debe devolver { ok: true, data: { id, email, name, role, tenantId } }
-          const response = await res.json();
-          const user = response.data || response;
+          // data.user o data.data debería contener: id, email, name, role, tenantId
+          const user = data.data || data.user || data;
+          
+          if (!user || !user.id) {
+            console.error("❌ User data missing in response", data);
+            return null;
+          }
 
           console.log("✅ User authorized:", {
             id: user.id,
@@ -85,7 +91,13 @@ const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token.user) {
-        session.user = token.user as any;
+        session.user = {
+          id: token.user.id,
+          email: token.user.email,
+          name: token.user.name,
+          role: token.user.role,
+          tenantId: token.user.tenantId,
+        } as any;
       }
       return session;
     },

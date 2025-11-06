@@ -43,7 +43,7 @@ export default function ResetConfirmPage() {
     setLoading(true);
 
     try {
-      const response = await apiPost("/auth/reset/confirm", {
+      const response = await apiPost("/api/_auth/reset/confirm", {
         token: data.token,
         password: data.password,
       });
