@@ -296,46 +296,24 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   // POST /api/auth/login - Login con validación de email verificado
   app.post("/api/auth/login", async (request, reply) => {
     try {
-      // Log de entrada (sin password)
-      const body = request.body as any;
+      const body = request.body ?? {};
+      const email = body.email?.trim()?.toLowerCase();
+      const password = body.password ?? "";
+
       request.log.info({
-        path: "/api/auth/login",
-        bodyKeys: Object.keys(body || {}),
-        email: body?.email,
-      }, "login:incoming");
+        event: "login:incoming",
+        bodyKeys: Object.keys(body),
+        email,
+      });
 
-      // Validar con Zod
-      const parsed = loginSchema.safeParse(body);
-
-      if (!parsed.success) {
-        const fieldErrors: Record<string, string[]> = {};
-        parsed.error.errors.forEach((err) => {
-          const path = err.path.join(".");
-          if (!fieldErrors[path]) fieldErrors[path] = [];
-          fieldErrors[path].push(err.message);
+      if (!email || !password) {
+        return reply.code(400).send({
+          ok: false,
+          message: "Email y contraseña requeridos",
         });
-
-        if (AUTH_DEBUG) {
-          request.log.warn({
-            reason: "validation_error",
-            email: body?.email,
-            errors: fieldErrors,
-          }, "login:fail");
-        }
-
-        return sendError(
-          reply,
-          400,
-          "Errores de validación",
-          "validation_error",
-          fieldErrors,
-        );
       }
 
-      const { email, password } = parsed.data;
-
-      // Buscar usuario con campos necesarios para validación
-      const user = await prisma.user.findUnique({
+      const user = await prisma.user.findFirst({
         where: { email },
         select: {
           id: true,
@@ -343,76 +321,43 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           name: true,
           role: true,
           tenantId: true,
-          passwordHash: true, // Necesario para comparar contraseña
-          emailVerified: true, // Necesario para verificar email
+          passwordHash: true,
+          emailVerified: true,
         },
       });
 
       if (!user) {
-        if (AUTH_DEBUG) {
-          request.log.warn({
-            reason: "user_not_found",
-            email,
-            hasUser: false,
-          }, "login:fail");
-        }
-
-        return reply.status(401).send({
+        request.log.warn({ event: "login:user_not_found", email });
+        return reply.code(401).send({
           ok: false,
-          code: "INVALID_CREDENTIALS",
-          message: "Email o contraseña inválidos",
+          message: "Usuario no encontrado",
         });
       }
 
-      // Verificar contraseña (usando passwordHash)
-      const isPasswordValid = user.passwordHash
-        ? await bcrypt.compare(password, user.passwordHash)
-        : false;
-
-      if (!isPasswordValid) {
-        if (AUTH_DEBUG) {
-          request.log.warn({
-            reason: "invalid_password",
-            email,
-            hasUser: true,
-            hasPasswordHash: !!user.passwordHash,
-          }, "login:fail");
-        }
-
-        return reply.status(401).send({
+      const valid = await bcrypt.compare(password, user.passwordHash || "");
+      if (!valid) {
+        request.log.warn({ event: "login:invalid_password", email });
+        return reply.code(401).send({
           ok: false,
-          code: "INVALID_CREDENTIALS",
-          message: "Email o contraseña inválidos",
+          message: "Contraseña incorrecta",
         });
       }
 
-      // Verificar si el email está verificado
       if (!user.emailVerified) {
-        if (AUTH_DEBUG) {
-          request.log.warn({
-            reason: "email_not_verified",
-            email,
-            hasUser: true,
-          }, "login:fail");
-        }
-
-        return reply.status(403).send({
+        request.log.warn({ event: "login:unverified_email", email });
+        return reply.code(403).send({
           ok: false,
-          code: "EMAIL_NOT_VERIFIED",
-          message: "Debes verificar tu email antes de iniciar sesión",
+          message: "Email no verificado",
         });
       }
 
-      // Login exitoso
-      if (AUTH_DEBUG) {
-        request.log.info({
-          reason: "success",
-          email,
-          userId: user.id,
-        }, "login:success");
-      }
+      request.log.info({
+        event: "login:success",
+        email,
+        userId: user.id,
+      });
 
-      return reply.status(200).send({
+      return reply.send({
         ok: true,
         user: {
           id: user.id,
@@ -422,13 +367,16 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           tenantId: user.tenantId,
         },
       });
-    } catch (error: any) {
-      request.log.error({ err: safeLog(error) }, "login:exception");
-      return reply.status(500).send({
+    } catch (err: any) {
+      request.log.error({
+        event: "login:exception",
+        error: err.message || err,
+        stack: err.stack,
+      });
+      return reply.code(500).send({
         ok: false,
-        code: "INTERNAL",
-        message: "Error al iniciar sesión",
-        ...(AUTH_DEBUG ? { detail: String(error) } : {}),
+        message: "Error interno al iniciar sesión",
+        detail: err.message || String(err),
       });
     }
   });
