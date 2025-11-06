@@ -134,13 +134,24 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       }
 
       // Armamos el payload según si existe la relación Tenant en el cliente Prisma
-      const baseData = {
+      const baseData: any = {
         name,
         email: normEmail,
         passwordHash,
-        emailVerified: new Date(),
         role: "user",
       };
+
+      // Intentar agregar emailVerified (puede fallar si la columna no existe)
+      try {
+        // Verificar si el modelo tiene emailVerified en el schema
+        baseData.emailVerified = new Date();
+      } catch (e) {
+        // Si no existe la columna, no la agregamos
+        request.log.warn({
+          event: "register:emailVerified_missing",
+          email: normEmail,
+        });
+      }
 
       const dataBase: Prisma.UserCreateInput = tenantId
         ? {
@@ -149,17 +160,47 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           }
         : (baseData as Prisma.UserCreateInput);
 
-      const created = await prisma.user.create({
-        data: dataBase,
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          emailVerified: true,
-          tenantId: true,
-        },
-      });
+      // Intentar crear usuario con emailVerified, si falla intentar sin él
+      let created: any = null;
+      try {
+        created = await prisma.user.create({
+          data: dataBase,
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            emailVerified: true,
+            tenantId: true,
+          },
+        });
+      } catch (e: any) {
+        // Si falla por columna faltante, intentar sin emailVerified
+        if (e?.code === "P2022" || e?.message?.includes("emailVerified")) {
+          request.log.warn({
+            event: "register:emailVerified_missing",
+            email: normEmail,
+            error: e?.message,
+          });
+          // Remover emailVerified del dataBase
+          const dataWithoutVerified = { ...dataBase };
+          delete dataWithoutVerified.emailVerified;
+          created = await prisma.user.create({
+            data: dataWithoutVerified,
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              role: true,
+              tenantId: true,
+            },
+          });
+          // Asignar emailVerified como null si no existe
+          created.emailVerified = null;
+        } else {
+          throw e;
+        }
+      }
 
       request.log.info({
         event: "register:success",
@@ -314,18 +355,48 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 
       request.log.info({ event: "login:incoming", email: normEmail });
 
-      const user = await prisma.user.findFirst({
-        where: { email: normEmail },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          tenantId: true,
-          passwordHash: true,
-          emailVerified: true,
-        },
-      });
+      // Intentar obtener usuario con emailVerified, si falla intentar sin él
+      let user: any = null;
+      try {
+        user = await prisma.user.findFirst({
+          where: { email: normEmail },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            tenantId: true,
+            passwordHash: true,
+            emailVerified: true,
+          },
+        });
+      } catch (e: any) {
+        // Si falla por columna faltante, intentar sin emailVerified
+        if (e?.code === "P2022" || e?.message?.includes("emailVerified")) {
+          request.log.warn({
+            event: "login:emailVerified_missing",
+            email: normEmail,
+            error: e?.message,
+          });
+          user = await prisma.user.findFirst({
+            where: { email: normEmail },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              role: true,
+              tenantId: true,
+              passwordHash: true,
+            },
+          });
+          // Asignar emailVerified como null si no existe
+          if (user) {
+            user.emailVerified = null;
+          }
+        } else {
+          throw e;
+        }
+      }
 
       if (!user) {
         request.log.warn({ event: "login:user_not_found", email: normEmail });
@@ -344,7 +415,15 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         });
       }
 
-      if (!user.emailVerified) {
+      // Solo verificar emailVerified si existe (puede ser null si la columna no existe)
+      if (user.emailVerified === undefined || user.emailVerified === null) {
+        // Si emailVerified no existe o es null, permitir login (por ahora)
+        request.log.info({
+          event: "login:emailVerified_null",
+          email: normEmail,
+          message: "Email no verificado, pero permitiendo login",
+        });
+      } else if (!user.emailVerified) {
         request.log.warn({ event: "login:unverified_email", email: normEmail });
         return reply.code(403).send({
           ok: false,

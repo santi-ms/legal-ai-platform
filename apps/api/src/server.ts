@@ -5,6 +5,48 @@ import rateLimit from "@fastify/rate-limit";
 import helmet from "@fastify/helmet";
 import { registerDocumentRoutes } from "./routes.documents.js";
 import { registerAuthRoutes } from "./routes.auth.js";
+import { execSync } from "child_process";
+import { existsSync } from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Ejecutar migraciones automáticamente al iniciar el servidor (solo en producción)
+function runMigrations() {
+  if (process.env.NODE_ENV !== "production") {
+    return; // En desarrollo, las migraciones se ejecutan manualmente
+  }
+
+  try {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    
+    // Buscar el schema de Prisma
+    const schemaPaths = [
+      path.resolve(__dirname, "../../../packages/db/prisma/schema.prisma"),
+      path.resolve(__dirname, "../../../prisma/schema.prisma"),
+      path.resolve(process.cwd(), "packages/db/prisma/schema.prisma"),
+      path.resolve(process.cwd(), "prisma/schema.prisma"),
+    ];
+
+    const schemaPath = schemaPaths.find((p) => existsSync(p));
+    
+    if (!schemaPath) {
+      console.warn("[migrate] ⚠️ No se encontró schema.prisma, omitiendo migraciones");
+      return;
+    }
+
+    console.log("[migrate] 🔄 Ejecutando migraciones de Prisma...");
+    execSync(`npx prisma migrate deploy --schema "${schemaPath}"`, {
+      stdio: "inherit",
+      env: process.env,
+    });
+    console.log("[migrate] ✅ Migraciones aplicadas correctamente");
+  } catch (error: any) {
+    console.error("[migrate] ❌ Error ejecutando migraciones:", error.message);
+    // No fallar el servidor si las migraciones fallan, pero loguear el error
+    console.warn("[migrate] ⚠️ Continuando sin aplicar migraciones");
+  }
+}
 
 async function buildServer() {
   const app = Fastify({
@@ -71,6 +113,9 @@ async function buildServer() {
 
   return app;
 }
+
+// Ejecutar migraciones antes de iniciar el servidor (solo en producción)
+runMigrations();
 
 // inicializamos y escuchamos
 const app = await buildServer();
