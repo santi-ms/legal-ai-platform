@@ -29,7 +29,8 @@ export default async function DocumentsPage() {
 
   try {
     const data = await getDocuments();
-    documents = data.documents || mockDocuments;
+    // El proxy devuelve { ok: true, items: [...], total: ..., page: ..., pageSize: ... }
+    documents = data.items || data.documents || mockDocuments;
   } catch (error) {
     console.error("Error loading documents:", error);
     documents = mockDocuments;

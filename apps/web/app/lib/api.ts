@@ -138,7 +138,8 @@ export async function apiGet<T = any>(
  */
 export async function getDocuments() {
   try {
-    const response = await fetch(`${config.apiUrl}/documents`, { 
+    // Usar el proxy server-side que maneja la autenticación automáticamente
+    const response = await fetch(`/api/_proxy/documents`, { 
       cache: "no-store",
       headers: {
         'Content-Type': 'application/json',
@@ -146,7 +147,8 @@ export async function getDocuments() {
     });
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
     }
     
     const data = await response.json();
