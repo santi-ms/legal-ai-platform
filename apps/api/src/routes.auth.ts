@@ -97,11 +97,11 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       request.log.info({ event: "register:incoming", email: normEmail });
 
       // Verificar si el usuario ya existe
-      const existing = await prisma.user.findFirst({
+      const exists = await prisma.user.findFirst({
         where: { email: normEmail },
       });
 
-      if (existing) {
+      if (exists) {
         request.log.warn({ event: "register:email_exists", email: normEmail });
         return reply.code(409).send({
           ok: false,
@@ -112,15 +112,35 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       // Hashear contraseña
       const passwordHash = await bcrypt.hash(password, 10);
 
-      // Crear usuario (sin tenant por ahora, tenantId es opcional)
+      // Si existe el modelo Tenant y querés asociar:
+      let tenantId: string | undefined = undefined;
+      try {
+        if (company && company.trim().length > 0) {
+          // crea tenant solo si no existe uno con ese nombre
+          const existingTenant = await prisma.tenant.findFirst({
+            where: { name: company },
+          });
+          const tenant = existingTenant
+            ? existingTenant
+            : await prisma.tenant.create({ data: { name: company } });
+          tenantId = tenant.id;
+        }
+      } catch (e) {
+        request.log.warn({
+          event: "register:tenant_warning",
+          error: (e as any)?.message,
+        });
+        // si falla la creación del tenant, seguimos sin bloquear el alta de usuario
+      }
+
       const created = await prisma.user.create({
         data: {
           name,
           email: normEmail,
           passwordHash,
           emailVerified: new Date(), // temporalmente verificado
-          company: company || null,
           role: "user",
+          ...(tenantId ? { tenantId } : {}),
         },
         select: {
           id: true,
@@ -128,19 +148,17 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           name: true,
           role: true,
           emailVerified: true,
+          tenantId: true,
         },
       });
 
       request.log.info({
         event: "register:success",
         userId: created.id,
-        email: normEmail,
+        tenantId: created.tenantId || null,
       });
 
-      return reply.send({
-        ok: true,
-        user: created,
-      });
+      return reply.send({ ok: true, user: created });
     } catch (err: any) {
       request.log.error({
         event: "register:exception",
