@@ -285,6 +285,14 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     }
   });
 
+  // GET /api/auth/login - Handler defensivo (405)
+  app.get("/api/auth/login", async (_, reply) => {
+    return reply.code(405).send({
+      ok: false,
+      message: "Method Not Allowed",
+    });
+  });
+
   // POST /api/auth/login - Login con validación de email verificado
   app.post("/api/auth/login", async (request, reply) => {
     try {

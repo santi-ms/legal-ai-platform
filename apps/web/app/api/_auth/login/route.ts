@@ -4,25 +4,38 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "http
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
+    // Log mínimo (sin password)
+    console.log("[_auth/login] in", { hasEmail: !!body.email });
+
     const r = await fetch(`${API_BASE}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      // @ts-ignore
-      cache: "no-store",
+      body: JSON.stringify({ email: body.email, password: body.password }),
+      cache: "no-store" as const,
     });
+
     const data = await r.json().catch(() => ({}));
-    return NextResponse.json(data, { 
-      status: r.status, 
-      headers: { "cache-control": "no-store" } 
+    console.log("[_auth/login] out", { status: r.status, ok: data?.ok });
+
+    return NextResponse.json(data, {
+      status: r.status,
+      headers: { "cache-control": "no-store" },
     });
   } catch (err) {
-    console.error("Auth proxy /api/_auth/login error:", err);
+    console.error("[_auth/login] proxy error", err);
     return NextResponse.json(
-      { ok: false, message: "Auth proxy error" }, 
+      { ok: false, message: "Auth proxy error" },
       { status: 500 }
     );
   }
+}
+
+// Handler defensivo para GET (405)
+export async function GET() {
+  return NextResponse.json(
+    { ok: false, message: "Method Not Allowed" },
+    { status: 405 }
+  );
 }
 

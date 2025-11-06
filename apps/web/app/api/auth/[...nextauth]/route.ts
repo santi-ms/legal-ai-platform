@@ -1,10 +1,14 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-const API_BASE =
-  process.env.API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:4001";
+// Helper para obtener baseURL robusto
+function getBaseUrl() {
+  // En Vercel/Prod
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  // Local
+  return "http://localhost:3000";
+}
 
 const authOptions: NextAuthOptions = {
   providers: [
@@ -17,49 +21,35 @@ const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         try {
           if (!credentials?.email || !credentials?.password) {
-            console.log("❌ Email o contraseña faltante");
+            console.log("[authorize] missing credentials");
             return null;
           }
 
-          console.log("🔐 NextAuth authorize called with:", { email: credentials.email });
-
-          // Llamar al proxy local (server-side)
-          const nextAuthUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-          const res = await fetch(`${nextAuthUrl}/api/_auth/login`, {
+          const base = getBaseUrl();
+          const res = await fetch(`${base}/api/_auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               email: credentials.email,
               password: credentials.password,
             }),
-            // @ts-ignore
             cache: "no-store",
           });
 
-          const data = await res.json().catch(() => ({}));
+          let data: any = {};
+          try {
+            data = await res.json();
+          } catch {}
           
-          if (!res.ok || !data?.ok) {
-            console.error("❌ authorize login failed", { status: res.status, data });
-            return null; // dispara CredentialsSignin error genérico
-          }
+          console.log("[authorize] login resp", { status: res.status, ok: data?.ok });
 
-          // data.user debería contener: id, email, name, role, tenantId
-          const user = data.user || data.data;
-          
-          if (!user || !user.id) {
-            console.error("❌ User data missing in response", data);
+          if (!res.ok || !data?.ok || !data?.user) {
             return null;
           }
 
-          console.log("✅ User authorized:", {
-            id: user.id,
-            email: user.email,
-            tenantId: user.tenantId
-          });
-
-          return user;
-        } catch (error) {
-          console.error("❌ Error en authorize:", error);
+          return data.user;
+        } catch (err) {
+          console.error("[authorize] exception", err);
           return null;
         }
       }
