@@ -1,7 +1,8 @@
-import { FastifyInstance } from "fastify";
+import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { PrismaClient, Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import rateLimit from "@fastify/rate-limit";
+import { z } from "zod";
 import {
   registerSchema,
   loginSchema,
@@ -80,29 +81,10 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   });
 
   // POST /api/register - Registro con verificación de email
-  app.post("/api/register", async (request, reply) => {
+  type RegisterBody = z.infer<typeof registerSchema>;
+  app.post<{ Body: RegisterBody }>("/api/register", async (request, reply) => {
     try {
-      // Validar con Zod
-      const parsed = registerSchema.safeParse(request.body);
-
-      if (!parsed.success) {
-        const fieldErrors: Record<string, string[]> = {};
-        parsed.error.errors.forEach((err) => {
-          const path = err.path.join(".");
-          if (!fieldErrors[path]) fieldErrors[path] = [];
-          fieldErrors[path].push(err.message);
-        });
-
-        return sendError(
-          reply,
-          400,
-          "Errores de validación",
-          "validation_error",
-          fieldErrors,
-        );
-      }
-
-      const { name, email, password, companyName } = parsed.data;
+      const { name, email, password, companyName } = registerSchema.parse(request.body);
 
       // Verificar si el usuario ya existe
       const existingUser = await prisma.user.findUnique({
@@ -185,7 +167,14 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         },
       );
     } catch (error: any) {
-      app.log.error("Error en registro:", error);
+      request.log.error({ event: "register:exception", error: error?.message, stack: error?.stack });
+      if (error?.name === "ZodError") {
+        return reply.code(400).send({
+          ok: false,
+          message: "Body inválido",
+          issues: error.issues,
+        });
+      }
       return sendError(reply, 500, "Error al crear usuario", "internal_error");
     }
   });
@@ -193,16 +182,21 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   // GET /api/auth/verify-email - Verificar email con token
   app.get("/api/auth/verify-email", async (request, reply) => {
     try {
-      const { token } = request.query as { token?: string };
-
+      const token = (request.query as any)?.token as string | undefined;
       if (!token) {
-        return sendError(reply, 400, "Token requerido", "token_required");
+        return reply.code(400).send({
+          ok: false,
+          message: "Token requerido",
+        });
       }
 
       // Validar con Zod
       const parsed = verifyEmailSchema.safeParse({ token });
       if (!parsed.success) {
-        return sendError(reply, 400, "Token inválido", "invalid_token");
+        return reply.code(400).send({
+          ok: false,
+          message: "Token inválido",
+        });
       }
 
       // Buscar token en la base de datos
@@ -275,7 +269,14 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         email: user.email,
       });
     } catch (error: any) {
-      app.log.error("Error verificando email:", error);
+      request.log.error({ event: "verify_email:exception", error: error?.message, stack: error?.stack });
+      if (error?.name === "ZodError") {
+        return reply.code(400).send({
+          ok: false,
+          message: "Token inválido",
+          issues: error.issues,
+        });
+      }
       return sendError(
         reply,
         500,
@@ -294,27 +295,16 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   });
 
   // POST /api/auth/login - Login con validación de email verificado
-  app.post("/api/auth/login", async (request, reply) => {
+  type LoginBody = z.infer<typeof loginSchema>;
+  app.post<{ Body: LoginBody }>("/api/auth/login", async (request, reply) => {
     try {
-      const body = request.body ?? {};
-      const email = body.email?.trim()?.toLowerCase();
-      const password = body.password ?? "";
+      const { email, password } = loginSchema.parse(request.body);
+      const normEmail = email.trim().toLowerCase();
 
-      request.log.info({
-        event: "login:incoming",
-        bodyKeys: Object.keys(body),
-        email,
-      });
-
-      if (!email || !password) {
-        return reply.code(400).send({
-          ok: false,
-          message: "Email y contraseña requeridos",
-        });
-      }
+      request.log.info({ event: "login:incoming", email: normEmail });
 
       const user = await prisma.user.findFirst({
-        where: { email },
+        where: { email: normEmail },
         select: {
           id: true,
           email: true,
@@ -327,7 +317,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       });
 
       if (!user) {
-        request.log.warn({ event: "login:user_not_found", email });
+        request.log.warn({ event: "login:user_not_found", email: normEmail });
         return reply.code(401).send({
           ok: false,
           message: "Usuario no encontrado",
@@ -336,7 +326,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 
       const valid = await bcrypt.compare(password, user.passwordHash || "");
       if (!valid) {
-        request.log.warn({ event: "login:invalid_password", email });
+        request.log.warn({ event: "login:invalid_password", email: normEmail });
         return reply.code(401).send({
           ok: false,
           message: "Contraseña incorrecta",
@@ -344,7 +334,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       }
 
       if (!user.emailVerified) {
-        request.log.warn({ event: "login:unverified_email", email });
+        request.log.warn({ event: "login:unverified_email", email: normEmail });
         return reply.code(403).send({
           ok: false,
           message: "Email no verificado",
@@ -353,7 +343,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 
       request.log.info({
         event: "login:success",
-        email,
+        email: normEmail,
         userId: user.id,
       });
 
@@ -370,41 +360,28 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     } catch (err: any) {
       request.log.error({
         event: "login:exception",
-        error: err.message || err,
-        stack: err.stack,
+        error: err?.message,
+        stack: err?.stack,
       });
+      if (err?.name === "ZodError") {
+        return reply.code(400).send({
+          ok: false,
+          message: "Body inválido",
+          issues: err.issues,
+        });
+      }
       return reply.code(500).send({
         ok: false,
         message: "Error interno al iniciar sesión",
-        detail: err.message || String(err),
       });
     }
   });
 
   // POST /api/auth/reset/request - Solicitar reset de contraseña
-  app.post("/api/auth/reset/request", async (request, reply) => {
+  type ResetReqBody = z.infer<typeof resetRequestSchema>;
+  app.post<{ Body: ResetReqBody }>("/api/auth/reset/request", async (request, reply) => {
     try {
-      // Validar con Zod
-      const parsed = resetRequestSchema.safeParse(request.body);
-
-      if (!parsed.success) {
-        const fieldErrors: Record<string, string[]> = {};
-        parsed.error.errors.forEach((err) => {
-          const path = err.path.join(".");
-          if (!fieldErrors[path]) fieldErrors[path] = [];
-          fieldErrors[path].push(err.message);
-        });
-
-        return sendError(
-          reply,
-          400,
-          "Errores de validación",
-          "validation_error",
-          fieldErrors,
-        );
-      }
-
-      const { email } = parsed.data;
+      const { email } = resetRequestSchema.parse(request.body);
 
       // Buscar usuario
       const user = await prisma.user.findUnique({
@@ -463,7 +440,14 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         "Si el email existe, recibirás un enlace para restablecer tu contraseña",
       );
     } catch (error: any) {
-      app.log.error("Error en reset request:", error);
+      request.log.error({ event: "reset_request:exception", error: error?.message, stack: error?.stack });
+      if (error?.name === "ZodError") {
+        return reply.code(400).send({
+          ok: false,
+          message: "Body inválido",
+          issues: error.issues,
+        });
+      }
       return sendError(
         reply,
         500,
@@ -474,29 +458,10 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   });
 
   // POST /api/auth/reset/confirm - Confirmar reset de contraseña
-  app.post("/api/auth/reset/confirm", async (request, reply) => {
+  type ResetConfBody = z.infer<typeof resetConfirmSchema>;
+  app.post<{ Body: ResetConfBody }>("/api/auth/reset/confirm", async (request, reply) => {
     try {
-      // Validar con Zod
-      const parsed = resetConfirmSchema.safeParse(request.body);
-
-      if (!parsed.success) {
-        const fieldErrors: Record<string, string[]> = {};
-        parsed.error.errors.forEach((err) => {
-          const path = err.path.join(".");
-          if (!fieldErrors[path]) fieldErrors[path] = [];
-          fieldErrors[path].push(err.message);
-        });
-
-        return sendError(
-          reply,
-          400,
-          "Errores de validación",
-          "validation_error",
-          fieldErrors,
-        );
-      }
-
-      const { token, password } = parsed.data;
+      const { token, password } = resetConfirmSchema.parse(request.body);
 
       // Buscar token
       const verificationToken = await prisma.verificationToken.findUnique({
@@ -552,7 +517,14 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 
       return sendSuccess(reply, "Contraseña actualizada exitosamente");
     } catch (error: any) {
-      app.log.error("Error en reset confirm:", error);
+      request.log.error({ event: "reset_confirm:exception", error: error?.message, stack: error?.stack });
+      if (error?.name === "ZodError") {
+        return reply.code(400).send({
+          ok: false,
+          message: "Body inválido",
+          issues: error.issues,
+        });
+      }
       return sendError(
         reply,
         500,
