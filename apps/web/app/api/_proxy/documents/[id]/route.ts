@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
-import { config } from "@/app/lib/config";
-import { generateJWT } from "../../utils";
+import { apiUrl, generateJWT } from "../../utils";
+
+function jsonError(status: number, message: string, detail?: any) {
+  return NextResponse.json({ ok: false, message, detail }, { status });
+}
 
 /**
  * Proxy server-side para operaciones en documentos individuales
@@ -36,34 +38,14 @@ async function handleRequest(
   method: "GET" | "PATCH" | "DELETE"
 ) {
   try {
-    // Obtener token JWT de la sesión
-    const token = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    if (!token) {
-      return NextResponse.json(
-        { ok: false, message: "Unauthorized" },
-        { 
-          status: 401,
-          headers: {
-            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-          },
-        }
-      );
-    }
-
-    const backendUrl = `${config.apiUrl}/documents/${id}`;
-
-    // Generar JWT válido para el backend
-    const jwtToken = generateJWT(token);
+    const jwt = await generateJWT();
+    const url = apiUrl(`/documents/${id}`);
 
     const options: RequestInit = {
       method,
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${jwtToken}`,
+        Authorization: `Bearer ${jwt}`,
+        Accept: "application/json",
       },
       cache: "no-store",
     };
@@ -72,26 +54,25 @@ async function handleRequest(
     if (method === "PATCH") {
       const body = await request.json().catch(() => ({}));
       options.body = JSON.stringify(body);
+      (options.headers as any)["Content-Type"] = "application/json";
     }
 
-    const response = await fetch(backendUrl, options);
-    const data = await response.json();
+    const response = await fetch(url, options);
 
-    return NextResponse.json(data, {
-      status: response.status,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-      },
+    const ct = response.headers.get("content-type") || "";
+    if (ct.includes("application/json")) {
+      const json = await response.json().catch(() => null);
+      if (!json) return jsonError(502, "JSON inválido desde API");
+      return NextResponse.json(json, { status: response.status });
+    }
+
+    const text = await response.text();
+    return jsonError(response.status || 502, "Upstream no devolvió JSON", {
+      contentType: ct,
+      bodyPreview: text.slice(0, 500),
+      url: url.toString(),
     });
-  } catch (error) {
-    console.error(`[proxy/documents/${id}] Error:`, error);
-    return NextResponse.json(
-      {
-        ok: false,
-        message: error instanceof Error ? error.message : "Error interno del servidor",
-      },
-      { status: 500 }
-    );
+  } catch (err: any) {
+    return jsonError(500, "Proxy error", err?.message || String(err));
   }
 }

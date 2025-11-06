@@ -41,22 +41,12 @@ export default function DocumentDetailPage() {
       if (!id) return;
 
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
-        const res = await fetch(`${apiUrl}/documents/${id}`, {
-          cache: "no-store",
-        });
-
-        if (!res.ok) {
-          setError("No se pudo cargar el documento");
-          setLoading(false);
-          return;
-        }
-
-        const json = (await res.json()) as DocumentResponse;
+        const { getDocument } = await import("@/app/lib/webApi");
+        const json = await getDocument(id);
         setData(json);
         setLoading(false);
-      } catch {
-        setError("Error de red al cargar el documento");
+      } catch (err: any) {
+        setError(err?.message || "Error de red al cargar el documento");
         setLoading(false);
       }
     }
@@ -66,9 +56,9 @@ export default function DocumentDetailPage() {
 
   function handleDownload() {
     if (!id) return;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
+    // Usar el proxy para el PDF
     window.open(
-      `${apiUrl}/documents/${id}/pdf`,
+      `/api/_proxy/documents/${id}/pdf`,
       "_blank",
       "noopener,noreferrer"
     );

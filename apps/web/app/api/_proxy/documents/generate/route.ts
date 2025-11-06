@@ -1,40 +1,36 @@
-import { NextRequest, NextResponse } from "next/server";
-import { apiUrl, generateJWT } from "../../../utils";
+import { NextResponse } from "next/server";
+import { apiUrl, generateJWT } from "../../utils";
 
 function jsonError(status: number, message: string, detail?: any) {
   return NextResponse.json({ ok: false, message, detail }, { status });
 }
 
-/**
- * Proxy server-side para POST /documents/:id/duplicate
- */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: Request) {
   try {
     const jwt = await generateJWT();
-    const url = apiUrl(`/documents/${params.id}/duplicate`);
+    const url = apiUrl("/documents/generate");
+    const body = await req.json().catch(() => ({}));
 
-    const response = await fetch(url, {
+    const upstream = await fetch(url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${jwt}`,
         Accept: "application/json",
         "Content-Type": "application/json",
       },
+      body: JSON.stringify(body),
       cache: "no-store",
     });
 
-    const ct = response.headers.get("content-type") || "";
+    const ct = upstream.headers.get("content-type") || "";
     if (ct.includes("application/json")) {
-      const json = await response.json().catch(() => null);
+      const json = await upstream.json().catch(() => null);
       if (!json) return jsonError(502, "JSON inválido desde API");
-      return NextResponse.json(json, { status: response.status });
+      return NextResponse.json(json, { status: upstream.status });
     }
 
-    const text = await response.text();
-    return jsonError(response.status || 502, "Upstream no devolvió JSON", {
+    const text = await upstream.text();
+    return jsonError(upstream.status || 502, "Upstream no devolvió JSON", {
       contentType: ct,
       bodyPreview: text.slice(0, 500),
       url: url.toString(),
@@ -43,3 +39,4 @@ export async function POST(
     return jsonError(500, "Proxy error", err?.message || String(err));
   }
 }
+

@@ -182,21 +182,43 @@ export async function getDocuments() {
 
 /**
  * Obtener un documento por ID (compatibilidad)
+ * Usa el proxy server-side para autenticación automática
  */
 export async function getDocument(id: string) {
   try {
-    const response = await fetch(`${config.apiUrl}/documents/${id}`, { 
+    // Usar el proxy server-side que maneja la autenticación automáticamente
+    const isServer = typeof window === "undefined";
+    const baseUrl = isServer 
+      ? (process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
+          ? `https://${process.env.VERCEL_URL}` 
+          : "http://localhost:3000")
+      : "";
+    
+    const proxyUrl = isServer 
+      ? `${baseUrl}/api/_proxy/documents/${id}`
+      : `/api/_proxy/documents/${id}`;
+    
+    const response = await fetch(proxyUrl, { 
       cache: "no-store",
       headers: {
         'Content-Type': 'application/json',
       }
     });
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Verificar que la respuesta sea JSON
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      console.error("[getDocument] Respuesta no es JSON:", text.substring(0, 200));
+      throw new Error("El servidor devolvió una respuesta inválida");
     }
     
     const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || data.error || `HTTP error! status: ${response.status}`);
+    }
+    
     return data;
   } catch (error) {
     console.error('Error fetching document:', error);
@@ -206,10 +228,23 @@ export async function getDocument(id: string) {
 
 /**
  * Generar un documento (compatibilidad)
+ * Usa el proxy server-side para autenticación automática
  */
 export async function generateDocument(formData: any) {
   try {
-    const response = await fetch(`${config.apiUrl}/documents/generate`, {
+    // Usar el proxy server-side que maneja la autenticación automáticamente
+    const isServer = typeof window === "undefined";
+    const baseUrl = isServer 
+      ? (process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
+          ? `https://${process.env.VERCEL_URL}` 
+          : "http://localhost:3000")
+      : "";
+    
+    const proxyUrl = isServer 
+      ? `${baseUrl}/api/_proxy/documents/generate`
+      : `/api/_proxy/documents/generate`;
+    
+    const response = await fetch(proxyUrl, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json" 
@@ -217,10 +252,18 @@ export async function generateDocument(formData: any) {
       body: JSON.stringify(formData),
     });
 
+    // Verificar que la respuesta sea JSON
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      console.error("[generateDocument] Respuesta no es JSON:", text.substring(0, 200));
+      throw new Error("El servidor devolvió una respuesta inválida");
+    }
+
     const data = await response.json();
     
-    if (!data.ok) {
-      throw new Error(data.error || "Error al generar el documento");
+    if (!response.ok || !data.ok) {
+      throw new Error(data.message || data.error || "Error al generar el documento");
     }
 
     return data;

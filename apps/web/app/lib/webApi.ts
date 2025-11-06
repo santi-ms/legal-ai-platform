@@ -50,6 +50,43 @@ export interface DocumentsParams {
 }
 
 /**
+ * Helper "content-type aware" que nunca parsea HTML como JSON
+ */
+export async function apiFetchJSON<T = any>(
+  input: RequestInfo | URL,
+  init: RequestInit = {}
+): Promise<T> {
+  const res = await fetch(input, {
+    ...init,
+    headers: { Accept: "application/json", ...(init.headers || {}) },
+    cache: "no-store",
+  });
+
+  const ct = res.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) {
+    const text = await res.text().catch(() => "");
+    const preview = text.slice(0, 400);
+    throw new Error(
+      `Respuesta no-JSON (status ${res.status}, ct="${ct}"). body="${preview}"`
+    );
+  }
+
+  let data: any;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(`JSON inválido (status ${res.status}).`);
+  }
+
+  if (!res.ok || data?.ok === false) {
+    const msg = data?.message || data?.error || `Error ${res.status}`;
+    throw new Error(msg);
+  }
+
+  return data as T;
+}
+
+/**
  * Lista documentos con filtros y paginación
  * Funciona tanto en Server Components como en Client Components
  */
@@ -82,90 +119,32 @@ export async function listDocuments(
     ? `${baseUrl}/api/_proxy/documents${queryString ? `?${queryString}` : ""}`
     : `/api/_proxy/documents${queryString ? `?${queryString}` : ""}`;
 
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    cache: "no-store",
-  });
-
-  // Verificar que la respuesta sea JSON
-  const contentType = response.headers.get("content-type");
-  if (!contentType || !contentType.includes("application/json")) {
-    const text = await response.text();
-    console.error("[listDocuments] Respuesta no es JSON:", text.substring(0, 200));
-    throw new Error("El servidor devolvió una respuesta inválida");
-  }
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || data.error || "Error al cargar documentos");
-  }
-
-  return data;
+  return apiFetchJSON<DocumentsResponse>(url);
 }
 
 /**
  * Obtiene un documento por ID
  */
 export async function getDocument(id: string): Promise<DocumentResponse> {
-  const response = await fetch(`/api/_proxy/documents/${id}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    cache: "no-store",
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || data.error || "Error al cargar documento");
-  }
-
-  return data;
+  return apiFetchJSON<DocumentResponse>(`/api/_proxy/documents/${id}`);
 }
 
 /**
  * Duplica un documento
  */
 export async function duplicateDocument(id: string): Promise<{ ok: boolean; data: { id: string }; message?: string }> {
-  const response = await fetch(`/api/_proxy/documents/${id}/duplicate`, {
+  return apiFetchJSON(`/api/_proxy/documents/${id}/duplicate`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
   });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || data.error || "Error al duplicar documento");
-  }
-
-  return data;
 }
 
 /**
  * Elimina un documento
  */
 export async function deleteDocument(id: string): Promise<{ ok: boolean; message?: string }> {
-  const response = await fetch(`/api/_proxy/documents/${id}`, {
+  return apiFetchJSON(`/api/_proxy/documents/${id}`, {
     method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
   });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || data.error || "Error al eliminar documento");
-  }
-
-  return data;
 }
 
 /**
@@ -175,21 +154,13 @@ export async function patchDocument(
   id: string,
   payload: { type?: string; jurisdiccion?: string; tono?: string }
 ): Promise<{ ok: boolean; document?: Document; message?: string }> {
-  const response = await fetch(`/api/_proxy/documents/${id}`, {
+  return apiFetchJSON(`/api/_proxy/documents/${id}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
   });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || data.error || "Error al actualizar documento");
-  }
-
-  return data;
 }
 
 /**

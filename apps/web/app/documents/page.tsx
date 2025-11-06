@@ -2,10 +2,9 @@ import Link from "next/link";
 import { DashboardShell } from "@/app/components/DashboardShell";
 import { DocumentStatusBadge } from "@/app/components/DocumentStatusBadge";
 import { Button } from "@/components/ui/button";
-import { listDocuments } from "@/app/lib/webApi";
+import { listDocuments, apiFetchJSON, DocumentsResponse } from "@/app/lib/webApi";
 import { formatDate, formatDocumentType } from "@/app/lib/format";
 import { FileText, Download, Eye, Plus } from "lucide-react";
-import { config } from "@/app/lib/config";
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -29,9 +28,20 @@ export default async function DocumentsPage() {
   let error: string | null = null;
 
   try {
-    // Usar listDocuments que maneja correctamente el proxy server-side
-    const data = await listDocuments({});
-    // listDocuments devuelve { ok: true, items: [...], total: ..., page: ..., pageSize: ... }
+    // Usar apiFetchJSON que garantiza JSON y maneja el proxy server-side
+    const isServer = typeof window === "undefined";
+    const baseUrl = isServer 
+      ? (process.env.NEXTAUTH_URL || (process.env.VERCEL_URL 
+          ? `https://${process.env.VERCEL_URL}` 
+          : "http://localhost:3000"))
+      : "";
+    
+    const url = isServer
+      ? `${baseUrl}/api/_proxy/documents`
+      : `/api/_proxy/documents`;
+    
+    const data = await apiFetchJSON<DocumentsResponse>(url);
+    
     if (data.ok && data.items) {
       documents = data.items;
     } else {
@@ -163,7 +173,7 @@ export default async function DocumentsPage() {
 
                         {document.lastVersion?.pdfUrl && (
                           <a
-                            href={`${config.apiUrl}/documents/${document.id}/pdf`}
+                            href={`/api/_proxy/documents/${document.id}/pdf`}
                             target="_blank"
                             rel="noopener noreferrer"
                           >

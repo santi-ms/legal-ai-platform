@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
-import { config } from "@/app/lib/config";
-import { generateJWT } from "../../../utils";
+import { apiUrl, generateJWT } from "../../../utils";
+
+function jsonError(status: number, message: string, detail?: any) {
+  return NextResponse.json({ ok: false, message, detail }, { status });
+}
 
 /**
  * Proxy server-side para GET /documents/:id/pdf
@@ -12,43 +14,30 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Obtener token JWT de la sesión
-    const token = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
+    const jwt = await generateJWT();
+    const url = apiUrl(`/documents/${params.id}/pdf`);
 
-    if (!token) {
-      return NextResponse.json(
-        { ok: false, message: "Unauthorized" },
-        { 
-          status: 401,
-          headers: {
-            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-          },
-        }
-      );
-    }
-
-    // Generar JWT válido para el backend
-    const jwtToken = generateJWT(token);
-
-    const backendUrl = `${config.apiUrl}/documents/${params.id}/pdf`;
-
-    const response = await fetch(backendUrl, {
+    const response = await fetch(url, {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${jwtToken}`,
+        Authorization: `Bearer ${jwt}`,
       },
       cache: "no-store",
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return NextResponse.json(
-        { ok: false, message: errorData.message || "Error al obtener PDF" },
-        { status: response.status }
-      );
+      // Si el backend devuelve JSON de error, parsearlo
+      const ct = response.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        const errorData = await response.json().catch(() => ({}));
+        return jsonError(response.status, errorData.message || "Error al obtener PDF");
+      }
+      // Si devuelve HTML u otro formato, devolver error JSON
+      const text = await response.text();
+      return jsonError(response.status, "Error al obtener PDF", {
+        contentType: ct,
+        bodyPreview: text.slice(0, 500),
+      });
     }
 
     // Stream del PDF con headers seguros
@@ -66,14 +55,7 @@ export async function GET(
         "X-Content-Type-Options": "nosniff",
       },
     });
-  } catch (error) {
-    console.error(`[proxy/documents/${params.id}/pdf] Error:`, error);
-    return NextResponse.json(
-      {
-        ok: false,
-        message: error instanceof Error ? error.message : "Error interno del servidor",
-      },
-      { status: 500 }
-    );
+  } catch (err: any) {
+    return jsonError(500, "Proxy error", err?.message || String(err));
   }
 }

@@ -198,8 +198,8 @@ export default function NewDocumentPage() {
       setLoadingProgress(25);
       setLoadingStep("Generando contenido con IA...");
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
-      const res = await fetch(`${apiUrl}/documents/generate`, {
+      // Usar el proxy server-side que maneja la autenticación automáticamente
+      const res = await fetch(`/api/_proxy/documents/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -207,6 +207,14 @@ export default function NewDocumentPage() {
 
       setLoadingProgress(70);
       setLoadingStep("Creando PDF...");
+
+      // Verificar que la respuesta sea JSON
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error("[generateDocument] Respuesta no es JSON:", text.substring(0, 200));
+        throw new Error("El servidor devolvió una respuesta inválida");
+      }
 
       const json = await res.json();
 
@@ -617,7 +625,7 @@ export default function NewDocumentPage() {
                 {result.pdfUrl && (
                   <div>
                     <a
-                      href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001"}/documents/${result.documentId}/pdf`}
+                      href={`/api/_proxy/documents/${result.documentId}/pdf`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm ring-1 ring-inset ring-teal-700/30 hover:bg-teal-500 hover:shadow-md transition-all"
