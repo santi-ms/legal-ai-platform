@@ -112,55 +112,43 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       // Hashear contraseña
       const passwordHash = await bcrypt.hash(password, 10);
 
-      // Crear tenant y usuario en transacción
-      const result = await prisma.$transaction(
-        async (tx: Prisma.TransactionClient) => {
-          // Crear tenant (usar company o nombre por defecto)
-          const tenant = await tx.tenant.create({
-            data: {
-              name: company || name || "Default Tenant",
-            },
-          });
-
-          // Crear usuario con email verificado por defecto
-          const newUser = await tx.user.create({
-            data: {
-              name,
-              email: normEmail,
-              passwordHash,
-              emailVerified: new Date(), // Marcar verificado por ahora
-              role: "owner", // Primer usuario de un tenant es owner
-              tenantId: tenant.id,
-            },
-          });
-
-          return { user: newUser, tenant };
+      // Crear usuario (sin tenant por ahora, tenantId es opcional)
+      const created = await prisma.user.create({
+        data: {
+          name,
+          email: normEmail,
+          passwordHash,
+          emailVerified: new Date(), // temporalmente verificado
+          company: company || null,
+          role: "user",
         },
-      );
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          emailVerified: true,
+        },
+      });
 
       request.log.info({
         event: "register:success",
-        userId: result.user.id,
+        userId: created.id,
         email: normEmail,
       });
 
       return reply.send({
         ok: true,
-        user: {
-          id: result.user.id,
-          email: result.user.email,
-          name: result.user.name,
-          role: result.user.role,
-          tenantId: result.user.tenantId,
-        },
+        user: created,
       });
     } catch (err: any) {
       request.log.error({
         event: "register:exception",
-        error: err?.message || err,
+        message: err?.message,
+        code: err?.code,
+        meta: err?.meta,
         stack: err?.stack,
       });
-
       if (err?.name === "ZodError") {
         return reply.code(400).send({
           ok: false,
@@ -168,7 +156,6 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           issues: err.issues,
         });
       }
-
       return reply.code(500).send({
         ok: false,
         message: "Error interno al registrar usuario",
@@ -355,9 +342,12 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         },
       });
     } catch (err: any) {
+      // 🔎 Log de Prisma con detalle real
       request.log.error({
         event: "login:exception",
-        error: err?.message,
+        message: err?.message,
+        code: err?.code,
+        meta: err?.meta,
         stack: err?.stack,
       });
       if (err?.name === "ZodError") {
@@ -564,6 +554,39 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         ok: false,
         db: false,
         message: "DB error",
+      });
+    }
+  });
+
+  // GET /api/_diagnostics/prisma-user - Endpoint de diagnóstico de Prisma User
+  app.get("/api/_diagnostics/prisma-user", async (request, reply) => {
+    try {
+      const columnsUsers = await prisma.$queryRawUnsafe<any[]>(
+        `SELECT column_name, data_type 
+         FROM information_schema.columns 
+         WHERE table_schema = 'public' AND table_name IN ('users','User') 
+         ORDER BY column_name`
+      );
+      let sample: any = null;
+      try {
+        sample = await prisma.user.findFirst({
+          select: {
+            id: true,
+            email: true,
+            passwordHash: true,
+            emailVerified: true,
+          },
+        });
+      } catch (e: any) {
+        sample = { error: e?.message || String(e) };
+      }
+      return reply.send({ ok: true, columns: columnsUsers, sample });
+    } catch (err: any) {
+      request.log.error({ err }, "diag:prisma-user");
+      return reply.code(500).send({
+        ok: false,
+        message: "diag failed",
+        detail: err?.message,
       });
     }
   });
