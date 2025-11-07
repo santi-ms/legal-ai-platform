@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { apiUrl, generateJWT } from "../utils";
+import { backendPath, generateJWT } from "../utils";
 
 function jsonError(status: number, message: string, extra: Record<string, unknown> = {}) {
   return NextResponse.json({ ok: false, message, ...extra }, { status });
 }
 
 export async function GET(req: NextRequest) {
-  const target = new URL(apiUrl("/documents"));
+  const target = new URL(backendPath("documents"));
   try {
     const incoming = new URL(req.url);
     incoming.searchParams.forEach((value, key) => target.searchParams.set(key, value));
 
     const jwt = await generateJWT(req);
 
+    console.debug("[proxy/documents] ->", target.toString());
     const response = await fetch(target, {
       headers: {
         Authorization: `Bearer ${jwt}`,
@@ -22,6 +23,7 @@ export async function GET(req: NextRequest) {
     });
 
     const contentType = response.headers.get("content-type") || "";
+    console.debug("[proxy/documents] <-", response.status, contentType);
 
     if (contentType.includes("application/json")) {
       const json = await response.json().catch(() => null);

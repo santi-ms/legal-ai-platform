@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { apiUrl, generateJWT } from "../../utils";
+import { backendPath, generateJWT } from "../../utils";
 
-function jsonError(status: number, message: string, detail?: any) {
-  return NextResponse.json({ ok: false, message, detail }, { status });
+function jsonError(status: number, message: string, extra: Record<string, unknown> = {}) {
+  return NextResponse.json({ ok: false, message, ...extra }, { status });
 }
 
 export async function POST(req: NextRequest) {
+  const target = backendPath("documents/generate");
   try {
     const jwt = await generateJWT(req);
-    const url = apiUrl("/documents/generate");
     const body = await req.json().catch(() => ({}));
 
-    const upstream = await fetch(url, {
+    console.debug("[proxy/documents.generate] ->", target);
+    const upstream = await fetch(target, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${jwt}`,
@@ -22,21 +23,27 @@ export async function POST(req: NextRequest) {
       cache: "no-store",
     });
 
-    const ct = upstream.headers.get("content-type") || "";
-    if (ct.includes("application/json")) {
+    const contentType = upstream.headers.get("content-type") || "";
+    console.debug("[proxy/documents.generate] <-", upstream.status, contentType);
+
+    if (contentType.includes("application/json")) {
       const json = await upstream.json().catch(() => null);
-      if (!json) return jsonError(502, "JSON inválido desde API");
+      if (!json) return jsonError(502, "JSON inválido desde API", { target });
       return NextResponse.json(json, { status: upstream.status });
     }
 
     const text = await upstream.text();
-    return jsonError(upstream.status || 502, "Upstream no devolvió JSON", {
-      contentType: ct,
+    return jsonError(502, "Upstream no devolvió JSON", {
+      status: upstream.status,
+      contentType,
       bodyPreview: text.slice(0, 500),
-      url: url.toString(),
+      target,
     });
   } catch (err: any) {
-    return jsonError(500, "Proxy error", err?.message || String(err));
+    return jsonError(500, "Proxy error", {
+      target,
+      error: err?.message || String(err),
+    });
   }
 }
 

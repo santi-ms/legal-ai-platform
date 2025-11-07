@@ -96,13 +96,19 @@ async function buildServer() {
   });
 
   // Healthcheck endpoint (sin rate limiting para monitoreo)
-  app.get("/healthz", async (request, reply) => {
-    const startTime = process.uptime();
-    return reply.send({
-      ok: true,
-      uptime: Math.floor(startTime),
-      timestamp: new Date().toISOString(),
-    });
+  app.get("/healthz", async () => ({
+    ok: true,
+    uptime: process.uptime(),
+    ts: Date.now(),
+  }));
+
+  // Raíz simple para diagnóstico rápido
+  app.get("/", async () => ({ ok: true, message: "API up" }));
+
+  // Listado de rutas registradas
+  app.get("/_routes", (request, reply) => {
+    const routes = app.printRoutes();
+    return reply.type("text/plain").send(routes);
   });
 
   // registrar endpoints /documents/*
@@ -119,6 +125,9 @@ runMigrations();
 
 // inicializamos y escuchamos
 const app = await buildServer();
+
+await app.ready();
+app.log.info({ event: "routes", routes: app.printRoutes() });
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4001;
 

@@ -16,6 +16,27 @@ export function getApiBase() {
   return base.replace(/\/+$/, "");
 }
 
+export function getWebOrigin() {
+  const base =
+    process.env.NEXTAUTH_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+  return base.replace(/\/+$/, "");
+}
+
+export function joinUrl(base: string, path: string) {
+  const root = base.replace(/\/+$/, "");
+  const segment = path.replace(/^\/+/, "");
+  return `${root}/${segment}`;
+}
+
+const BACKEND_PREFIX = (process.env.BACKEND_PREFIX || "").replace(/^\/+|\/+$/g, "");
+
+export function backendPath(path: string) {
+  const clean = path.replace(/^\/+/, "");
+  const full = BACKEND_PREFIX ? `${BACKEND_PREFIX}/${clean}` : clean;
+  return joinUrl(getApiBase(), full);
+}
+
 export async function getSessionSafe(req?: NextRequest) {
   try {
     if (req) {
