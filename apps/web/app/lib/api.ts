@@ -139,7 +139,27 @@ export async function apiGet<T = any>(
  */
 export async function getDocuments() {
   try {
-    return apiFetchJSON("/api/_proxy/documents");
+    const res = await fetch("/api/_proxy/documents", {
+      cache: "no-store",
+      headers: {
+        accept: "application/json",
+      },
+    });
+
+    const ct = res.headers.get("content-type") || "";
+    if (!ct.includes("application/json")) {
+      const text = await res.text().catch(() => "");
+      throw new Error(
+        `Respuesta no-JSON (status ${res.status}, ct="${ct}"). body="${text.slice(0, 200)}"`
+      );
+    }
+
+    const data = await res.json();
+    if (!res.ok || data?.ok === false) {
+      throw new Error(data?.message || data?.error || `HTTP error! status: ${res.status}`);
+    }
+
+    return data;
   } catch (error) {
     console.error('Error fetching documents:', error);
     throw error;
@@ -152,7 +172,27 @@ export async function getDocuments() {
  */
 export async function getDocument(id: string) {
   try {
-    return apiFetchJSON(`/api/_proxy/documents/${id}`);
+    const res = await fetch(`/api/_proxy/documents/${id}`, {
+      cache: "no-store",
+      headers: {
+        accept: "application/json",
+      },
+    });
+
+    const ct = res.headers.get("content-type") || "";
+    if (!ct.includes("application/json")) {
+      const text = await res.text().catch(() => "");
+      throw new Error(
+        `Respuesta no-JSON (status ${res.status}, ct="${ct}"). body="${text.slice(0, 200)}"`
+      );
+    }
+
+    const data = await res.json();
+    if (!res.ok || data?.ok === false) {
+      throw new Error(data?.message || data?.error || `HTTP error! status: ${res.status}`);
+    }
+
+    return data;
   } catch (error) {
     console.error('Error fetching document:', error);
     throw error;
