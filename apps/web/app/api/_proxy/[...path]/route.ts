@@ -1,82 +1,93 @@
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// apps/web/app/api/_proxy/[...path]/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import jwt from "jsonwebtoken";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 
-import { NextRequest, NextResponse } from 'next/server';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-function joinUrl(base: string, ...parts: string[]) {
-  const b = base.replace(/\/+$/, '');
-  const p = parts.join('/').replace(/(^\/+|\/+$)/g, '');
-  return p ? `${b}/${p}` : b;
+const API_URL = process.env.API_URL!;
+const BACKEND_PREFIX = (process.env.BACKEND_PREFIX ?? "").replace(/^\/|\/$/g, "");
+const withPrefix = (p: string) =>
+  BACKEND_PREFIX ? `/${BACKEND_PREFIX}${p.startsWith("/") ? p : `/${p}`}` : p;
+
+function json(status: number, payload: any) {
+  return NextResponse.json(payload, { status });
 }
 
-function sanitizePrefix(v?: string | null) {
-  if (!v) return '';
-  return v.replace(/^\/+|\/+$/g, '');
+async function buildAuthHeader() {
+  const session = await getServerSession(authOptions).catch(() => null);
+  if (!session?.user) return {};
+  const secret = process.env.NEXTAUTH_SECRET!;
+  const token = jwt.sign(
+    { sub: session.user.id ?? session.user.email ?? "user" },
+    secret,
+    { expiresIn: "10m" }
+  );
+  return { Authorization: `Bearer ${token}` };
 }
 
-async function forward(req: NextRequest, params: { path?: string[] }) {
-  const METHOD = req.method as 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS';
-  const apiBase = process.env.API_URL || '';
-  const prefix  = sanitizePrefix(process.env.BACKEND_PREFIX || '');
-  const segs    = params?.path ?? [];
-  const relPath = segs.join('/');
-  const urlPath = prefix ? `${prefix}/${relPath}` : relPath;
+async function proxy(req: NextRequest, { params }: { params: { path: string[] } }) {
+  if (!API_URL) return json(500, { ok: false, message: "API_URL not set" });
 
-  const target = new URL(joinUrl(apiBase, urlPath));
-  const reqUrl = new URL(req.url);
-  if (reqUrl.search) target.search = reqUrl.search;
+  const method = req.method;
+  const search = req.nextUrl.search || "";
+  const rawPath = `/${(params.path ?? []).join("/")}`;
+  const targetPath = withPrefix(rawPath);
+  const targetUrl = `${API_URL}${targetPath}${search}`;
 
-  const headers = new Headers(req.headers);
-  headers.delete('host');
-  headers.delete('x-forwarded-host');
-  headers.delete('x-forwarded-proto');
-  headers.delete('content-length');
+  const incomingHeaders = new Headers(req.headers);
+  incomingHeaders.delete("cookie");
 
-  const hasBody = !['GET','HEAD'].includes(METHOD);
-  const body = hasBody ? await req.arrayBuffer() : undefined;
+  const authHeader = await buildAuthHeader();
+  Object.entries(authHeader).forEach(([k, v]) => incomingHeaders.set(k, v as string));
 
-  const upstreamResp = await fetch(target.toString(), {
-    method: METHOD,
-    headers,
-    body,
-    redirect: 'manual',
-  });
-
-  const ct = upstreamResp.headers.get('content-type') || '';
-  if (!ct.toLowerCase().includes('application/json')) {
-    const snippet = (await upstreamResp.text()).slice(0, 800);
-    return NextResponse.json(
-      { ok: false, message: 'Upstream non-JSON', status: upstreamResp.status, snippet },
-      { status: 502 }
-    );
+  let body: BodyInit | undefined = undefined;
+  if (!["GET", "HEAD"].includes(method)) {
+    const ct = incomingHeaders.get("content-type") || "";
+    if (ct.includes("application/json")) {
+      const jsonBody = await req.json().catch(() => null);
+      body = jsonBody ? JSON.stringify(jsonBody) : null;
+    } else if (ct.includes("form")) {
+      const form = await req.formData();
+      body = form as any;
+    } else {
+      const buf = await req.arrayBuffer();
+      body = buf;
+    }
   }
 
-  const buf = await upstreamResp.arrayBuffer();
-  const out = new NextResponse(buf, {
-    status: upstreamResp.status,
-    headers: upstreamResp.headers,
+  let upstream: Response;
+  try {
+    upstream = await fetch(targetUrl, {
+      method,
+      headers: incomingHeaders,
+      body,
+      redirect: "manual",
+    });
+  } catch (err: any) {
+    console.error("[_proxy] fetch error", { err: String(err), targetUrl });
+    return json(502, { ok: false, message: "Upstream fetch error", error: String(err) });
+  }
+
+  const ct = upstream.headers.get("content-type") || "";
+  if (ct.includes("text/html")) {
+    const text = await upstream.text();
+    const snippet = text.slice(0, 500);
+    console.warn("[_proxy] upstream returned HTML", { status: upstream.status, targetUrl, snippet });
+    return json(502, { ok: false, message: "Upstream non-JSON", status: upstream.status, snippet });
+  }
+
+  const headers = new Headers(upstream.headers);
+  headers.delete("set-cookie");
+
+  return new NextResponse(upstream.body, {
+    status: upstream.status,
+    headers,
   });
-  return out;
 }
 
-export async function GET(req: NextRequest, { params }: { params: { path?: string[] } }) {
-  return forward(req, params);
-}
-export async function POST(req: NextRequest, { params }: { params: { path?: string[] } }) {
-  return forward(req, params);
-}
-export async function PUT(req: NextRequest, { params }: { params: { path?: string[] } }) {
-  return forward(req, params);
-}
-export async function PATCH(req: NextRequest, { params }: { params: { path?: string[] } }) {
-  return forward(req, params);
-}
-export async function DELETE(req: NextRequest, { params }: { params: { path?: string[] } }) {
-  return forward(req, params);
-}
-export async function OPTIONS(req: NextRequest, { params }: { params: { path?: string[] } }) {
-  return forward(req, params);
-}
+export { proxy as GET, proxy as POST, proxy as PUT, proxy as PATCH, proxy as DELETE, proxy as HEAD, proxy as OPTIONS };
 
 
