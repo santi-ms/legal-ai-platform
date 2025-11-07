@@ -6,26 +6,10 @@ import { DashboardShell } from "@/app/components/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { SkeletonDocumentDetail } from "@/components/ui/skeleton";
+import type { Document as ProxyDocument, DocumentResponse as ProxyDocumentResponse } from "@/app/lib/webApi";
 
-type LastVersion = {
-  id: string;
-  rawText: string;
-  pdfUrl: string | null;
-  createdAt: string;
-};
-
-type DocumentResponse = {
-  ok: boolean;
-  document: {
-    id: string;
-    type: string;
-    jurisdiccion: string;
-    tono: string;
-    estado: string;
-    costUsd: number | null;
-    lastVersion: LastVersion | null;
-  };
-};
+type DocumentResponse = ProxyDocumentResponse;
+type LastVersion = ProxyDocument["lastVersion"];
 
 export default function DocumentDetailPage() {
   const params = useParams<{ id: string }>();
