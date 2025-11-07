@@ -1,183 +1,58 @@
-import Link from "next/link";
-import { DashboardShell } from "@/app/components/DashboardShell";
-import { DocumentStatusBadge } from "@/app/components/DocumentStatusBadge";
-import { Button } from "@/components/ui/button";
-import { listDocuments } from "@/app/lib/webApi";
-import { formatDate, formatDocumentType } from "@/app/lib/format";
-import { FileText, Download, Eye, Plus } from "lucide-react";
-
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
+import React from "react";
+import { generateJWT } from "@/app/api/_proxy/utils";
 
-const mockDocuments = [
-  {
-    id: "3047ae32-b143-4d3f-8b26-b942b03a4155",
-    type: "contrato_servicios",
-    jurisdiccion: "Corrientes Capital",
-    estado: "GENERATED",
-    createdAt: "2025-01-28T10:30:00Z",
-    lastVersion: {
-      pdfUrl: "/path/to/pdf",
+async function listDocumentsDirect(params: URLSearchParams) {
+  const apiBase = process.env.API_URL!;
+  const prefix = (process.env.BACKEND_PREFIX || "").replace(/^\/|\/$/g, "");
+  const path = prefix ? `/${prefix}/documents` : `/documents`;
+  const qs = params.toString();
+  const url = `${apiBase}${path}${qs ? `?${qs}` : ""}`;
+
+  const token = await generateJWT();
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
     },
-  },
-];
+    cache: "no-store",
+  });
 
-export default async function DocumentsPage() {
-  let documents = [];
-  let error: string | null = null;
-
-  try {
-    const data = await listDocuments();
-    if (data.ok && data.items) {
-      documents = data.items;
-    } else {
-      error = data.message || data.error || "No se pudieron cargar los documentos";
-      documents = mockDocuments;
-    }
-  } catch (err: any) {
-    console.error("Error loading documents:", err);
-    documents = mockDocuments;
-    error = err?.message || "Error al cargar documentos";
+  const ct = res.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) {
+    const snippet = (await res.text()).slice(0, 400);
+    throw new Error(`Upstream no-JSON (${res.status}): ${snippet}`);
   }
 
-  return (
-    <DashboardShell
-      title="Documentos"
-      description="Historial de contratos, NDAs y cartas documento generados con IA. Todo listo para descargar y firmar."
-      action={
-        <Link href="/documents/new">
-          <Button className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm ring-1 ring-inset ring-teal-700/30 hover:bg-teal-500 hover:shadow-md transition-all">
-            <Plus className="h-4 w-4" />
-            Nuevo documento
-          </Button>
-        </Link>
-      }
-    >
-      {/* Contenedor principal */}
-      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm ring-1 ring-black/[0.02] overflow-hidden">
-        {error ? (
-          <div className="p-16 text-center space-y-4">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-xl bg-red-50 ring-1 ring-inset ring-red-200">
-              <span className="text-2xl">⚠️</span>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900">
-              Error al cargar documentos
-            </h3>
-            <p className="text-sm text-gray-500 max-w-md mx-auto">
-              {error}
-            </p>
-          </div>
-        ) : documents.length === 0 ? (
-          <div className="p-16 text-center space-y-4">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-xl bg-gray-50 ring-1 ring-inset ring-gray-200">
-              <FileText className="h-8 w-8 text-teal-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900">
-              No hay documentos todavía
-            </h3>
-            <p className="text-sm text-gray-500 max-w-md mx-auto">
-              Creá tu primer documento legal con IA y obtené tu contrato
-              profesional en segundos.
-            </p>
-            <Link href="/documents/new">
-              <Button className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm ring-1 ring-inset ring-teal-700/30 hover:bg-teal-500 hover:shadow-md transition-all">
-                <Plus className="h-4 w-4" />
-                Crear documento
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                    Documento
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                    Jurisdicción
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                    Estado
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                    Fecha
-                  </th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
+  return res.json();
+}
 
-              <tbody className="divide-y divide-gray-100">
-                {documents.map((document: any) => (
-                  <tr
-                    key={document.id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    {/* Documento */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-teal-50 ring-1 ring-inset ring-teal-600/20">
-                          <FileText className="h-5 w-5 text-teal-600" />
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {formatDocumentType(document.type)}
-                          </div>
-                          <div className="text-[11px] text-gray-500 font-medium">
-                            #{document.id.slice(0, 8)}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
+type DocumentsPageProps = {
+  searchParams: Record<string, string>;
+};
 
-                    {/* Jurisdicción */}
-                    <td className="px-6 py-4 text-sm text-gray-700">
-                      {document.jurisdiccion}
-                    </td>
+export default async function DocumentsPage({ searchParams }: DocumentsPageProps) {
+  const params = new URLSearchParams(searchParams);
 
-                    {/* Estado */}
-                    <td className="px-6 py-4">
-                      <DocumentStatusBadge status={document.estado} />
-                    </td>
+  try {
+    const data = await listDocumentsDirect(params);
+    const rows = data?.data ?? [];
+    const total = data?.total ?? rows.length;
 
-                    {/* Fecha */}
-                    <td className="px-6 py-4 text-sm text-gray-700">
-                      {formatDate(document.createdAt)}
-                    </td>
-
-                    {/* Acciones */}
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link href={`/documents/${document.id}`}>
-                          <button className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-gray-900">
-                            <Eye className="h-3.5 w-3.5" />
-                            Ver
-                          </button>
-                        </Link>
-
-                        {document.lastVersion?.pdfUrl && (
-                          <a
-                            href={`/api/_proxy/documents/${document.id}/pdf`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <button className="inline-flex items-center gap-1.5 rounded-md bg-teal-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-teal-700/30 hover:bg-teal-500 hover:shadow-md transition-all">
-                              <Download className="h-3.5 w-3.5" />
-                              PDF
-                            </button>
-                          </a>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-semibold mb-2">Dashboard de Documentos</h1>
+        <p className="text-sm opacity-70 mb-4">{total} documentos en total</p>
+        <pre className="text-xs bg-black/10 rounded p-4 overflow-auto">{JSON.stringify(data, null, 2)}</pre>
       </div>
-    </DashboardShell>
-  );
+    );
+  } catch (e: any) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <h2 className="text-xl font-semibold">Error al cargar documentos</h2>
+        <p className="mt-2 text-sm opacity-70">{String(e.message)}</p>
+      </div>
+    );
+  }
 }

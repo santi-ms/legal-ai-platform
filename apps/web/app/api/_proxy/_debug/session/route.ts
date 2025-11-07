@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionSafe } from "../../utils";
 
-export async function GET(req: NextRequest) {
-  const session = await getSessionSafe(req);
+export async function GET(_req: NextRequest) {
+  const session: any = await getSessionSafe();
+  const user = session?.user ?? null;
+
   return NextResponse.json({
     ok: true,
     session: {
-      hasSession: !!session,
-      email: session?.user?.email || null,
-      id: (session?.user as any)?.id || null,
-      tenantId: (session?.user as any)?.tenantId || null,
-      role: (session?.user as any)?.role || null,
+      hasSession: !!user,
+      email: user?.email || null,
+      id: user?.id || null,
+      tenantId: user?.tenantId || null,
+      role: user?.role || null,
     },
   });
 }
