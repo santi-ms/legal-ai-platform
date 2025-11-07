@@ -6,8 +6,8 @@ function jsonError(status: number, message: string, extra: Record<string, unknow
 }
 
 export async function GET(req: NextRequest) {
+  const target = new URL(apiUrl("/documents"));
   try {
-    const target = new URL(apiUrl("/documents"));
     const incoming = new URL(req.url);
     incoming.searchParams.forEach((value, key) => target.searchParams.set(key, value));
 
@@ -32,14 +32,15 @@ export async function GET(req: NextRequest) {
     }
 
     const text = await response.text();
-    return jsonError(response.status || 502, "Upstream no devolvió JSON", {
+    return jsonError(502, "Upstream no devolvió JSON", {
+      status: response.status,
       contentType,
       bodyPreview: text.slice(0, 500),
       target: target.toString(),
     });
   } catch (err: any) {
     return jsonError(500, "Proxy error", {
-      target: apiUrl("/documents"),
+      target: target.toString(),
       error: err?.message || String(err),
     });
   }
