@@ -11,94 +11,81 @@ generator client {
 }
 
 model Tenant {
-  id        String      @id @default(uuid())
-  name      String
+  id        String      @id @default(cuid())
+  name      String      @unique
   users     User[]
   documents Document[]
-  logs      IAUsageLog[]   // 👈 inversa a IAUsageLog.tenant
+  logs      IAUsageLog[]
   createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 }
 
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
+  id            String   @id @default(cuid())
   name          String?
-  passwordHash  String   @map("password") // Mapeado a columna "password" existente en DB
-  role          String   // "owner" | "admin" | "editor" | "viewer"
-  emailVerified DateTime? // Fecha de verificación del email
+  email         String   @unique
+  passwordHash  String   @map("password")
+  emailVerified DateTime?
+  company       String?
+  role          String   @default("user")
+  tenantId      String?
 
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-
+  tenant          Tenant?     @relation(fields: [tenantId], references: [id])
   documentsCreated Document[] @relation("CreatedByUser")
   accounts         Account[]
   sessions         Session[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("User")
 }
 
 model Document {
-  id             String            @id @default(uuid())
-
-  // relación con Tenant
+  id             String            @id @default(cuid())
   tenantId       String
   tenant         Tenant            @relation(fields: [tenantId], references: [id])
-
-  // quién lo creó (User)
   createdById    String
   createdBy      User              @relation("CreatedByUser", fields: [createdById], references: [id])
-
-  type           String            // ej: "contrato_servicios"
-  jurisdiccion   String            // ej: "corrientes_capital"
-  tono           String            // ej: "comercial_claro"
-  estado         String            // "generated_text" | "ready_pdf" | "error"
+  type           String
+  jurisdiccion   String
+  tono           String
+  estado         String
   costUsd        Float?
-
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
-
   versions       DocumentVersion[]
-  logs           IAUsageLog[]      @relation("DocLogs") // 👈 inversa a IAUsageLog.document
+  logs           IAUsageLog[]      @relation("DocLogs")
 }
 
 model DocumentVersion {
-  id              String    @id @default(uuid())
-
-  documentId      String
-  document        Document  @relation(fields: [documentId], references: [id])
-
-  versionNumber   Int
-  rawText         String
-  pdfUrl          String?
-  hashSha256      String?
-  generatedBy     String    // "gpt-5", "claude", etc.
-  createdAt       DateTime  @default(now())
+  id            String   @id @default(cuid())
+  documentId    String
+  document      Document @relation(fields: [documentId], references: [id])
+  versionNumber Int
+  rawText       String
+  pdfUrl        String?
+  hashSha256    String?
+  generatedBy   String
+  createdAt     DateTime @default(now())
 }
-
 
 model IAUsageLog {
-  id               String   @id @default(uuid())
-
-  // Relación con Tenant
-  tenantId         String
-  tenant           Tenant   @relation(fields: [tenantId], references: [id])
-
-  // Relación opcional con Document
-  documentId       String?
-  document         Document? @relation("DocLogs", fields: [documentId], references: [id])
-
-  service          String   // "draft-service" | "review-service"
-  modelName        String   // "gpt-5"
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  documentId String?
+  document   Document? @relation("DocLogs", fields: [documentId], references: [id])
+  service    String
+  modelName  String
   promptTokens     Int
   completionTokens Int
-  costUsd          Float
-  timestamp        DateTime @default(now())
+  costUsd    Float
+  timestamp  DateTime @default(now())
 }
 
-// NextAuth models
 model Account {
-  id                String  @id @default(uuid())
+  id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
@@ -117,11 +104,12 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(uuid())
+  id           String   @id @default(cuid())
   sessionToken String   @unique
   userId       String
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
