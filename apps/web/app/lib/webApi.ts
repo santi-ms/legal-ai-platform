@@ -94,7 +94,7 @@ export async function listDocuments(
   params: DocumentsParams = {}
 ): Promise<DocumentsResponse> {
   const searchParams = new URLSearchParams();
-  
+
   if (params.query) searchParams.set("query", params.query);
   if (params.type) searchParams.set("type", params.type);
   if (params.jurisdiccion) searchParams.set("jurisdiccion", params.jurisdiccion);
@@ -105,19 +105,8 @@ export async function listDocuments(
   if (params.sort) searchParams.set("sort", params.sort);
 
   const queryString = searchParams.toString();
-  
-  // En Server Components, necesitamos usar la URL absoluta
-  // En Client Components, podemos usar la ruta relativa
-  const isServer = typeof window === "undefined";
-  const baseUrl = isServer 
-    ? (process.env.NEXTAUTH_URL || (process.env.VERCEL_URL 
-        ? `https://${process.env.VERCEL_URL}` 
-        : "http://localhost:3000"))
-    : "";
-  
-  const url = isServer
-    ? `${baseUrl}/api/_proxy/documents${queryString ? `?${queryString}` : ""}`
-    : `/api/_proxy/documents${queryString ? `?${queryString}` : ""}`;
+
+  const url = `/api/_proxy/documents${queryString ? `?${queryString}` : ""}`;
 
   return apiFetchJSON<DocumentsResponse>(url);
 }

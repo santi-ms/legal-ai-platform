@@ -2,11 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiUrl, generateJWT } from "../../utils";
 
 export async function GET(req: NextRequest) {
-  const url = apiUrl("/documents");
+  const url = apiUrl("/healthz");
   try {
-    const jwt = await generateJWT(req);
+    // Health no requiere auth, pero si el backend lo necesita podemos enviar token
+    let headers: Record<string, string> = {};
+    try {
+      const jwt = await generateJWT(req);
+      headers = { Authorization: `Bearer ${jwt}` };
+    } catch {
+      // ignorar si no hay sesión
+    }
+
     const response = await fetch(url, {
-      headers: { Authorization: `Bearer ${jwt}`, Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        ...headers,
+      },
       cache: "no-store",
     });
 

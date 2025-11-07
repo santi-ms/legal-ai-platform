@@ -6,9 +6,13 @@ import { NextRequest } from "next/server";
 
 type JwtAlgo = "HS256" | "RS256";
 
-function getApiBase() {
-  const base = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL;
-  if (!base) throw new Error("API base URL no configurada (API_URL/NEXT_PUBLIC_API_URL).");
+export function getApiBase() {
+  const raw = process.env.API_URL || "";
+  if (!raw) {
+    throw new Error("Falta API_URL (URL pública del backend en Railway)");
+  }
+
+  const base = raw.startsWith("http") ? raw : `https://${raw}`;
   return base.replace(/\/+$/, "");
 }
 
@@ -24,7 +28,6 @@ export async function getSessionSafe(req?: NextRequest) {
         console.warn("[getSessionSafe] No se encontró token en Route Handler");
         return null;
       }
-      console.log("[getSessionSafe] Token encontrado, user:", token.user?.id || token.sub);
       // Convertir token a formato de sesión
       return {
         user: {
