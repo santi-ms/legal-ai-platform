@@ -1,12 +1,9 @@
 import { withAuth } from "next-auth/middleware";
 import { NextRequest, NextResponse } from "next/server";
 
-const PROXY_EXCLUDE = [/^\/api\/\_proxy(\/|$)/];
-
 export default withAuth(
-  function middleware(req: NextRequest) {
-    const pathname = req.nextUrl.pathname;
-    if (PROXY_EXCLUDE.some((re) => re.test(pathname))) {
+  function middleware(request: NextRequest) {
+    if (request.nextUrl.pathname.startsWith("/api/_proxy")) {
       return NextResponse.next();
     }
     return NextResponse.next();
@@ -24,5 +21,7 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/((?!api/_proxy).*)"],
+  matcher: [
+    "/((?!api/_proxy|_next|favicon.ico|assets|images|public).*)",
+  ],
 };
