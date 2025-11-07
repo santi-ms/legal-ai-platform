@@ -139,41 +139,7 @@ export async function apiGet<T = any>(
  */
 export async function getDocuments() {
   try {
-    // En Server Components, necesitamos usar la URL absoluta
-    // En Client Components, podemos usar la ruta relativa
-    const isServer = typeof window === "undefined";
-    const baseUrl = isServer 
-      ? (process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
-          ? `https://${process.env.VERCEL_URL}` 
-          : "http://localhost:3000")
-      : "";
-    
-    const proxyUrl = isServer 
-      ? `${baseUrl}/api/_proxy/documents`
-      : `/api/_proxy/documents`;
-    
-    const response = await fetch(proxyUrl, { 
-      cache: "no-store",
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-    
-    // Verificar que la respuesta sea JSON
-    const contentType = response.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      const text = await response.text();
-      console.error("[getDocuments] Respuesta no es JSON:", text.substring(0, 200));
-      throw new Error("El servidor devolvió una respuesta inválida");
-    }
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || data.error || `HTTP error! status: ${response.status}`);
-    }
-    
-    return data;
+    return apiFetchJSON("/api/_proxy/documents");
   } catch (error) {
     console.error('Error fetching documents:', error);
     throw error;
@@ -186,40 +152,7 @@ export async function getDocuments() {
  */
 export async function getDocument(id: string) {
   try {
-    // Usar el proxy server-side que maneja la autenticación automáticamente
-    const isServer = typeof window === "undefined";
-    const baseUrl = isServer 
-      ? (process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
-          ? `https://${process.env.VERCEL_URL}` 
-          : "http://localhost:3000")
-      : "";
-    
-    const proxyUrl = isServer 
-      ? `${baseUrl}/api/_proxy/documents/${id}`
-      : `/api/_proxy/documents/${id}`;
-    
-    const response = await fetch(proxyUrl, { 
-      cache: "no-store",
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-    
-    // Verificar que la respuesta sea JSON
-    const contentType = response.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      const text = await response.text();
-      console.error("[getDocument] Respuesta no es JSON:", text.substring(0, 200));
-      throw new Error("El servidor devolvió una respuesta inválida");
-    }
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || data.error || `HTTP error! status: ${response.status}`);
-    }
-    
-    return data;
+    return apiFetchJSON(`/api/_proxy/documents/${id}`);
   } catch (error) {
     console.error('Error fetching document:', error);
     throw error;

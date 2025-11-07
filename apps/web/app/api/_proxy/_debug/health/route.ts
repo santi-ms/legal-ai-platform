@@ -1,8 +1,10 @@
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
-import { apiUrl, generateJWT } from "../../utils";
+import { backendPath, generateJWT } from "../../utils";
 
 export async function GET(req: NextRequest) {
-  const url = apiUrl("/healthz");
+  const url = backendPath("healthz");
   try {
     // Health no requiere auth, pero si el backend lo necesita podemos enviar token
     let headers: Record<string, string> = {};

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { apiUrl, getApiBase } from "../../utils";
+import { backendPath, getApiBase } from "../../utils";
 
 export async function GET() {
   const apiBase = getApiBase();
-  const docsUrl = apiUrl("/documents");
+  const docsUrl = backendPath("documents");
   return NextResponse.json({ ok: true, apiBase, docsUrl });
 }
 

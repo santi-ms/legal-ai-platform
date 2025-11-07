@@ -2,16 +2,15 @@ import jwt from "jsonwebtoken";
 import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 type JwtAlgo = "HS256" | "RS256";
 
 export function getApiBase() {
-  const raw = process.env.API_URL || "";
+  const raw = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "";
   if (!raw) {
-    throw new Error("Falta API_URL (URL pública del backend en Railway)");
+    throw new Error("API_URL not set");
   }
-
   const base = raw.startsWith("http") ? raw : `https://${raw}`;
   return base.replace(/\/+$/, "");
 }
@@ -24,17 +23,36 @@ export function getWebOrigin() {
 }
 
 export function joinUrl(base: string, path: string) {
-  const root = base.replace(/\/+$/, "");
-  const segment = path.replace(/^\/+/, "");
-  return `${root}/${segment}`;
+  return `${base.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
 }
 
 const BACKEND_PREFIX = (process.env.BACKEND_PREFIX || "").replace(/^\/+|\/+$/g, "");
 
 export function backendPath(path: string) {
   const clean = path.replace(/^\/+/, "");
-  const full = BACKEND_PREFIX ? `${BACKEND_PREFIX}/${clean}` : clean;
-  return joinUrl(getApiBase(), full);
+  const prefixed = BACKEND_PREFIX ? `${BACKEND_PREFIX}/${clean}` : clean;
+  return joinUrl(getApiBase(), prefixed);
+}
+
+export function badGatewayFromHtml(status: number, html: string) {
+  return NextResponse.json(
+    { ok: false, message: "Upstream non-JSON", status, snippet: html.slice(0, 800) },
+    { status: 502 }
+  );
+}
+
+export function apiJsonOrHtml(res: Response) {
+  const ct = res.headers.get("content-type") || "";
+  return ct.includes("application/json");
+}
+
+export function bearer(headers: Headers) {
+  const auth = headers.get("authorization") || "";
+  return auth;
+}
+
+export function serverBearer() {
+  return "";
 }
 
 export async function getSessionSafe(req?: NextRequest) {

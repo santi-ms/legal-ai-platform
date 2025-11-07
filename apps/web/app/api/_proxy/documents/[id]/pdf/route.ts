@@ -1,8 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
-import { apiUrl, generateJWT } from "../../../utils";
+export const runtime = "nodejs";
 
-function jsonError(status: number, message: string, detail?: any) {
-  return NextResponse.json({ ok: false, message, detail }, { status });
+import { NextRequest, NextResponse } from "next/server";
+import {
+  backendPath,
+  bearer,
+  generateJWT,
+  badGatewayFromHtml,
+  serverBearer,
+} from "../../../utils";
+
+function jsonError(status: number, message: string, extra: Record<string, unknown> = {}) {
+  return NextResponse.json({ ok: false, message, ...extra }, { status });
 }
 
 /**
@@ -13,14 +21,16 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const target = backendPath(`documents/${params.id}/pdf`);
   try {
     const jwt = await generateJWT(request);
-    const url = apiUrl(`/documents/${params.id}/pdf`);
+    const authHeader = bearer(request.headers) || (jwt ? `Bearer ${jwt}` : serverBearer());
 
-    const response = await fetch(url, {
+    console.debug(`[proxy/documents.pdf] ->`, target);
+    const response = await fetch(target, {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${jwt}`,
+        ...(authHeader ? { authorization: authHeader } : {}),
       },
       cache: "no-store",
     });
@@ -28,16 +38,16 @@ export async function GET(
     if (!response.ok) {
       // Si el backend devuelve JSON de error, parsearlo
       const ct = response.headers.get("content-type") || "";
+      console.debug(`[proxy/documents.pdf] <-`, response.status, ct);
       if (ct.includes("application/json")) {
         const errorData = await response.json().catch(() => ({}));
-        return jsonError(response.status, errorData.message || "Error al obtener PDF");
+        return jsonError(response.status, errorData.message || "Error al obtener PDF", {
+          target,
+        });
       }
       // Si devuelve HTML u otro formato, devolver error JSON
       const text = await response.text();
-      return jsonError(response.status, "Error al obtener PDF", {
-        contentType: ct,
-        bodyPreview: text.slice(0, 500),
-      });
+      return badGatewayFromHtml(response.status, text);
     }
 
     // Stream del PDF con headers seguros
@@ -46,6 +56,7 @@ export async function GET(
     // Sanitizar filename para evitar path traversal
     const sanitizedFilename = `documento-${params.id.replace(/[^a-zA-Z0-9-_]/g, "")}.pdf`;
     
+    console.debug(`[proxy/documents.pdf] <-`, response.status, "application/pdf");
     return new NextResponse(pdfBuffer, {
       status: 200,
       headers: {
@@ -56,6 +67,9 @@ export async function GET(
       },
     });
   } catch (err: any) {
-    return jsonError(500, "Proxy error", err?.message || String(err));
+    return jsonError(500, "Proxy error", {
+      target,
+      error: err?.message || String(err),
+    });
   }
 }

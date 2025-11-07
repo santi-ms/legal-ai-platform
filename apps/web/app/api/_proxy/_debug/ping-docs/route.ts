@@ -1,8 +1,10 @@
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
-import { apiUrl, generateJWT } from "../../utils";
+import { backendPath, generateJWT } from "../../utils";
 
 export async function GET(req: NextRequest) {
-  const url = apiUrl("/documents");
+  const url = backendPath("documents");
   try {
     const jwt = await generateJWT(req);
     const response = await fetch(url, {

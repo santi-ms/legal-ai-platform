@@ -1,8 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
-import { apiUrl, generateJWT } from "../../utils";
+export const runtime = "nodejs";
 
-function jsonError(status: number, message: string, detail?: any) {
-  return NextResponse.json({ ok: false, message, detail }, { status });
+import { NextRequest, NextResponse } from "next/server";
+import {
+  backendPath,
+  bearer,
+  generateJWT,
+  apiJsonOrHtml,
+  badGatewayFromHtml,
+  serverBearer,
+} from "../../utils";
+
+function jsonError(status: number, message: string, extra: Record<string, unknown> = {}) {
+  return NextResponse.json({ ok: false, message, ...extra }, { status });
 }
 
 /**
@@ -37,15 +46,16 @@ async function handleRequest(
   id: string,
   method: "GET" | "PATCH" | "DELETE"
 ) {
+  const target = backendPath(`documents/${id}`);
   try {
     const jwt = await generateJWT(request);
-    const url = apiUrl(`/documents/${id}`);
+    const authHeader = bearer(request.headers) || (jwt ? `Bearer ${jwt}` : serverBearer());
 
     const options: RequestInit = {
       method,
       headers: {
-        Authorization: `Bearer ${jwt}`,
-        Accept: "application/json",
+        accept: "application/json",
+        ...(authHeader ? { authorization: authHeader } : {}),
       },
       cache: "no-store",
     };
@@ -57,22 +67,24 @@ async function handleRequest(
       (options.headers as any)["Content-Type"] = "application/json";
     }
 
-    const response = await fetch(url, options);
+    console.debug(`[proxy documents ${method}] ->`, target);
+    const response = await fetch(target, options);
 
-    const ct = response.headers.get("content-type") || "";
-    if (ct.includes("application/json")) {
+    const contentType = response.headers.get("content-type") || "";
+    console.debug(`[proxy documents ${method}] <-`, response.status, contentType);
+
+    if (apiJsonOrHtml(response)) {
       const json = await response.json().catch(() => null);
-      if (!json) return jsonError(502, "JSON inválido desde API");
+      if (!json) return jsonError(502, "JSON inválido desde API", { target });
       return NextResponse.json(json, { status: response.status });
     }
 
     const text = await response.text();
-    return jsonError(response.status || 502, "Upstream no devolvió JSON", {
-      contentType: ct,
-      bodyPreview: text.slice(0, 500),
-      url: url.toString(),
-    });
+    return badGatewayFromHtml(response.status, text);
   } catch (err: any) {
-    return jsonError(500, "Proxy error", err?.message || String(err));
+    return jsonError(500, "Proxy error", {
+      target,
+      error: err?.message || String(err),
+    });
   }
 }

@@ -1,15 +1,19 @@
 import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+
+const PROXY_EXCLUDE = [/^\/api\/\_proxy(\/|$)/];
 
 export default withAuth(
-  function middleware(req) {
-    // Middleware simple - solo pasar la request si está autorizado
+  function middleware(req: NextRequest) {
+    const pathname = req.nextUrl.pathname;
+    if (PROXY_EXCLUDE.some((re) => re.test(pathname))) {
+      return NextResponse.next();
+    }
     return NextResponse.next();
   },
   {
     callbacks: {
       authorized: ({ token }) => {
-        // Si hay token, está autorizado
         return !!token;
       },
     },

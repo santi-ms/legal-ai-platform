@@ -41,6 +41,22 @@ npm run dev
 - **API**: http://localhost:4001
 - **PDF Service**: http://localhost:4100
 
+### Variables de entorno clave
+
+| Variable        | Descripción                                                                 | Ejemplo                                           |
+|-----------------|------------------------------------------------------------------------------|---------------------------------------------------|
+| `NEXTAUTH_URL`  | URL pública del frontend (sin slash final)                                   | `https://legal-ai-platform.vercel.app`            |
+| `API_URL`       | URL pública del backend en Railway (sin slash final, usada por el proxy)     | `https://api-production-8cad.up.railway.app`      |
+| `BACKEND_PREFIX` (opcional) | Prefijo global del backend (por ejemplo `api` si las rutas viven en `/api/*`) | `api`                                             |
+
+> ⚠️ El proxy de `apps/web/app/api/_proxy/*` **siempre** usa `API_URL` para hablar con el backend. Asegurate de no incluir la barra final y definilo en todos los entornos (Vercel, local, CI).
+
+Endpoints de diagnóstico útiles una vez desplegado:
+
+- `/api/_proxy/_debug/where` → muestra el `apiBase` y la URL exacta hacia `/documents`.
+- `/api/_proxy/_debug/health` → ejecuta `/healthz` en el backend.
+- `/api/_proxy/_debug/ping-docs` → reenvía a `/documents` mostrando `status`, `contentType` y un preview del cuerpo.
+
 ---
 
 ## ✨ Características Principales

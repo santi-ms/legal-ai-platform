@@ -2,12 +2,11 @@ import Link from "next/link";
 import { DashboardShell } from "@/app/components/DashboardShell";
 import { DocumentStatusBadge } from "@/app/components/DocumentStatusBadge";
 import { Button } from "@/components/ui/button";
-import { listDocuments, apiFetchJSON, DocumentsResponse } from "@/app/lib/webApi";
+import { listDocuments } from "@/app/lib/webApi";
 import { formatDate, formatDocumentType } from "@/app/lib/format";
 import { FileText, Download, Eye, Plus } from "lucide-react";
 
-// Force dynamic rendering
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const mockDocuments = [
@@ -28,25 +27,12 @@ export default async function DocumentsPage() {
   let error: string | null = null;
 
   try {
-    // Usar apiFetchJSON que garantiza JSON y maneja el proxy server-side
-    const isServer = typeof window === "undefined";
-    const baseUrl = isServer 
-      ? (process.env.NEXTAUTH_URL || (process.env.VERCEL_URL 
-          ? `https://${process.env.VERCEL_URL}` 
-          : "http://localhost:3000"))
-      : "";
-    
-    const url = isServer
-      ? `${baseUrl}/api/_proxy/documents`
-      : `/api/_proxy/documents`;
-    
-    const data = await apiFetchJSON<DocumentsResponse>(url);
-    
+    const data = await listDocuments();
     if (data.ok && data.items) {
       documents = data.items;
     } else {
-      documents = mockDocuments;
       error = data.message || data.error || "No se pudieron cargar los documentos";
+      documents = mockDocuments;
     }
   } catch (err: any) {
     console.error("Error loading documents:", err);
