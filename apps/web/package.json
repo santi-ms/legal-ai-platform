@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "NEXT_TELEMETRY_DISABLED=1 next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "echo \"[web] no prisma generate\""
+    "postinstall": "echo \"[web] skipping prisma generate\""
   },
   "dependencies": {
     "@babel/runtime": "^7.28.4",
