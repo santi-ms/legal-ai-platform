@@ -1,48 +1,48 @@
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const dynamic = "force-dynamic";
 
-import React from 'react';
+import React from "react";
+import { listDocuments, DocumentsResponse } from "@/app/lib/webApi";
 
 type DocumentsPageProps = {
-  searchParams: Record<string, string>;
+  searchParams: Record<string, string | string[]>;
 };
 
-type DocumentsResponse = {
-  ok?: boolean;
-  data?: unknown;
-  message?: string;
-  error?: string;
-  total?: number;
-};
+function normalizeSearchParams(searchParams: Record<string, string | string[]>): Record<string, string> {
+  const entries = Object.entries(searchParams).flatMap(([key, value]) => {
+    if (Array.isArray(value)) {
+      return value.length > 0 ? [[key, value[0]]] : [];
+    }
+    return value ? [[key, value]] : [];
+  });
+  return Object.fromEntries(entries);
+}
 
 export default async function DocumentsPage({ searchParams }: DocumentsPageProps) {
-  const params = new URLSearchParams(searchParams);
-  const qs = params.toString();
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
-  const url = `${basePath}/api/_proxy/documents${qs ? `?${qs}` : ''}`;
+  try {
+    const filters = normalizeSearchParams(searchParams ?? {});
+    const data = (await listDocuments(filters)) as DocumentsResponse;
+    const rows = Array.isArray((data as any)?.items) ? (data as any).items : (data as any)?.data ?? [];
+    const total = typeof data?.total === "number" ? data.total : Array.isArray(rows) ? rows.length : 0;
 
-  const res = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
-    cache: 'no-store',
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Error ${res.status}: ${text}`);
+    return (
+      <div className="p-6 space-y-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Dashboard de Documentos</h1>
+          <p className="text-sm opacity-70">{total} documentos en total</p>
+        </div>
+        <pre className="text-xs bg-black/10 rounded p-4 overflow-auto">
+          {JSON.stringify(data, null, 2)}
+        </pre>
+      </div>
+    );
+  } catch (error: any) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-2">
+        <h2 className="text-xl font-semibold">Error al cargar documentos</h2>
+        <p className="text-sm opacity-70 text-center max-w-lg">
+          {error?.message || "Error desconocido"}
+        </p>
+      </div>
+    );
   }
-
-  const data = (await res.json()) as DocumentsResponse;
-  const rows: unknown[] = Array.isArray((data as any).data) ? ((data as any).data as unknown[]) : [];
-  const total = typeof data.total === 'number' ? data.total : rows.length;
-
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-2">Dashboard de Documentos</h1>
-      <p className="text-sm opacity-70 mb-4">{total} documentos en total</p>
-      <pre className="text-xs bg-black/10 rounded p-4 overflow-auto">{JSON.stringify(data, null, 2)}</pre>
-    </div>
-  );
 }

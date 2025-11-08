@@ -8,6 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const API_URL = process.env.API_URL!;
+// Prefijo vacío por defecto (tu backend expone /documents en la raíz)
 const BACKEND_PREFIX = (process.env.BACKEND_PREFIX ?? "").replace(/^\/|\/$/g, "");
 const withPrefix = (p: string) =>
   BACKEND_PREFIX ? `/${BACKEND_PREFIX}${p.startsWith("/") ? p : `/${p}`}` : p;
@@ -38,12 +39,13 @@ async function proxy(req: NextRequest, { params }: { params: { path: string[] } 
   const targetUrl = `${API_URL}${targetPath}${search}`;
 
   const incomingHeaders = new Headers(req.headers);
+  // Nunca forwardear cookies del frontend → backend
   incomingHeaders.delete("cookie");
 
   const authHeader = await buildAuthHeader();
   Object.entries(authHeader).forEach(([k, v]) => incomingHeaders.set(k, v as string));
 
-  let body: BodyInit | undefined = undefined;
+  let body: BodyInit | null | undefined;
   if (!["GET", "HEAD"].includes(method)) {
     const ct = incomingHeaders.get("content-type") || "";
     if (ct.includes("application/json")) {

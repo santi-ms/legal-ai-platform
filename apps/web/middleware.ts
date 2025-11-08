@@ -1,9 +1,11 @@
 import { withAuth } from "next-auth/middleware";
 import { NextRequest, NextResponse } from "next/server";
 
+const PROXY_PREFIX = "/api/_proxy";
+
 export default withAuth(
   function middleware(request: NextRequest) {
-    if (request.nextUrl.pathname.startsWith("/api/_proxy")) {
+    if (request.nextUrl.pathname.startsWith(PROXY_PREFIX)) {
       return NextResponse.next();
     }
     return NextResponse.next();
