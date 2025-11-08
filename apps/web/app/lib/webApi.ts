@@ -1,8 +1,9 @@
+import { backendFetchJSON } from "@/app/lib/server-api";
+
 /**
  * Helper client-side para llamar al proxy de documentos
  * Todas las requests van por el proxy server-side que inyecta el JWT
  */
-
 export interface Document {
   id: string;
   type: string;
@@ -91,24 +92,24 @@ export async function apiFetchJSON<T = any>(
  * Funciona tanto en Server Components como en Client Components
  */
 export async function listDocuments(
-  params: DocumentsParams = {}
+  params?: Record<string, any> | URLSearchParams
 ): Promise<DocumentsResponse> {
-  const searchParams = new URLSearchParams();
+  let qs = "";
+  if (params instanceof URLSearchParams) {
+    const serialized = params.toString();
+    qs = serialized ? `?${serialized}` : "";
+  } else if (params && typeof params === "object") {
+    const usp = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && `${value}` !== "") {
+        usp.set(key, `${value}`);
+      }
+    }
+    const serialized = usp.toString();
+    qs = serialized ? `?${serialized}` : "";
+  }
 
-  if (params.query) searchParams.set("query", params.query);
-  if (params.type) searchParams.set("type", params.type);
-  if (params.jurisdiccion) searchParams.set("jurisdiccion", params.jurisdiccion);
-  if (params.from) searchParams.set("from", params.from);
-  if (params.to) searchParams.set("to", params.to);
-  if (params.page) searchParams.set("page", params.page.toString());
-  if (params.pageSize) searchParams.set("pageSize", params.pageSize.toString());
-  if (params.sort) searchParams.set("sort", params.sort);
-
-  const queryString = searchParams.toString();
-
-  const url = `/api/_proxy/documents${queryString ? `?${queryString}` : ""}`;
-
-  return apiFetchJSON<DocumentsResponse>(url);
+  return backendFetchJSON<DocumentsResponse>(`/documents${qs}`);
 }
 
 /**
