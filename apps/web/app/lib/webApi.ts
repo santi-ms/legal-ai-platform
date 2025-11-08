@@ -1,3 +1,5 @@
+import { backendFetchJSON } from "@/app/lib/server-api";
+
 /**
  * Helper client-side para llamar al proxy de documentos
  * Todas las requests van por el proxy server-side que inyecta el JWT
@@ -107,8 +109,7 @@ export async function listDocuments(
     qs = serialized ? `?${serialized}` : "";
   }
 
-  const url = `/api/_proxy/documents${qs}`;
-  return apiFetchJSON<DocumentsResponse>(url);
+  return backendFetchJSON<DocumentsResponse>(`/documents${qs}`);
 }
 
 /**

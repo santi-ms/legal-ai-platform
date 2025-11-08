@@ -34,5 +34,27 @@ export default async function DocumentsPage({
     );
   }
 
-  return <div>{/* TODO: tu tabla con data */}</div>;
+  const rows = Array.isArray((data as any)?.items)
+    ? (data as any).items
+    : Array.isArray((data as any)?.data)
+    ? (data as any).data
+    : [];
+  const total =
+    typeof (data as any)?.total === "number"
+      ? (data as any).total
+      : Array.isArray(rows)
+      ? rows.length
+      : 0;
+
+  return (
+    <div className="p-6 space-y-4">
+      <div>
+        <h1 className="text-2xl font-semibold">Dashboard de Documentos</h1>
+        <p className="text-sm opacity-70">{total} documentos en total</p>
+      </div>
+      <pre className="text-xs bg-black/10 rounded p-4 overflow-auto">
+        {JSON.stringify(data, null, 2)}
+      </pre>
+    </div>
+  );
 }
