@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { listDocuments } from "@/app/lib/webApi";
+import { listDocumentsServer } from "@/app/lib/webApi";
 
 type DocumentsPageProps = {
   searchParams: Record<string, string | string[] | undefined>;
@@ -20,7 +20,7 @@ export default async function DocumentsPage({
 
   let data: any;
   try {
-    data = await listDocuments(flat);
+    data = await listDocumentsServer(flat);
   } catch (e: any) {
     return (
       <div className="mx-auto max-w-xl py-16 text-center">
