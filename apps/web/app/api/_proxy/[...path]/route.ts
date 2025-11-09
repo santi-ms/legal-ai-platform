@@ -1,27 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const API_URL = process.env.API_URL!;
-const TIMEOUT_MS = 20000;
 
-function jsonError(status: number, info: Record<string, unknown>) {
-  return NextResponse.json({ ok: false, ...info }, { status });
-}
-
-async function doProxy(req: NextRequest, params: { path: string[] }) {
+async function handler(req: Request, ctx: { params: { path?: string[] } }) {
   if (!API_URL) {
-    return jsonError(500, { message: "API_URL not configured" });
+    return Response.json(
+      { ok: false, error: "MISSING_API_URL" },
+      { status: 500 }
+    );
   }
 
-  const path = params.path?.length ? `/${params.path.join("/")}` : "/";
-  const url = new URL(API_URL);
-  const target = `${url.origin}${path}${req.nextUrl.search || ""}`;
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
+  const path = (ctx.params.path ?? []).join("/");
+  const url = new URL(req.url);
+  const search = url.search ?? "";
+  const target = `${API_URL}/${path}${search}`;
   const headers = new Headers(req.headers);
-  headers.set("x-forwarded-host", req.headers.get("host") || "");
-  headers.set("x-proxy", "next");
+  headers.delete("host");
+  headers.delete("x-forwarded-host");
+  headers.delete("x-forwarded-proto");
 
   const init: RequestInit = {
     method: req.method,
@@ -29,52 +26,37 @@ async function doProxy(req: NextRequest, params: { path: string[] }) {
     body: ["GET", "HEAD"].includes(req.method)
       ? undefined
       : await req.arrayBuffer(),
-    signal: controller.signal,
+    cache: "no-store",
     redirect: "manual",
   };
 
+  let upstream: Response;
   try {
-    const upstream = await fetch(target, init);
-    const ct = upstream.headers.get("content-type") || "";
-    const status = upstream.status;
-
-    if (ct.includes("application/json")) {
-      const body = await upstream.text();
-      clearTimeout(timer);
-      return new NextResponse(body, {
-        status,
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
-    }
-
-    const text = await upstream.text();
-    clearTimeout(timer);
-    return jsonError(502, {
-      message: "Upstream non-JSON",
-      status,
-      contentType: ct,
-      snippet: text.slice(0, 400),
-      target,
-    });
+    upstream = await fetch(target, init);
   } catch (err: any) {
-    clearTimeout(timer);
-    return jsonError(502, {
-      message: "Proxy failed",
-      error: String(err?.message || err),
-      target,
-    });
+    return Response.json(
+      { ok: false, error: "UPSTREAM_FETCH_FAILED", detail: String(err) },
+      { status: 502 }
+    );
   }
+
+  const ct = upstream.headers.get("content-type") || "";
+  if (ct.includes("text/html")) {
+    const snippet = (await upstream.text()).slice(0, 400);
+    return Response.json(
+      {
+        ok: false,
+        error: "UPSTREAM_NON_JSON",
+        status: upstream.status,
+        snippet,
+      },
+      { status: upstream.status === 200 ? 502 : upstream.status }
+    );
+  }
+
+  const body = new Uint8Array(await upstream.arrayBuffer());
+  const headersOut = new Headers(upstream.headers);
+  return new Response(body, { status: upstream.status, headers: headersOut });
 }
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return doProxy(req, params);
-}
-export const POST = GET;
-export const PUT = GET;
-export const PATCH = GET;
-export const DELETE = GET;
-export const HEAD = GET;
-export const OPTIONS = GET;
+export { handler as GET, handler as POST, handler as PUT, handler as PATCH, handler as DELETE, handler as OPTIONS };
