@@ -87,10 +87,16 @@ function DashboardContent() {
     try {
       const currentFilters = getFiltersFromUrl();
       const response = await listDocuments(currentFilters);
-      
-      setDocuments(response.items);
-      setTotal(response.total);
-      setCurrentPage(response.page);
+
+      setDocuments(Array.isArray(response.documents) ? response.documents : []);
+      setTotal(
+        typeof response.total === "number"
+          ? response.total
+          : Array.isArray(response.documents)
+          ? response.documents.length
+          : 0
+      );
+      setCurrentPage(typeof response.page === "number" ? response.page : 1);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al cargar documentos";
       setError(message);

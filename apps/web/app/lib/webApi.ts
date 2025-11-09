@@ -20,23 +20,6 @@ export interface Document {
   } | null;
 }
 
-export interface DocumentsResponse {
-  ok: boolean;
-  items: Document[];
-  total: number;
-  page: number;
-  pageSize: number;
-  message?: string;
-  error?: string;
-}
-
-export interface DocumentResponse {
-  ok: boolean;
-  document?: Document;
-  message?: string;
-  error?: string;
-}
-
 export interface DocumentsParams {
   query?: string;
   type?: string;
@@ -48,135 +31,163 @@ export interface DocumentsParams {
   sort?: "createdAt:asc" | "createdAt:desc";
 }
 
-/**
- * Helper "content-type aware" que nunca parsea HTML como JSON
- */
-export async function apiFetchJSON<T = any>(
-  input: RequestInfo | URL,
+export type DocumentApiResponse = {
+  ok?: boolean;
+  document?: Document;
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
+};
+
+const PROXY_BASE = "/api/_proxy";
+
+export type ListDocumentsResult = {
+  documents: Document[];
+  total: number;
+  page: number;
+  pageSize: number;
+  raw: unknown;
+  status: number;
+};
+
+function buildQuery(params?: URLSearchParams | DocumentsParams | Record<string, any>) {
+  if (!params) return "";
+  if (params instanceof URLSearchParams) {
+    const qs = params.toString();
+    return qs ? `?${qs}` : "";
+  }
+
+  const usp = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null) return;
+    const stringValue = Array.isArray(value) ? value[0] : String(value);
+    if (stringValue !== "") {
+      usp.set(key, stringValue);
+    }
+  });
+  const serialized = usp.toString();
+  return serialized ? `?${serialized}` : "";
+}
+
+function isJson(resp: Response) {
+  const ct = resp.headers.get("content-type") || "";
+  return ct.includes("application/json");
+}
+
+async function readJson(resp: Response) {
+  if (!isJson(resp)) {
+    const snippet = (await resp.text().catch(() => "")).slice(0, 400);
+    throw new Error(`Proxy non-JSON: status=${resp.status}, snippet=${snippet}`);
+  }
+
+  try {
+    return await resp.json();
+  } catch {
+    throw new Error(`JSON inválido (status ${resp.status}).`);
+  }
+}
+
+async function proxyJson<T = any>(
+  path: string,
   init: RequestInit = {}
-): Promise<T> {
-  const res = await fetch(input, {
+): Promise<{ status: number; data: T }> {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  const headers = new Headers(init.headers as HeadersInit | undefined);
+  if (!headers.has("Accept")) {
+    headers.set("Accept", "application/json");
+  }
+
+  const resp = await fetch(`${PROXY_BASE}${normalized}`, {
     ...init,
-    headers: { Accept: "application/json", ...(init.headers || {}) },
+    headers,
     cache: "no-store",
   });
 
-  const ct = res.headers.get("content-type") || "";
-  if (!ct.includes("application/json")) {
-    const text = await res.text().catch(() => "");
-    const preview = text.slice(0, 400);
-    throw new Error(
-      `Respuesta no-JSON (status ${res.status}, ct="${ct}"). body="${preview}"`
-    );
+  const data = await readJson(resp);
+
+  if (!resp.ok || (data && typeof data === "object" && "ok" in data && (data as any).ok === false)) {
+    const message =
+      (data as any)?.message ||
+      (data as any)?.error ||
+      `Error ${resp.status}`;
+    throw new Error(message);
   }
 
-  let data: any;
-  try {
-    data = await res.json();
-  } catch {
-    throw new Error(`JSON inválido (status ${res.status}).`);
-  }
-
-  if (!res.ok || data?.ok === false) {
-    const msg = data?.message || data?.error || `Error ${res.status}`;
-    throw new Error(msg);
-  }
-
-  return data as T;
+  return { status: resp.status, data: data as T };
 }
 
-/**
- * Lista documentos con filtros y paginación
- * Funciona tanto en Server Components como en Client Components
- */
 export async function listDocuments(
-  params: DocumentsParams = {}
-): Promise<DocumentsResponse> {
-  const searchParams = new URLSearchParams();
+  params?: URLSearchParams | DocumentsParams | Record<string, any>
+): Promise<ListDocumentsResult> {
+  const qs = buildQuery(params);
+  const { status, data } = await proxyJson<any>(`/documents${qs}`);
 
-  if (params.query) searchParams.set("query", params.query);
-  if (params.type) searchParams.set("type", params.type);
-  if (params.jurisdiccion) searchParams.set("jurisdiccion", params.jurisdiccion);
-  if (params.from) searchParams.set("from", params.from);
-  if (params.to) searchParams.set("to", params.to);
-  if (params.page) searchParams.set("page", params.page.toString());
-  if (params.pageSize) searchParams.set("pageSize", params.pageSize.toString());
-  if (params.sort) searchParams.set("sort", params.sort);
+  const documents = Array.isArray(data?.items)
+    ? data.items
+    : Array.isArray(data?.data)
+    ? data.data
+    : Array.isArray(data)
+    ? data
+    : [];
 
-  const queryString = searchParams.toString();
+  const total =
+    typeof data?.total === "number"
+      ? data.total
+      : Array.isArray(documents)
+      ? documents.length
+      : 0;
 
-  const url = `/api/_proxy/documents${queryString ? `?${queryString}` : ""}`;
+  const page = typeof data?.page === "number" ? data.page : 1;
+  const pageSize =
+    typeof data?.pageSize === "number"
+      ? data.pageSize
+      : typeof data?.limit === "number"
+      ? data.limit
+      : documents.length || 20;
 
-  return apiFetchJSON<DocumentsResponse>(url);
+  return {
+    documents,
+    total,
+    page,
+    pageSize,
+    raw: data,
+    status,
+  };
 }
 
-export async function listDocumentsServer(
-  params?: DocumentsParams | Record<string, any> | URLSearchParams
-): Promise<DocumentsResponse> {
-  const { backendFetchJSON } = await import("@/app/lib/server-api");
-
-  let qs = "";
-  if (params instanceof URLSearchParams) {
-    const serialized = params.toString();
-    qs = serialized ? `?${serialized}` : "";
-  } else if (params && typeof params === "object") {
-    const usp = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== null && `${value}` !== "") {
-        usp.set(key, `${value}`);
-      }
-    }
-    const serialized = usp.toString();
-    qs = serialized ? `?${serialized}` : "";
-  }
-
-  return backendFetchJSON<DocumentsResponse>(`/documents${qs}`);
+export async function getDocument(id: string) {
+  const { data } = await proxyJson<DocumentApiResponse>(`/documents/${id}`);
+  return data;
 }
 
-/**
- * Obtiene un documento por ID
- */
-export async function getDocument(id: string): Promise<DocumentResponse> {
-  return apiFetchJSON<DocumentResponse>(`/api/_proxy/documents/${id}`);
-}
-
-/**
- * Duplica un documento
- */
-export async function duplicateDocument(id: string): Promise<{ ok: boolean; data: { id: string }; message?: string }> {
-  return apiFetchJSON(`/api/_proxy/documents/${id}/duplicate`, {
+export async function duplicateDocument(id: string) {
+  const { data } = await proxyJson(`/documents/${id}/duplicate`, {
     method: "POST",
   });
+  return data as { ok: boolean; data?: { id: string }; message?: string };
 }
 
-/**
- * Elimina un documento
- */
-export async function deleteDocument(id: string): Promise<{ ok: boolean; message?: string }> {
-  return apiFetchJSON(`/api/_proxy/documents/${id}`, {
+export async function deleteDocument(id: string) {
+  const { data } = await proxyJson(`/documents/${id}`, {
     method: "DELETE",
   });
+  return data as { ok: boolean; message?: string };
 }
 
-/**
- * Actualiza metadatos de un documento
- */
 export async function patchDocument(
   id: string,
   payload: { type?: string; jurisdiccion?: string; tono?: string }
-): Promise<{ ok: boolean; document?: Document; message?: string }> {
-  return apiFetchJSON(`/api/_proxy/documents/${id}`, {
+) {
+  const { data } = await proxyJson(`/documents/${id}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
   });
+  return data as { ok: boolean; document?: Document; message?: string };
 }
 
-/**
- * Obtiene la URL del PDF (via proxy)
- */
 export function getPdfUrl(id: string): string {
-  return `/api/_proxy/documents/${id}/pdf`;
+  return `${PROXY_BASE}/documents/${id}/pdf`;
 }

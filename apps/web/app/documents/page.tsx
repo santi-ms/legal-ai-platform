@@ -1,60 +1,31 @@
 export const dynamic = "force-dynamic";
 
-import { listDocumentsServer } from "@/app/lib/webApi";
+import { listDocuments } from "@/app/lib/webApi";
+import { DocumentsTableSafe } from "@/components/dashboard/DocumentsTableSafe";
 
-type DocumentsPageProps = {
-  searchParams: Record<string, string | string[] | undefined>;
-};
+export default async function DocumentsPage() {
+  let documents: any[] = [];
+  let errorMsg: string | null = null;
 
-export default async function DocumentsPage({
-  searchParams,
-}: DocumentsPageProps) {
-  const flat: Record<string, string> = {};
-  for (const [key, value] of Object.entries(searchParams || {})) {
-    if (Array.isArray(value)) {
-      flat[key] = value[0] ?? "";
-    } else if (value) {
-      flat[key] = value;
-    }
-  }
-
-  let data: any;
   try {
-    data = await listDocumentsServer(flat);
-  } catch (e: any) {
-    return (
-      <div className="mx-auto max-w-xl py-16 text-center">
-        <h2 className="text-2xl font-semibold mb-4">
-          Error al cargar documentos
-        </h2>
-        <pre className="text-left text-sm whitespace-pre-wrap bg-red-950/20 border border-red-500/30 p-3 rounded">
-{String(e?.message ?? e)}
-        </pre>
-      </div>
-    );
+    const result = await listDocuments();
+    documents = Array.isArray(result.documents) ? result.documents : [];
+  } catch (err: any) {
+    errorMsg = err?.message || "Error al cargar documentos";
   }
-
-  const rows = Array.isArray((data as any)?.items)
-    ? (data as any).items
-    : Array.isArray((data as any)?.data)
-    ? (data as any).data
-    : [];
-  const total =
-    typeof (data as any)?.total === "number"
-      ? (data as any).total
-      : Array.isArray(rows)
-      ? rows.length
-      : 0;
 
   return (
-    <div className="p-6 space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Dashboard de Documentos</h1>
-        <p className="text-sm opacity-70">{total} documentos en total</p>
-      </div>
-      <pre className="text-xs bg-black/10 rounded p-4 overflow-auto">
-        {JSON.stringify(data, null, 2)}
-      </pre>
+    <div className="p-6">
+      <h1 className="text-xl font-semibold">Dashboard de Documentos</h1>
+
+      {errorMsg ? (
+        <div className="mt-6 rounded-md bg-red-900/20 text-red-300 p-4">
+          <p className="font-medium">No se pudieron cargar los documentos.</p>
+          <p className="text-sm opacity-80">{errorMsg}</p>
+        </div>
+      ) : (
+        <DocumentsTableSafe documents={documents ?? []} />
+      )}
     </div>
   );
 }

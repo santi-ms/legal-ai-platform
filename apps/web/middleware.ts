@@ -28,6 +28,10 @@ function isPublic(pathname: string) {
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  if (pathname.startsWith("/api/_proxy")) {
+    return NextResponse.next();
+  }
+
   if (isPublic(pathname)) {
     return NextResponse.next();
   }
@@ -56,5 +60,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|assets).*)"],
+  matcher: ["/((?!api/_proxy|_next/static|_next/image|favicon.ico|assets).*)"],
 };

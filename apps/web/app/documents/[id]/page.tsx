@@ -6,7 +6,10 @@ import { DashboardShell } from "@/app/components/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { SkeletonDocumentDetail } from "@/components/ui/skeleton";
-import type { Document as ProxyDocument, DocumentResponse as ProxyDocumentResponse } from "@/app/lib/webApi";
+import type {
+  Document as ProxyDocument,
+  DocumentApiResponse as ProxyDocumentResponse,
+} from "@/app/lib/webApi";
 
 type DocumentResponse = ProxyDocumentResponse;
 type LastVersion = ProxyDocument["lastVersion"];
