@@ -8,6 +8,9 @@ function getBaseUrl() {
 }
 
 export const authOptions: NextAuthOptions = {
+  // Configuración para Vercel/producción
+  trustHost: true,
+  
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -73,14 +76,15 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 60 * 60 * 2,
-    updateAge: 10 * 60,
+    maxAge: 60 * 60 * 2, // 2 horas
+    updateAge: 10 * 60, // 10 minutos
   },
   jwt: {
-    maxAge: 60 * 60 * 2,
+    maxAge: 60 * 60 * 2, // 2 horas
   },
   callbacks: {
     async jwt({ token, user }) {
+      // Cuando el usuario inicia sesión, guardar info en el token
       if (user) {
         token.user = {
           id: user.id as string,
@@ -93,6 +97,7 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      // Pasar la info del token a la sesión
       if (token.user) {
         session.user = {
           id: token.user.id,
@@ -118,9 +123,9 @@ export const authOptions: NextAuthOptions = {
           : "next-auth.session-token",
       options: {
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: "lax", // Compatible con navegación cross-site
         path: "/",
-        secure: process.env.NODE_ENV === "production",
+        secure: process.env.NODE_ENV === "production", // HTTPS en producción
       },
     },
     callbackUrl: {
