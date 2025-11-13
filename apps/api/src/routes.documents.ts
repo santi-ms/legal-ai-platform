@@ -315,25 +315,28 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
               create: {
                 id: userId,
                 email: "demo@example.com",
-                passwordHash: "dev-placeholder",
+                password: "dev-placeholder", // El schema mapea passwordHash a password
                 role: "owner",
                 tenantId: tenant.id,
-                emailVerified: null,
               },
             });
           }
 
           // Creamos el documento
+          const documentData = {
+            tenantId: tenant.id,
+            createdById: finalUser.id,
+            type: data.type,
+            jurisdiccion: data.jurisdiccion,
+            tono: data.tono,
+            estado: "generated_text", // Usar el valor correcto del schema
+            costUsd: 0,
+          };
+          
+          request.log?.info({ documentData }, "Intentando crear documento con datos:");
+          
           const doc = await tx.document.create({
-            data: {
-              tenantId: tenant.id,
-              createdById: finalUser.id,
-              type: data.type,
-              jurisdiccion: data.jurisdiccion,
-              tono: data.tono,
-              estado: "GENERATED", // <-- importante para UI verde
-              costUsd: 0,
-            },
+            data: documentData,
           });
 
           // Creamos la versión inicial
@@ -398,6 +401,15 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
     } catch (err: any) {
       request.log?.error({ err }, "documents route error");
       
+      // Log detallado del error de Prisma
+      if (err.code === "P2022" || err.message?.includes("P2022")) {
+        request.log?.error({
+          code: err.code,
+          meta: err.meta,
+          message: err.message,
+        }, "Prisma P2022: Columna no existe en la tabla");
+      }
+      
       // Mensajes de error más descriptivos
       let errorMessage = "Error al generar el documento";
       
@@ -405,6 +417,10 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
         errorMessage = "Datos inválidos: " + err.errors.map((e: any) => e.message).join(", ");
       } else if (err.message?.includes("OPENAI") || err.message?.includes("API key") || err.message?.includes("apiKey")) {
         errorMessage = "Error de configuración: La clave de API de OpenAI no está configurada o es inválida";
+      } else if (err.code === "P2022" || err.message?.includes("P2022")) {
+        const columnName = err.meta?.column || "desconocida";
+        errorMessage = `Error de base de datos: La columna "${columnName}" no existe en la tabla. Es necesario ejecutar migraciones.`;
+        request.log?.error({ columnName, meta: err.meta }, "Columna faltante detectada");
       } else if (err.message?.includes("Prisma") || err.message?.includes("database") || err.message?.includes("P2002")) {
         errorMessage = "Error de base de datos: No se pudo guardar el documento";
       } else if (err.message?.includes("Tenant") || err.message?.includes("Usuario")) {
@@ -416,7 +432,9 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
       return reply.status(500).send({ 
         ok: false, 
         message: errorMessage,
-        error: err.message || "INTERNAL_ERROR"
+        error: err.message || "INTERNAL_ERROR",
+        code: err.code,
+        meta: process.env.NODE_ENV === "development" ? err.meta : undefined,
       });
     }
   });
