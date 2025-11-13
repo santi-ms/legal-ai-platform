@@ -1,7 +1,8 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const API_URL = process.env.API_URL!;
+// Usar NEXT_PUBLIC_API_URL o API_URL como fallback
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "http://localhost:4001";
 
 // Helper para obtener el token JWT de la sesión de NextAuth
 async function getAuthToken(req: Request): Promise<string | null> {
@@ -133,10 +134,41 @@ async function handler(
 
   const url = new URL(req.url);
   const search = url.search ?? "";
+  
   // Asegurar que API_URL no termine con / y path no empiece con /
   const cleanApiUrl = API_URL.replace(/\/$/, "");
   const cleanPath = path.startsWith("/") ? path.slice(1) : path;
-  const target = `${cleanApiUrl}/${cleanPath}${search}`;
+  
+  // Construir la URL de destino de forma segura
+  let target: string;
+  try {
+    // Si API_URL ya es una URL completa, usarla directamente
+    if (cleanApiUrl.startsWith("http://") || cleanApiUrl.startsWith("https://")) {
+      target = `${cleanApiUrl}/${cleanPath}${search}`;
+    } else {
+      // Si no tiene protocolo, asumir http://
+      target = `http://${cleanApiUrl}/${cleanPath}${search}`;
+    }
+    
+    // Validar que la URL sea válida
+    new URL(target);
+  } catch (urlError) {
+    console.error("[_proxy] Error construyendo URL:", {
+      API_URL,
+      cleanApiUrl,
+      path,
+      cleanPath,
+      error: urlError
+    });
+    return Response.json(
+      { 
+        ok: false, 
+        error: "INVALID_URL", 
+        detail: `No se pudo construir la URL: ${cleanApiUrl}/${cleanPath}` 
+      },
+      { status: 500 }
+    );
+  }
   
   console.log(`[_proxy] ${req.method} ${path} -> ${target}`);
   
