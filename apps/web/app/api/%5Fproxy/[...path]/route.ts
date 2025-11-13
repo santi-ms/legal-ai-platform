@@ -3,6 +3,89 @@ export const dynamic = "force-dynamic";
 
 const API_URL = process.env.API_URL!;
 
+// Helper para obtener el token JWT de la sesión de NextAuth
+async function getAuthToken(req: Request): Promise<string | null> {
+  try {
+    // Leer la cookie de sesión de NextAuth directamente
+    const cookieHeader = req.headers.get("cookie") || "";
+    const cookies = cookieHeader.split(";").reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split("=");
+      if (key && value) acc[key] = decodeURIComponent(value);
+      return acc;
+    }, {} as Record<string, string>);
+
+    // Buscar el token de sesión de NextAuth
+    const sessionTokenName = process.env.NODE_ENV === "production"
+      ? "__Secure-next-auth.session-token"
+      : "next-auth.session-token";
+    
+    const sessionToken = cookies[sessionTokenName];
+    
+    if (!sessionToken) {
+      return null;
+    }
+
+    // Decodificar el JWT de NextAuth (sin verificar, solo para extraer datos)
+    const jwt = await import("jsonwebtoken");
+    const secret = process.env.NEXTAUTH_SECRET || "dev-secret-change-in-production";
+    
+    try {
+      // Decodificar el token de NextAuth
+      const decoded = jwt.verify(sessionToken, secret) as any;
+      
+      // Extraer información del usuario del token
+      const user = decoded.user || decoded;
+      
+      if (!user || !user.id) {
+        return null;
+      }
+
+      // Generar un nuevo token JWT con la estructura que espera el backend
+      const backendToken = jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+          tenantId: user.tenantId,
+          role: user.role || "user",
+        },
+        secret,
+        { expiresIn: "2h" }
+      );
+
+      return backendToken;
+    } catch (verifyError) {
+      // Si el token no es válido, intentar decodificarlo sin verificar
+      try {
+        const decoded = jwt.decode(sessionToken) as any;
+        const user = decoded?.user || decoded;
+        
+        if (!user || !user.id) {
+          return null;
+        }
+
+        const backendToken = jwt.sign(
+          {
+            id: user.id,
+            email: user.email,
+            tenantId: user.tenantId,
+            role: user.role || "user",
+          },
+          secret,
+          { expiresIn: "2h" }
+        );
+
+        return backendToken;
+      } catch (decodeError) {
+        console.error("[_proxy] Error decodificando token:", decodeError);
+        return null;
+      }
+    }
+  } catch (error) {
+    console.error("[_proxy] Error obteniendo token:", error);
+    return null;
+  }
+}
+
 async function handler(
   req: Request, 
   ctx: { params: Promise<{ path?: string[] }> | { path?: string[] } }
@@ -48,10 +131,22 @@ async function handler(
   const target = `${cleanApiUrl}/${cleanPath}${search}`;
   
   console.log(`[_proxy] ${req.method} ${path} -> ${target}`);
+  
+  // Obtener token de autenticación
+  const authToken = await getAuthToken(req);
+  
   const headers = new Headers(req.headers);
   headers.delete("host");
   headers.delete("x-forwarded-host");
   headers.delete("x-forwarded-proto");
+  
+  // Agregar token de autenticación si está disponible
+  if (authToken) {
+    headers.set("Authorization", `Bearer ${authToken}`);
+    console.log("[_proxy] Token de autenticación agregado");
+  } else {
+    console.warn("[_proxy] No se pudo obtener token de autenticación");
+  }
 
   const init: RequestInit = {
     method: req.method,
