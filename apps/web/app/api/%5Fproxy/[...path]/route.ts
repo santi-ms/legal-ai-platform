@@ -23,39 +23,70 @@ async function getAuthToken(req: Request): Promise<string | null> {
   try {
     // Leer cookies del request
     const cookieHeader = req.headers.get("cookie") || "";
-    const cookies: Record<string, string> = {};
     
+    if (!cookieHeader) {
+      console.error("[_proxy] ❌ No hay cookies en el request");
+      return null;
+    }
+
+    // Parsear cookies
+    const cookies: Record<string, string> = {};
     cookieHeader.split(";").forEach(cookie => {
-      const [key, ...values] = cookie.trim().split("=");
-      if (key && values.length > 0) {
-        cookies[key.trim()] = decodeURIComponent(values.join("="));
+      const trimmed = cookie.trim();
+      const equalIndex = trimmed.indexOf("=");
+      if (equalIndex > 0) {
+        const key = trimmed.substring(0, equalIndex).trim();
+        const value = trimmed.substring(equalIndex + 1).trim();
+        if (key && value) {
+          try {
+            cookies[key] = decodeURIComponent(value);
+          } catch {
+            cookies[key] = value;
+          }
+        }
       }
     });
 
-    // Buscar el token de sesión de NextAuth
-    const sessionTokenName = process.env.NODE_ENV === "production"
-      ? "__Secure-next-auth.session-token"
-      : "next-auth.session-token";
-    
-    const sessionToken = cookies[sessionTokenName];
-    
+    // Buscar cookie de sesión de NextAuth (puede tener diferentes nombres)
+    const sessionTokenNames = [
+      "__Secure-next-auth.session-token",
+      "next-auth.session-token",
+      "__Host-next-auth.session-token",
+    ];
+
+    let sessionToken: string | undefined;
+    let foundName: string | undefined;
+
+    for (const name of sessionTokenNames) {
+      if (cookies[name]) {
+        sessionToken = cookies[name];
+        foundName = name;
+        break;
+      }
+    }
+
     if (!sessionToken) {
-      console.log("[_proxy] No se encontró cookie de sesión");
+      const cookieNames = Object.keys(cookies);
+      console.error("[_proxy] ❌ No se encontró cookie de sesión de NextAuth");
+      console.error("[_proxy] Cookies disponibles:", cookieNames);
+      console.error("[_proxy] Buscando:", sessionTokenNames);
       return null;
     }
+
+    console.log("[_proxy] ✅ Cookie de sesión encontrada:", foundName);
 
     // Decodificar el JWT de NextAuth
     const jwt = await import("jsonwebtoken");
-    const secret = process.env.NEXTAUTH_SECRET || "dev-secret-change-in-production";
+    const secret = process.env.NEXTAUTH_SECRET;
     
-    if (!secret) {
-      console.error("[_proxy] NEXTAUTH_SECRET no configurado");
+    if (!secret || secret === "dev-secret-change-in-production") {
+      console.error("[_proxy] ⚠️ NEXTAUTH_SECRET no configurado correctamente");
       return null;
     }
 
+    // Decodificar el token (sin verificar primero para ver su estructura)
     let decoded: any;
     try {
-      // Intentar verificar el token
       decoded = jwt.verify(sessionToken, secret);
     } catch (verifyError) {
       // Si falla la verificación, intentar decodificar sin verificar
@@ -64,12 +95,11 @@ async function getAuthToken(req: Request): Promise<string | null> {
     }
 
     if (!decoded) {
-      console.log("[_proxy] No se pudo decodificar el token");
+      console.error("[_proxy] ❌ No se pudo decodificar el token");
       return null;
     }
 
-    // Extraer información del usuario del token de NextAuth
-    // NextAuth almacena la info del usuario en decoded.user
+    // NextAuth almacena la info del usuario en decoded.user o directamente en decoded
     const user = decoded.user || decoded;
     const userId = user?.id || user?.sub;
     const tenantId = user?.tenantId;
@@ -77,22 +107,17 @@ async function getAuthToken(req: Request): Promise<string | null> {
     const email = user?.email;
 
     if (!userId) {
-      console.log("[_proxy] Token sin userId:", decoded);
+      console.error("[_proxy] ❌ Token sin userId. Estructura:", Object.keys(decoded));
       return null;
     }
 
-    console.log("[_proxy] Usuario extraído del token:", {
-      userId,
-      email,
-      tenantId,
-      role,
-    });
+    console.log("[_proxy] Usuario extraído:", { userId, email, tenantId, role });
 
-    // Generar un nuevo token JWT con la estructura que espera el backend
+    // Generar token para el backend
     const backendToken = jwt.sign(
       {
-        id: userId,      // El backend busca 'id' primero
-        sub: userId,     // Luego busca 'sub' como fallback
+        id: userId,
+        sub: userId,
         email: email,
         tenantId: tenantId,
         role: role,
@@ -101,7 +126,7 @@ async function getAuthToken(req: Request): Promise<string | null> {
       { expiresIn: "2h" }
     );
 
-    console.log("[_proxy] Token generado exitosamente");
+    console.log("[_proxy] ✅ Token generado exitosamente");
     return backendToken;
   } catch (error: any) {
     console.error("[_proxy] Error obteniendo token:", error?.message || error);
@@ -231,9 +256,10 @@ async function handler(
   // Agregar token de autenticación si está disponible
   if (authToken) {
     headers.set("Authorization", `Bearer ${authToken}`);
-    console.log("[_proxy] Token de autenticación agregado");
+    console.log("[_proxy] ✅ Token de autenticación agregado al header");
   } else {
-    console.warn("[_proxy] No se pudo obtener token de autenticación");
+    console.warn("[_proxy] ⚠️ No se pudo obtener token de autenticación - la petición se enviará sin autenticación");
+    console.warn("[_proxy] Esto causará un error 401 en el backend si el endpoint requiere autenticación");
   }
 
   const init: RequestInit = {
@@ -254,6 +280,17 @@ async function handler(
       { ok: false, error: "UPSTREAM_FETCH_FAILED", detail: String(err) },
       { status: 502 }
     );
+  }
+
+  // Logging especial para errores 401 (autenticación)
+  if (upstream.status === 401) {
+    console.error("[_proxy] ❌ Backend devolvió 401 (No autorizado)");
+    console.error("[_proxy] Detalles:", {
+      path: path,
+      target: target,
+      tieneAuthToken: !!authToken,
+      status: upstream.status,
+    });
   }
 
   const ct = upstream.headers.get("content-type") || "";
