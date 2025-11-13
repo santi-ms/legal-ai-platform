@@ -221,8 +221,11 @@ export default function NewDocumentPage() {
       setLoadingProgress(90);
       setLoadingStep("Guardando documento...");
 
-      if (!json.ok) {
-        throw new Error("Error al generar el documento");
+      if (!res.ok || !json.ok) {
+        // Extraer el mensaje de error del servidor
+        const errorMessage = json.message || json.error || json.detail || "Error al generar el documento";
+        console.error("[generateDocument] Error del servidor:", json);
+        throw new Error(errorMessage);
       }
 
       setLoadingProgress(100);
@@ -597,9 +600,12 @@ export default function NewDocumentPage() {
 
             {/* resultado o error */}
             {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2 shadow-sm">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                <span>{error}</span>
+              <div className="rounded-lg border border-red-500/50 bg-red-900/20 px-4 py-3 text-sm text-red-300 flex items-start gap-2 shadow-sm">
+                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-medium text-red-200 mb-1">Error al generar el documento</p>
+                  <p className="text-red-300/90">{error}</p>
+                </div>
               </div>
             )}
 

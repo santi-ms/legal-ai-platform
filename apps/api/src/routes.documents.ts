@@ -395,9 +395,29 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
         contrato,
         pdfUrl: pdfGenerated ? fileName : null,
       });
-    } catch (err) {
+    } catch (err: any) {
       request.log?.error({ err }, "documents route error");
-      return reply.status(500).send({ ok: false, message: "Internal error" });
+      
+      // Mensajes de error más descriptivos
+      let errorMessage = "Error al generar el documento";
+      
+      if (err instanceof z.ZodError) {
+        errorMessage = "Datos inválidos: " + err.errors.map((e: any) => e.message).join(", ");
+      } else if (err.message?.includes("OPENAI") || err.message?.includes("API key") || err.message?.includes("apiKey")) {
+        errorMessage = "Error de configuración: La clave de API de OpenAI no está configurada o es inválida";
+      } else if (err.message?.includes("Prisma") || err.message?.includes("database") || err.message?.includes("P2002")) {
+        errorMessage = "Error de base de datos: No se pudo guardar el documento";
+      } else if (err.message?.includes("Tenant") || err.message?.includes("Usuario")) {
+        errorMessage = err.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      return reply.status(500).send({ 
+        ok: false, 
+        message: errorMessage,
+        error: err.message || "INTERNAL_ERROR"
+      });
     }
   });
 
