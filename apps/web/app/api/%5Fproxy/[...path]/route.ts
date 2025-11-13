@@ -1,8 +1,22 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Usar NEXT_PUBLIC_API_URL o API_URL como fallback
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "http://localhost:4001";
+// Función para obtener la URL de la API (leer en tiempo de ejecución, no en tiempo de módulo)
+function getApiUrl(): string {
+  // En producción, preferir NEXT_PUBLIC_API_URL (disponible en build y runtime)
+  // API_URL solo está disponible en runtime (server-side)
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL;
+  
+  if (!apiUrl) {
+    // Solo usar localhost si estamos en desarrollo
+    if (process.env.NODE_ENV === "development") {
+      return "http://localhost:4001";
+    }
+    throw new Error("NEXT_PUBLIC_API_URL o API_URL debe estar configurado");
+  }
+  
+  return apiUrl;
+}
 
 // Helper para obtener el token JWT de la sesión de NextAuth
 async function getAuthToken(req: Request): Promise<string | null> {
@@ -99,9 +113,43 @@ async function handler(
   req: Request, 
   ctx: { params: Promise<{ path?: string[] }> | { path?: string[] } }
 ) {
-  if (!API_URL) {
+  // Obtener API_URL en tiempo de ejecución
+  let API_URL: string;
+  try {
+    API_URL = getApiUrl();
+  } catch (error: any) {
+    const envCheck = {
+      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ? `✅ configurado (${process.env.NEXT_PUBLIC_API_URL.substring(0, 30)}...)` : "❌ faltante",
+      API_URL: process.env.API_URL ? `✅ configurado (${process.env.API_URL.substring(0, 30)}...)` : "❌ faltante",
+      NODE_ENV: process.env.NODE_ENV || "no definido",
+    };
+    
+    console.error("[_proxy] Error obteniendo API_URL:", envCheck);
+    
     return Response.json(
-      { ok: false, error: "MISSING_API_URL" },
+      { 
+        ok: false, 
+        error: "MISSING_API_URL",
+        message: "La URL de la API no está configurada.",
+        detail: "Configure NEXT_PUBLIC_API_URL en Vercel con la URL completa de su API (ej: https://api-pr...)"
+      },
+      { status: 500 }
+    );
+  }
+  
+  // Validar que no sea localhost en producción
+  const isProduction = process.env.NODE_ENV === "production";
+  const isLocalhost = API_URL.includes("localhost") || API_URL.includes("127.0.0.1");
+  
+  if (isProduction && isLocalhost) {
+    console.error("[_proxy] API_URL es localhost en producción:", API_URL);
+    return Response.json(
+      { 
+        ok: false, 
+        error: "INVALID_API_URL",
+        message: "No se puede usar localhost en producción.",
+        detail: "Configure NEXT_PUBLIC_API_URL con una URL de producción válida"
+      },
       { status: 500 }
     );
   }
@@ -113,15 +161,15 @@ async function handler(
   const pathArray = params.path ?? [];
   const path = pathArray.join("/");
   
-  // Logging para diagnóstico
-  console.log("[_proxy] Debug:", {
-    url: req.url,
-    method: req.method,
-    params: params,
-    pathArray: pathArray,
-    path: path,
-    API_URL: API_URL
-  });
+  // Logging para diagnóstico (solo en desarrollo o si hay error)
+  if (process.env.NODE_ENV === "development" || !path) {
+    console.log("[_proxy] Debug:", {
+      url: req.url,
+      method: req.method,
+      path: path,
+      API_URL: API_URL.substring(0, 50) + "...", // Solo mostrar primeros 50 caracteres por seguridad
+    });
+  }
   
   // Si el path está vacío, devolver error
   if (!path) {
