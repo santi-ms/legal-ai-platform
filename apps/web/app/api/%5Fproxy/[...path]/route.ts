@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
+import { getToken } from "next-auth/jwt";
 import jwt from "jsonwebtoken";
 
 // Asegurar que se ejecute en Node.js runtime (no Edge)
@@ -26,19 +25,21 @@ function getApiUrl(): string {
 }
 
 /**
- * Genera un JWT para el backend a partir de la sesión de NextAuth
+ * Genera un JWT para el backend a partir del token de NextAuth
  */
-function generateBackendToken(session: any): string {
+function generateBackendToken(token: any): string {
   const secret = process.env.NEXTAUTH_SECRET;
   
   if (!secret || secret === "dev-secret-change-in-production") {
     throw new Error("NEXTAUTH_SECRET no configurado correctamente");
   }
 
-  const user = session.user as any;
+  // El token de NextAuth tiene la estructura del callback jwt
+  // token.user contiene: id, email, tenantId, role
+  const user = token?.user || token;
   
   if (!user?.id) {
-    throw new Error("Sesión sin información de usuario");
+    throw new Error("Token sin información de usuario");
   }
 
   // Generar token con la estructura que espera el backend
@@ -111,11 +112,28 @@ async function handler(
       );
     }
 
-    // 3. Obtener sesión de NextAuth usando la API oficial
-    const session = await getServerSession(authOptions);
+    // 3. Obtener token de NextAuth usando getToken
+    const secret = process.env.NEXTAUTH_SECRET;
     
-    if (!session || !session.user) {
-      console.log("[_proxy] Sin sesión de NextAuth - usuario no autenticado");
+    if (!secret || secret === "dev-secret-change-in-production") {
+      console.error("[_proxy] NEXTAUTH_SECRET no configurado correctamente");
+      return NextResponse.json(
+        { 
+          ok: false,
+          error: "MISSING_SECRET",
+          message: "Error de configuración del servidor" 
+        },
+        { status: 500 }
+      );
+    }
+
+    const token = await getToken({ 
+      req, 
+      secret: secret 
+    });
+    
+    if (!token) {
+      console.log("[_proxy] Sin token de NextAuth - usuario no autenticado");
       return NextResponse.json(
         { 
           ok: false,
@@ -126,16 +144,24 @@ async function handler(
       );
     }
 
-    console.log("[_proxy] ✅ Sesión encontrada para usuario:", {
-      id: (session.user as any).id,
-      email: session.user.email,
-      tenantId: (session.user as any).tenantId,
+    // Extraer información del usuario del token
+    const user = token.user || token;
+    const userId = user?.id;
+    const email = user?.email;
+    const tenantId = user?.tenantId;
+    const role = user?.role || "user";
+
+    console.log("[_proxy] ✅ Token encontrado para usuario:", {
+      id: userId,
+      email: email,
+      tenantId: tenantId,
+      role: role,
     });
 
     // 4. Generar token JWT para el backend
     let backendToken: string;
     try {
-      backendToken = generateBackendToken(session);
+      backendToken = generateBackendToken(token);
     } catch (error: any) {
       console.error("[_proxy] Error generando token:", error.message);
       return NextResponse.json(
