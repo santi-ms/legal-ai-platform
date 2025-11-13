@@ -20,22 +20,17 @@ function runMigrations() {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     
-    // Buscar el schema de Prisma
-    const schemaPaths = [
-      path.resolve(__dirname, "../../../packages/db/prisma/schema.prisma"),
-      path.resolve(__dirname, "../../../prisma/schema.prisma"),
-      path.resolve(process.cwd(), "packages/db/prisma/schema.prisma"),
-      path.resolve(process.cwd(), "prisma/schema.prisma"),
-    ];
-
-    const schemaPath = schemaPaths.find((p) => existsSync(p));
+    // Usar siempre el schema compartido del monorepo
+    const schemaPath = path.resolve(__dirname, "../../../packages/db/prisma/schema.prisma");
     
-    if (!schemaPath) {
-      console.warn("[migrate] ⚠️ No se encontró schema.prisma, omitiendo migraciones");
+    if (!existsSync(schemaPath)) {
+      console.warn("[migrate] ⚠️ No se encontró schema.prisma en packages/db/prisma/schema.prisma");
+      console.warn("[migrate] ⚠️ Omitiendo migraciones automáticas");
       return;
     }
 
     console.log("[migrate] 🔄 Ejecutando migraciones de Prisma...");
+    console.log("[migrate] 📋 Schema:", schemaPath);
     execSync(`npx prisma migrate deploy --schema "${schemaPath}"`, {
       stdio: "inherit",
       env: process.env,

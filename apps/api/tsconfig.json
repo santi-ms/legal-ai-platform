@@ -7,7 +7,11 @@
     "strict": true,
     "resolveJsonModule": true,
     "outDir": "dist",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "db": ["../../packages/db/index.ts"]
+    }
   },
   "include": ["src"]
 }

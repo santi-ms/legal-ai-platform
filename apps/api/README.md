@@ -27,7 +27,21 @@ El servidor estará disponible en `http://localhost:4001`
 
 ### Schema de Prisma
 
-El schema de Prisma está centralizado en `packages/db/prisma/schema.prisma` (monorepo).
+**⚠️ IMPORTANTE:** El schema de Prisma está **centralizado** en `packages/db/prisma/schema.prisma`.
+
+- ✅ **Único schema válido:** `packages/db/prisma/schema.prisma`
+- ❌ **NO usar:** schemas duplicados en `apps/api/prisma/` o `apps/web/prisma/`
+- ✅ **Migraciones compartidas:** `packages/db/prisma/migrations/`
+
+### Prisma Client Compartido
+
+El API usa el Prisma Client compartido desde el package `db`:
+
+```typescript
+import { prisma } from "db";
+```
+
+Esto asegura que todos los servicios usen la misma instancia y el mismo schema.
 
 ### Migraciones
 
@@ -40,55 +54,40 @@ npm run migrate:dev
 # Esto generará una migración en packages/db/prisma/migrations/
 ```
 
-#### Producción (Railway/Supabase)
+#### Producción (Railway)
 
-**⚠️ IMPORTANTE:** Antes de hacer deploy, asegúrate de aplicar las migraciones pendientes.
+**Configuración Automática (Recomendado):**
 
-##### Opción 1: Manual (Recomendado para primera vez)
-
-1. **Obtener DATABASE_URL de Railway:**
-   - Ve a Railway → Tu servicio → Variables
-   - Copia el valor de `DATABASE_URL`
-
-2. **Aplicar migraciones localmente:**
-   ```bash
-   # Configurar DATABASE_URL temporalmente
-   export DATABASE_URL="postgresql://user:pass@host:port/db"
-   # O en Windows PowerShell:
-   $env:DATABASE_URL="postgresql://user:pass@host:port/db"
-   
-   # Aplicar migraciones
-   npm run migrate:deploy
-   ```
-
-3. **O ejecutar SQL directamente en Railway:**
-   - Ve a Railway → PostgreSQL → Query
-   - Ejecuta el SQL de las migraciones pendientes desde `packages/db/prisma/migrations/`
-
-##### Opción 2: Automatizado en Railway
-
-**Configurar en Railway:**
-
-1. **Variables de Entorno:**
-   - Asegúrate de que `DATABASE_URL` esté configurado (Railway lo hace automáticamente)
-
-2. **Start Command:**
+1. **Railway → Settings → Deploy → Start Command:**
    ```
    npm run migrate:deploy && npm start
    ```
-   
-   Esto aplicará las migraciones antes de iniciar el servidor.
 
-3. **O usar Deploy Hook (Recomendado):**
-   - Railway → Settings → Deploy Hooks
-   - Crear un hook que ejecute:
+   Esto aplicará las migraciones automáticamente antes de iniciar el servidor.
+
+2. **Variables de Entorno:**
+   - `DATABASE_URL` - Configurado automáticamente por Railway
+   - `NODE_ENV=production` - Para activar migraciones automáticas
+
+**Migración Manual (Si es necesario):**
+
+1. **Obtener DATABASE_URL de Railway:**
+   - Railway → Tu servicio PostgreSQL → Variables
+   - Copia el valor de `DATABASE_URL`
+
+2. **Aplicar migraciones:**
    ```bash
-   cd apps/api && npm run migrate:deploy
+   # Configurar DATABASE_URL
+   export DATABASE_URL="postgresql://user:pass@host:port/db"
+   
+   # Aplicar migraciones
+   cd apps/api
+   npm run migrate:deploy
    ```
 
-**⚠️ Nota de Seguridad:** 
-- Las migraciones se ejecutan automáticamente en producción si `NODE_ENV=production` (ver `src/server.ts`)
-- Para mayor control, desactiva la ejecución automática y usa Deploy Hooks
+**⚠️ Nota:** 
+- Las migraciones se ejecutan automáticamente al iniciar el servidor en producción (ver `src/server.ts`)
+- El servidor busca el schema en `packages/db/prisma/schema.prisma`
 
 ### Migración Actual: Agregar `updatedAt` a Tenant
 

@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { PrismaClient, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { prisma } from "db";
 import rateLimit from "@fastify/rate-limit";
 import { z } from "zod";
 import {
@@ -18,8 +19,6 @@ import {
   getResetPasswordEmailHtml,
   getResetPasswordEmailText,
 } from "./services/email.js";
-
-const prisma = new PrismaClient();
 
 // AUTH_DEBUG flag para logs detallados
 const AUTH_DEBUG = process.env.AUTH_DEBUG === "true";
