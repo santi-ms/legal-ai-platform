@@ -1,5 +1,8 @@
+import { buildFrontendUrl, isServer } from "./url-utils";
+
 /**
- * Helper client-side para llamar al proxy de documentos
+ * Helper para llamar al proxy de documentos
+ * Funciona tanto en client-side como en server-side (RSC)
  * Todas las requests van por el proxy server-side que inyecta el JWT
  */
 export interface Document {
@@ -97,7 +100,12 @@ async function proxyJson<T = any>(
     headers.set("Accept", "application/json");
   }
 
-  const resp = await fetch(`${PROXY_BASE}${normalized}`, {
+  // Construir URL: absoluta en servidor, relativa en cliente
+  const url = isServer()
+    ? buildFrontendUrl(`${PROXY_BASE}${normalized}`)
+    : `${PROXY_BASE}${normalized}`;
+
+  const resp = await fetch(url, {
     ...init,
     headers,
     cache: "no-store",

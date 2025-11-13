@@ -1,5 +1,6 @@
 import { config } from "./config";
 import { getSession } from "next-auth/react";
+import { buildFrontendUrl, isServer } from "./url-utils";
 
 export interface ApiResponse<T = any> {
   ok: boolean;
@@ -139,7 +140,12 @@ export async function apiGet<T = any>(
  */
 export async function getDocuments() {
   try {
-    const res = await fetch("/api/_proxy/documents", {
+    // Usar URL absoluta en servidor, relativa en cliente
+    const url = isServer()
+      ? buildFrontendUrl("/api/_proxy/documents")
+      : "/api/_proxy/documents";
+    
+    const res = await fetch(url, {
       cache: "no-store",
       headers: {
         accept: "application/json",
@@ -172,7 +178,12 @@ export async function getDocuments() {
  */
 export async function getDocument(id: string) {
   try {
-    const res = await fetch(`/api/_proxy/documents/${id}`, {
+    // Usar URL absoluta en servidor, relativa en cliente
+    const url = isServer()
+      ? buildFrontendUrl(`/api/_proxy/documents/${id}`)
+      : `/api/_proxy/documents/${id}`;
+    
+    const res = await fetch(url, {
       cache: "no-store",
       headers: {
         accept: "application/json",
@@ -206,16 +217,10 @@ export async function getDocument(id: string) {
 export async function generateDocument(formData: any) {
   try {
     // Usar el proxy server-side que maneja la autenticación automáticamente
-    const isServer = typeof window === "undefined";
-    const baseUrl = isServer 
-      ? (process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
-          ? `https://${process.env.VERCEL_URL}` 
-          : "http://localhost:3000")
-      : "";
-    
-    const proxyUrl = isServer 
-      ? `${baseUrl}/api/_proxy/documents/generate`
-      : `/api/_proxy/documents/generate`;
+    // Usar URL absoluta en servidor, relativa en cliente
+    const proxyUrl = isServer()
+      ? buildFrontendUrl("/api/_proxy/documents/generate")
+      : "/api/_proxy/documents/generate";
     
     const response = await fetch(proxyUrl, {
       method: "POST",
