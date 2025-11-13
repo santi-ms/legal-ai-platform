@@ -24,10 +24,19 @@ async function getAuthToken(req: Request): Promise<string | null> {
     // Leer cookies del request
     const cookieHeader = req.headers.get("cookie") || "";
     
+    console.log("[_proxy] 🔍 Iniciando búsqueda de token de autenticación");
+    console.log("[_proxy] Cookie header presente:", !!cookieHeader);
+    console.log("[_proxy] Cookie header length:", cookieHeader.length);
+    
     if (!cookieHeader) {
       console.error("[_proxy] ❌ No hay cookies en el request");
+      console.error("[_proxy] Headers disponibles:", Array.from(req.headers.keys()));
       return null;
     }
+    
+    // Log parcial de cookies (sin valores sensibles)
+    const cookiePreview = cookieHeader.substring(0, 200);
+    console.log("[_proxy] Cookie header preview:", cookiePreview + (cookieHeader.length > 200 ? "..." : ""));
 
     // Parsear cookies
     const cookies: Record<string, string> = {};
@@ -68,8 +77,20 @@ async function getAuthToken(req: Request): Promise<string | null> {
     if (!sessionToken) {
       const cookieNames = Object.keys(cookies);
       console.error("[_proxy] ❌ No se encontró cookie de sesión de NextAuth");
+      console.error("[_proxy] Total de cookies parseadas:", cookieNames.length);
       console.error("[_proxy] Cookies disponibles:", cookieNames);
-      console.error("[_proxy] Buscando:", sessionTokenNames);
+      console.error("[_proxy] Buscando cookies con nombres:", sessionTokenNames);
+      
+      // Buscar cookies que contengan "next-auth" o "session" en el nombre
+      const relatedCookies = cookieNames.filter(name => 
+        name.toLowerCase().includes("next") || 
+        name.toLowerCase().includes("auth") || 
+        name.toLowerCase().includes("session")
+      );
+      if (relatedCookies.length > 0) {
+        console.error("[_proxy] ⚠️ Cookies relacionadas encontradas:", relatedCookies);
+      }
+      
       return null;
     }
 
