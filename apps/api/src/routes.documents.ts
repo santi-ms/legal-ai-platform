@@ -4,6 +4,7 @@ import OpenAI from "openai";
 import { PrismaClient, Prisma } from "@prisma/client";
 import { z } from "zod";
 import { getUserFromRequest, requireAuth } from "./utils/auth.js";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -308,14 +309,16 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
               throw new Error("Usuario no encontrado");
             }
           } else {
-            // Modo demo
+            // Modo demo - solo para desarrollo/testing
+            // En producción, siempre debe haber un usuario autenticado
+            const demoPasswordHash = await bcrypt.hash("dev-placeholder", 10);
             finalUser = await tx.user.upsert({
               where: { id: userId },
               update: {},
               create: {
                 id: userId,
                 email: "demo@example.com",
-                password: "dev-placeholder", // El schema mapea passwordHash a password
+                passwordHash: demoPasswordHash, // Usar passwordHash según el schema de Prisma
                 role: "owner",
                 tenantId: tenant.id,
               },
