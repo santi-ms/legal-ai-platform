@@ -5,7 +5,8 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { getUserFromRequest, requireAuth } from "./utils/auth.js";
 import bcrypt from "bcryptjs";
-import { prisma } from "db";
+import db from "db";
+const { prisma } = db;
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
