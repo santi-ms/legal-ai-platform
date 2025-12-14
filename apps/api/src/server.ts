@@ -57,8 +57,27 @@ function runMigrations() {
     console.log("[migrate] ✅ Migraciones aplicadas correctamente");
   } catch (error: any) {
     console.error("[migrate] ❌ Error ejecutando migraciones:", error.message);
+    console.error("[migrate] ❌ Stack:", error.stack);
+    
+    // Verificar si es un error de conexión
+    if (error.message?.includes("FATAL") || error.message?.includes("not found")) {
+      console.error("[migrate] ⚠️ Error de conexión a la base de datos");
+      console.error("[migrate] ⚠️ Verificá que DATABASE_URL esté configurada correctamente");
+      console.error("[migrate] ⚠️ DATABASE_URL presente:", !!process.env.DATABASE_URL);
+      if (process.env.DATABASE_URL) {
+        // Mostrar solo el host para diagnóstico (sin credenciales)
+        try {
+          const url = new URL(process.env.DATABASE_URL);
+          console.error("[migrate] ⚠️ Host:", url.hostname);
+          console.error("[migrate] ⚠️ Database:", url.pathname);
+        } catch (e) {
+          console.error("[migrate] ⚠️ DATABASE_URL no es una URL válida");
+        }
+      }
+    }
+    
     // No fallar el servidor si las migraciones fallan, pero loguear el error
-    console.warn("[migrate] ⚠️ Continuando sin aplicar migraciones");
+    console.warn("[migrate] ⚠️ Continuando sin aplicar migraciones - el servidor iniciará pero puede haber errores de BD");
   }
 }
 
