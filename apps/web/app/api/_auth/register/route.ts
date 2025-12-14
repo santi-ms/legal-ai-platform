@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "http://localhost:4001";
 
+// Método GET para diagnóstico (devolver 405)
+export async function GET() {
+  return NextResponse.json(
+    { ok: false, message: "Method Not Allowed. Use POST." },
+    { status: 405 }
+  );
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
