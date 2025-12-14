@@ -5,7 +5,10 @@ import rateLimit from "@fastify/rate-limit";
 import helmet from "@fastify/helmet";
 import { registerDocumentRoutes } from "./routes.documents.js";
 import { registerAuthRoutes } from "./routes.auth.js";
-import { execSync } from "child_process";
+import { execSync, exec } from "child_process";
+import { promisify } from "util";
+
+const execAsync = promisify(exec);
 import { existsSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -64,19 +67,20 @@ async function runMigrations() {
     }
     
     // Ejecutar migraciones con timeout para evitar que se cuelgue
-    return new Promise<void>((resolve, reject) => {
-      try {
-        execSync(`npx prisma migrate deploy --schema "${schemaPath}"`, {
-          stdio: "inherit",
-          env: migrationEnv,
-          timeout: 30000, // 30 segundos de timeout
-        });
+    // Usar execAsync en lugar de execSync para que no bloquee
+    return Promise.race([
+      execAsync(`npx prisma migrate deploy --schema "${schemaPath}"`, {
+        env: migrationEnv,
+        maxBuffer: 1024 * 1024 * 10, // 10MB buffer
+      }).then(() => {
         console.log("[migrate] ✅ Migraciones aplicadas correctamente");
-        resolve();
-      } catch (error: any) {
-        reject(error);
-      }
-    });
+      }),
+      new Promise<void>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Timeout: Las migraciones tardaron más de 30 segundos"));
+        }, 30000); // 30 segundos de timeout
+      }),
+    ]);
   } catch (error: any) {
     console.error("[migrate] ❌ Error ejecutando migraciones:", error.message);
     console.error("[migrate] ❌ Stack:", error.stack);
