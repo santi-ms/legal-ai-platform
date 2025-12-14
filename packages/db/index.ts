@@ -8,9 +8,21 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: ["error", "warn"] // si querés "query" para debug, lo podés sumar
+    log: process.env.NODE_ENV === "development" ? ["error", "warn", "query"] : ["error", "warn"],
+    errorFormat: "pretty",
   });
 
 if (!globalForPrisma.prisma) {
   globalForPrisma.prisma = prisma;
+}
+
+// Función para verificar la conexión a la base de datos
+export async function checkDatabaseConnection() {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return true;
+  } catch (error) {
+    console.error("Error de conexión a la base de datos:", error);
+    return false;
+  }
 }

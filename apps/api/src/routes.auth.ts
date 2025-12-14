@@ -96,9 +96,28 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       request.log.info({ event: "register:incoming", email: normEmail });
 
       // Verificar si el usuario ya existe
-      const exists = await prisma.user.findFirst({
-        where: { email: normEmail },
-      });
+      let exists = null;
+      try {
+        exists = await prisma.user.findFirst({
+          where: { email: normEmail },
+        });
+      } catch (dbError: any) {
+        request.log.error({
+          event: "register:db_error",
+          error: dbError?.message,
+          code: dbError?.code,
+          meta: dbError?.meta,
+        });
+        // Si es un error de conexión o tabla no encontrada, devolver error más claro
+        if (dbError?.code === "P1001" || dbError?.message?.includes("not found")) {
+          return reply.code(500).send({
+            ok: false,
+            message: "Error de conexión con la base de datos. Verificá que las migraciones se hayan ejecutado correctamente.",
+            error: "database_connection_error",
+          });
+        }
+        throw dbError;
+      }
 
       if (exists) {
         request.log.warn({ event: "register:email_exists", email: normEmail });
@@ -216,6 +235,8 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         meta: err?.meta,
         stack: err?.stack,
       });
+      
+      // Errores de validación de Zod
       if (err?.name === "ZodError") {
         return reply.code(400).send({
           ok: false,
@@ -223,9 +244,31 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           issues: err.issues,
         });
       }
+      
+      // Errores de Prisma - conexión o tabla no encontrada
+      if (err?.code === "P1001" || err?.code === "P2022" || err?.message?.includes("not found")) {
+        return reply.code(500).send({
+          ok: false,
+          message: "Error de conexión con la base de datos. Verificá que las migraciones se hayan ejecutado correctamente.",
+          error: "database_error",
+          details: err?.message,
+        });
+      }
+      
+      // Otros errores de Prisma
+      if (err?.code?.startsWith("P")) {
+        return reply.code(500).send({
+          ok: false,
+          message: "Error en la base de datos",
+          error: "database_error",
+          details: err?.message,
+        });
+      }
+      
       return reply.code(500).send({
         ok: false,
         message: "Error interno al registrar usuario",
+        error: "internal_error",
       });
     }
   });
