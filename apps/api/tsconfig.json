@@ -10,8 +10,8 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "db": ["../../packages/db/index.ts"]
+      "db": ["../../packages/db/index.ts", "./node_modules/db/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "src/types"]
 }
