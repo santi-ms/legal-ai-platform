@@ -75,18 +75,29 @@ function runMigrations() {
     // Verificar si es un error de conexión
     if (error.message?.includes("FATAL") || error.message?.includes("not found")) {
       console.error("[migrate] ⚠️ Error de conexión a la base de datos");
-      console.error("[migrate] ⚠️ Verificá que DATABASE_URL esté configurada correctamente");
+      console.error("[migrate] ⚠️ El error 'Tenant or user not found' generalmente significa:");
+      console.error("[migrate] ⚠️ 1. Las credenciales (usuario/contraseña) son incorrectas");
+      console.error("[migrate] ⚠️ 2. El usuario no existe en la base de datos");
+      console.error("[migrate] ⚠️ 3. El usuario no tiene permisos para acceder");
+      console.error("[migrate] ⚠️ Verificá que DATABASE_URL esté configurada correctamente en Railway");
       console.error("[migrate] ⚠️ DATABASE_URL presente:", !!process.env.DATABASE_URL);
       if (process.env.DATABASE_URL) {
         // Mostrar solo el host para diagnóstico (sin credenciales)
         try {
           const url = new URL(process.env.DATABASE_URL);
           console.error("[migrate] ⚠️ Host:", url.hostname);
+          console.error("[migrate] ⚠️ Puerto:", url.port);
           console.error("[migrate] ⚠️ Database:", url.pathname);
+          console.error("[migrate] ⚠️ Usuario:", url.username ? `${url.username.substring(0, 10)}...` : "no especificado");
         } catch (e) {
           console.error("[migrate] ⚠️ DATABASE_URL no es una URL válida");
         }
       }
+      console.error("[migrate] 💡 SOLUCIÓN: Verificá en Railway que la variable DATABASE_URL tenga:");
+      console.error("[migrate] 💡 - El usuario correcto (postgres.xxxxx)");
+      console.error("[migrate] 💡 - La contraseña correcta");
+      console.error("[migrate] 💡 - El host correcto");
+      console.error("[migrate] 💡 - El nombre de la base de datos correcto (generalmente 'postgres')");
     }
     
     // No fallar el servidor si las migraciones fallan, pero loguear el error
