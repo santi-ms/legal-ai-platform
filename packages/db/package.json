@@ -7,8 +7,8 @@
     ".": "./index.ts"
   },
   "scripts": {
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:generate": "prisma generate --schema prisma/schema.prisma || echo 'Schema not found, skipping Prisma generate'",
+    "prisma:migrate": "prisma migrate dev --schema prisma/schema.prisma"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

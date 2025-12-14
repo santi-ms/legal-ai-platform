@@ -7,11 +7,11 @@
     "build": "tsc && npm run prisma:generate",
     "prestart": "npm run prisma:generate",
     "start": "node dist/server.js",
-    "postinstall": "npm run prisma:generate",
-    "prisma:generate": "prisma generate --schema ../../packages/db/prisma/schema.prisma",
-    "migrate:dev": "prisma migrate dev --schema ../../packages/db/prisma/schema.prisma",
-    "migrate:deploy": "prisma migrate deploy --schema ../../packages/db/prisma/schema.prisma",
-    "prisma:migrate:deploy": "prisma migrate deploy --schema ../../packages/db/prisma/schema.prisma",
+    "postinstall": "npm run prisma:generate || echo 'Prisma generate failed, will retry on start'",
+    "prisma:generate": "prisma generate --schema prisma/schema.prisma",
+    "migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
+    "migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
+    "prisma:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
