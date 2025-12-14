@@ -9,6 +9,7 @@ const PUBLIC_PATHS = [
   "/auth/reset/(.*)",
   "/auth/verify-email",
   "/api/_proxy/(.*)",
+  "/api/_auth/(.*)",
   "/api/auth/(.*)",
   "/favicon.ico",
   "/_next/(.*)",
@@ -28,7 +29,8 @@ function isPublic(pathname: string) {
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (pathname.startsWith("/api/_proxy")) {
+  // Permitir rutas de API proxy y auth sin verificación
+  if (pathname.startsWith("/api/_proxy") || pathname.startsWith("/api/_auth")) {
     return NextResponse.next();
   }
 
@@ -60,5 +62,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/_proxy|_next/static|_next/image|favicon.ico|assets).*)"],
+  matcher: ["/((?!api/_proxy|api/_auth|_next/static|_next/image|favicon.ico|assets).*)"],
 };
