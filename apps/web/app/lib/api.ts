@@ -68,18 +68,33 @@ export async function apiFetch<T = any>(
   }
 
   try {
+    console.log("[apiFetch] Making fetch request", { url, method: options?.method || "GET" });
+    
     const response = await fetch(url, {
       ...options,
       headers,
     });
 
-    const data: ApiResponse<T> = await response.json().catch(() => ({
-      ok: false,
-      message: "Error al procesar respuesta del servidor",
-    }));
+    console.log("[apiFetch] Response received", { 
+      url, 
+      status: response.status, 
+      statusText: response.statusText,
+      contentType: response.headers.get("content-type")
+    });
+
+    const data: ApiResponse<T> = await response.json().catch((jsonError) => {
+      console.error("[apiFetch] Error parsing JSON", { url, jsonError });
+      return {
+        ok: false,
+        message: "Error al procesar respuesta del servidor",
+      };
+    });
+
+    console.log("[apiFetch] Parsed data", { url, ok: data.ok, hasMessage: !!data.message });
 
     // Si la respuesta no es ok, devolver el error del servidor
     if (!response.ok) {
+      console.warn("[apiFetch] Response not OK", { url, status: response.status, data });
       return {
         ok: false,
         message: data.message || `Error ${response.status}: ${response.statusText}`,
@@ -91,7 +106,7 @@ export async function apiFetch<T = any>(
     return data;
   } catch (error) {
     // Error de red o conexión
-    console.error("Error en apiFetch:", error);
+    console.error("[apiFetch] Network or connection error", { url, error });
     return {
       ok: false,
       message: error instanceof Error ? error.message : "Error de conexión con el servidor",
@@ -106,10 +121,18 @@ export async function apiPost<T = any>(
   path: string,
   body: any
 ): Promise<ApiResponse<T>> {
-  return apiFetch<T>(path, {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+  console.log("[apiPost] Making POST request", { path, hasBody: !!body });
+  try {
+    const response = await apiFetch<T>(path, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    console.log("[apiPost] Response received", { path, ok: response.ok });
+    return response;
+  } catch (error) {
+    console.error("[apiPost] Error in apiPost", { path, error });
+    throw error;
+  }
 }
 
 /**

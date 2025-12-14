@@ -10,7 +10,7 @@ export const registerSchema = z.object({
     .regex(/[A-Za-z]/, "La contraseña debe contener al menos una letra")
     .regex(/[0-9]/, "La contraseña debe contener al menos un número"),
   confirmPassword: z.string().min(1, "Confirma tu contraseña"),
-  companyName: z.string().min(1, "El nombre de la empresa es requerido").optional(),
+  companyName: z.string().optional().or(z.literal("")),
 })
 .refine((data) => data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden",

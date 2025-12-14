@@ -37,10 +37,26 @@ export default function RegisterPage() {
     resolver: zodResolver(registerSchema),
   });
 
+  // Log de errores de validación
+  useEffect(() => {
+    if (Object.keys(errors).length > 0) {
+      console.error("[register] Form validation errors:", errors);
+    }
+  }, [errors]);
+
   const onSubmit = async (data: RegisterInput) => {
+    console.log("[register] onSubmit called", { 
+      hasName: !!data.name, 
+      hasEmail: !!data.email, 
+      hasPassword: !!data.password,
+      hasCompanyName: !!data.companyName 
+    });
+    
     setLoading(true);
 
     try {
+      console.log("[register] Calling apiPost to /api/_auth/register");
+      
       // Registrar usuario usando proxy
       const response = await apiPost("/api/_auth/register", {
         name: data.name,
@@ -49,7 +65,15 @@ export default function RegisterPage() {
         companyName: data.companyName,
       });
 
+      console.log("[register] Response received", { 
+        ok: response.ok, 
+        message: response.message,
+        hasFieldErrors: !!response.fieldErrors,
+        error: response.error 
+      });
+
       if (!response.ok) {
+        console.error("[register] Registration failed", response);
         // Mostrar errores de campo si existen
         if (response.fieldErrors) {
           Object.entries(response.fieldErrors).forEach(([field, messages]) => {
@@ -64,10 +88,13 @@ export default function RegisterPage() {
         return;
       }
 
+      console.log("[register] Registration successful, redirecting...");
+      
       // Éxito: redirigir a página de verificación
       success("¡Cuenta creada exitosamente! Revisá tu email para verificar tu cuenta.");
       router.push("/auth/verify-email?sent=1");
     } catch (err: any) {
+      console.error("[register] Exception in onSubmit", err);
       showError(err.message || "Error al crear cuenta");
       setLoading(false);
     }
@@ -91,7 +118,13 @@ export default function RegisterPage() {
 
         {/* Formulario */}
         <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <form 
+            onSubmit={(e) => {
+              console.log("[register] Form submit event triggered");
+              handleSubmit(onSubmit)(e);
+            }} 
+            className="space-y-5"
+          >
             {/* Nombre */}
             <div>
               <Label htmlFor="name" className="text-neutral-300 mb-2">
