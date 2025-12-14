@@ -216,6 +216,26 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           });
           // Asignar emailVerified como null si no existe
           created.emailVerified = null;
+        } else if (e?.code === "P1001" || e?.message?.includes("not found") || e?.message?.includes("FATAL")) {
+          // Error de conexión a la base de datos
+          request.log.error({
+            event: "register:db_connection_error",
+            email: normEmail,
+            error: e?.message,
+            code: e?.code,
+          });
+          return reply.code(500).send({
+            ok: false,
+            message: "Error de conexión con la base de datos. Por favor, contactá al administrador.",
+            error: "database_connection_error",
+          });
+        } else if (e?.code === "P2002" || e?.message?.includes("Unique constraint")) {
+          // Usuario ya existe (aunque ya lo verificamos antes, puede haber race condition)
+          request.log.warn({ event: "register:email_exists_race", email: normEmail });
+          return reply.code(409).send({
+            ok: false,
+            message: "El email ya está registrado",
+          });
         } else {
           throw e;
         }
