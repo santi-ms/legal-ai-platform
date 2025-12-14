@@ -11,7 +11,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 // Ejecutar migraciones automáticamente al iniciar el servidor
-function runMigrations() {
+async function runMigrations() {
   // Ejecutar migraciones si:
   // 1. Estamos en producción, O
   // 2. Estamos en desarrollo pero DATABASE_URL está configurada (para facilitar desarrollo local)
@@ -63,11 +63,20 @@ function runMigrations() {
       console.log("[migrate] 💡 La conexión directa usa el puerto 6543 o la URL directa sin pooler");
     }
     
-    execSync(`npx prisma migrate deploy --schema "${schemaPath}"`, {
-      stdio: "inherit",
-      env: migrationEnv,
+    // Ejecutar migraciones con timeout para evitar que se cuelgue
+    return new Promise<void>((resolve, reject) => {
+      try {
+        execSync(`npx prisma migrate deploy --schema "${schemaPath}"`, {
+          stdio: "inherit",
+          env: migrationEnv,
+          timeout: 30000, // 30 segundos de timeout
+        });
+        console.log("[migrate] ✅ Migraciones aplicadas correctamente");
+        resolve();
+      } catch (error: any) {
+        reject(error);
+      }
     });
-    console.log("[migrate] ✅ Migraciones aplicadas correctamente");
   } catch (error: any) {
     console.error("[migrate] ❌ Error ejecutando migraciones:", error.message);
     console.error("[migrate] ❌ Stack:", error.stack);
@@ -178,7 +187,13 @@ async function buildServer() {
 }
 
 // Ejecutar migraciones antes de iniciar el servidor (solo en producción)
-runMigrations();
+// Ejecutar de forma asíncrona para no bloquear el inicio del servidor
+// El servidor iniciará aunque las migraciones fallen
+runMigrations().catch((err) => {
+  console.error("[migrate] ⚠️ Error en migraciones (no bloqueante):", err.message);
+  console.error("[migrate] ⚠️ El servidor iniciará pero las tablas pueden no existir");
+  console.error("[migrate] ⚠️ Solución: Ejecutá el script SQL manualmente en Supabase");
+});
 
 // inicializamos y escuchamos
 const app = await buildServer();
