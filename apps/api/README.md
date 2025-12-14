@@ -27,21 +27,34 @@ El servidor estará disponible en `http://localhost:4001`
 
 ### Schema de Prisma
 
-**⚠️ IMPORTANTE:** El schema de Prisma está **centralizado** en `packages/db/prisma/schema.prisma`.
+**⚠️ IMPORTANTE:** Para Railway (producción), el schema de Prisma está en `prisma/schema.prisma` (local al repo del API).
 
-- ✅ **Único schema válido:** `packages/db/prisma/schema.prisma`
-- ❌ **NO usar:** schemas duplicados en `apps/api/prisma/` o `apps/web/prisma/`
-- ✅ **Migraciones compartidas:** `packages/db/prisma/migrations/`
+- ✅ **Schema para Railway:** `prisma/schema.prisma` (este repo)
+- ✅ **Schema del monorepo:** `packages/db/prisma/schema.prisma` (desarrollo local)
+- ✅ **Migraciones locales:** `prisma/migrations/` (este repo)
 
-### Prisma Client Compartido
+**Sincronización Manual:**
 
-El API usa el Prisma Client compartido desde el package `db`:
+Si trabajás en el monorepo y modificás `packages/db/prisma/schema.prisma`, debés copiar los cambios a `prisma/schema.prisma` antes de hacer deploy a Railway:
+
+1. Copiar el contenido de `packages/db/prisma/schema.prisma` a `prisma/schema.prisma`
+2. Copiar las migraciones nuevas de `packages/db/prisma/migrations/` a `prisma/migrations/`
+3. Hacer commit y push
+
+### Prisma Client
+
+El API genera su propio Prisma Client desde `prisma/schema.prisma`:
+
+```typescript
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
+```
+
+O si usás el package compartido (solo en desarrollo local del monorepo):
 
 ```typescript
 import { prisma } from "db";
 ```
-
-Esto asegura que todos los servicios usen la misma instancia y el mismo schema.
 
 ### Migraciones
 
@@ -51,7 +64,7 @@ Esto asegura que todos los servicios usen la misma instancia y el mismo schema.
 # Crear una nueva migración
 npm run migrate:dev
 
-# Esto generará una migración en packages/db/prisma/migrations/
+# Esto generará una migración en prisma/migrations/
 ```
 
 #### Producción (Railway)
@@ -87,7 +100,8 @@ npm run migrate:dev
 
 **⚠️ Nota:** 
 - Las migraciones se ejecutan automáticamente al iniciar el servidor en producción (ver `src/server.ts`)
-- El servidor busca el schema en `packages/db/prisma/schema.prisma`
+- El servidor busca el schema en `prisma/schema.prisma` (local)
+- Si no existe, intenta usar `packages/db/prisma/schema.prisma` como fallback (solo desarrollo local)
 
 ### Migración Actual: Agregar `updatedAt` a Tenant
 

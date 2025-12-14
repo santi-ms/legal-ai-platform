@@ -10,21 +10,40 @@ import { existsSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// Ejecutar migraciones automáticamente al iniciar el servidor (solo en producción)
+// Ejecutar migraciones automáticamente al iniciar el servidor
 function runMigrations() {
-  if (process.env.NODE_ENV !== "production") {
-    return; // En desarrollo, las migraciones se ejecutan manualmente
+  // Ejecutar migraciones si:
+  // 1. Estamos en producción, O
+  // 2. Estamos en desarrollo pero DATABASE_URL está configurada (para facilitar desarrollo local)
+  const shouldRunMigrations = 
+    process.env.NODE_ENV === "production" || 
+    (process.env.NODE_ENV !== "production" && process.env.DATABASE_URL);
+  
+  if (!shouldRunMigrations) {
+    console.log("[migrate] ⏭️  Omitiendo migraciones (desarrollo sin DATABASE_URL)");
+    return;
   }
 
   try {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     
-    // Usar siempre el schema compartido del monorepo
-    const schemaPath = path.resolve(__dirname, "../../../packages/db/prisma/schema.prisma");
+    // Usar schema local (prisma/schema.prisma) - Railway usa este repo solo
+    const schemaPath = path.resolve(__dirname, "../prisma/schema.prisma");
     
     if (!existsSync(schemaPath)) {
-      console.warn("[migrate] ⚠️ No se encontró schema.prisma en packages/db/prisma/schema.prisma");
+      // Fallback: intentar schema del monorepo (solo para desarrollo local)
+      const monorepoSchema = path.resolve(__dirname, "../../../packages/db/prisma/schema.prisma");
+      if (existsSync(monorepoSchema)) {
+        console.log("[migrate] 📋 Usando schema del monorepo (desarrollo local)");
+        execSync(`npx prisma migrate deploy --schema "${monorepoSchema}"`, {
+          stdio: "inherit",
+          env: process.env,
+        });
+        console.log("[migrate] ✅ Migraciones aplicadas correctamente");
+        return;
+      }
+      console.warn("[migrate] ⚠️ No se encontró schema.prisma en prisma/schema.prisma");
       console.warn("[migrate] ⚠️ Omitiendo migraciones automáticas");
       return;
     }
