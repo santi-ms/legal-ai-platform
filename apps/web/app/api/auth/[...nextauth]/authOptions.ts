@@ -53,12 +53,24 @@ export const authOptions: NextAuthOptions = {
 
           let data: any = {};
           try {
-            data = await res.json();
-          } catch {}
+            const text = await res.text();
+            if (text) {
+              data = JSON.parse(text);
+            }
+          } catch (e) {
+            console.error("[authorize] Error parsing response:", e);
+            return null;
+          }
 
-          console.log("[authorize] login resp", { status: res.status, ok: data?.ok });
+          console.log("[authorize] login resp", { status: res.status, ok: data?.ok, hasUser: !!data?.user });
 
-          if (!res.ok || !data?.ok || !data?.user) {
+          if (!res.ok || !data?.ok) {
+            console.warn("[authorize] Login failed:", { status: res.status, message: data?.message });
+            return null;
+          }
+
+          if (!data?.user) {
+            console.error("[authorize] Response missing user field:", data);
             return null;
           }
 
