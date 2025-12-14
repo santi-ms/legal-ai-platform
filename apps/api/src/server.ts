@@ -72,13 +72,17 @@ async function runMigrations() {
       execAsync(`npx prisma migrate deploy --schema "${schemaPath}"`, {
         env: migrationEnv,
         maxBuffer: 1024 * 1024 * 10, // 10MB buffer
-      }).then(() => {
+      }).then((result) => {
+        if (result.stdout) console.log("[migrate] stdout:", result.stdout);
+        if (result.stderr && !result.stderr.includes("No pending migrations")) {
+          console.log("[migrate] stderr:", result.stderr);
+        }
         console.log("[migrate] ✅ Migraciones aplicadas correctamente");
       }),
       new Promise<void>((_, reject) => {
         setTimeout(() => {
-          reject(new Error("Timeout: Las migraciones tardaron más de 30 segundos"));
-        }, 30000); // 30 segundos de timeout
+          reject(new Error("Timeout: Las migraciones tardaron más de 60 segundos"));
+        }, 60000); // 60 segundos de timeout (aumentado de 30s)
       }),
     ]);
   } catch (error: any) {

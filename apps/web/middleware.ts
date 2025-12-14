@@ -62,5 +62,16 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/_proxy|api/_auth|_next/static|_next/image|favicon.ico|assets).*)"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api/_proxy (proxy routes)
+     * - api/_auth (auth proxy routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - assets (asset files)
+     */
+    "/((?!api/_proxy|api/_auth|_next/static|_next/image|favicon.ico|assets).*)",
+  ],
 };

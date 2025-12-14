@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "http://localhost:4001";
 
-// Método GET para diagnóstico (devolver 405)
+// Método GET para diagnóstico
 export async function GET() {
+  console.log("[_auth/register][GET] Method not allowed");
   return NextResponse.json(
     { ok: false, message: "Method Not Allowed. Use POST." },
     { status: 405 }
@@ -11,6 +12,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  console.log("[_auth/register][POST] Request received");
   try {
     const body = await req.json();
     
@@ -24,13 +26,16 @@ export async function POST(req: Request) {
       company: companyValue && companyValue.trim().length > 0 ? companyValue.trim() : null,
     };
     
+    console.log("[_auth/register][POST] Calling backend:", `${API_BASE}/api/register`);
+    
     const r = await fetch(`${API_BASE}/api/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(transformedBody),
-      // @ts-ignore
-      cache: "no-store",
+      cache: "no-store" as const,
     });
+    
+    console.log("[_auth/register][POST] Backend response status:", r.status);
     
     // Verificar que la respuesta sea JSON válido
     const contentType = r.headers.get("content-type");
