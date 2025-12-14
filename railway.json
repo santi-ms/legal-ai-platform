@@ -2,9 +2,9 @@
   "build": {
     "root": "apps/api",
     "builder": "NIXPACKS",
-    "buildCommand": "cd apps/api && npm install && npm run build"
+    "buildCommand": "npm install && npm run build"
   },
   "deploy": {
-    "startCommand": "cd apps/api && npm run migrate:deploy && npm run start"
+    "startCommand": "npm run migrate:deploy && npm run start"
   }
 }
