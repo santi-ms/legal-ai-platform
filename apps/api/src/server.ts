@@ -50,9 +50,22 @@ function runMigrations() {
 
     console.log("[migrate] 🔄 Ejecutando migraciones de Prisma...");
     console.log("[migrate] 📋 Schema:", schemaPath);
+    
+    // Para Supabase, si hay una URL de migración directa, usarla
+    // De lo contrario, usar DATABASE_URL normal
+    const migrationEnv = { ...process.env };
+    if (process.env.DATABASE_MIGRATION_URL) {
+      console.log("[migrate] 🔗 Usando DATABASE_MIGRATION_URL para migraciones");
+      migrationEnv.DATABASE_URL = process.env.DATABASE_MIGRATION_URL;
+    } else if (process.env.DATABASE_URL?.includes("pooler.supabase.com")) {
+      console.log("[migrate] ⚠️ Detectado pooler de Supabase - las migraciones pueden fallar");
+      console.log("[migrate] 💡 Sugerencia: Configurá DATABASE_MIGRATION_URL con la conexión directa de Supabase");
+      console.log("[migrate] 💡 La conexión directa usa el puerto 6543 o la URL directa sin pooler");
+    }
+    
     execSync(`npx prisma migrate deploy --schema "${schemaPath}"`, {
       stdio: "inherit",
-      env: process.env,
+      env: migrationEnv,
     });
     console.log("[migrate] ✅ Migraciones aplicadas correctamente");
   } catch (error: any) {
