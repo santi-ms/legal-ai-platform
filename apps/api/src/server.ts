@@ -144,9 +144,11 @@ async function buildServer() {
     allowedHeaders: ["Content-Type", "Authorization"],
     origin: isDev ? true : (origin, cb) => {
       // permitir no-browser requests (origin null) y los de la whitelist
-      if (!origin || allowedSet.has(origin)) {
+      // También permitir cualquier origen de Vercel (*.vercel.app)
+      if (!origin || allowedSet.has(origin) || origin.includes(".vercel.app")) {
         cb(null, true);
       } else {
+        console.warn("[CORS] Rejected origin:", origin);
         cb(new Error("CORS not allowed"), false);
       }
     },
