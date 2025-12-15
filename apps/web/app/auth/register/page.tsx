@@ -12,7 +12,6 @@ import { useToast } from "@/components/ui/toast";
 import Link from "next/link";
 import { Scale, Mail, Lock, User, Building2, Eye, EyeOff } from "lucide-react";
 import { registerSchema, type RegisterInput } from "@/app/lib/validation/auth";
-import { apiPost } from "@/app/lib/api";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -55,34 +54,66 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      console.log("[register] Calling apiPost to /api/_auth/register");
+      // Llamar DIRECTAMENTE al backend de Railway, sin pasar por el proxy de Next.js
+      // Esto evita el problema del 405 en Vercel
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
+      const backendUrl = `${apiUrl}/api/register`;
       
-      // Registrar usuario usando proxy
-      const response = await apiPost("/api/_auth/register", {
+      console.log("[register] Calling backend directly:", backendUrl);
+      
+      const transformedBody = {
         name: data.name,
         email: data.email,
         password: data.password,
-        companyName: data.companyName,
+        company: data.companyName && data.companyName.trim().length > 0 ? data.companyName.trim() : null,
+      };
+      
+      const response = await fetch(backendUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(transformedBody),
+        cache: "no-store",
       });
+
+      console.log("[register] Backend response status:", response.status);
+      
+      let responseData: any;
+      try {
+        responseData = await response.json();
+      } catch (e) {
+        const text = await response.text();
+        console.error("[register] Failed to parse JSON:", text);
+        throw new Error("Error al procesar respuesta del servidor");
+      }
 
       console.log("[register] Response received", { 
-        ok: response.ok, 
-        message: response.message,
-        hasFieldErrors: !!response.fieldErrors,
-        error: response.error 
+        ok: responseData?.ok, 
+        message: responseData?.message,
+        hasUser: !!responseData?.user,
+        error: responseData?.error 
       });
+      
+      // Convertir a formato ApiResponse
+      const apiResponse = {
+        ok: response.ok && responseData?.ok === true,
+        message: responseData?.message || "Error al registrar usuario",
+        fieldErrors: responseData?.fieldErrors,
+        error: responseData?.error,
+        data: responseData?.user,
+      };
 
-      if (!response.ok) {
-        console.error("[register] Registration failed", response);
+      if (!apiResponse.ok) {
+        console.error("[register] Registration failed", apiResponse);
         // Mostrar errores de campo si existen
-        if (response.fieldErrors) {
-          Object.entries(response.fieldErrors).forEach(([field, messages]) => {
-            if (messages && messages.length > 0) {
-              showError(`${field}: ${messages[0]}`);
+        if (apiResponse.fieldErrors) {
+          Object.entries(apiResponse.fieldErrors).forEach(([field, messages]) => {
+            const msgArray = Array.isArray(messages) ? messages : [];
+            if (msgArray.length > 0) {
+              showError(`${field}: ${msgArray[0]}`);
             }
           });
         } else {
-          showError(response.message || "Error al registrar usuario");
+          showError(apiResponse.message || "Error al registrar usuario");
         }
         setLoading(false);
         return;
