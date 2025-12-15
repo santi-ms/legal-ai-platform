@@ -29,7 +29,13 @@ function isPublic(pathname: string) {
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Permitir rutas de API proxy y auth sin verificación
+  // Permitir TODAS las rutas de API sin verificación
+  // Esto incluye /api/_proxy, /api/_auth, /api/auth, etc.
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
+  // Permitir rutas de API proxy y auth sin verificación (redundante pero seguro)
   if (pathname.startsWith("/api/_proxy") || pathname.startsWith("/api/_auth")) {
     return NextResponse.next();
   }
@@ -65,13 +71,12 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api/_proxy (proxy routes)
-     * - api/_auth (auth proxy routes)
+     * - api/ (all API routes - proxy, auth, etc.)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - assets (asset files)
      */
-    "/((?!api/_proxy|api/_auth|_next/static|_next/image|favicon.ico|assets).*)",
+    "/((?!api/|_next/static|_next/image|favicon.ico|assets).*)",
   ],
 };
