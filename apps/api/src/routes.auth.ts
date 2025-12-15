@@ -1,7 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { prisma } from "db";
+import db from "db";
+const prisma = db.prisma;
 import rateLimit from "@fastify/rate-limit";
 import { z } from "zod";
 import {
