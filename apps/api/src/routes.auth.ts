@@ -3,11 +3,6 @@ import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import db from "db";
 const prisma = db.prisma;
-
-// Verificar que prisma esté definido
-if (!prisma) {
-  throw new Error("Prisma client no está inicializado. Verificá que el cliente de Prisma se haya generado correctamente.");
-}
 import rateLimit from "@fastify/rate-limit";
 import { z } from "zod";
 import {
