@@ -3,6 +3,11 @@ import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import db from "db";
 const prisma = db.prisma;
+
+// Verificar que prisma esté definido
+if (!prisma) {
+  throw new Error("Prisma client no está inicializado. Verificá que el cliente de Prisma se haya generado correctamente.");
+}
 import rateLimit from "@fastify/rate-limit";
 import { z } from "zod";
 import {
@@ -99,6 +104,20 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       // Verificar si el usuario ya existe
       let exists = null;
       try {
+        // Verificar que prisma y prisma.user estén definidos
+        if (!prisma || !prisma.user) {
+          request.log.error({
+            event: "register:prisma_not_initialized",
+            prismaIsUndefined: !prisma,
+            userModelIsUndefined: !prisma?.user,
+          });
+          return reply.code(500).send({
+            ok: false,
+            message: "Error interno: cliente de base de datos no inicializado. Por favor contactá al administrador.",
+            error: "database_not_initialized",
+          });
+        }
+        
         exists = await prisma.user.findFirst({
           where: { email: normEmail },
         });
@@ -108,6 +127,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           error: dbError?.message,
           code: dbError?.code,
           meta: dbError?.meta,
+          stack: dbError?.stack,
         });
         // Si es un error de conexión o tabla no encontrada, devolver error más claro
         if (dbError?.code === "P1001" || dbError?.message?.includes("not found")) {
@@ -131,18 +151,18 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       // Hashear contraseña
       const passwordHash = await bcrypt.hash(password, 10);
 
-      // Si existe el modelo Tenant y querés asociar:
+      // Crear o encontrar tenant si se proporciona una compañía
       let tenantId: string | undefined = undefined;
       try {
         if (company && company.trim().length > 0) {
-          // crea tenant solo si no existe uno con ese nombre
-          const existingTenant = await prisma.tenant?.findFirst?.({
+          // Buscar tenant existente o crear uno nuevo
+          const existingTenant = await prisma.tenant.findFirst({
             where: { name: company },
           });
           const tenant =
             existingTenant ??
-            (await prisma.tenant?.create?.({ data: { name: company } }));
-          tenantId = tenant?.id;
+            (await prisma.tenant.create({ data: { name: company } }));
+          tenantId = tenant.id;
         }
       } catch (e) {
         request.log.warn({
@@ -247,7 +267,16 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         tenantId: created.tenantId || null,
       });
 
-      return reply.send({ ok: true, user: created });
+      return reply.send({ 
+        ok: true, 
+        user: {
+          id: created.id,
+          email: created.email,
+          name: created.name,
+          role: created.role,
+          tenantId: created.tenantId || null,
+        }
+      });
     } catch (err: any) {
       request.log.error({
         event: "register:exception",
