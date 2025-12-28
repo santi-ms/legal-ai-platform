@@ -1,7 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { prisma } from "db";
+import db from "db";
+const prisma = db.prisma;
 import rateLimit from "@fastify/rate-limit";
 import { z } from "zod";
 import {
@@ -98,20 +99,6 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       // Verificar si el usuario ya existe
       let exists = null;
       try {
-        // Verificar que prisma y prisma.user estén definidos
-        if (!prisma || !prisma.user) {
-          request.log.error({
-            event: "register:prisma_not_initialized",
-            prismaIsUndefined: !prisma,
-            userModelIsUndefined: !prisma?.user,
-          });
-          return reply.code(500).send({
-            ok: false,
-            message: "Error interno: cliente de base de datos no inicializado. Por favor contactá al administrador.",
-            error: "database_not_initialized",
-          });
-        }
-        
         exists = await prisma.user.findFirst({
           where: { email: normEmail },
         });
