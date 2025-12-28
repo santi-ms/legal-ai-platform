@@ -65,37 +65,49 @@ export async function generatePdfFromContract({
     doc.pipe(writeStream);
 
     try {
+      // Asegurar posición inicial
+      doc.x = doc.page.margins.left;
+      doc.y = doc.page.margins.top;
+      
       // título - establecer color, fuente y tamaño explícitamente
       doc
         .fillColor("black")
         .font("Helvetica-Bold")
         .fontSize(18)
-        .text(title || "DOCUMENTO", { align: "center" });
+        .text(title || "DOCUMENTO", {
+          align: "center",
+          width: doc.page.width - doc.page.margins.left - doc.page.margins.right
+        });
 
       doc.moveDown(2);
 
-      // cuerpo legal - establecer color, fuente y tamaño explícitamente
-      doc
-        .fillColor("black")
-        .font("Helvetica")
-        .fontSize(12);
-      
-      // Limpiar y normalizar el texto (reemplazar diferentes tipos de saltos de línea)
+      // Limpiar y normalizar el texto
       const cleanText = rawText.trim().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
       
       if (!cleanText || cleanText.length === 0) {
         console.warn(`[pdf] WARNING: cleanText is empty after processing!`);
-        doc.fillColor("black").text("[Sin contenido]", { align: "left" });
+        doc
+          .fillColor("black")
+          .font("Helvetica")
+          .fontSize(12)
+          .text("[Sin contenido]", {
+            align: "left",
+            width: doc.page.width - doc.page.margins.left - doc.page.margins.right
+          });
       } else {
         console.log(`[pdf] Writing text content (${cleanText.length} chars)`);
         console.log(`[pdf] First 200 chars: "${cleanText.substring(0, 200)}"`);
         
-        // Escribir el texto usando align "left" que es más confiable que "justify"
-        // PDFKit manejará automáticamente los saltos de línea y el word wrapping
-        doc.fillColor("black").text(cleanText, {
-          align: "left",
-          lineGap: 3
-        });
+        // Escribir el texto con configuración explícita
+        doc
+          .fillColor("black")
+          .font("Helvetica")
+          .fontSize(12)
+          .text(cleanText, {
+            align: "left",
+            width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
+            lineGap: 3
+          });
       }
 
       doc.moveDown(3);
@@ -103,10 +115,17 @@ export async function generatePdfFromContract({
       // bloque de firma - establecer color explícitamente
       doc
         .fillColor("black")
+        .font("Helvetica")
         .fontSize(11)
-        .text("__________________________", { align: "left" });
+        .text("__________________________", {
+          align: "left",
+          width: doc.page.width - doc.page.margins.left - doc.page.margins.right
+        });
       doc.moveDown(0.5);
-      doc.text("Firma / Aclaración / DNI", { align: "left" });
+      doc.text("Firma / Aclaración / DNI", {
+        align: "left",
+        width: doc.page.width - doc.page.margins.left - doc.page.margins.right
+      });
 
       // Finalizar el documento
       doc.end();
