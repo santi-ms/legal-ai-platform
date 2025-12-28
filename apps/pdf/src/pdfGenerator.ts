@@ -82,7 +82,13 @@ export async function generatePdfFromContract({
       doc.moveDown(2);
 
       // Limpiar y normalizar el texto
-      const cleanText = rawText.trim().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+      let cleanText = rawText.trim()
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n");
+      
+      // Remover markdown básico (**texto** se convierte en texto normal)
+      // Esto evita problemas de renderizado con caracteres especiales
+      cleanText = cleanText.replace(/\*\*(.*?)\*\*/g, "$1");
       
       if (!cleanText || cleanText.length === 0) {
         console.warn(`[pdf] WARNING: cleanText is empty after processing!`);
@@ -97,17 +103,35 @@ export async function generatePdfFromContract({
       } else {
         console.log(`[pdf] Writing text content (${cleanText.length} chars)`);
         console.log(`[pdf] First 200 chars: "${cleanText.substring(0, 200)}"`);
+        console.log(`[pdf] Current position before text: x=${doc.x}, y=${doc.y}`);
+        
+        // Asegurar que estamos en la posición correcta y con el formato correcto
+        doc.x = doc.page.margins.left;
+        doc.fillColor("black");
+        doc.font("Helvetica");
+        doc.fontSize(12);
+        
+        // Verificar que la posición Y sea válida (dentro de los márgenes de la página)
+        const maxY = doc.page.height - doc.page.margins.bottom;
+        if (doc.y > maxY) {
+          console.warn(`[pdf] WARNING: Y position (${doc.y}) exceeds page bounds (${maxY}), adding new page`);
+          doc.addPage();
+          doc.y = doc.page.margins.top;
+        }
         
         // Escribir el texto con configuración explícita
-        doc
-          .fillColor("black")
-          .font("Helvetica")
-          .fontSize(12)
-          .text(cleanText, {
+        try {
+          doc.text(cleanText, {
             align: "left",
             width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
             lineGap: 3
           });
+          console.log(`[pdf] Text written successfully. New position: x=${doc.x}, y=${doc.y}`);
+        } catch (textError) {
+          console.error(`[pdf] Error writing text:`, textError);
+          // Intentar escribir sin opciones especiales como fallback
+          doc.text(cleanText);
+        }
       }
 
       doc.moveDown(3);
