@@ -2,7 +2,24 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import db from "db";
-const prisma = db.prisma;
+
+// Helper para obtener prisma de manera segura
+function getPrisma() {
+  try {
+    // Acceder a db.prisma de manera segura
+    if (!db || typeof db !== 'object') {
+      throw new Error("El módulo 'db' no está correctamente importado");
+    }
+    const prismaClient = db.prisma;
+    if (!prismaClient) {
+      throw new Error("Prisma client no está disponible en db.prisma");
+    }
+    return prismaClient;
+  } catch (error: any) {
+    console.error("[getPrisma] Error obteniendo Prisma client:", error);
+    throw new Error(`Error al obtener Prisma client: ${error?.message || 'Desconocido'}`);
+  }
+}
 import rateLimit from "@fastify/rate-limit";
 import { z } from "zod";
 import {
@@ -99,7 +116,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       // Verificar si el usuario ya existe
       let exists = null;
       try {
-        exists = await prisma.user.findFirst({
+        exists = await getPrisma().user.findFirst({
           where: { email: normEmail },
         });
       } catch (dbError: any) {
@@ -137,12 +154,12 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       try {
         if (company && company.trim().length > 0) {
           // Buscar tenant existente o crear uno nuevo
-          const existingTenant = await prisma.tenant.findFirst({
+          const existingTenant = await getPrisma().tenant.findFirst({
             where: { name: company },
           });
           const tenant =
             existingTenant ??
-            (await prisma.tenant.create({ data: { name: company } }));
+            (await getPrisma().tenant.create({ data: { name: company } }));
           tenantId = tenant.id;
         }
       } catch (e) {
@@ -183,7 +200,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       // Intentar crear usuario con emailVerified, si falla intentar sin él
       let created: any = null;
       try {
-        created = await prisma.user.create({
+        created = await getPrisma().user.create({
           data: dataBase,
           select: {
             id: true,
@@ -205,7 +222,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           // Remover emailVerified del dataBase
           const dataWithoutVerified = { ...dataBase };
           delete dataWithoutVerified.emailVerified;
-          created = await prisma.user.create({
+          created = await getPrisma().user.create({
             data: dataWithoutVerified,
             select: {
               id: true,
@@ -325,7 +342,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       }
 
       // Buscar token en la base de datos
-      const verificationToken = await prisma.verificationToken.findUnique({
+      const verificationToken = await getPrisma().verificationToken.findUnique({
         where: { token },
       });
 
@@ -341,7 +358,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       // Verificar si el token expiró
       if (verificationToken.expires < new Date()) {
         // Eliminar token expirado
-        await prisma.verificationToken.delete({
+        await getPrisma().verificationToken.delete({
           where: { token },
         });
 
@@ -354,7 +371,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       }
 
       // Buscar usuario por email
-      const user = await prisma.user.findUnique({
+      const user = await getPrisma().user.findUnique({
         where: { email: verificationToken.identifier },
         select: {
           id: true,
@@ -369,7 +386,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 
       // Si ya está verificado, no hacer nada pero retornar éxito
       if (user.emailVerified) {
-        await prisma.verificationToken.delete({
+        await getPrisma().verificationToken.delete({
           where: { token },
         });
 
@@ -379,7 +396,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       }
 
       // Marcar email como verificado y eliminar token
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await getPrisma().$transaction(async (tx: Prisma.TransactionClient) => {
         await tx.user.update({
           where: { id: user.id },
           data: { emailVerified: new Date() },
@@ -431,7 +448,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       // Intentar obtener usuario con emailVerified, si falla intentar sin él
       let user: any = null;
       try {
-        user = await prisma.user.findFirst({
+        user = await getPrisma().user.findFirst({
           where: { email: normEmail },
           select: {
             id: true,
@@ -451,7 +468,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
             email: normEmail,
             error: e?.message,
           });
-          user = await prisma.user.findFirst({
+          user = await getPrisma().user.findFirst({
             where: { email: normEmail },
             select: {
               id: true,
@@ -550,7 +567,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       const { email } = resetRequestSchema.parse(request.body);
 
       // Buscar usuario
-      const user = await prisma.user.findUnique({
+      const user = await getPrisma().user.findUnique({
         where: { email },
       });
 
@@ -564,7 +581,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       }
 
       // Eliminar tokens de reset previos para este usuario
-      await prisma.verificationToken.deleteMany({
+      await getPrisma().verificationToken.deleteMany({
         where: {
           identifier: email,
           // Podríamos filtrar por un tipo si lo agregamos al schema
@@ -577,7 +594,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       const expires = new Date();
       expires.setHours(expires.getHours() + 1); // Expira en 1 hora
 
-      await prisma.verificationToken.create({
+      await getPrisma().verificationToken.create({
         data: {
           identifier: email,
           token,
@@ -630,7 +647,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       const { token, password } = resetConfirmSchema.parse(request.body);
 
       // Buscar token
-      const verificationToken = await prisma.verificationToken.findUnique({
+      const verificationToken = await getPrisma().verificationToken.findUnique({
         where: { token },
       });
 
@@ -645,7 +662,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 
       // Verificar si el token expiró
       if (verificationToken.expires < new Date()) {
-        await prisma.verificationToken.delete({
+        await getPrisma().verificationToken.delete({
           where: { token },
         });
 
@@ -658,7 +675,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       }
 
       // Buscar usuario
-      const user = await prisma.user.findUnique({
+      const user = await getPrisma().user.findUnique({
         where: { email: verificationToken.identifier },
       });
 
@@ -670,7 +687,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       const passwordHash = await bcrypt.hash(password, 10);
 
       // Actualizar contraseña y eliminar token
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await getPrisma().$transaction(async (tx: Prisma.TransactionClient) => {
         await tx.user.update({
           where: { id: user.id },
           data: { passwordHash },
@@ -703,7 +720,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   // GET /api/_diagnostics/auth - Endpoint de diagnóstico para auth
   app.get("/api/_diagnostics/auth", async (request, reply) => {
     try {
-      const one = await prisma.user.findFirst({
+      const one = await getPrisma().user.findFirst({
         select: {
           id: true,
           email: true,
@@ -740,7 +757,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   // GET /api/_diagnostics/prisma-user - Endpoint de diagnóstico de Prisma User
   app.get("/api/_diagnostics/prisma-user", async (request, reply) => {
     try {
-      const columnsUsers = await prisma.$queryRawUnsafe<any[]>(
+      const columnsUsers = await getPrisma().$queryRawUnsafe<any[]>(
         `SELECT column_name, data_type 
          FROM information_schema.columns 
          WHERE table_schema = 'public' AND table_name IN ('users','User') 
@@ -748,7 +765,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       );
       let sample: any = null;
       try {
-        sample = await prisma.user.findFirst({
+        sample = await getPrisma().user.findFirst({
           select: {
             id: true,
             email: true,
