@@ -65,20 +65,20 @@ export async function generatePdfFromContract({
     doc.pipe(writeStream);
 
     try {
-      // Asegurar posición inicial
-      doc.x = doc.page.margins.left;
-      doc.y = doc.page.margins.top;
+      // Configurar color y fuente iniciales
+      doc.fillColor("black");
       
-      // título - establecer color, fuente y tamaño explícitamente
+      // Título - establecer color, fuente y tamaño explícitamente
       doc
-        .fillColor("black")
         .font("Helvetica-Bold")
         .fontSize(18)
+        .fillColor("black")
         .text(title || "DOCUMENTO", {
           align: "center",
           width: doc.page.width - doc.page.margins.left - doc.page.margins.right
         });
 
+      // Mover hacia abajo después del título
       doc.moveDown(2);
 
       // Limpiar y normalizar el texto
@@ -87,8 +87,15 @@ export async function generatePdfFromContract({
         .replace(/\r/g, "\n");
       
       // Remover markdown básico (**texto** se convierte en texto normal)
-      // Esto evita problemas de renderizado con caracteres especiales
-      cleanText = cleanText.replace(/\*\*(.*?)\*\*/g, "$1");
+      // También remover otros caracteres problemáticos
+      cleanText = cleanText
+        .replace(/\*\*(.*?)\*\*/g, "$1")
+        .replace(/\*(.*?)\*/g, "$1") // También remover *texto* (cursiva)
+        .replace(/__(.*?)__/g, "$1") // Remover __texto__ (negrita markdown alternativo)
+        .replace(/_(.*?)_/g, "$1"); // Remover _texto_ (cursiva markdown alternativo)
+      
+      // Asegurar que el texto no esté vacío después de limpiar
+      cleanText = cleanText.trim();
       
       if (!cleanText || cleanText.length === 0) {
         console.warn(`[pdf] WARNING: cleanText is empty after processing!`);
@@ -105,38 +112,51 @@ export async function generatePdfFromContract({
         console.log(`[pdf] First 200 chars: "${cleanText.substring(0, 200)}"`);
         console.log(`[pdf] Current position before text: x=${doc.x}, y=${doc.y}`);
         
-        // Asegurar que estamos en la posición correcta y con el formato correcto
-        doc.x = doc.page.margins.left;
-        doc.fillColor("black");
-        doc.font("Helvetica");
-        doc.fontSize(12);
-        
-        // Verificar que la posición Y sea válida (dentro de los márgenes de la página)
+        // Verificar que la posición Y sea válida
         const maxY = doc.page.height - doc.page.margins.bottom;
         if (doc.y > maxY) {
           console.warn(`[pdf] WARNING: Y position (${doc.y}) exceeds page bounds (${maxY}), adding new page`);
           doc.addPage();
-          doc.y = doc.page.margins.top;
         }
         
-        // Escribir el texto con configuración explícita
-        try {
+        // Calcular ancho disponible
+        const textWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+        
+        // Asegurar que estamos en el margen izquierdo
+        doc.x = doc.page.margins.left;
+        
+        // Configurar formato explícitamente - usar métodos individuales para mayor control
+        doc.fillColor("#000000"); // Negro explícito en hex
+        doc.strokeColor("#000000"); // También establecer stroke color
+        doc.font("Helvetica");
+        doc.fontSize(12);
+        
+        // Verificar que el texto no esté vacío y tenga contenido válido
+        if (cleanText && cleanText.length > 0) {
+          // Escribir el texto - usar el método estándar de PDFKit
+          // No pasar coordenadas explícitas, dejar que PDFKit maneje la posición
           doc.text(cleanText, {
             align: "left",
-            width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
-            lineGap: 3
+            width: textWidth,
+            lineGap: 3,
+            paragraphGap: 5,
+            ellipsis: false
           });
-          console.log(`[pdf] Text written successfully. New position: x=${doc.x}, y=${doc.y}`);
-        } catch (textError) {
-          console.error(`[pdf] Error writing text:`, textError);
-          // Intentar escribir sin opciones especiales como fallback
-          doc.text(cleanText);
+        } else {
+          console.error(`[pdf] ERROR: cleanText is empty or invalid after processing!`);
+          doc.text("[Error: Contenido vacío]", {
+            align: "left",
+            width: textWidth
+          });
         }
+        
+        console.log(`[pdf] Text written successfully. New position: x=${doc.x}, y=${doc.y}`);
       }
 
+      // Mover hacia abajo antes de la firma
       doc.moveDown(3);
 
-      // bloque de firma - establecer color explícitamente
+      // Bloque de firma
       doc
         .fillColor("black")
         .font("Helvetica")
@@ -146,10 +166,14 @@ export async function generatePdfFromContract({
           width: doc.page.width - doc.page.margins.left - doc.page.margins.right
         });
       doc.moveDown(0.5);
-      doc.text("Firma / Aclaración / DNI", {
-        align: "left",
-        width: doc.page.width - doc.page.margins.left - doc.page.margins.right
-      });
+      doc
+        .fillColor("black")
+        .font("Helvetica")
+        .fontSize(11)
+        .text("Firma / Aclaración / DNI", {
+          align: "left",
+          width: doc.page.width - doc.page.margins.left - doc.page.margins.right
+        });
 
       // Finalizar el documento
       doc.end();
