@@ -383,6 +383,10 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
       try {
         const pdfServiceUrl =
           process.env.PDF_SERVICE_URL || "http://localhost:4100";
+        
+        app.log.info(`[api] Calling PDF service at: ${pdfServiceUrl}/pdf/generate`);
+        app.log.info(`[api] PDF generation params: title=${data.type}, fileName=${fileName}, textLength=${contrato.length}`);
+        
         const pdfResponse = await fetch(`${pdfServiceUrl}/pdf/generate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -393,15 +397,24 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
           }),
         });
 
+        app.log.info(`[api] PDF service response status: ${pdfResponse.status}`);
+        
         if (pdfResponse.ok) {
           const pdfJson = await pdfResponse.json();
+          app.log.info({ pdfJson }, `[api] PDF service response`);
           if (pdfJson.ok && pdfJson.fileName === fileName) {
             pdfGenerated = true;
             app.log.info(`[api] PDF generated successfully: ${fileName}`);
+          } else {
+            app.log.warn({ pdfJson }, `[api] PDF generation response invalid`);
           }
+        } else {
+          const errorText = await pdfResponse.text().catch(() => "Could not read error");
+          app.log.error({ status: pdfResponse.status, errorText }, `[api] PDF service error`);
         }
       } catch (err) {
         app.log.error(err, "Error al llamar al pdf-service");
+        app.log.error(`[api] PDF service URL was: ${process.env.PDF_SERVICE_URL || "http://localhost:4100"}`);
       }
 
       // 8️⃣ Guardar fileName en DB
