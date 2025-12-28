@@ -119,6 +119,10 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       try {
         exists = await prisma.user.findFirst({
           where: { email: normEmail },
+          select: {
+            id: true,
+            email: true,
+          },
         });
       } catch (dbError: any) {
         request.log.error({
@@ -129,14 +133,24 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           stack: dbError?.stack,
         });
         // Si es un error de conexión o tabla no encontrada, devolver error más claro
-        if (dbError?.code === "P1001" || dbError?.message?.includes("not found")) {
+        if (dbError?.code === "P1001" || dbError?.message?.includes("not found") || dbError?.message?.includes("FATAL")) {
           return reply.code(500).send({
             ok: false,
             message: "Error de conexión con la base de datos. Verificá que las migraciones se hayan ejecutado correctamente.",
             error: "database_connection_error",
           });
         }
-        throw dbError;
+        // Si es un error de columna faltante, continuar (las migraciones no están aplicadas pero podemos intentar crear sin esa columna)
+        if (dbError?.code === "P2022" || dbError?.message?.includes("does not exist")) {
+          request.log.warn({
+            event: "register:schema_mismatch",
+            error: dbError?.message,
+            message: "Schema no está actualizado, continuando sin columnas opcionales",
+          });
+          // Continuar, no lanzar error
+        } else {
+          throw dbError;
+        }
       }
 
       if (exists) {
@@ -172,24 +186,13 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       }
 
       // Armamos el payload según si existe la relación Tenant en el cliente Prisma
+      // NO incluir emailVerified por ahora, ya que la columna puede no existir
       const baseData: any = {
         name,
         email: normEmail,
         passwordHash,
         role: "user",
       };
-
-      // Intentar agregar emailVerified (puede fallar si la columna no existe)
-      try {
-        // Verificar si el modelo tiene emailVerified en el schema
-        baseData.emailVerified = new Date();
-      } catch (e) {
-        // Si no existe la columna, no la agregamos
-        request.log.warn({
-          event: "register:emailVerified_missing",
-          email: normEmail,
-        });
-      }
 
       const dataBase: Prisma.UserCreateInput = tenantId
         ? {
@@ -201,6 +204,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       // Intentar crear usuario con emailVerified, si falla intentar sin él
       let created: any = null;
       try {
+        // Primero intentar sin emailVerified en el select para evitar errores si la columna no existe
         created = await prisma.user.create({
           data: dataBase,
           select: {
@@ -208,10 +212,19 @@ export async function registerAuthRoutes(app: FastifyInstance) {
             email: true,
             name: true,
             role: true,
-            emailVerified: true,
             tenantId: true,
           },
         });
+        // Intentar agregar emailVerified al resultado si existe
+        try {
+          const withVerified = await prisma.user.findUnique({
+            where: { id: created.id },
+            select: { emailVerified: true },
+          });
+          created.emailVerified = withVerified?.emailVerified || null;
+        } catch {
+          created.emailVerified = null;
+        }
       } catch (e: any) {
         // Si falla por columna faltante, intentar sin emailVerified
         if (e?.code === "P2022" || e?.message?.includes("emailVerified")) {
