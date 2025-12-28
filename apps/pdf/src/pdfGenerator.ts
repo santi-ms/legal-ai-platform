@@ -43,6 +43,7 @@ export async function generatePdfFromContract({
 
   return new Promise<GeneratePdfResult>((resolve, reject) => {
     const writeStream = fs.createWriteStream(absolutePath);
+    let hasError = false;
 
     const doc = new PDFDocument({
       size: "A4",
@@ -50,64 +51,102 @@ export async function generatePdfFromContract({
     });
 
     // Manejar errores
-    writeStream.on("error", (err) => {
-      console.error(`[pdf] Write stream error:`, err);
+    const handleError = (err: Error) => {
+      if (hasError) return;
+      hasError = true;
+      console.error(`[pdf] Error:`, err);
+      writeStream.destroy();
       reject(err);
-    });
-    
-    doc.on("error", (err) => {
-      console.error(`[pdf] PDF document error:`, err);
-      reject(err);
-    });
+    };
+
+    writeStream.on("error", handleError);
+    doc.on("error", handleError);
 
     doc.pipe(writeStream);
 
-    // título
-    doc
-      .font("Times-Bold")
-      .fontSize(16)
-      .text(title, { align: "center" });
+    try {
+      // título - establecer color, fuente y tamaño explícitamente
+      doc
+        .fillColor("black")
+        .font("Helvetica-Bold")
+        .fontSize(18)
+        .text(title || "DOCUMENTO", { align: "center" });
 
-    doc.moveDown(1);
+      doc.moveDown(2);
 
-    // cuerpo legal
-    doc.font("Times-Roman").fontSize(11);
-    
-    // Escribir el contenido del texto (ya validado en la ruta)
-    doc.text(rawText, {
-      align: "justify"
-    });
+      // cuerpo legal - establecer color, fuente y tamaño explícitamente
+      doc
+        .fillColor("black")
+        .font("Helvetica")
+        .fontSize(12);
+      
+      // Limpiar y normalizar el texto (reemplazar diferentes tipos de saltos de línea)
+      const cleanText = rawText.trim().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+      
+      if (!cleanText || cleanText.length === 0) {
+        console.warn(`[pdf] WARNING: cleanText is empty after processing!`);
+        doc.fillColor("black").text("[Sin contenido]", { align: "left" });
+      } else {
+        console.log(`[pdf] Writing text content (${cleanText.length} chars)`);
+        console.log(`[pdf] First 200 chars: "${cleanText.substring(0, 200)}"`);
+        
+        // Escribir el texto usando align "left" que es más confiable que "justify"
+        // PDFKit manejará automáticamente los saltos de línea y el word wrapping
+        doc.fillColor("black").text(cleanText, {
+          align: "left",
+          lineGap: 3
+        });
+      }
 
-    doc.moveDown(4);
+      doc.moveDown(3);
 
-    // bloque de firma
-    doc.fontSize(11).text("__________________________", { align: "left" });
-    doc.text("Firma / Aclaración / DNI", { align: "left" });
+      // bloque de firma - establecer color explícitamente
+      doc
+        .fillColor("black")
+        .fontSize(11)
+        .text("__________________________", { align: "left" });
+      doc.moveDown(0.5);
+      doc.text("Firma / Aclaración / DNI", { align: "left" });
 
-    // Finalizar el documento
-    doc.end();
+      // Finalizar el documento
+      doc.end();
+      
+      console.log(`[pdf] PDF document ended, waiting for stream to finish...`);
+    } catch (err) {
+      handleError(err instanceof Error ? err : new Error(String(err)));
+      return;
+    }
 
     // Esperar a que el stream termine de escribir
     writeStream.on("finish", () => {
+      if (hasError) return;
+      
       console.log(`[pdf] PDF generation completed: ${fileName}`);
-      // Verificar que el archivo existe y tiene contenido
-      const stats = fs.statSync(absolutePath);
-      console.log(`[pdf] PDF file size: ${stats.size} bytes`);
-      if (stats.size === 0) {
-        console.error(`[pdf] ERROR: Generated PDF is empty!`);
-        reject(new Error("Generated PDF file is empty"));
-      } else {
-        resolve({
-          filePath: absolutePath,
-          fileName
-        });
+      try {
+        // Verificar que el archivo existe y tiene contenido
+        const stats = fs.statSync(absolutePath);
+        console.log(`[pdf] PDF file size: ${stats.size} bytes`);
+        if (stats.size === 0) {
+          console.error(`[pdf] ERROR: Generated PDF is empty!`);
+          reject(new Error("Generated PDF file is empty"));
+        } else {
+          resolve({
+            filePath: absolutePath,
+            fileName
+          });
+        }
+      } catch (err) {
+        console.error(`[pdf] Error checking file stats:`, err);
+        reject(err instanceof Error ? err : new Error(String(err)));
       }
     });
 
     // Timeout de seguridad (30 segundos)
     setTimeout(() => {
-      if (!writeStream.writableEnded) {
+      if (!hasError && !writeStream.writableEnded) {
         console.error(`[pdf] ERROR: PDF generation timeout`);
+        hasError = true;
+        writeStream.destroy();
         reject(new Error("PDF generation timeout"));
       }
     }, 30000);
