@@ -63,6 +63,9 @@ export async function registerPdfRoutes(app: FastifyInstance) {
 
     const { title, rawText, fileName } = parsed.data;
 
+    app.log.info(`[pdf] Generating PDF with fileName: ${fileName || "auto-generated"}`);
+    app.log.info(`[pdf] Title: ${title}, Text length: ${rawText.length}`);
+
     // Validar fileName si viene (debe ser alfanumérico con punto, guión o underscore)
     if (fileName && !/^[a-zA-Z0-9._-]+\.pdf$/.test(fileName)) {
       return reply.status(400).send({
@@ -72,19 +75,32 @@ export async function registerPdfRoutes(app: FastifyInstance) {
       });
     }
 
+    // Validar que rawText no esté vacío
+    if (!rawText || rawText.trim().length === 0) {
+      app.log.warn(`[pdf] WARNING: rawText is empty!`);
+      return reply.status(400).send({
+        ok: false,
+        error: "empty_text",
+        message: "rawText cannot be empty"
+      });
+    }
+
     try {
       const result = await generatePdfFromContract({ title, rawText, fileName });
 
+      app.log.info(`[pdf] PDF generated successfully: ${result.fileName}`);
+      
       return reply.send({
         ok: true,
         filePath: result.filePath,
         fileName: result.fileName
       });
     } catch (err) {
-      request.log.error(err);
+      request.log.error(err, `[pdf] Error generating PDF: ${err instanceof Error ? err.message : "Unknown error"}`);
       return reply.status(500).send({
         ok: false,
-        error: "PDF_GENERATION_FAILED"
+        error: "PDF_GENERATION_FAILED",
+        message: err instanceof Error ? err.message : "Unknown error"
       });
     }
   });
