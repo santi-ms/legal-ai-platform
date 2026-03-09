@@ -1,6 +1,11 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
-import { prisma } from "db";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient({
+  log: process.env.NODE_ENV === "development" ? ["error", "warn", "query"] : ["error", "warn"],
+  errorFormat: "pretty",
+});
 
 async function main() {
   console.log("🌱 Iniciando seed de base de datos...");

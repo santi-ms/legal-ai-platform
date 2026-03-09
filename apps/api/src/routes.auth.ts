@@ -1,26 +1,12 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { Prisma, PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import db from "db";
 
-// Obtener prisma de manera segura, con fallback si db.prisma no está disponible
-let prisma: PrismaClient;
-try {
-  prisma = db?.prisma;
-  if (!prisma) {
-    // Fallback: crear instancia directa si db.prisma no está disponible
-    prisma = new PrismaClient({
-      log: process.env.NODE_ENV === "development" ? ["error", "warn", "query"] : ["error", "warn"],
-      errorFormat: "pretty",
-    });
-  }
-} catch (error) {
-  // Si falla la importación de db, crear instancia directa
-  prisma = new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["error", "warn", "query"] : ["error", "warn"],
-    errorFormat: "pretty",
-  });
-}
+// Crear instancia de PrismaClient
+const prisma = new PrismaClient({
+  log: process.env.NODE_ENV === "development" ? ["error", "warn", "query"] : ["error", "warn"],
+  errorFormat: "pretty",
+});
 import rateLimit from "@fastify/rate-limit";
 import { z } from "zod";
 import {

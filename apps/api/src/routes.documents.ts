@@ -5,26 +5,12 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { getUserFromRequest, requireAuth } from "./utils/auth.js";
 import bcrypt from "bcryptjs";
-import db from "db";
 
-// Obtener prisma de manera segura, con fallback si db.prisma no está disponible
-let prisma: PrismaClient;
-try {
-  prisma = db?.prisma;
-  if (!prisma) {
-    // Fallback: crear instancia directa si db.prisma no está disponible
-    prisma = new PrismaClient({
-      log: process.env.NODE_ENV === "development" ? ["error", "warn", "query"] : ["error", "warn"],
-      errorFormat: "pretty",
-    });
-  }
-} catch (error) {
-  // Si falla la importación de db, crear instancia directa
-  prisma = new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["error", "warn", "query"] : ["error", "warn"],
-    errorFormat: "pretty",
-  });
-}
+// Crear instancia de PrismaClient
+const prisma = new PrismaClient({
+  log: process.env.NODE_ENV === "development" ? ["error", "warn", "query"] : ["error", "warn"],
+  errorFormat: "pretty",
+});
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
