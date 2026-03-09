@@ -138,14 +138,32 @@ async function buildServer() {
   
   const allowedSet = new Set<string>(allowedOrigins);
 
+  // Función para verificar si un origen está permitido
+  const isOriginAllowed = (origin: string | undefined): boolean => {
+    // Permitir requests sin origin (no-browser, Postman, etc.)
+    if (!origin) {
+      return true;
+    }
+    
+    // Verificar si está en la whitelist
+    if (allowedSet.has(origin)) {
+      return true;
+    }
+    
+    // Permitir cualquier dominio de Vercel
+    if (origin.includes(".vercel.app")) {
+      return true;
+    }
+    
+    return false;
+  };
+
   await app.register(fastifyCors, {
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     origin: isDev ? true : (origin, cb) => {
-      // permitir no-browser requests (origin null) y los de la whitelist
-      // También permitir cualquier origen de Vercel (*.vercel.app)
-      if (!origin || allowedSet.has(origin) || origin.includes(".vercel.app")) {
+      if (isOriginAllowed(origin)) {
         cb(null, true);
       } else {
         console.warn("[CORS] Rejected origin:", origin);
