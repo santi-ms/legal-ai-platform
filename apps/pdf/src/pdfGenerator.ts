@@ -44,6 +44,7 @@ export async function generatePdfFromContract({
   return new Promise<GeneratePdfResult>((resolve, reject) => {
     const writeStream = fs.createWriteStream(absolutePath);
     let hasError = false;
+    let streamFinished = false;
 
     const doc = new PDFDocument({
       size: "A4",
@@ -62,20 +63,38 @@ export async function generatePdfFromContract({
     writeStream.on("error", handleError);
     doc.on("error", handleError);
 
+    // Verificar que el stream esté listo antes de escribir
+    writeStream.on("open", () => {
+      console.log(`[pdf] Write stream opened, starting PDF generation...`);
+    });
+
     doc.pipe(writeStream);
 
     try {
-      // Título
+      console.log(`[pdf] Starting to write PDF content...`);
+      console.log(`[pdf] rawText preview (first 200 chars): ${rawText.substring(0, 200)}`);
+      
+      // Asegurar que el color sea negro explícitamente
+      doc.fillColor("black");
+      doc.strokeColor("black");
+      
+      // Título - usar fuente estándar que soporte mejor caracteres especiales
+      const titleText = title || "DOCUMENTO";
+      console.log(`[pdf] Writing title: "${titleText}"`);
+      console.log(`[pdf] Title character codes: ${Array.from(titleText).map(c => c.charCodeAt(0)).join(',')}`);
+      
       doc
         .font("Helvetica-Bold")
         .fontSize(18)
         .fillColor("black")
-        .text(title || "DOCUMENTO", {
+        .text(titleText, {
           align: "center",
-          width: doc.page.width - doc.page.margins.left - doc.page.margins.right
+          width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
+          continued: false
         });
 
       doc.moveDown(2);
+      console.log(`[pdf] Title written, current Y position: ${doc.y}`);
 
       // Limpiar texto - remover markdown
       let cleanText = rawText.trim()
@@ -87,33 +106,64 @@ export async function generatePdfFromContract({
         .replace(/_(.*?)_/g, "$1")
         .trim();
       
+      console.log(`[pdf] Cleaned text length: ${cleanText.length}`);
+      console.log(`[pdf] Cleaned text preview: ${cleanText.substring(0, 100)}...`);
+      
       if (!cleanText || cleanText.length === 0) {
+        console.warn(`[pdf] WARNING: Cleaned text is empty, using placeholder`);
         cleanText = "[Sin contenido]";
       }
       
       // Escribir texto principal - método directo y simple
       const textWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+      const pageHeight = doc.page.height;
+      const currentY = doc.y;
+      
+      console.log(`[pdf] Page dimensions: width=${doc.page.width}, height=${pageHeight}`);
+      console.log(`[pdf] Current position: x=${doc.x}, y=${currentY}`);
+      console.log(`[pdf] Text width: ${textWidth}`);
+      console.log(`[pdf] Writing main text (${cleanText.length} chars)...`);
+      
+      // Asegurar que estamos en una posición válida
+      if (currentY > pageHeight - 100) {
+        console.warn(`[pdf] WARNING: Current Y position (${currentY}) is too close to bottom, adding new page`);
+        doc.addPage();
+      }
+      
+      // Escribir texto principal - método simple y directo
+      console.log(`[pdf] Writing main text (${cleanText.length} chars)...`);
+      console.log(`[pdf] First 500 chars of cleanText: ${cleanText.substring(0, 500)}`);
       
       doc
         .font("Helvetica")
         .fontSize(12)
-        .fillColor("black")
-        .text(cleanText, {
-          align: "left",
-          width: textWidth,
-          lineGap: 3
-        });
+        .fillColor("black");
+      
+      // Escribir el texto completo de una vez
+      doc.text(cleanText, {
+        align: "left",
+        width: textWidth,
+        lineGap: 3,
+        paragraphGap: 5
+      });
+      
+      const afterTextY = doc.y;
+      console.log(`[pdf] Main text written, Y position after: ${afterTextY}`);
 
       doc.moveDown(3);
 
       // Bloque de firma
+      doc.moveDown(3);
+      console.log(`[pdf] Writing signature block at Y: ${doc.y}`);
+      
       doc
         .font("Helvetica")
         .fontSize(11)
         .fillColor("black")
         .text("__________________________", {
           align: "left",
-          width: textWidth
+          width: textWidth,
+          continued: false
         });
       doc.moveDown(0.5);
       doc
@@ -122,10 +172,13 @@ export async function generatePdfFromContract({
         .fillColor("black")
         .text("Firma / Aclaración / DNI", {
           align: "left",
-          width: textWidth
+          width: textWidth,
+          continued: false
         });
+      console.log(`[pdf] Signature block written, final Y: ${doc.y}`);
 
       // Finalizar el documento
+      console.log(`[pdf] Ending PDF document...`);
       doc.end();
       
       console.log(`[pdf] PDF document ended, waiting for stream to finish...`);
@@ -137,31 +190,51 @@ export async function generatePdfFromContract({
     // Esperar a que el stream termine de escribir
     writeStream.on("finish", () => {
       if (hasError) return;
+      streamFinished = true;
       
+      console.log(`[pdf] Write stream finished`);
       console.log(`[pdf] PDF generation completed: ${fileName}`);
-      try {
-        // Verificar que el archivo existe y tiene contenido
-        const stats = fs.statSync(absolutePath);
-        console.log(`[pdf] PDF file size: ${stats.size} bytes`);
-        if (stats.size === 0) {
-          console.error(`[pdf] ERROR: Generated PDF is empty!`);
-          reject(new Error("Generated PDF file is empty"));
-        } else {
-          resolve({
-            filePath: absolutePath,
-            fileName
-          });
+      
+      // Dar un pequeño delay para asegurar que el archivo esté completamente escrito
+      setTimeout(() => {
+        try {
+          // Verificar que el archivo existe y tiene contenido
+          const stats = fs.statSync(absolutePath);
+          console.log(`[pdf] PDF file size: ${stats.size} bytes`);
+          
+          if (stats.size === 0) {
+            console.error(`[pdf] ERROR: Generated PDF is empty!`);
+            reject(new Error("Generated PDF file is empty"));
+          } else if (stats.size < 1000) {
+            // PDFs válidos deberían tener al menos algunos KB
+            console.warn(`[pdf] WARNING: PDF file is very small (${stats.size} bytes), might be corrupted`);
+          }
+          
+          // Verificar que el archivo es realmente un PDF leyendo los primeros bytes
+          const fileBuffer = fs.readFileSync(absolutePath, { encoding: null });
+          const pdfHeader = fileBuffer.slice(0, 4).toString();
+          if (pdfHeader !== "%PDF") {
+            console.error(`[pdf] ERROR: File does not have PDF header! Got: ${pdfHeader}`);
+            reject(new Error("Generated file is not a valid PDF"));
+          } else {
+            console.log(`[pdf] PDF header verified: ${pdfHeader}`);
+            resolve({
+              filePath: absolutePath,
+              fileName
+            });
+          }
+        } catch (err) {
+          console.error(`[pdf] Error checking file stats:`, err);
+          reject(err instanceof Error ? err : new Error(String(err)));
         }
-      } catch (err) {
-        console.error(`[pdf] Error checking file stats:`, err);
-        reject(err instanceof Error ? err : new Error(String(err)));
-      }
+      }, 100); // 100ms delay para asegurar escritura completa
     });
 
     // Timeout de seguridad (30 segundos)
     setTimeout(() => {
-      if (!hasError && !writeStream.writableEnded) {
-        console.error(`[pdf] ERROR: PDF generation timeout`);
+      if (!hasError && !streamFinished) {
+        console.error(`[pdf] ERROR: PDF generation timeout (stream not finished)`);
+        console.error(`[pdf] Stream state: writableEnded=${writeStream.writableEnded}, destroyed=${writeStream.destroyed}`);
         hasError = true;
         writeStream.destroy();
         reject(new Error("PDF generation timeout"));
