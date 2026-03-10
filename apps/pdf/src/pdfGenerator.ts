@@ -81,19 +81,33 @@ export async function generatePdfFromContract({
       // Título - usar fuente estándar que soporte mejor caracteres especiales
       const titleText = title || "DOCUMENTO";
       console.log(`[pdf] Writing title: "${titleText}"`);
-      console.log(`[pdf] Title character codes: ${Array.from(titleText).map(c => c.charCodeAt(0)).join(',')}`);
       
+      // Escribir título usando el método estándar de PDFKit
       doc
         .font("Helvetica-Bold")
         .fontSize(18)
+        .fillColor("black")
         .text(titleText, {
           align: "center",
-          width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
-          continued: false
+          width: doc.page.width - doc.page.margins.left - doc.page.margins.right
         });
 
       doc.moveDown(2);
       console.log(`[pdf] Title written, current Y position: ${doc.y}`);
+
+      // Calcular ancho del texto antes de usarlo
+      const textWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+      // Escribir texto de prueba para verificar que el PDF funciona
+      doc
+        .font("Helvetica")
+        .fontSize(10)
+        .fillColor("black")
+        .text("TEXTO DE PRUEBA: Si ves esto, el PDF está funcionando correctamente.", {
+          align: "left",
+          width: textWidth
+        });
+      doc.moveDown(1);
 
       // Limpiar texto - remover markdown
       let cleanText = rawText.trim()
@@ -112,9 +126,6 @@ export async function generatePdfFromContract({
         console.warn(`[pdf] WARNING: Cleaned text is empty, using placeholder`);
         cleanText = "[Sin contenido]";
       }
-      
-      // Escribir texto principal - método directo y simple
-      const textWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
       const pageHeight = doc.page.height;
       const currentY = doc.y;
       
@@ -140,38 +151,51 @@ export async function generatePdfFromContract({
       // Usar fuente estándar que definitivamente existe
       doc
         .font("Helvetica")
-        .fontSize(12);
+        .fontSize(12)
+        .fillColor("black");
       
       // Verificar que el texto no esté vacío antes de escribir
       if (cleanText && cleanText.length > 0) {
-        // Escribir el texto completo de una vez
-        // Usar opciones explícitas para asegurar visibilidad
+        // Escribir el texto completo usando el método estándar de PDFKit
         try {
+          const startY = doc.y;
+          
+          // Asegurar que el color y fuente estén configurados
+          doc
+            .font("Helvetica")
+            .fontSize(12)
+            .fillColor("black");
+          
+          // Escribir el texto
           doc.text(cleanText, {
             align: "left",
             width: textWidth,
             lineGap: 3,
-            paragraphGap: 5,
-            ellipsis: false
+            paragraphGap: 5
           });
-          console.log(`[pdf] Text written successfully, Y position after: ${doc.y}`);
+          
+          const endY = doc.y;
+          console.log(`[pdf] Text written successfully, Y position: ${startY} -> ${endY}`);
           
           // Verificar que el cursor se movió (indica que el texto se escribió)
-          if (doc.y === currentY) {
+          if (Math.abs(endY - startY) < 1) {
             console.warn(`[pdf] WARNING: Y position did not change after writing text!`);
+            console.warn(`[pdf] Attempting to write test text...`);
+            // Intentar escribir texto de prueba
+            doc.text("TEST: Este texto debería ser visible", {
+              width: textWidth
+            });
           }
         } catch (textError) {
           console.error(`[pdf] ERROR writing text:`, textError);
           // Intentar escribir texto de prueba
           doc.text("[ERROR al escribir texto]", {
-            align: "left",
             width: textWidth
           });
         }
       } else {
         console.error(`[pdf] ERROR: cleanText is empty or invalid!`);
         doc.text("[ERROR: Texto vacío]", {
-          align: "left",
           width: textWidth
         });
       }
