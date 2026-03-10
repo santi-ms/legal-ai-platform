@@ -43,13 +43,16 @@ export default function DocumentDetailPage() {
   }, [id]);
 
   function handleDownload() {
-    if (!id) return;
-    // Usar el proxy para el PDF
-    window.open(
-      `/api/_proxy/documents/${id}/pdf`,
-      "_blank",
-      "noopener,noreferrer"
-    );
+    if (!id || !data?.document?.lastVersion?.rawText) return;
+    
+    // Generar PDF en el frontend usando jsPDF
+    const { generatePdfFromText } = require("@/app/lib/pdfGenerator");
+    const doc = data.document;
+    const title = doc.type || "DOCUMENTO";
+    const text = doc.lastVersion.rawText;
+    const fileName = `${id}.pdf`;
+    
+    generatePdfFromText(title, text, fileName);
   }
 
   // distintos estados

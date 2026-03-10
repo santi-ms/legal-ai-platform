@@ -87,60 +87,32 @@ export async function generatePdfFromContract({
   console.log(`[pdf-puppeteer] Formatted text length: ${formattedText.length}`);
   console.log(`[pdf-puppeteer] Formatted text preview (first 500 chars): ${formattedText.substring(0, 500)}`);
 
-  // HTML template - EXTREMADAMENTE SIMPLE para debugging
-  // Primero, crear un HTML de prueba MUY básico
-  const testHtml = `
-<!DOCTYPE html>
+  // HTML template - ABSOLUTAMENTE MÍNIMO para verificar que funciona
+  // Si esto no funciona, el problema es más fundamental
+  const html = `<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <style>
-    body { 
-      font-family: Arial; 
-      font-size: 16px; 
-      color: #000000; 
-      background: #FFFFFF;
-      padding: 50px;
-    }
-    .test { 
-      background: #FFFF00; 
-      color: #000000; 
-      padding: 20px; 
-      border: 5px solid #FF0000; 
-      font-size: 20px;
-      font-weight: bold;
-      margin: 20px 0;
-    }
-    h1 { 
-      color: #000000; 
-      font-size: 24px; 
-      margin: 20px 0;
-    }
-    p { 
-      color: #000000; 
-      font-size: 14px; 
-      margin: 10px 0;
-      line-height: 1.5;
-    }
-  </style>
+<meta charset="UTF-8">
+<style>
+body { font-family: Arial; font-size: 14px; color: black; padding: 20px; }
+.test { background: yellow; color: black; padding: 15px; border: 3px solid red; font-weight: bold; margin: 20px 0; }
+h1 { color: black; font-size: 20px; margin: 20px 0; }
+p { color: black; margin: 8px 0; }
+</style>
 </head>
 <body>
-  <div class="test">PRUEBA: Este texto debe ser visible en amarillo con borde rojo</div>
-  <h1>${titleText}</h1>
-  <p style="color: #000000; font-weight: bold;">Este es un párrafo de prueba en negro</p>
-  <div style="color: #000000;">
-    ${formattedText}
-  </div>
-  <p style="color: #000000; margin-top: 40px;">__________________________</p>
-  <p style="color: #000000;">Firma / Aclaración / DNI</p>
+<div class="test">PRUEBA VISIBLE: Texto amarillo con borde rojo</div>
+<h1>${titleText}</h1>
+<p style="color: black;">Texto de prueba en negro</p>
+<div style="color: black;">
+${formattedText}
+</div>
+<p style="color: black; margin-top: 30px;">__________________________</p>
+<p style="color: black;">Firma / Aclaración / DNI</p>
 </body>
-</html>
-  `.trim();
+</html>`;
   
-  console.log(`[pdf-puppeteer] HTML length: ${testHtml.length}`);
-  console.log(`[pdf-puppeteer] HTML preview (first 1000 chars): ${testHtml.substring(0, 1000)}`);
-  
-  const html = testHtml;
+  console.log(`[pdf-puppeteer] HTML length: ${html.length}`);
 
   try {
     // Lanzar browser
@@ -176,8 +148,9 @@ export async function generatePdfFromContract({
 
     // Generar PDF con opciones mejoradas
     console.log(`[pdf-puppeteer] Generating PDF...`);
-    await page.pdf({
-      path: absolutePath,
+    
+    // Generar PDF directamente como buffer primero para verificar
+    const pdfBuffer = await page.pdf({
       format: 'A4',
       margin: {
         top: '2cm',
@@ -188,15 +161,35 @@ export async function generatePdfFromContract({
       printBackground: true,
       preferCSSPageSize: false
     });
+    
+    console.log(`[pdf-puppeteer] PDF buffer generated, size: ${pdfBuffer.length} bytes`);
+    
+    // Escribir el buffer al archivo
+    fs.writeFileSync(absolutePath, pdfBuffer);
     console.log(`[pdf-puppeteer] PDF file written to: ${absolutePath}`);
 
     await browser.close();
 
-    // Verificar que el archivo existe
+    // Verificar que el archivo existe y tiene contenido válido
     const stats = fs.statSync(absolutePath);
     if (stats.size === 0) {
       throw new Error("Generated PDF is empty");
     }
+
+    // Verificar header del PDF
+    const fileBuffer = fs.readFileSync(absolutePath, { encoding: null });
+    const pdfHeader = fileBuffer.slice(0, 4).toString();
+    console.log(`[pdf-puppeteer] PDF header: ${pdfHeader}`);
+    
+    if (pdfHeader !== "%PDF") {
+      throw new Error(`Invalid PDF header: ${pdfHeader}`);
+    }
+
+    // Verificar que el PDF tiene contenido (buscar texto en el PDF)
+    const pdfContent = fileBuffer.toString('latin1');
+    const hasTestText = pdfContent.includes('PRUEBA VISIBLE') || pdfContent.includes('PRUEBA');
+    console.log(`[pdf-puppeteer] PDF contains test text: ${hasTestText}`);
+    console.log(`[pdf-puppeteer] PDF content preview (first 500 chars): ${pdfContent.substring(0, 500)}`);
 
     console.log(`[pdf-puppeteer] PDF generated successfully: ${fileName} (${stats.size} bytes)`);
 

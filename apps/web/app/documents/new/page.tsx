@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { DashboardShell } from "@/app/components/DashboardShell";
 import { useToast } from "@/components/ui/toast";
 import { sanitizeInput } from "@/app/lib/sanitize";
+import { generatePdfFromText } from "@/app/lib/pdfGenerator";
 import confetti from "canvas-confetti";
 
 // Tipos del formulario
@@ -629,17 +630,19 @@ export default function NewDocumentPage() {
                   </div>
                 </div>
 
-                {result.pdfUrl && (
+                {result.contrato && (
                   <div>
-                    <a
-                      href={`/api/_proxy/documents/${result.documentId}/pdf`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => {
+                        const title = formData.type || "DOCUMENTO";
+                        const fileName = `${result.documentId}.pdf`;
+                        generatePdfFromText(title, result.contrato, fileName);
+                      }}
                       className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm ring-1 ring-inset ring-teal-700/30 hover:bg-teal-500 hover:shadow-md transition-all"
                     >
                       <Download className="h-4 w-4" />
                       Descargar PDF
-                    </a>
+                    </button>
                   </div>
                 )}
 
