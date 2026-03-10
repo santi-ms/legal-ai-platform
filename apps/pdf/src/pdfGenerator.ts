@@ -86,7 +86,6 @@ export async function generatePdfFromContract({
       doc
         .font("Helvetica-Bold")
         .fontSize(18)
-        .fillColor("black")
         .text(titleText, {
           align: "center",
           width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
@@ -134,18 +133,48 @@ export async function generatePdfFromContract({
       console.log(`[pdf] Writing main text (${cleanText.length} chars)...`);
       console.log(`[pdf] First 500 chars of cleanText: ${cleanText.substring(0, 500)}`);
       
+      // Asegurar que el color sea negro explícitamente
+      doc.fillColor("black");
+      doc.strokeColor("black");
+      
+      // Usar fuente estándar que definitivamente existe
       doc
         .font("Helvetica")
-        .fontSize(12)
-        .fillColor("black");
+        .fontSize(12);
       
-      // Escribir el texto completo de una vez
-      doc.text(cleanText, {
-        align: "left",
-        width: textWidth,
-        lineGap: 3,
-        paragraphGap: 5
-      });
+      // Verificar que el texto no esté vacío antes de escribir
+      if (cleanText && cleanText.length > 0) {
+        // Escribir el texto completo de una vez
+        // Usar opciones explícitas para asegurar visibilidad
+        try {
+          doc.text(cleanText, {
+            align: "left",
+            width: textWidth,
+            lineGap: 3,
+            paragraphGap: 5,
+            ellipsis: false
+          });
+          console.log(`[pdf] Text written successfully, Y position after: ${doc.y}`);
+          
+          // Verificar que el cursor se movió (indica que el texto se escribió)
+          if (doc.y === currentY) {
+            console.warn(`[pdf] WARNING: Y position did not change after writing text!`);
+          }
+        } catch (textError) {
+          console.error(`[pdf] ERROR writing text:`, textError);
+          // Intentar escribir texto de prueba
+          doc.text("[ERROR al escribir texto]", {
+            align: "left",
+            width: textWidth
+          });
+        }
+      } else {
+        console.error(`[pdf] ERROR: cleanText is empty or invalid!`);
+        doc.text("[ERROR: Texto vacío]", {
+          align: "left",
+          width: textWidth
+        });
+      }
       
       const afterTextY = doc.y;
       console.log(`[pdf] Main text written, Y position after: ${afterTextY}`);
@@ -156,10 +185,13 @@ export async function generatePdfFromContract({
       doc.moveDown(3);
       console.log(`[pdf] Writing signature block at Y: ${doc.y}`);
       
+      // Asegurar color negro explícitamente
+      doc.fillColor("black");
+      doc.strokeColor("black");
+      
       doc
         .font("Helvetica")
         .fontSize(11)
-        .fillColor("black")
         .text("__________________________", {
           align: "left",
           width: textWidth,
@@ -169,7 +201,6 @@ export async function generatePdfFromContract({
       doc
         .font("Helvetica")
         .fontSize(11)
-        .fillColor("black")
         .text("Firma / Aclaración / DNI", {
           align: "left",
           width: textWidth,
