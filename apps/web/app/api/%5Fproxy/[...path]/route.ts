@@ -262,15 +262,32 @@ async function handler(
     }
 
     // 9. Leer respuesta del backend
-    const responseText = await backendResponse.text();
+    const contentType = backendResponse.headers.get("content-type") || "application/json";
+    const isBinary = contentType.includes("application/pdf") || 
+                     contentType.includes("image/") || 
+                     contentType.includes("application/octet-stream");
     
     // 10. Devolver respuesta al cliente
-    return new NextResponse(responseText, {
-      status: backendResponse.status,
-      headers: {
-        "Content-Type": backendResponse.headers.get("content-type") || "application/json",
-      },
-    });
+    if (isBinary) {
+      // Para archivos binarios (PDFs, imágenes, etc.), usar arrayBuffer
+      const arrayBuffer = await backendResponse.arrayBuffer();
+      return new NextResponse(arrayBuffer, {
+        status: backendResponse.status,
+        headers: {
+          "Content-Type": contentType,
+          "Content-Disposition": backendResponse.headers.get("content-disposition") || undefined,
+        },
+      });
+    } else {
+      // Para JSON y texto, usar text()
+      const responseText = await backendResponse.text();
+      return new NextResponse(responseText, {
+        status: backendResponse.status,
+        headers: {
+          "Content-Type": contentType,
+        },
+      });
+    }
 
   } catch (error: any) {
     console.error("[_proxy] Error inesperado:", error);
