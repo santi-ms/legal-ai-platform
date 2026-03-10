@@ -780,7 +780,11 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
           versions: {
             orderBy: { createdAt: "desc" },
             take: 1,
-            select: { pdfUrl: true },
+            select: { 
+              id: true,
+              pdfUrl: true,
+              rawText: true,
+            },
           },
         },
       });
@@ -791,10 +795,73 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
           .send({ ok: false, error: "DOCUMENT_NOT_FOUND" });
       }
 
-      const fileName = document.versions[0]?.pdfUrl;
+      const version = document.versions[0];
+      let fileName = version?.pdfUrl;
 
-      if (!fileName) {
-        return reply.status(404).send({ ok: false, error: "PDF_NOT_FOUND" });
+      // Si no hay PDF, intentar regenerarlo automáticamente
+      if (!fileName || !version?.rawText) {
+        app.log.info(`[api] PDF not found for document ${id}, attempting to regenerate...`);
+        
+        if (!version?.rawText) {
+          return reply.status(404).send({ 
+            ok: false, 
+            error: "PDF_NOT_FOUND",
+            message: "El documento no tiene contenido para generar el PDF" 
+          });
+        }
+
+        // Regenerar PDF
+        const versionId = version.id;
+        fileName = `${versionId}.pdf`;
+        
+        try {
+          const pdfServiceUrl = process.env.PDF_SERVICE_URL || "http://localhost:4100";
+          app.log.info(`[api] Regenerating PDF at: ${pdfServiceUrl}/pdf/generate`);
+          
+          const pdfResponse = await fetch(`${pdfServiceUrl}/pdf/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: document.type.toUpperCase(),
+              rawText: version.rawText,
+              fileName: fileName,
+            }),
+          });
+
+          if (pdfResponse.ok) {
+            const pdfJson = await pdfResponse.json();
+            if (pdfJson.ok && pdfJson.fileName === fileName) {
+              // Guardar el fileName en la base de datos
+              await prisma.documentVersion.update({
+                where: { id: versionId },
+                data: { pdfUrl: fileName },
+              });
+              app.log.info(`[api] PDF regenerated successfully: ${fileName}`);
+            } else {
+              app.log.warn({ pdfJson }, `[api] PDF regeneration response invalid`);
+              return reply.status(500).send({ 
+                ok: false, 
+                error: "PDF_GENERATION_FAILED",
+                message: "No se pudo regenerar el PDF" 
+              });
+            }
+          } else {
+            const errorText = await pdfResponse.text().catch(() => "Could not read error");
+            app.log.error({ status: pdfResponse.status, errorText }, `[api] PDF regeneration error`);
+            return reply.status(500).send({ 
+              ok: false, 
+              error: "PDF_GENERATION_FAILED",
+              message: "Error al regenerar el PDF" 
+            });
+          }
+        } catch (err) {
+          app.log.error(err, "Error al regenerar PDF");
+          return reply.status(500).send({ 
+            ok: false, 
+            error: "PDF_GENERATION_FAILED",
+            message: "Error al conectar con el servicio de PDF" 
+          });
+        }
       }
 
       app.log.info(`[api] Fetching PDF with fileName: ${fileName}`);
