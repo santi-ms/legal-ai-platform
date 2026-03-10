@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { generatePdfFromContract } from "./pdfGenerator.js";
+// Usar Puppeteer en lugar de PDFKit (más confiable)
+import { generatePdfFromContract } from "./pdfGeneratorPuppeteer.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
