@@ -78,71 +78,69 @@ export async function generatePdfFromContract({
 
   console.log(`[pdf-puppeteer] Generating PDF with fileName: ${fileName}`);
   console.log(`[pdf-puppeteer] Title: ${title}, Text length: ${rawText.length}`);
+  console.log(`[pdf-puppeteer] Raw text preview (first 300 chars): ${rawText.substring(0, 300)}`);
 
   // Limpiar y formatear texto
   const formattedText = formatTextForHtml(rawText);
   const titleText = escapeHtml(title || "DOCUMENTO");
+  
+  console.log(`[pdf-puppeteer] Formatted text length: ${formattedText.length}`);
+  console.log(`[pdf-puppeteer] Formatted text preview (first 500 chars): ${formattedText.substring(0, 500)}`);
 
-  // HTML template - MUY SIMPLE para debugging
-  const html = `
+  // HTML template - EXTREMADAMENTE SIMPLE para debugging
+  // Primero, crear un HTML de prueba MUY básico
+  const testHtml = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      font-size: 14px;
-      color: black;
-      background: white;
-      padding: 40px;
-      margin: 0;
+    body { 
+      font-family: Arial; 
+      font-size: 16px; 
+      color: #000000; 
+      background: #FFFFFF;
+      padding: 50px;
     }
-    h1 {
-      font-size: 24px;
+    .test { 
+      background: #FFFF00; 
+      color: #000000; 
+      padding: 20px; 
+      border: 5px solid #FF0000; 
+      font-size: 20px;
       font-weight: bold;
-      text-align: center;
-      color: black;
-      margin-bottom: 30px;
-      border-bottom: 2px solid black;
-      padding-bottom: 10px;
-    }
-    .test {
-      background: yellow;
-      padding: 10px;
       margin: 20px 0;
-      border: 2px solid red;
-      color: black;
-      font-weight: bold;
     }
-    .content {
-      color: black;
-      line-height: 1.6;
+    h1 { 
+      color: #000000; 
+      font-size: 24px; 
+      margin: 20px 0;
     }
-    .content p {
-      color: black;
+    p { 
+      color: #000000; 
+      font-size: 14px; 
       margin: 10px 0;
-    }
-    .signature {
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 1px solid black;
+      line-height: 1.5;
     }
   </style>
 </head>
 <body>
-  <div class="test">TEXTO DE PRUEBA: Si ves esto, el PDF funciona correctamente</div>
+  <div class="test">PRUEBA: Este texto debe ser visible en amarillo con borde rojo</div>
   <h1>${titleText}</h1>
-  <div class="content">
+  <p style="color: #000000; font-weight: bold;">Este es un párrafo de prueba en negro</p>
+  <div style="color: #000000;">
     ${formattedText}
   </div>
-  <div class="signature">
-    <p style="color: black;">__________________________</p>
-    <p style="color: black;">Firma / Aclaración / DNI</p>
-  </div>
+  <p style="color: #000000; margin-top: 40px;">__________________________</p>
+  <p style="color: #000000;">Firma / Aclaración / DNI</p>
 </body>
 </html>
   `.trim();
+  
+  console.log(`[pdf-puppeteer] HTML length: ${testHtml.length}`);
+  console.log(`[pdf-puppeteer] HTML preview (first 1000 chars): ${testHtml.substring(0, 1000)}`);
+  
+  const html = testHtml;
 
   try {
     // Lanzar browser
@@ -158,19 +156,26 @@ export async function generatePdfFromContract({
 
     const page = await browser.newPage();
     
+    console.log(`[pdf-puppeteer] Browser page created`);
+    
     // Establecer viewport para asegurar renderizado correcto
     await page.setViewport({ width: 1200, height: 1600 });
+    console.log(`[pdf-puppeteer] Viewport set`);
     
     // Establecer contenido HTML
+    console.log(`[pdf-puppeteer] Setting HTML content...`);
     await page.setContent(html, { 
-      waitUntil: 'networkidle0',
+      waitUntil: 'load',
       timeout: 30000
     });
+    console.log(`[pdf-puppeteer] HTML content set`);
 
     // Esperar un momento para que se renderice completamente
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    console.log(`[pdf-puppeteer] Waited for render`);
 
     // Generar PDF con opciones mejoradas
+    console.log(`[pdf-puppeteer] Generating PDF...`);
     await page.pdf({
       path: absolutePath,
       format: 'A4',
@@ -183,6 +188,7 @@ export async function generatePdfFromContract({
       printBackground: true,
       preferCSSPageSize: false
     });
+    console.log(`[pdf-puppeteer] PDF file written to: ${absolutePath}`);
 
     await browser.close();
 
