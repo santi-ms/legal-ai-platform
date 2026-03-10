@@ -19,7 +19,6 @@ import { Switch } from "@/components/ui/switch";
 import { DashboardShell } from "@/app/components/DashboardShell";
 import { useToast } from "@/components/ui/toast";
 import { sanitizeInput } from "@/app/lib/sanitize";
-import { generatePdfFromText } from "@/app/lib/pdfGenerator";
 import confetti from "canvas-confetti";
 
 // Tipos del formulario
@@ -633,9 +632,9 @@ export default function NewDocumentPage() {
                 {result.contrato && (
                   <div>
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         try {
-                          console.log("[new-document] Iniciando descarga de PDF");
+                          console.log("[new-document] CLICKED - Iniciando descarga de PDF");
                           console.log("[new-document] Document ID:", result.documentId);
                           console.log("[new-document] Contrato length:", result.contrato?.length || 0);
                           console.log("[new-document] Contrato preview:", result.contrato?.substring(0, 200));
@@ -649,7 +648,105 @@ export default function NewDocumentPage() {
                             return;
                           }
                           
-                          generatePdfFromText(title, text, fileName);
+                          // Dynamic import de jsPDF
+                          const { jsPDF } = await import("jspdf");
+                          console.log("[new-document] jsPDF imported successfully");
+                          
+                          const doc = new jsPDF({
+                            orientation: "portrait",
+                            unit: "mm",
+                            format: "a4",
+                          });
+
+                          const pageWidth = doc.internal.pageSize.getWidth();
+                          const pageHeight = doc.internal.pageSize.getHeight();
+                          const margin = 20;
+                          const maxWidth = pageWidth - 2 * margin;
+
+                          let yPosition = margin;
+
+                          // TEXTO DE PRUEBA
+                          doc.setFontSize(16);
+                          doc.setFont("helvetica", "bold");
+                          doc.setTextColor(0, 0, 0);
+                          doc.text("PRUEBA: Este texto debe ser visible", pageWidth / 2, yPosition, {
+                            align: "center",
+                          });
+                          yPosition += 15;
+
+                          // Título
+                          doc.setFontSize(18);
+                          doc.setFont("helvetica", "bold");
+                          doc.setTextColor(0, 0, 0);
+                          const titleLines = doc.splitTextToSize(title.toUpperCase(), maxWidth);
+                          doc.text(titleLines, pageWidth / 2, yPosition, {
+                            align: "center",
+                          });
+                          yPosition += titleLines.length * 8 + 10;
+
+                          // Línea separadora
+                          doc.setLineWidth(0.5);
+                          doc.line(margin, yPosition, pageWidth - margin, yPosition);
+                          yPosition += 10;
+
+                          // Limpiar texto
+                          let cleanText = text
+                            .trim()
+                            .replace(/\r\n/g, "\n")
+                            .replace(/\r/g, "\n")
+                            .replace(/\*\*(.*?)\*\*/g, "$1")
+                            .replace(/\*(.*?)\*/g, "$1")
+                            .replace(/__(.*?)__/g, "$1")
+                            .replace(/_(.*?)_/g, "$1");
+
+                          const lines = cleanText.split("\n").filter((line) => line.trim().length > 0);
+
+                          doc.setFontSize(11);
+                          doc.setFont("helvetica", "normal");
+                          doc.setTextColor(0, 0, 0);
+
+                          console.log("[new-document] Escribiendo", lines.length, "líneas");
+
+                          for (const line of lines) {
+                            if (yPosition > pageHeight - margin - 20) {
+                              doc.addPage();
+                              yPosition = margin;
+                            }
+
+                            const textLines = doc.splitTextToSize(line.trim(), maxWidth);
+                            
+                            for (const textLine of textLines) {
+                              if (yPosition > pageHeight - margin - 20) {
+                                doc.addPage();
+                                yPosition = margin;
+                              }
+                              
+                              doc.setTextColor(0, 0, 0);
+                              doc.text(textLine, margin, yPosition);
+                              yPosition += 6;
+                            }
+                            
+                            yPosition += 2;
+                          }
+
+                          // Firma
+                          if (yPosition > pageHeight - margin - 30) {
+                            doc.addPage();
+                            yPosition = margin;
+                          }
+
+                          yPosition += 20;
+                          doc.setLineWidth(0.5);
+                          doc.line(margin, yPosition, margin + 80, yPosition);
+                          yPosition += 8;
+                          
+                          doc.setFontSize(10);
+                          doc.setTextColor(0, 0, 0);
+                          doc.text("Firma / Aclaración / DNI", margin, yPosition);
+
+                          console.log("[new-document] Guardando PDF:", fileName);
+                          doc.save(fileName);
+                          console.log("[new-document] PDF generado exitosamente");
                         } catch (error) {
                           console.error("[new-document] Error al generar PDF:", error);
                           alert(`Error: ${error instanceof Error ? error.message : String(error)}`);
