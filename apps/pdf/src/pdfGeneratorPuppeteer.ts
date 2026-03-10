@@ -74,13 +74,18 @@ export async function generatePdfFromContract({
   const formattedText = formatTextForHtml(rawText);
   const titleText = escapeHtml(title || "DOCUMENTO");
 
-  // HTML template
+  // HTML template - mejorado para asegurar visibilidad
   const html = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
     @page {
       size: A4;
       margin: 2cm;
@@ -88,34 +93,49 @@ export async function generatePdfFromContract({
     body {
       font-family: 'Helvetica', 'Arial', sans-serif;
       font-size: 12pt;
-      line-height: 1.6;
-      color: #000000;
+      line-height: 1.8;
+      color: #000000 !important;
+      background: #ffffff;
       margin: 0;
-      padding: 0;
+      padding: 20px;
+      width: 100%;
     }
     .title {
-      font-size: 18pt;
+      font-size: 20pt;
       font-weight: bold;
       text-align: center;
       margin-bottom: 30px;
-      color: #000000;
+      color: #000000 !important;
+      padding: 10px;
+      border-bottom: 2px solid #000000;
     }
     .content {
       text-align: left;
-      color: #000000;
+      color: #000000 !important;
+      width: 100%;
+      padding: 10px 0;
     }
     .content p {
-      margin: 8px 0;
-      color: #000000;
+      margin: 10px 0;
+      color: #000000 !important;
+      font-size: 12pt;
+      line-height: 1.8;
     }
     .signature {
-      margin-top: 40px;
-      color: #000000;
+      margin-top: 50px;
+      color: #000000 !important;
+      padding-top: 20px;
     }
     .signature-line {
-      border-top: 1px solid #000;
-      width: 200px;
-      margin: 20px 0 5px 0;
+      border-top: 2px solid #000000;
+      width: 300px;
+      margin: 20px 0 10px 0;
+      display: block;
+    }
+    .signature p {
+      color: #000000 !important;
+      font-size: 11pt;
+      margin-top: 5px;
     }
   </style>
 </head>
@@ -139,16 +159,26 @@ export async function generatePdfFromContract({
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage'
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
       ]
     });
 
     const page = await browser.newPage();
     
+    // Establecer viewport para asegurar renderizado correcto
+    await page.setViewport({ width: 1200, height: 1600 });
+    
     // Establecer contenido HTML
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.setContent(html, { 
+      waitUntil: 'networkidle0',
+      timeout: 30000
+    });
 
-    // Generar PDF
+    // Esperar un momento para que se renderice completamente
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Generar PDF con opciones mejoradas
     await page.pdf({
       path: absolutePath,
       format: 'A4',
@@ -158,7 +188,8 @@ export async function generatePdfFromContract({
         bottom: '2cm',
         left: '2cm'
       },
-      printBackground: true
+      printBackground: true,
+      preferCSSPageSize: false
     });
 
     await browser.close();
