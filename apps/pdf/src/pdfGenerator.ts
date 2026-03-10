@@ -74,40 +74,24 @@ export async function generatePdfFromContract({
       console.log(`[pdf] Starting to write PDF content...`);
       console.log(`[pdf] rawText preview (first 200 chars): ${rawText.substring(0, 200)}`);
       
-      // Asegurar que el color sea negro explícitamente
-      doc.fillColor("black");
-      doc.strokeColor("black");
+      // Calcular ancho del texto
+      const textWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
       
-      // Título - usar fuente estándar que soporte mejor caracteres especiales
+      // Título - método simple sin posiciones explícitas
       const titleText = title || "DOCUMENTO";
       console.log(`[pdf] Writing title: "${titleText}"`);
       
-      // Escribir título usando el método estándar de PDFKit
       doc
         .font("Helvetica-Bold")
         .fontSize(18)
         .fillColor("black")
         .text(titleText, {
           align: "center",
-          width: doc.page.width - doc.page.margins.left - doc.page.margins.right
+          width: textWidth
         });
 
       doc.moveDown(2);
       console.log(`[pdf] Title written, current Y position: ${doc.y}`);
-
-      // Calcular ancho del texto antes de usarlo
-      const textWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-
-      // Escribir texto de prueba para verificar que el PDF funciona
-      doc
-        .font("Helvetica")
-        .fontSize(10)
-        .fillColor("black")
-        .text("TEXTO DE PRUEBA: Si ves esto, el PDF está funcionando correctamente.", {
-          align: "left",
-          width: textWidth
-        });
-      doc.moveDown(1);
 
       // Limpiar texto - remover markdown
       let cleanText = rawText.trim()
@@ -156,17 +140,19 @@ export async function generatePdfFromContract({
       
       // Verificar que el texto no esté vacío antes de escribir
       if (cleanText && cleanText.length > 0) {
-        // Escribir el texto completo usando el método estándar de PDFKit
+        // Escribir el texto usando el método estándar de PDFKit
         try {
-          const startY = doc.y;
+          const currentY = doc.y;
+          console.log(`[pdf] Writing main text at Y: ${currentY}`);
+          console.log(`[pdf] Text length: ${cleanText.length} chars`);
           
-          // Asegurar que el color y fuente estén configurados
+          // Configurar fuente y color explícitamente
           doc
             .font("Helvetica")
             .fontSize(12)
             .fillColor("black");
           
-          // Escribir el texto
+          // Escribir el texto usando el método estándar (sin posiciones explícitas)
           doc.text(cleanText, {
             align: "left",
             width: textWidth,
@@ -175,27 +161,26 @@ export async function generatePdfFromContract({
           });
           
           const endY = doc.y;
-          console.log(`[pdf] Text written successfully, Y position: ${startY} -> ${endY}`);
+          console.log(`[pdf] Text written successfully, Y position: ${currentY} -> ${endY}`);
           
-          // Verificar que el cursor se movió (indica que el texto se escribió)
-          if (Math.abs(endY - startY) < 1) {
-            console.warn(`[pdf] WARNING: Y position did not change after writing text!`);
-            console.warn(`[pdf] Attempting to write test text...`);
-            // Intentar escribir texto de prueba
-            doc.text("TEST: Este texto debería ser visible", {
+          // Verificar que el cursor se movió
+          if (Math.abs(endY - currentY) < 1) {
+            console.error(`[pdf] ERROR: Y position did not change! Text may not have been written.`);
+            // Intentar escribir texto de prueba simple
+            doc.text("TEST: Este es un texto de prueba", {
               width: textWidth
             });
           }
         } catch (textError) {
           console.error(`[pdf] ERROR writing text:`, textError);
           // Intentar escribir texto de prueba
-          doc.text("[ERROR al escribir texto]", {
+          doc.text("ERROR: No se pudo escribir el texto", {
             width: textWidth
           });
         }
       } else {
         console.error(`[pdf] ERROR: cleanText is empty or invalid!`);
-        doc.text("[ERROR: Texto vacío]", {
+        doc.text("ERROR: Texto vacío", {
           width: textWidth
         });
       }
