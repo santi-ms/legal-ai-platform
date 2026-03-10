@@ -7,6 +7,7 @@ import { registerDocumentRoutes } from "./routes.documents.js";
 import { registerAuthRoutes } from "./routes.auth.js";
 import { execSync, exec } from "child_process";
 import { promisify } from "util";
+import { logger } from "./utils/logger.js";
 
 const execAsync = promisify(exec);
 import { existsSync } from "fs";
@@ -23,7 +24,7 @@ async function runMigrations() {
     (process.env.NODE_ENV !== "production" && process.env.DATABASE_URL);
   
   if (!shouldRunMigrations) {
-    console.log("[migrate] ⏭️  Omitiendo migraciones (desarrollo sin DATABASE_URL)");
+    logger.info("[migrate] ⏭️  Omitiendo migraciones (desarrollo sin DATABASE_URL)");
     return;
   }
 
@@ -38,32 +39,32 @@ async function runMigrations() {
       // Fallback: intentar schema del monorepo (solo para desarrollo local)
       const monorepoSchema = path.resolve(__dirname, "../../../packages/db/prisma/schema.prisma");
       if (existsSync(monorepoSchema)) {
-        console.log("[migrate] 📋 Usando schema del monorepo (desarrollo local)");
+        logger.info("[migrate] 📋 Usando schema del monorepo (desarrollo local)");
         execSync(`npx prisma migrate deploy --schema "${monorepoSchema}"`, {
           stdio: "inherit",
           env: process.env,
         });
-        console.log("[migrate] ✅ Migraciones aplicadas correctamente");
+        logger.info("[migrate] ✅ Migraciones aplicadas correctamente");
         return;
       }
-      console.warn("[migrate] ⚠️ No se encontró schema.prisma en prisma/schema.prisma");
-      console.warn("[migrate] ⚠️ Omitiendo migraciones automáticas");
+      logger.warn("[migrate] ⚠️ No se encontró schema.prisma en prisma/schema.prisma");
+      logger.warn("[migrate] ⚠️ Omitiendo migraciones automáticas");
       return;
     }
 
-    console.log("[migrate] 🔄 Ejecutando migraciones de Prisma...");
-    console.log("[migrate] 📋 Schema:", schemaPath);
+    logger.info("[migrate] 🔄 Ejecutando migraciones de Prisma...");
+    logger.info("[migrate] 📋 Schema:", { schemaPath });
     
     // Para Supabase, si hay una URL de migración directa, usarla
     // De lo contrario, usar DATABASE_URL normal
     const migrationEnv = { ...process.env };
     if (process.env.DATABASE_MIGRATION_URL) {
-      console.log("[migrate] 🔗 Usando DATABASE_MIGRATION_URL para migraciones");
+      logger.info("[migrate] 🔗 Usando DATABASE_MIGRATION_URL para migraciones");
       migrationEnv.DATABASE_URL = process.env.DATABASE_MIGRATION_URL;
     } else if (process.env.DATABASE_URL?.includes("pooler.supabase.com")) {
-      console.log("[migrate] ⚠️ Detectado pooler de Supabase - las migraciones pueden fallar");
-      console.log("[migrate] 💡 Sugerencia: Configurá DATABASE_MIGRATION_URL con la conexión directa de Supabase");
-      console.log("[migrate] 💡 La conexión directa usa el puerto 6543 o la URL directa sin pooler");
+      logger.warn("[migrate] ⚠️ Detectado pooler de Supabase - las migraciones pueden fallar");
+      logger.info("[migrate] 💡 Sugerencia: Configurá DATABASE_MIGRATION_URL con la conexión directa de Supabase");
+      logger.info("[migrate] 💡 La conexión directa usa el puerto 6543 o la URL directa sin pooler");
     }
     
     // Ejecutar migraciones con timeout para evitar que se cuelgue
@@ -73,11 +74,11 @@ async function runMigrations() {
         env: migrationEnv,
         maxBuffer: 1024 * 1024 * 10, // 10MB buffer
       }).then((result) => {
-        if (result.stdout) console.log("[migrate] stdout:", result.stdout);
+        if (result.stdout) logger.info("[migrate] stdout:", { stdout: result.stdout });
         if (result.stderr && !result.stderr.includes("No pending migrations")) {
-          console.log("[migrate] stderr:", result.stderr);
+          logger.info("[migrate] stderr:", { stderr: result.stderr });
         }
-        console.log("[migrate] ✅ Migraciones aplicadas correctamente");
+        logger.info("[migrate] ✅ Migraciones aplicadas correctamente");
       }),
       new Promise<void>((_, reject) => {
         setTimeout(() => {
@@ -86,39 +87,46 @@ async function runMigrations() {
       }),
     ]);
   } catch (error: any) {
-    console.error("[migrate] ❌ Error ejecutando migraciones:", error.message);
-    console.error("[migrate] ❌ Stack:", error.stack);
+    logger.error("[migrate] ❌ Error ejecutando migraciones", error, { message: error.message });
     
     // Verificar si es un error de conexión
     if (error.message?.includes("FATAL") || error.message?.includes("not found")) {
-      console.error("[migrate] ⚠️ Error de conexión a la base de datos");
-      console.error("[migrate] ⚠️ El error 'Tenant or user not found' generalmente significa:");
-      console.error("[migrate] ⚠️ 1. Las credenciales (usuario/contraseña) son incorrectas");
-      console.error("[migrate] ⚠️ 2. El usuario no existe en la base de datos");
-      console.error("[migrate] ⚠️ 3. El usuario no tiene permisos para acceder");
-      console.error("[migrate] ⚠️ Verificá que DATABASE_URL esté configurada correctamente en Railway");
-      console.error("[migrate] ⚠️ DATABASE_URL presente:", !!process.env.DATABASE_URL);
+      logger.error("[migrate] ⚠️ Error de conexión a la base de datos", error, {
+        message: "El error 'Tenant or user not found' generalmente significa:",
+        reasons: [
+          "Las credenciales (usuario/contraseña) son incorrectas",
+          "El usuario no existe en la base de datos",
+          "El usuario no tiene permisos para acceder",
+        ],
+        hasDatabaseUrl: !!process.env.DATABASE_URL,
+      });
       if (process.env.DATABASE_URL) {
         // Mostrar solo el host para diagnóstico (sin credenciales)
         try {
           const url = new URL(process.env.DATABASE_URL);
-          console.error("[migrate] ⚠️ Host:", url.hostname);
-          console.error("[migrate] ⚠️ Puerto:", url.port);
-          console.error("[migrate] ⚠️ Database:", url.pathname);
-          console.error("[migrate] ⚠️ Usuario:", url.username ? `${url.username.substring(0, 10)}...` : "no especificado");
+          logger.error("[migrate] ⚠️ Información de conexión", undefined, {
+            host: url.hostname,
+            port: url.port,
+            database: url.pathname,
+            user: url.username ? `${url.username.substring(0, 10)}...` : "no especificado",
+          });
         } catch (e) {
-          console.error("[migrate] ⚠️ DATABASE_URL no es una URL válida");
+          logger.error("[migrate] ⚠️ DATABASE_URL no es una URL válida", e);
         }
       }
-      console.error("[migrate] 💡 SOLUCIÓN: Verificá en Railway que la variable DATABASE_URL tenga:");
-      console.error("[migrate] 💡 - El usuario correcto (postgres.xxxxx)");
-      console.error("[migrate] 💡 - La contraseña correcta");
-      console.error("[migrate] 💡 - El host correcto");
-      console.error("[migrate] 💡 - El nombre de la base de datos correcto (generalmente 'postgres')");
+      logger.error("[migrate] 💡 SOLUCIÓN", undefined, {
+        solution: "Verificá en Railway que la variable DATABASE_URL tenga:",
+        requirements: [
+          "El usuario correcto (postgres.xxxxx)",
+          "La contraseña correcta",
+          "El host correcto",
+          "El nombre de la base de datos correcto (generalmente 'postgres')",
+        ],
+      });
     }
     
     // No fallar el servidor si las migraciones fallan, pero loguear el error
-    console.warn("[migrate] ⚠️ Continuando sin aplicar migraciones - el servidor iniciará pero puede haber errores de BD");
+    logger.warn("[migrate] ⚠️ Continuando sin aplicar migraciones - el servidor iniciará pero puede haber errores de BD");
   }
 }
 
@@ -166,7 +174,7 @@ async function buildServer() {
       if (isOriginAllowed(origin)) {
         cb(null, true);
       } else {
-        console.warn("[CORS] Rejected origin:", origin);
+        logger.warn("[CORS] Rejected origin", { origin });
         cb(new Error("CORS not allowed"), false);
       }
     },
@@ -218,9 +226,10 @@ async function buildServer() {
 // Ejecutar de forma asíncrona para no bloquear el inicio del servidor
 // El servidor iniciará aunque las migraciones fallen
 runMigrations().catch((err) => {
-  console.error("[migrate] ⚠️ Error en migraciones (no bloqueante):", err.message);
-  console.error("[migrate] ⚠️ El servidor iniciará pero las tablas pueden no existir");
-  console.error("[migrate] ⚠️ Solución: Ejecutá el script SQL manualmente en Supabase");
+  logger.error("[migrate] ⚠️ Error en migraciones (no bloqueante)", err, {
+    message: "El servidor iniciará pero las tablas pueden no existir",
+    solution: "Ejecutá el script SQL manualmente en Supabase",
+  });
 });
 
 // inicializamos y escuchamos

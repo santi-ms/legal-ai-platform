@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
 import Link from "next/link";
 import { Scale, Mail, Lock, User, Building2, Eye, EyeOff } from "lucide-react";
+import { logger } from "@/app/lib/logger";
 import { registerSchema, type RegisterInput } from "@/app/lib/validation/auth";
 
 export default function RegisterPage() {
@@ -39,12 +40,12 @@ export default function RegisterPage() {
   // Log de errores de validación
   useEffect(() => {
     if (Object.keys(errors).length > 0) {
-      console.error("[register] Form validation errors:", errors);
+      logger.error("[register] Form validation errors", undefined, { errors });
     }
   }, [errors]);
 
   const onSubmit = async (data: RegisterInput) => {
-    console.log("[register] onSubmit called", { 
+    logger.debug("[register] onSubmit called", { 
       hasName: !!data.name, 
       hasEmail: !!data.email, 
       hasPassword: !!data.password,
@@ -59,7 +60,7 @@ export default function RegisterPage() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
       const backendUrl = `${apiUrl}/api/register`;
       
-      console.log("[register] Calling backend directly:", backendUrl);
+      logger.debug("[register] Calling backend directly", { backendUrl });
       
       const transformedBody = {
         name: data.name,
@@ -75,20 +76,19 @@ export default function RegisterPage() {
         cache: "no-store",
       });
 
-      console.log("[register] Backend response status:", response.status);
+      logger.debug("[register] Backend response status", { status: response.status });
       
       let responseData: any;
       try {
         responseData = await response.json();
       } catch (e) {
         const text = await response.text();
-        console.error("[register] Failed to parse JSON:", text);
+        logger.error("[register] Failed to parse JSON", e, { text: text.substring(0, 200) });
         throw new Error("Error al procesar respuesta del servidor");
       }
 
-      console.log("[register] Response received", { 
+      logger.debug("[register] Response received", { 
         ok: responseData?.ok, 
-        message: responseData?.message,
         hasUser: !!responseData?.user,
         error: responseData?.error 
       });
@@ -103,7 +103,7 @@ export default function RegisterPage() {
       };
 
       if (!apiResponse.ok) {
-        console.error("[register] Registration failed", apiResponse);
+        logger.error("[register] Registration failed", undefined, { error: apiResponse.error });
         // Mostrar errores de campo si existen
         if (apiResponse.fieldErrors) {
           Object.entries(apiResponse.fieldErrors).forEach(([field, messages]) => {
@@ -119,13 +119,13 @@ export default function RegisterPage() {
         return;
       }
 
-      console.log("[register] Registration successful, redirecting...");
+      logger.info("[register] Registration successful, redirecting");
       
       // Éxito: redirigir a página de verificación
       success("¡Cuenta creada exitosamente! Revisá tu email para verificar tu cuenta.");
       router.push("/auth/verify-email?sent=1");
     } catch (err: any) {
-      console.error("[register] Exception in onSubmit", err);
+      logger.error("[register] Exception in onSubmit", err);
       showError(err.message || "Error al crear cuenta");
       setLoading(false);
     }
@@ -151,7 +151,7 @@ export default function RegisterPage() {
         <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8">
           <form 
             onSubmit={(e) => {
-              console.log("[register] Form submit event triggered");
+              logger.debug("[register] Form submit event triggered");
               handleSubmit(onSubmit)(e);
             }} 
             className="space-y-5"

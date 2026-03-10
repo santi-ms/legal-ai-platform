@@ -5,6 +5,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { getUserFromRequest, requireAuth } from "./utils/auth.js";
 import bcrypt from "bcryptjs";
+import { sanitizeObject } from "./utils/sanitize.js";
 
 // Crear instancia de PrismaClient
 const prisma = new PrismaClient({
@@ -175,39 +176,42 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
 
       const data = parsed.data;
 
+      // 1.5️⃣ Sanitizar inputs para prevenir XSS
+      const sanitizedData = sanitizeObject(data, false) as typeof data;
+
       // 2️⃣ Construir prompt legal mejorado
       const systemMessage = `Eres un abogado senior argentino especializado en derecho comercial con 20 años de experiencia. Generas documentos legales válidos, profesionales y completos según la normativa argentina vigente.`;
 
-      const prompt = `GENERA UN ${data.type.toUpperCase()} PROFESIONAL
+      const prompt = `GENERA UN ${sanitizedData.type.toUpperCase()} PROFESIONAL
 
 ESPECIFICACIONES LEGALES:
-- Jurisdicción/Fuero: ${data.jurisdiccion}
+- Jurisdicción/Fuero: ${sanitizedData.jurisdiccion}
 - Legislación: Código de Comercio Argentino, Código Civil y Comercial
-- Jurisdicción competente: ${data.jurisdiccion} (renuncia expresa a cualquier otro fuero)
+- Jurisdicción competente: ${sanitizedData.jurisdiccion} (renuncia expresa a cualquier otro fuero)
 
 PARTES CONTRATANTES:
 
 PROVEEDOR:
-- Nombre/Razón Social: ${data.proveedor_nombre}
-- Documento/CUIT: ${data.proveedor_doc}
-- Domicilio: ${data.proveedor_domicilio}
+- Nombre/Razón Social: ${sanitizedData.proveedor_nombre}
+- Documento/CUIT: ${sanitizedData.proveedor_doc}
+- Domicilio: ${sanitizedData.proveedor_domicilio}
 
 CLIENTE:
-- Nombre/Razón Social: ${data.cliente_nombre}
-- Documento/CUIT: ${data.cliente_doc}
-- Domicilio: ${data.cliente_domicilio}
+- Nombre/Razón Social: ${sanitizedData.cliente_nombre}
+- Documento/CUIT: ${sanitizedData.cliente_doc}
+- Domicilio: ${sanitizedData.cliente_domicilio}
 
 OBJETO Y CONDICIONES:
-- Servicio/Objeto del contrato: ${data.descripcion_servicio}
-- Monto mensual: ${data.monto_mensual}
-- Forma de pago: ${data.forma_pago}
-- Inicio de vigencia: ${data.inicio_vigencia}
-- Plazo mínimo: ${data.plazo_minimo_meses} meses
-- Penalización por rescisión anticipada: ${data.penalizacion_rescision ? "SÍ" : "NO"}${data.penalizacion_rescision && data.penalizacion_monto ? ` - Monto de penalización: ${data.penalizacion_monto}` : ""}
-- Modalidad facturación: ${data.preferencias_fiscales}
+- Servicio/Objeto del contrato: ${sanitizedData.descripcion_servicio}
+- Monto mensual: ${sanitizedData.monto_mensual}
+- Forma de pago: ${sanitizedData.forma_pago}
+- Inicio de vigencia: ${sanitizedData.inicio_vigencia}
+- Plazo mínimo: ${sanitizedData.plazo_minimo_meses} meses
+- Penalización por rescisión anticipada: ${sanitizedData.penalizacion_rescision ? "SÍ" : "NO"}${sanitizedData.penalizacion_rescision && sanitizedData.penalizacion_monto ? ` - Monto de penalización: ${sanitizedData.penalizacion_monto}` : ""}
+- Modalidad facturación: ${sanitizedData.preferencias_fiscales}
 
 INSTRUCCIONES DE REDACCIÓN:
-1. TONO: ${data.tono === "formal" ? "Formal y técnico legal. Usar terminología jurídica precisa y cláusulas técnicas." : "Comercial y claro. Lenguaje entendible para PyMEs sin sacrificar validez legal."}
+1. TONO: ${sanitizedData.tono === "formal" ? "Formal y técnico legal. Usar terminología jurídica precisa y cláusulas técnicas." : "Comercial y claro. Lenguaje entendible para PyMEs sin sacrificar validez legal."}
 2. ESTRUCTURA: Encabezado con datos completos de partes, luego cláusulas numeradas (PRIMERA, SEGUNDA, etc.)
 3. MÍNIMOS LEGALES: Incluir cláusulas obligatorias según tipo de contrato y normativa argentina
 4. VALIDEZ: El documento debe ser legalmente válido y ejecutable en Argentina
@@ -215,8 +219,8 @@ INSTRUCCIONES DE REDACCIÓN:
 
 CLÁUSULAS OBLIGATORIAS A INCLUIR:
 - Identificación completa de partes con CUIT/documento
-- Domicilio constituido en ${data.jurisdiccion}
-- Foro de competencia exclusivo en ${data.jurisdiccion}
+- Domicilio constituido en ${sanitizedData.jurisdiccion}
+- Foro de competencia exclusivo en ${sanitizedData.jurisdiccion}
 - Ley aplicable (leyes argentinas)
 - Medios de resolución de disputas
 - Plazo de vigencia y condiciones de rescisión
@@ -333,9 +337,9 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
           const documentData = {
             tenantId: tenant.id,
             createdById: finalUser.id,
-            type: data.type,
-            jurisdiccion: data.jurisdiccion,
-            tono: data.tono,
+            type: sanitizedData.type,
+            jurisdiccion: sanitizedData.jurisdiccion,
+            tono: sanitizedData.tono,
             estado: "generated_text", // Usar el valor correcto del schema
             costUsd: 0,
           };
@@ -371,13 +375,13 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
           process.env.PDF_SERVICE_URL || "http://localhost:4100";
         
         app.log.info(`[api] Calling PDF service at: ${pdfServiceUrl}/pdf/generate`);
-        app.log.info(`[api] PDF generation params: title=${data.type}, fileName=${fileName}, textLength=${contrato.length}`);
+        app.log.info(`[api] PDF generation params: title=${sanitizedData.type}, fileName=${fileName}, textLength=${contrato.length}`);
         
         const pdfResponse = await fetch(`${pdfServiceUrl}/pdf/generate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            title: data.type.toUpperCase(),
+            title: sanitizedData.type.toUpperCase(),
             rawText: contrato,
             fileName: fileName,
           }),

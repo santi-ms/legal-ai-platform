@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { Prisma, PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { sanitizeInput } from "./utils/sanitize.js";
 
 // Crear instancia de PrismaClient
 const prisma = new PrismaClient({
@@ -96,7 +97,13 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   app.post<{ Body: RegisterBody }>("/api/register", async (request, reply) => {
     try {
       const { name, email, password, company } = RegisterSchema.parse(request.body);
-      const normEmail = email.trim().toLowerCase();
+      
+      // Sanitizar inputs para prevenir XSS
+      const sanitizedName = sanitizeInput(name || "");
+      const sanitizedEmail = sanitizeInput(email.trim().toLowerCase());
+      const sanitizedCompany = company ? sanitizeInput(company) : null;
+      
+      const normEmail = sanitizedEmail;
 
       request.log.info({ event: "register:incoming", email: normEmail });
 
@@ -153,14 +160,14 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       // Crear o encontrar tenant si se proporciona una compañía
       let tenantId: string | undefined = undefined;
       try {
-        if (company && company.trim().length > 0) {
+        if (sanitizedCompany && sanitizedCompany.trim().length > 0) {
           // Buscar tenant existente o crear uno nuevo
           const existingTenant = await prisma.tenant.findFirst({
-            where: { name: company },
+            where: { name: sanitizedCompany },
           });
           const tenant =
             existingTenant ??
-            (await prisma.tenant.create({ data: { name: company } }));
+            (await prisma.tenant.create({ data: { name: sanitizedCompany } }));
           tenantId = tenant.id;
         }
       } catch (e) {
@@ -174,7 +181,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       // Armamos el payload según si existe la relación Tenant en el cliente Prisma
       // NO incluir emailVerified por ahora, ya que la columna puede no existir
       const baseData: any = {
-        name,
+        name: sanitizedName,
         email: normEmail,
         passwordHash,
         role: "user",

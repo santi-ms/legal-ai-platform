@@ -18,6 +18,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { DashboardShell } from "@/app/components/DashboardShell";
 import { useToast } from "@/components/ui/toast";
+import { sanitizeInput } from "@/app/lib/sanitize";
 import confetti from "canvas-confetti";
 
 // Tipos del formulario
@@ -647,7 +648,7 @@ export default function NewDocumentPage() {
                     Ver contenido del contrato
                   </summary>
                   <div className="mt-3 max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white p-4 font-mono text-xs leading-relaxed text-gray-800 shadow-inner whitespace-pre-wrap">
-                    {result.contrato}
+                    {sanitizeInput(result.contrato)}
                   </div>
                 </details>
               </Card>

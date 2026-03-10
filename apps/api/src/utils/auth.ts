@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { FastifyRequest } from "fastify";
+import { logger } from "./logger.js";
 
 export interface AuthUser {
   userId: string;
@@ -23,7 +24,7 @@ export function getUserFromRequest(request: FastifyRequest): AuthUser | null {
   const secret = process.env.NEXTAUTH_SECRET;
 
   if (!secret) {
-    console.warn("[auth] NEXTAUTH_SECRET no configurado");
+    logger.warn("[auth] NEXTAUTH_SECRET no configurado");
     return null;
   }
 

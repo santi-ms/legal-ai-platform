@@ -6,6 +6,7 @@ import { DashboardShell } from "@/app/components/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { SkeletonDocumentDetail } from "@/components/ui/skeleton";
+import { sanitizeInput } from "@/app/lib/sanitize";
 import type {
   Document as ProxyDocument,
   DocumentApiResponse as ProxyDocumentResponse,
@@ -95,7 +96,7 @@ export default function DocumentDetailPage() {
   const last = doc.lastVersion;
 
   // armamos los textos que van al header
-  const headerDescription = `${doc.type} • ${doc.jurisdiccion} • ${
+  const headerDescription = `${sanitizeInput(doc.type || "")} • ${sanitizeInput(doc.jurisdiccion || "")} • ${
     last
       ? `Actualizado ${new Date(last.createdAt).toLocaleString("es-AR")}`
       : "Sin versión generada"
@@ -132,15 +133,15 @@ export default function DocumentDetailPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
             <MetaField
               label="Tipo de documento"
-              value={doc.type}
+              value={sanitizeInput(doc.type || "")}
             />
             <MetaField
               label="Jurisdicción"
-              value={doc.jurisdiccion}
+              value={sanitizeInput(doc.jurisdiccion || "")}
             />
             <MetaField
               label="Estado"
-              value={doc.estado}
+              value={sanitizeInput(doc.estado || "")}
               valueClassName={
                 doc.estado === "GENERATED"
                   ? "text-emerald-700"
@@ -151,7 +152,7 @@ export default function DocumentDetailPage() {
             />
             <MetaField
               label="Tono"
-              value={doc.tono || "—"}
+              value={sanitizeInput(doc.tono || "—")}
             />
             <MetaField
               label="Costo estimado (USD)"
@@ -191,7 +192,7 @@ export default function DocumentDetailPage() {
 
           {last ? (
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm ring-1 ring-black/[0.02] text-sm leading-relaxed text-gray-800 whitespace-pre-wrap max-h-[70vh] overflow-y-auto">
-              {last.rawText}
+              {sanitizeInput(last.rawText)}
             </div>
           ) : (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 shadow-sm">

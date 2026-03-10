@@ -30,6 +30,8 @@ async function getAuthToken(): Promise<string | null> {
  * Helper para hacer fetch al backend con manejo homogéneo de errores
  * Incluye autenticación automática si hay sesión
  */
+import { logger } from "./logger";
+
 export async function apiFetch<T = any>(
   path: string,
   options?: RequestInit & { includeAuth?: boolean }
@@ -68,14 +70,14 @@ export async function apiFetch<T = any>(
   }
 
   try {
-    console.log("[apiFetch] Making fetch request", { url, method: options?.method || "GET" });
+    logger.debug("[apiFetch] Making fetch request", { url, method: options?.method || "GET" });
     
     const response = await fetch(url, {
       ...options,
       headers,
     });
 
-    console.log("[apiFetch] Response received", { 
+    logger.debug("[apiFetch] Response received", { 
       url, 
       status: response.status, 
       statusText: response.statusText,
@@ -83,18 +85,18 @@ export async function apiFetch<T = any>(
     });
 
     const data: ApiResponse<T> = await response.json().catch((jsonError) => {
-      console.error("[apiFetch] Error parsing JSON", { url, jsonError });
+      logger.error("[apiFetch] Error parsing JSON", jsonError, { url });
       return {
         ok: false,
         message: "Error al procesar respuesta del servidor",
       };
     });
 
-    console.log("[apiFetch] Parsed data", { url, ok: data.ok, hasMessage: !!data.message });
+    logger.debug("[apiFetch] Parsed data", { url, ok: data.ok, hasMessage: !!data.message });
 
     // Si la respuesta no es ok, devolver el error del servidor
     if (!response.ok) {
-      console.warn("[apiFetch] Response not OK", { url, status: response.status, data });
+      logger.warn("[apiFetch] Response not OK", { url, status: response.status, error: data.error });
       return {
         ok: false,
         message: data.message || `Error ${response.status}: ${response.statusText}`,
@@ -106,7 +108,7 @@ export async function apiFetch<T = any>(
     return data;
   } catch (error) {
     // Error de red o conexión
-    console.error("[apiFetch] Network or connection error", { url, error });
+    logger.error("[apiFetch] Network or connection error", error, { url });
     return {
       ok: false,
       message: error instanceof Error ? error.message : "Error de conexión con el servidor",
@@ -121,16 +123,16 @@ export async function apiPost<T = any>(
   path: string,
   body: any
 ): Promise<ApiResponse<T>> {
-  console.log("[apiPost] Making POST request", { path, hasBody: !!body });
+  logger.debug("[apiPost] Making POST request", { path, hasBody: !!body });
   try {
     const response = await apiFetch<T>(path, {
       method: "POST",
       body: JSON.stringify(body),
     });
-    console.log("[apiPost] Response received", { path, ok: response.ok });
+    logger.debug("[apiPost] Response received", { path, ok: response.ok });
     return response;
   } catch (error) {
-    console.error("[apiPost] Error in apiPost", { path, error });
+    logger.error("[apiPost] Error in apiPost", error, { path });
     throw error;
   }
 }
@@ -190,7 +192,7 @@ export async function getDocuments() {
 
     return data;
   } catch (error) {
-    console.error('Error fetching documents:', error);
+    logger.error('Error fetching documents', error);
     throw error;
   }
 }
@@ -228,7 +230,7 @@ export async function getDocument(id: string) {
 
     return data;
   } catch (error) {
-    console.error('Error fetching document:', error);
+    logger.error('Error fetching document', error);
     throw error;
   }
 }
@@ -257,7 +259,7 @@ export async function generateDocument(formData: any) {
     const contentType = response.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
       const text = await response.text();
-      console.error("[generateDocument] Respuesta no es JSON:", text.substring(0, 200));
+      logger.error("[generateDocument] Respuesta no es JSON", undefined, { text: text.substring(0, 200) });
       throw new Error("El servidor devolvió una respuesta inválida");
     }
 
@@ -269,7 +271,7 @@ export async function generateDocument(formData: any) {
 
     return data;
   } catch (error) {
-    console.error('Error generating document:', error);
+    logger.error('Error generating document', error);
     throw error;
   }
 }

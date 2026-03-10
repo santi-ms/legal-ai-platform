@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/app/lib/logger";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "http://localhost:4001";
 
@@ -16,7 +17,7 @@ export async function OPTIONS() {
 
 // Método GET para diagnóstico
 export async function GET() {
-  console.log("[_auth/register][GET] Method not allowed");
+  logger.warn("[_auth/register][GET] Method not allowed");
   return NextResponse.json(
     { ok: false, message: "Method Not Allowed. Use POST." },
     { status: 405 }
@@ -24,10 +25,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  console.log("[_auth/register][POST] Request received");
+  logger.debug("[_auth/register][POST] Request received");
   try {
     const body = await req.json();
-    console.log("[_auth/register][POST] Request body:", { 
+    logger.debug("[_auth/register][POST] Request body", { 
       hasName: !!body.name, 
       hasEmail: !!body.email, 
       hasPassword: !!body.password,
@@ -44,8 +45,8 @@ export async function POST(req: Request) {
       company: companyValue && companyValue.trim().length > 0 ? companyValue.trim() : null,
     };
     
-    console.log("[_auth/register][POST] Calling backend:", `${API_BASE}/api/register`);
-    console.log("[_auth/register][POST] Transformed body:", { 
+    logger.debug("[_auth/register][POST] Calling backend", { url: `${API_BASE}/api/register` });
+    logger.debug("[_auth/register][POST] Transformed body", { 
       name: transformedBody.name, 
       email: transformedBody.email, 
       hasPassword: !!transformedBody.password,
@@ -59,8 +60,7 @@ export async function POST(req: Request) {
       cache: "no-store" as const,
     });
     
-    console.log("[_auth/register][POST] Backend response status:", r.status);
-    console.log("[_auth/register][POST] Backend response headers:", Object.fromEntries(r.headers.entries()));
+    logger.debug("[_auth/register][POST] Backend response status", { status: r.status });
     
     // Verificar que la respuesta sea JSON válido
     const contentType = r.headers.get("content-type");
@@ -69,16 +69,15 @@ export async function POST(req: Request) {
     if (contentType && contentType.includes("application/json")) {
       try {
         data = await r.json();
-        console.log("[_auth/register][POST] Backend response data:", { 
+        logger.debug("[_auth/register][POST] Backend response data", { 
           ok: data?.ok, 
           hasUser: !!data?.user, 
-          message: data?.message,
           error: data?.error 
         });
       } catch (jsonError) {
-        console.error("[_auth/register][POST] Error parsing JSON response:", jsonError);
+        logger.error("[_auth/register][POST] Error parsing JSON response", jsonError);
         const text = await r.text().catch(() => "Error desconocido");
-        console.error("[_auth/register][POST] Response text:", text.substring(0, 500));
+        logger.error("[_auth/register][POST] Response text", undefined, { text: text.substring(0, 500) });
         return NextResponse.json(
           { 
             ok: false, 
@@ -90,7 +89,7 @@ export async function POST(req: Request) {
       }
     } else {
       const text = await r.text().catch(() => "Error desconocido");
-      console.error("[_auth/register][POST] Non-JSON response:", text.substring(0, 500));
+      logger.error("[_auth/register][POST] Non-JSON response", undefined, { text: text.substring(0, 500) });
       return NextResponse.json(
         { 
           ok: false, 
@@ -101,7 +100,7 @@ export async function POST(req: Request) {
       );
     }
     
-    console.log("[_auth/register][POST] Returning response:", { 
+    logger.debug("[_auth/register][POST] Returning response", { 
       status: r.status, 
       ok: data?.ok, 
       hasUser: !!data?.user 
@@ -112,7 +111,7 @@ export async function POST(req: Request) {
       headers: { "cache-control": "no-store" } 
     });
   } catch (err) {
-    console.error("Auth proxy /api/_auth/register error:", err);
+    logger.error("Auth proxy /api/_auth/register error", err);
     return NextResponse.json(
       { 
         ok: false, 

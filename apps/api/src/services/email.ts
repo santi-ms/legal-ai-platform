@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { randomBytes } from "crypto";
+import { logger } from "../utils/logger.js";
 
 // Configurar transporter de nodemailer
 const transporter = nodemailer.createTransport({
@@ -31,7 +32,7 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
 
     return { success: true, messageId: info.messageId };
   } catch (error: any) {
-    console.error("Error enviando email:", error);
+    logger.error("Error enviando email", error, { to, subject });
     throw new Error(`Error enviando email: ${error.message}`);
   }
 }
