@@ -3,7 +3,32 @@
  * Protege contra XSS y otros ataques de inyección
  */
 
-import DOMPurify from "isomorphic-dompurify";
+import { FilterXSS } from "xss";
+
+// Configuración para sanitización estricta (sin HTML)
+const strictXssFilter = new FilterXSS({
+  whiteList: {}, // No permite ningún tag
+  stripIgnoreTag: true, // Remueve tags no permitidos
+  stripIgnoreTagBody: ["script"], // Remueve contenido de scripts
+});
+
+// Configuración para sanitización con HTML limitado
+const htmlXssFilter = new FilterXSS({
+  whiteList: {
+    b: [],
+    i: [],
+    em: [],
+    strong: [],
+    a: ["href", "title"],
+    p: [],
+    br: [],
+    ul: [],
+    ol: [],
+    li: [],
+  },
+  stripIgnoreTag: true,
+  stripIgnoreTagBody: ["script"],
+});
 
 /**
  * Sanitiza un string removiendo HTML y scripts maliciosos
@@ -18,19 +43,11 @@ export function sanitizeInput(input: string, allowHtml: boolean = false): string
 
   if (allowHtml) {
     // Permite HTML seguro pero sanitiza scripts y atributos peligrosos
-    return DOMPurify.sanitize(input, {
-      ALLOWED_TAGS: ["b", "i", "em", "strong", "a", "p", "br", "ul", "ol", "li"],
-      ALLOWED_ATTR: ["href", "title"],
-      ALLOW_DATA_ATTR: false,
-    });
+    return htmlXssFilter.process(input);
   }
 
   // No permite HTML, solo texto plano
-  return DOMPurify.sanitize(input, {
-    ALLOWED_TAGS: [],
-    ALLOWED_ATTR: [],
-    ALLOW_DATA_ATTR: false,
-  });
+  return strictXssFilter.process(input);
 }
 
 /**
