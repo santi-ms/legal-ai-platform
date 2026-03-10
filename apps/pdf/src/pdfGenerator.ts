@@ -14,7 +14,7 @@ const OUTPUT_DIR = process.env.PDF_OUTPUT_DIR || path.resolve(__dirname, "../gen
 export type GeneratePdfInput = {
   title: string;
   rawText: string;
-  fileName?: string; // opcional: si viene, usarlo; si no, generar uno único
+  fileName?: string;
 };
 
 export type GeneratePdfResult = {
@@ -27,16 +27,13 @@ export async function generatePdfFromContract({
   rawText,
   fileName: providedFileName
 }: GeneratePdfInput): Promise<GeneratePdfResult> {
-  // asegurar carpeta
   if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   }
 
-  // usar fileName proporcionado o generar uno único
   const fileName = providedFileName || `${Date.now()}-${randomUUID()}.pdf`;
   const absolutePath = path.join(OUTPUT_DIR, fileName);
   
-  // Logging (se puede mejorar para usar logger inyectado)
   console.log(`[pdf] Generating PDF with fileName: ${fileName}`);
   console.log(`[pdf] Output path: ${absolutePath}`);
   console.log(`[pdf] Title length: ${title.length}, Text length: ${rawText.length}`);
@@ -51,7 +48,6 @@ export async function generatePdfFromContract({
       margins: { top: 50, left: 50, right: 50, bottom: 50 }
     });
 
-    // Manejar errores
     const handleError = (err: Error) => {
       if (hasError) return;
       hasError = true;
@@ -63,36 +59,13 @@ export async function generatePdfFromContract({
     writeStream.on("error", handleError);
     doc.on("error", handleError);
 
-    // Verificar que el stream esté listo antes de escribir
     writeStream.on("open", () => {
-      console.log(`[pdf] Write stream opened, starting PDF generation...`);
+      console.log(`[pdf] Write stream opened`);
     });
 
     doc.pipe(writeStream);
 
     try {
-      console.log(`[pdf] Starting to write PDF content...`);
-      console.log(`[pdf] rawText preview (first 200 chars): ${rawText.substring(0, 200)}`);
-      
-      // Calcular ancho del texto
-      const textWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-      
-      // Título - método simple sin posiciones explícitas
-      const titleText = title || "DOCUMENTO";
-      console.log(`[pdf] Writing title: "${titleText}"`);
-      
-      doc
-        .font("Helvetica-Bold")
-        .fontSize(18)
-        .fillColor("black")
-        .text(titleText, {
-          align: "center",
-          width: textWidth
-        });
-
-      doc.moveDown(2);
-      console.log(`[pdf] Title written, current Y position: ${doc.y}`);
-
       // Limpiar texto - remover markdown
       let cleanText = rawText.trim()
         .replace(/\r\n/g, "\n")
@@ -103,178 +76,181 @@ export async function generatePdfFromContract({
         .replace(/_(.*?)_/g, "$1")
         .trim();
       
-      console.log(`[pdf] Cleaned text length: ${cleanText.length}`);
-      console.log(`[pdf] Cleaned text preview: ${cleanText.substring(0, 100)}...`);
-      
       if (!cleanText || cleanText.length === 0) {
-        console.warn(`[pdf] WARNING: Cleaned text is empty, using placeholder`);
         cleanText = "[Sin contenido]";
       }
+
+      console.log(`[pdf] Cleaned text length: ${cleanText.length}`);
+
+      // Calcular dimensiones
+      const pageWidth = doc.page.width;
       const pageHeight = doc.page.height;
-      const currentY = doc.y;
-      
-      console.log(`[pdf] Page dimensions: width=${doc.page.width}, height=${pageHeight}`);
-      console.log(`[pdf] Current position: x=${doc.x}, y=${currentY}`);
+      const marginLeft = doc.page.margins.left;
+      const marginTop = doc.page.margins.top;
+      const marginRight = doc.page.margins.right;
+      const marginBottom = doc.page.margins.bottom;
+      const textWidth = pageWidth - marginLeft - marginRight;
+
+      console.log(`[pdf] Page: ${pageWidth}x${pageHeight}, Margins: L=${marginLeft} R=${marginRight} T=${marginTop} B=${marginBottom}`);
       console.log(`[pdf] Text width: ${textWidth}`);
-      console.log(`[pdf] Writing main text (${cleanText.length} chars)...`);
+
+      // POSICIÓN INICIAL
+      let currentY = marginTop;
+
+      // 1. TÍTULO - Escribir en posición fija
+      const titleText = title || "DOCUMENTO";
+      console.log(`[pdf] Writing title at Y=${currentY}: "${titleText}"`);
       
-      // Asegurar que estamos en una posición válida
-      if (currentY > pageHeight - 100) {
-        console.warn(`[pdf] WARNING: Current Y position (${currentY}) is too close to bottom, adding new page`);
-        doc.addPage();
-      }
-      
-      // Escribir texto principal - método simple y directo
-      console.log(`[pdf] Writing main text (${cleanText.length} chars)...`);
-      console.log(`[pdf] First 500 chars of cleanText: ${cleanText.substring(0, 500)}`);
-      
-      // Asegurar que el color sea negro explícitamente
-      doc.fillColor("black");
-      doc.strokeColor("black");
-      
-      // Usar fuente estándar que definitivamente existe
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(18)
+        .fillColor("black")
+        .moveTo(marginLeft, currentY)
+        .text(titleText, {
+          width: textWidth,
+          align: "center"
+        });
+
+      currentY += 40; // Espacio después del título
+      doc.y = currentY;
+
+      // 2. TEXTO DE PRUEBA - Para verificar que funciona
+      console.log(`[pdf] Writing test text at Y=${currentY}`);
+      doc
+        .font("Helvetica")
+        .fontSize(12)
+        .fillColor("black")
+        .moveTo(marginLeft, currentY)
+        .text("=== TEXTO DE PRUEBA ===", {
+          width: textWidth
+        });
+
+      currentY += 20;
+      doc.y = currentY;
+
+      // 3. TEXTO PRINCIPAL - Escribir línea por línea para mejor control
+      console.log(`[pdf] Writing main text starting at Y=${currentY}`);
+      const lines = cleanText.split('\n');
+      console.log(`[pdf] Text has ${lines.length} lines`);
+
       doc
         .font("Helvetica")
         .fontSize(12)
         .fillColor("black");
-      
-      // Verificar que el texto no esté vacío antes de escribir
-      if (cleanText && cleanText.length > 0) {
-        // Escribir el texto usando el método estándar de PDFKit
-        try {
-          const currentY = doc.y;
-          console.log(`[pdf] Writing main text at Y: ${currentY}`);
-          console.log(`[pdf] Text length: ${cleanText.length} chars`);
-          
-          // Configurar fuente y color explícitamente
-          doc
-            .font("Helvetica")
-            .fontSize(12)
-            .fillColor("black");
-          
-          // Escribir el texto usando el método estándar (sin posiciones explícitas)
-          doc.text(cleanText, {
-            align: "left",
-            width: textWidth,
-            lineGap: 3,
-            paragraphGap: 5
-          });
-          
-          const endY = doc.y;
-          console.log(`[pdf] Text written successfully, Y position: ${currentY} -> ${endY}`);
-          
-          // Verificar que el cursor se movió
-          if (Math.abs(endY - currentY) < 1) {
-            console.error(`[pdf] ERROR: Y position did not change! Text may not have been written.`);
-            // Intentar escribir texto de prueba simple
-            doc.text("TEST: Este es un texto de prueba", {
-              width: textWidth
-            });
-          }
-        } catch (textError) {
-          console.error(`[pdf] ERROR writing text:`, textError);
-          // Intentar escribir texto de prueba
-          doc.text("ERROR: No se pudo escribir el texto", {
+
+      let lineY = currentY;
+      const lineHeight = 15;
+      const maxY = pageHeight - marginBottom - 50;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        
+        // Si nos quedamos sin espacio, agregar nueva página
+        if (lineY > maxY) {
+          console.log(`[pdf] Adding new page at line ${i}`);
+          doc.addPage();
+          lineY = marginTop;
+        }
+
+        if (line.trim().length > 0) {
+          // Escribir línea en posición fija
+          doc.moveTo(marginLeft, lineY);
+          doc.text(line, {
             width: textWidth
           });
+          // Actualizar lineY basado en la nueva posición de doc.y
+          lineY = doc.y;
+        } else {
+          lineY += lineHeight;
         }
-      } else {
-        console.error(`[pdf] ERROR: cleanText is empty or invalid!`);
-        doc.text("ERROR: Texto vacío", {
-          width: textWidth
-        });
+        
+        lineY += lineHeight;
       }
-      
-      const afterTextY = doc.y;
-      console.log(`[pdf] Main text written, Y position after: ${afterTextY}`);
 
-      doc.moveDown(3);
+      doc.y = lineY;
+      console.log(`[pdf] Main text written, final Y: ${lineY}`);
 
-      // Bloque de firma
-      doc.moveDown(3);
-      console.log(`[pdf] Writing signature block at Y: ${doc.y}`);
-      
-      // Asegurar color negro explícitamente
-      doc.fillColor("black");
-      doc.strokeColor("black");
-      
+      // 4. BLOQUE DE FIRMA
+      if (lineY > maxY) {
+        doc.addPage();
+        lineY = marginTop;
+      }
+
+      lineY += 20;
+      console.log(`[pdf] Writing signature block at Y=${lineY}`);
+
       doc
         .font("Helvetica")
         .fontSize(11)
-        .text("__________________________", {
-          align: "left",
-          width: textWidth,
-          continued: false
-        });
-      doc.moveDown(0.5);
-      doc
-        .font("Helvetica")
-        .fontSize(11)
-        .text("Firma / Aclaración / DNI", {
-          align: "left",
-          width: textWidth,
-          continued: false
-        });
-      console.log(`[pdf] Signature block written, final Y: ${doc.y}`);
+        .fillColor("black");
+      
+      doc.moveTo(marginLeft, lineY);
+      doc.text("__________________________", {
+        width: textWidth
+      });
 
-      // Finalizar el documento
+      lineY = doc.y + 5;
+      doc.moveTo(marginLeft, lineY);
+      doc.text("Firma / Aclaración / DNI", {
+        width: textWidth
+      });
+
+      console.log(`[pdf] Signature block written, final Y: ${lineY}`);
+
+      // Finalizar
       console.log(`[pdf] Ending PDF document...`);
       doc.end();
       
-      console.log(`[pdf] PDF document ended, waiting for stream to finish...`);
     } catch (err) {
       handleError(err instanceof Error ? err : new Error(String(err)));
       return;
     }
 
-    // Esperar a que el stream termine de escribir
+    // Esperar a que el stream termine
     writeStream.on("finish", () => {
       if (hasError) return;
       streamFinished = true;
       
       console.log(`[pdf] Write stream finished`);
-      console.log(`[pdf] PDF generation completed: ${fileName}`);
       
-      // Dar un pequeño delay para asegurar que el archivo esté completamente escrito
       setTimeout(() => {
         try {
-          // Verificar que el archivo existe y tiene contenido
           const stats = fs.statSync(absolutePath);
           console.log(`[pdf] PDF file size: ${stats.size} bytes`);
           
           if (stats.size === 0) {
             console.error(`[pdf] ERROR: Generated PDF is empty!`);
             reject(new Error("Generated PDF file is empty"));
-          } else if (stats.size < 1000) {
-            // PDFs válidos deberían tener al menos algunos KB
-            console.warn(`[pdf] WARNING: PDF file is very small (${stats.size} bytes), might be corrupted`);
+            return;
           }
           
-          // Verificar que el archivo es realmente un PDF leyendo los primeros bytes
+          // Verificar header PDF
           const fileBuffer = fs.readFileSync(absolutePath, { encoding: null });
           const pdfHeader = fileBuffer.slice(0, 4).toString();
           if (pdfHeader !== "%PDF") {
             console.error(`[pdf] ERROR: File does not have PDF header! Got: ${pdfHeader}`);
             reject(new Error("Generated file is not a valid PDF"));
-          } else {
-            console.log(`[pdf] PDF header verified: ${pdfHeader}`);
-            resolve({
-              filePath: absolutePath,
-              fileName
-            });
+            return;
           }
+          
+          console.log(`[pdf] PDF header verified: ${pdfHeader}`);
+          console.log(`[pdf] PDF generated successfully: ${fileName}`);
+          
+          resolve({
+            filePath: absolutePath,
+            fileName
+          });
         } catch (err) {
           console.error(`[pdf] Error checking file stats:`, err);
           reject(err instanceof Error ? err : new Error(String(err)));
         }
-      }, 100); // 100ms delay para asegurar escritura completa
+      }, 200);
     });
 
-    // Timeout de seguridad (30 segundos)
+    // Timeout
     setTimeout(() => {
       if (!hasError && !streamFinished) {
-        console.error(`[pdf] ERROR: PDF generation timeout (stream not finished)`);
-        console.error(`[pdf] Stream state: writableEnded=${writeStream.writableEnded}, destroyed=${writeStream.destroyed}`);
+        console.error(`[pdf] ERROR: PDF generation timeout`);
         hasError = true;
         writeStream.destroy();
         reject(new Error("PDF generation timeout"));
