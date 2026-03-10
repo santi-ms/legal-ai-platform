@@ -634,9 +634,26 @@ export default function NewDocumentPage() {
                   <div>
                     <button
                       onClick={() => {
-                        const title = formData.type || "DOCUMENTO";
-                        const fileName = `${result.documentId}.pdf`;
-                        generatePdfFromText(title, result.contrato, fileName);
+                        try {
+                          console.log("[new-document] Iniciando descarga de PDF");
+                          console.log("[new-document] Document ID:", result.documentId);
+                          console.log("[new-document] Contrato length:", result.contrato?.length || 0);
+                          console.log("[new-document] Contrato preview:", result.contrato?.substring(0, 200));
+                          
+                          const title = formData.type || "DOCUMENTO";
+                          const fileName = `${result.documentId}.pdf`;
+                          const text = result.contrato || "";
+                          
+                          if (!text || text.trim().length === 0) {
+                            alert("Error: No hay contenido para generar el PDF");
+                            return;
+                          }
+                          
+                          generatePdfFromText(title, text, fileName);
+                        } catch (error) {
+                          console.error("[new-document] Error al generar PDF:", error);
+                          alert(`Error: ${error instanceof Error ? error.message : String(error)}`);
+                        }
                       }}
                       className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm ring-1 ring-inset ring-teal-700/30 hover:bg-teal-500 hover:shadow-md transition-all"
                     >

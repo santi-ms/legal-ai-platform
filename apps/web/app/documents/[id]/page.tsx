@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { SkeletonDocumentDetail } from "@/components/ui/skeleton";
 import { sanitizeInput } from "@/app/lib/sanitize";
+import { generatePdfFromText } from "@/app/lib/pdfGenerator";
 import type {
   Document as ProxyDocument,
   DocumentApiResponse as ProxyDocumentResponse,
@@ -43,16 +44,28 @@ export default function DocumentDetailPage() {
   }, [id]);
 
   function handleDownload() {
-    if (!id || !data?.document?.lastVersion?.rawText) return;
+    if (!id || !data?.document?.lastVersion?.rawText) {
+      console.error("[document-detail] No hay texto para generar PDF");
+      alert("Error: No hay contenido para generar el PDF");
+      return;
+    }
     
-    // Generar PDF en el frontend usando jsPDF
-    const { generatePdfFromText } = require("@/app/lib/pdfGenerator");
-    const doc = data.document;
-    const title = doc.type || "DOCUMENTO";
-    const text = doc.lastVersion.rawText;
-    const fileName = `${id}.pdf`;
-    
-    generatePdfFromText(title, text, fileName);
+    try {
+      console.log("[document-detail] Iniciando descarga de PDF");
+      console.log("[document-detail] Document ID:", id);
+      console.log("[document-detail] Text length:", data.document.lastVersion.rawText?.length || 0);
+      
+      // Generar PDF en el frontend usando jsPDF
+      const doc = data.document;
+      const title = doc.type || "DOCUMENTO";
+      const text = doc.lastVersion.rawText;
+      const fileName = `${id}.pdf`;
+      
+      generatePdfFromText(title, text, fileName);
+    } catch (error) {
+      console.error("[document-detail] Error al generar PDF:", error);
+      alert(`Error: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   // distintos estados

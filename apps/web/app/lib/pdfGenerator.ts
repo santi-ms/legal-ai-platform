@@ -10,27 +10,49 @@ export function generatePdfFromText(
   text: string,
   fileName: string = "documento.pdf"
 ): void {
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4",
-  });
+  console.log("[pdf-generator] Iniciando generación de PDF");
+  console.log("[pdf-generator] Title:", title);
+  console.log("[pdf-generator] Text length:", text?.length || 0);
+  console.log("[pdf-generator] Text preview:", text?.substring(0, 200) || "NO TEXT");
+  
+  if (!text || text.trim().length === 0) {
+    console.error("[pdf-generator] ERROR: No hay texto para generar el PDF");
+    alert("Error: No hay contenido para generar el PDF");
+    return;
+  }
 
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 20;
-  const maxWidth = pageWidth - 2 * margin;
+  try {
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
 
-  let yPosition = margin;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const maxWidth = pageWidth - 2 * margin;
 
-  // Título
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  const titleLines = doc.splitTextToSize(title.toUpperCase(), maxWidth);
-  doc.text(titleLines, pageWidth / 2, yPosition, {
-    align: "center",
-  });
-  yPosition += titleLines.length * 8 + 10;
+    let yPosition = margin;
+
+    // TEXTO DE PRUEBA PRIMERO para verificar que funciona
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0); // Negro explícito
+    doc.text("PRUEBA: Este texto debe ser visible", pageWidth / 2, yPosition, {
+      align: "center",
+    });
+    yPosition += 15;
+
+    // Título
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0); // Negro explícito
+    const titleLines = doc.splitTextToSize(title.toUpperCase(), maxWidth);
+    doc.text(titleLines, pageWidth / 2, yPosition, {
+      align: "center",
+    });
+    yPosition += titleLines.length * 8 + 10;
 
   // Línea separadora
   doc.setLineWidth(0.5);
@@ -53,6 +75,9 @@ export function generatePdfFromText(
   // Configurar fuente para el contenido
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
+  doc.setTextColor(0, 0, 0); // Negro explícito
+
+  console.log("[pdf-generator] Escribiendo", lines.length, "líneas de texto");
 
   // Escribir cada línea
   for (const line of lines) {
@@ -71,6 +96,7 @@ export function generatePdfFromText(
         yPosition = margin;
       }
       
+      doc.setTextColor(0, 0, 0); // Negro explícito en cada línea
       doc.text(textLine, margin, yPosition);
       yPosition += 6; // Espaciado entre líneas
     }
@@ -90,9 +116,16 @@ export function generatePdfFromText(
   yPosition += 8;
   
   doc.setFontSize(10);
+  doc.setTextColor(0, 0, 0); // Negro explícito
   doc.text("Firma / Aclaración / DNI", margin, yPosition);
 
   // Descargar PDF
+  console.log("[pdf-generator] Guardando PDF:", fileName);
   doc.save(fileName);
+  console.log("[pdf-generator] PDF generado exitosamente");
+  } catch (error) {
+    console.error("[pdf-generator] ERROR al generar PDF:", error);
+    alert(`Error al generar el PDF: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
