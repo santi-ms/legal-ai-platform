@@ -39,20 +39,29 @@ function formatTextForHtml(text: string): string {
   let cleanText = text.trim()
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.*?)\*/g, "<em>$1</em>")
-    .replace(/__(.*?)__/g, "<strong>$1</strong>")
-    .replace(/_(.*?)_/g, "<em>$1</em>")
+    .replace(/\*\*(.*?)\*\*/g, "$1") // Remover markdown bold
+    .replace(/\*(.*?)\*/g, "$1") // Remover markdown italic
+    .replace(/__(.*?)__/g, "$1") // Remover markdown bold
+    .replace(/_(.*?)_/g, "$1") // Remover markdown italic
     .trim();
 
-  // Convertir saltos de línea a párrafos
-  const lines = cleanText.split('\n').filter(line => line.trim().length > 0);
+  if (!cleanText || cleanText.length === 0) {
+    return '<p style="color: #000000;">[Sin contenido]</p>';
+  }
+
+  // Convertir saltos de línea a párrafos - método más simple
+  const lines = cleanText.split('\n');
   const formatted = lines.map(line => {
-    const escaped = escapeHtml(line.trim());
-    return `<p>${escaped}</p>`;
+    const trimmed = line.trim();
+    if (trimmed.length === 0) {
+      return '<br>';
+    }
+    // Escapar HTML pero mantener el texto visible
+    const escaped = escapeHtml(trimmed);
+    return `<p style="color: #000000; margin: 8px 0;">${escaped}</p>`;
   }).join('');
 
-  return formatted || '<p>[Sin contenido]</p>';
+  return formatted;
 }
 
 export async function generatePdfFromContract({
@@ -74,79 +83,62 @@ export async function generatePdfFromContract({
   const formattedText = formatTextForHtml(rawText);
   const titleText = escapeHtml(title || "DOCUMENTO");
 
-  // HTML template - mejorado para asegurar visibilidad
+  // HTML template - MUY SIMPLE para debugging
   const html = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    @page {
-      size: A4;
-      margin: 2cm;
-    }
     body {
-      font-family: 'Helvetica', 'Arial', sans-serif;
-      font-size: 12pt;
-      line-height: 1.8;
-      color: #000000 !important;
-      background: #ffffff;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      color: black;
+      background: white;
+      padding: 40px;
       margin: 0;
-      padding: 20px;
-      width: 100%;
     }
-    .title {
-      font-size: 20pt;
+    h1 {
+      font-size: 24px;
       font-weight: bold;
       text-align: center;
+      color: black;
       margin-bottom: 30px;
-      color: #000000 !important;
+      border-bottom: 2px solid black;
+      padding-bottom: 10px;
+    }
+    .test {
+      background: yellow;
       padding: 10px;
-      border-bottom: 2px solid #000000;
+      margin: 20px 0;
+      border: 2px solid red;
+      color: black;
+      font-weight: bold;
     }
     .content {
-      text-align: left;
-      color: #000000 !important;
-      width: 100%;
-      padding: 10px 0;
+      color: black;
+      line-height: 1.6;
     }
     .content p {
+      color: black;
       margin: 10px 0;
-      color: #000000 !important;
-      font-size: 12pt;
-      line-height: 1.8;
     }
     .signature {
-      margin-top: 50px;
-      color: #000000 !important;
+      margin-top: 40px;
       padding-top: 20px;
-    }
-    .signature-line {
-      border-top: 2px solid #000000;
-      width: 300px;
-      margin: 20px 0 10px 0;
-      display: block;
-    }
-    .signature p {
-      color: #000000 !important;
-      font-size: 11pt;
-      margin-top: 5px;
+      border-top: 1px solid black;
     }
   </style>
 </head>
 <body>
-  <div class="title">${titleText}</div>
+  <div class="test">TEXTO DE PRUEBA: Si ves esto, el PDF funciona correctamente</div>
+  <h1>${titleText}</h1>
   <div class="content">
     ${formattedText}
   </div>
   <div class="signature">
-    <div class="signature-line"></div>
-    <p>Firma / Aclaración / DNI</p>
+    <p style="color: black;">__________________________</p>
+    <p style="color: black;">Firma / Aclaración / DNI</p>
   </div>
 </body>
 </html>
