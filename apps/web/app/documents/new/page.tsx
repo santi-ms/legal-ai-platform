@@ -632,7 +632,11 @@ export default function NewDocumentPage() {
                 {result.contrato && (
                   <div>
                     <button
-                      onClick={async () => {
+                      type="button"
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log("[new-document] BUTTON CLICKED - onClick handler");
                         try {
                           console.log("[new-document] CLICKED - Iniciando descarga de PDF");
                           console.log("[new-document] Document ID:", result.documentId);

@@ -222,9 +222,15 @@ export default function DocumentDetailPage() {
       description={headerDescription}
       action={
         <div className="flex flex-col sm:flex-row gap-2">
-          {last?.pdfUrl && (
+          {last?.rawText && (
             <button
-              onClick={handleDownload}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log("[document-detail] BUTTON CLICKED - onClick handler");
+                handleDownload();
+              }}
               className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm ring-1 ring-inset ring-teal-700/30 hover:bg-teal-500 hover:shadow-md transition-all"
             >
               <Download className="h-4 w-4" />
