@@ -214,9 +214,9 @@ async function handler(
     };
 
     // Copiar headers relevantes del request original (si es necesario)
-    const contentType = req.headers.get("content-type");
-    if (contentType) {
-      headers["Content-Type"] = contentType;
+    const requestContentType = req.headers.get("content-type");
+    if (requestContentType) {
+      headers["Content-Type"] = requestContentType;
     }
 
     // 7. Hacer fetch al backend
