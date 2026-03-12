@@ -43,123 +43,16 @@ export default function DocumentDetailPage() {
   }, [id]);
 
   async function handleDownload() {
-    console.log("[document-detail] handleDownload CLICKED");
-    console.log("[document-detail] id:", id);
-    console.log("[document-detail] data:", data);
-    console.log("[document-detail] lastVersion:", data?.document?.lastVersion);
-    
     if (!id || !data?.document?.lastVersion?.rawText) {
-      console.error("[document-detail] No hay texto para generar PDF");
       alert("Error: No hay contenido para generar el PDF");
       return;
     }
     
     try {
-      console.log("[document-detail] Iniciando descarga de PDF");
-      console.log("[document-detail] Document ID:", id);
-      console.log("[document-detail] Text length:", data.document.lastVersion.rawText?.length || 0);
-      
-      // Dynamic import de jsPDF para evitar problemas con SSR
-      const { jsPDF } = await import("jspdf");
-      console.log("[document-detail] jsPDF imported successfully");
-      
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 20;
-      const maxWidth = pageWidth - 2 * margin;
-
-      let yPosition = margin;
-
-      // TEXTO DE PRUEBA
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(0, 0, 0);
-      doc.text("PRUEBA: Este texto debe ser visible", pageWidth / 2, yPosition, {
-        align: "center",
-      });
-      yPosition += 15;
-
-      // Título
+      const { generatePdfFromText } = await import("@/app/lib/pdfGenerator");
       const documentTitle = data.document.type || "DOCUMENTO";
-      doc.setFontSize(18);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(0, 0, 0);
-      const titleLines = doc.splitTextToSize(documentTitle.toUpperCase(), maxWidth);
-      doc.text(titleLines, pageWidth / 2, yPosition, {
-        align: "center",
-      });
-      yPosition += titleLines.length * 8 + 10;
-
-      // Línea separadora
-      doc.setLineWidth(0.5);
-      doc.line(margin, yPosition, pageWidth - margin, yPosition);
-      yPosition += 10;
-
-      // Limpiar texto
-      let cleanText = data.document.lastVersion.rawText
-        .trim()
-        .replace(/\r\n/g, "\n")
-        .replace(/\r/g, "\n")
-        .replace(/\*\*(.*?)\*\*/g, "$1")
-        .replace(/\*(.*?)\*/g, "$1")
-        .replace(/__(.*?)__/g, "$1")
-        .replace(/_(.*?)_/g, "$1");
-
-      const lines = cleanText.split("\n").filter((line) => line.trim().length > 0);
-
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(0, 0, 0);
-
-      console.log("[document-detail] Escribiendo", lines.length, "líneas");
-
-      for (const line of lines) {
-        if (yPosition > pageHeight - margin - 20) {
-          doc.addPage();
-          yPosition = margin;
-        }
-
-        const textLines = doc.splitTextToSize(line.trim(), maxWidth);
-        
-        for (const textLine of textLines) {
-          if (yPosition > pageHeight - margin - 20) {
-            doc.addPage();
-            yPosition = margin;
-          }
-          
-          doc.setTextColor(0, 0, 0);
-          doc.text(textLine, margin, yPosition);
-          yPosition += 6;
-        }
-        
-        yPosition += 2;
-      }
-
-      // Firma
-      if (yPosition > pageHeight - margin - 30) {
-        doc.addPage();
-        yPosition = margin;
-      }
-
-      yPosition += 20;
-      doc.setLineWidth(0.5);
-      doc.line(margin, yPosition, margin + 80, yPosition);
-      yPosition += 8;
-      
-      doc.setFontSize(10);
-      doc.setTextColor(0, 0, 0);
-      doc.text("Firma / Aclaración / DNI", margin, yPosition);
-
       const fileName = `${id}.pdf`;
-      console.log("[document-detail] Guardando PDF:", fileName);
-      doc.save(fileName);
-      console.log("[document-detail] PDF generado exitosamente");
+      generatePdfFromText(documentTitle, data.document.lastVersion.rawText, fileName);
     } catch (error) {
       console.error("[document-detail] Error al generar PDF:", error);
       alert(`Error: ${error instanceof Error ? error.message : String(error)}`);

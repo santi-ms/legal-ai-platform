@@ -1,6 +1,17 @@
+/**
+ * Legacy Document Creation Wizard
+ * 
+ * TODO: This is the old generic wizard. It will be deprecated in favor of
+ * the new guided flow at /documents/new/guided.
+ * 
+ * For now, we keep it for backward compatibility, but new users should
+ * use the guided flow.
+ */
+
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -67,6 +78,7 @@ const initialFormData: FormData = {
 };
 
 export default function NewDocumentPage() {
+  const router = useRouter();
   // Toast para notificaciones
   const { success, error: showError } = useToast();
   
@@ -636,121 +648,13 @@ export default function NewDocumentPage() {
                       onClick={async (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log("[new-document] BUTTON CLICKED - onClick handler");
                         try {
-                          console.log("[new-document] CLICKED - Iniciando descarga de PDF");
-                          console.log("[new-document] Document ID:", result.documentId);
-                          console.log("[new-document] Contrato length:", result.contrato?.length || 0);
-                          console.log("[new-document] Contrato preview:", result.contrato?.substring(0, 200));
-                          
+                          const { generatePdfFromText } = await import("@/app/lib/pdfGenerator");
                           const title = formData.type || "DOCUMENTO";
-                          const fileName = `${result.documentId}.pdf`;
-                          const text = result.contrato || "";
-                          
-                          if (!text || text.trim().length === 0) {
-                            alert("Error: No hay contenido para generar el PDF");
-                            return;
-                          }
-                          
-                          // Dynamic import de jsPDF
-                          const { jsPDF } = await import("jspdf");
-                          console.log("[new-document] jsPDF imported successfully");
-                          
-                          const doc = new jsPDF({
-                            orientation: "portrait",
-                            unit: "mm",
-                            format: "a4",
-                          });
-
-                          const pageWidth = doc.internal.pageSize.getWidth();
-                          const pageHeight = doc.internal.pageSize.getHeight();
-                          const margin = 20;
-                          const maxWidth = pageWidth - 2 * margin;
-
-                          let yPosition = margin;
-
-                          // TEXTO DE PRUEBA
-                          doc.setFontSize(16);
-                          doc.setFont("helvetica", "bold");
-                          doc.setTextColor(0, 0, 0);
-                          doc.text("PRUEBA: Este texto debe ser visible", pageWidth / 2, yPosition, {
-                            align: "center",
-                          });
-                          yPosition += 15;
-
-                          // Título
-                          doc.setFontSize(18);
-                          doc.setFont("helvetica", "bold");
-                          doc.setTextColor(0, 0, 0);
-                          const titleLines = doc.splitTextToSize(title.toUpperCase(), maxWidth);
-                          doc.text(titleLines, pageWidth / 2, yPosition, {
-                            align: "center",
-                          });
-                          yPosition += titleLines.length * 8 + 10;
-
-                          // Línea separadora
-                          doc.setLineWidth(0.5);
-                          doc.line(margin, yPosition, pageWidth - margin, yPosition);
-                          yPosition += 10;
-
-                          // Limpiar texto
-                          let cleanText = text
-                            .trim()
-                            .replace(/\r\n/g, "\n")
-                            .replace(/\r/g, "\n")
-                            .replace(/\*\*(.*?)\*\*/g, "$1")
-                            .replace(/\*(.*?)\*/g, "$1")
-                            .replace(/__(.*?)__/g, "$1")
-                            .replace(/_(.*?)_/g, "$1");
-
-                          const lines = cleanText.split("\n").filter((line) => line.trim().length > 0);
-
-                          doc.setFontSize(11);
-                          doc.setFont("helvetica", "normal");
-                          doc.setTextColor(0, 0, 0);
-
-                          console.log("[new-document] Escribiendo", lines.length, "líneas");
-
-                          for (const line of lines) {
-                            if (yPosition > pageHeight - margin - 20) {
-                              doc.addPage();
-                              yPosition = margin;
-                            }
-
-                            const textLines = doc.splitTextToSize(line.trim(), maxWidth);
-                            
-                            for (const textLine of textLines) {
-                              if (yPosition > pageHeight - margin - 20) {
-                                doc.addPage();
-                                yPosition = margin;
-                              }
-                              
-                              doc.setTextColor(0, 0, 0);
-                              doc.text(textLine, margin, yPosition);
-                              yPosition += 6;
-                            }
-                            
-                            yPosition += 2;
-                          }
-
-                          // Firma
-                          if (yPosition > pageHeight - margin - 30) {
-                            doc.addPage();
-                            yPosition = margin;
-                          }
-
-                          yPosition += 20;
-                          doc.setLineWidth(0.5);
-                          doc.line(margin, yPosition, margin + 80, yPosition);
-                          yPosition += 8;
-                          
-                          doc.setFontSize(10);
-                          doc.setTextColor(0, 0, 0);
-                          doc.text("Firma / Aclaración / DNI", margin, yPosition);
-
-                          console.log("[new-document] Guardando PDF:", fileName);
-                          doc.save(fileName);
-                          console.log("[new-document] PDF generado exitosamente");
+                          const fileName = result.documentId 
+                            ? `${result.documentId}.pdf`
+                            : "documento.pdf";
+                          generatePdfFromText(title, result.contrato, fileName);
                         } catch (error) {
                           console.error("[new-document] Error al generar PDF:", error);
                           alert(`Error: ${error instanceof Error ? error.message : String(error)}`);
@@ -842,8 +746,29 @@ export default function NewDocumentPage() {
     <DashboardShell
       title="Crear documento legal"
       description="Generá contratos profesionales con IA en cuatro pasos simples."
-      action={null}
+      action={
+        <Button
+          variant="outline"
+          onClick={() => router.push("/documents/new/guided")}
+        >
+          Usar Flujo Guiado (Nuevo)
+        </Button>
+      }
     >
+      {/* Legacy Wizard - TODO: Deprecate in favor of guided flow */}
+      <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <p className="text-sm text-yellow-800">
+          <strong>Nota:</strong> Este es el wizard genérico. Te recomendamos usar el{" "}
+          <button
+            onClick={() => router.push("/documents/new/guided")}
+            className="underline font-medium"
+          >
+            nuevo flujo guiado
+          </button>{" "}
+          que ofrece formularios específicos por tipo de documento.
+        </p>
+      </div>
+
       {/* Wizard (pasos + contenido dinámico) */}
       <div className="flex justify-center">
         <div className="w-full max-w-4xl space-y-8">

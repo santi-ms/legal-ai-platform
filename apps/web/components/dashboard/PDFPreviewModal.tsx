@@ -42,93 +42,9 @@ export function PDFPreviewModal({
           return;
         }
 
-        // Generar PDF con jsPDF
-        const { jsPDF } = await import("jspdf");
-
-        const pdfDoc = new jsPDF({
-          orientation: "portrait",
-          unit: "mm",
-          format: "a4",
-        });
-
-        const pageWidth = pdfDoc.internal.pageSize.getWidth();
-        const pageHeight = pdfDoc.internal.pageSize.getHeight();
-        const margin = 20;
-        const maxWidth = pageWidth - 2 * margin;
-
-        let yPosition = margin;
-
-        // Título
-        pdfDoc.setFontSize(18);
-        pdfDoc.setFont("helvetica", "bold");
-        pdfDoc.setTextColor(0, 0, 0);
-        const titleLines = pdfDoc.splitTextToSize(documentType.toUpperCase(), maxWidth);
-        pdfDoc.text(titleLines, pageWidth / 2, yPosition, {
-          align: "center",
-        });
-        yPosition += titleLines.length * 8 + 10;
-
-        // Línea separadora
-        pdfDoc.setLineWidth(0.5);
-        pdfDoc.line(margin, yPosition, pageWidth - margin, yPosition);
-        yPosition += 10;
-
-        // Limpiar texto
-        let cleanText = rawText
-          .trim()
-          .replace(/\r\n/g, "\n")
-          .replace(/\r/g, "\n")
-          .replace(/\*\*(.*?)\*\*/g, "$1")
-          .replace(/\*(.*?)\*/g, "$1")
-          .replace(/__(.*?)__/g, "$1")
-          .replace(/_(.*?)_/g, "$1");
-
-        const lines = cleanText.split("\n").filter((line) => line.trim().length > 0);
-
-        pdfDoc.setFontSize(11);
-        pdfDoc.setFont("helvetica", "normal");
-        pdfDoc.setTextColor(0, 0, 0);
-
-        for (const line of lines) {
-          if (yPosition > pageHeight - margin - 20) {
-            pdfDoc.addPage();
-            yPosition = margin;
-          }
-
-          const textLines = pdfDoc.splitTextToSize(line.trim(), maxWidth);
-          
-          for (const textLine of textLines) {
-            if (yPosition > pageHeight - margin - 20) {
-              pdfDoc.addPage();
-              yPosition = margin;
-            }
-            
-            pdfDoc.setTextColor(0, 0, 0);
-            pdfDoc.text(textLine, margin, yPosition);
-            yPosition += 6;
-          }
-          
-          yPosition += 2;
-        }
-
-        // Firma
-        if (yPosition > pageHeight - margin - 30) {
-          pdfDoc.addPage();
-          yPosition = margin;
-        }
-
-        yPosition += 20;
-        pdfDoc.setLineWidth(0.5);
-        pdfDoc.line(margin, yPosition, margin + 80, yPosition);
-        yPosition += 8;
-        
-        pdfDoc.setFontSize(10);
-        pdfDoc.setTextColor(0, 0, 0);
-        pdfDoc.text("Firma / Aclaración / DNI", margin, yPosition);
-
-        // Generar blob URL para el iframe
-        const pdfBlob = pdfDoc.output("blob");
-        const blobUrl = URL.createObjectURL(pdfBlob);
+        // Generar PDF blob usando función reutilizable
+        const { generatePdfBlobFromText } = await import("@/app/lib/pdfGenerator");
+        const blobUrl = generatePdfBlobFromText(documentType, rawText);
         setPdfBlobUrl(blobUrl);
         setLoading(false);
       } catch (err: any) {

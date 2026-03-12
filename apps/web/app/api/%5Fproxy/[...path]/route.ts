@@ -281,12 +281,12 @@ async function handler(
     } else {
       // Para JSON y texto, usar text()
       const responseText = await backendResponse.text();
-      return new NextResponse(responseText, {
-        status: backendResponse.status,
-        headers: {
+    return new NextResponse(responseText, {
+      status: backendResponse.status,
+      headers: {
           "Content-Type": contentType,
-        },
-      });
+      },
+    });
     }
 
   } catch (error: any) {

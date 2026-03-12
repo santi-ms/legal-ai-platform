@@ -5,6 +5,7 @@ import rateLimit from "@fastify/rate-limit";
 import helmet from "@fastify/helmet";
 import { registerDocumentRoutes } from "./routes.documents.js";
 import { registerAuthRoutes } from "./routes.auth.js";
+import { initializeDocumentRegistry } from "./modules/documents/domain/document-registry.js";
 import { execSync, exec } from "child_process";
 import { promisify } from "util";
 import { logger } from "./utils/logger.js";
@@ -131,6 +132,10 @@ async function runMigrations() {
 }
 
 async function buildServer() {
+  // Initialize document registry
+  initializeDocumentRegistry();
+  logger.info("[server] Document registry initialized");
+  
   const app = Fastify({
     logger: true,
   });

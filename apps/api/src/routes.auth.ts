@@ -5,9 +5,9 @@ import { sanitizeInput } from "./utils/sanitize.js";
 
 // Crear instancia de PrismaClient
 const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === "development" ? ["error", "warn", "query"] : ["error", "warn"],
-  errorFormat: "pretty",
-});
+    log: process.env.NODE_ENV === "development" ? ["error", "warn", "query"] : ["error", "warn"],
+    errorFormat: "pretty",
+  });
 import rateLimit from "@fastify/rate-limit";
 import { z } from "zod";
 import {

@@ -79,7 +79,7 @@ export async function generatePdfFromContract({
       if (!cleanText || cleanText.length === 0) {
         cleanText = "[Sin contenido]";
       }
-
+      
       console.log(`[pdf] Cleaned text length: ${cleanText.length}`);
 
       // Calcular dimensiones
@@ -192,8 +192,8 @@ export async function generatePdfFromContract({
       lineY = doc.y + 5;
       doc.moveTo(marginLeft, lineY);
       doc.text("Firma / Aclaración / DNI", {
-        width: textWidth
-      });
+          width: textWidth
+        });
 
       console.log(`[pdf] Signature block written, final Y: ${lineY}`);
 
@@ -214,13 +214,13 @@ export async function generatePdfFromContract({
       console.log(`[pdf] Write stream finished`);
       
       setTimeout(() => {
-        try {
-          const stats = fs.statSync(absolutePath);
-          console.log(`[pdf] PDF file size: ${stats.size} bytes`);
+      try {
+        const stats = fs.statSync(absolutePath);
+        console.log(`[pdf] PDF file size: ${stats.size} bytes`);
           
-          if (stats.size === 0) {
-            console.error(`[pdf] ERROR: Generated PDF is empty!`);
-            reject(new Error("Generated PDF file is empty"));
+        if (stats.size === 0) {
+          console.error(`[pdf] ERROR: Generated PDF is empty!`);
+          reject(new Error("Generated PDF file is empty"));
             return;
           }
           
@@ -240,10 +240,10 @@ export async function generatePdfFromContract({
             filePath: absolutePath,
             fileName
           });
-        } catch (err) {
-          console.error(`[pdf] Error checking file stats:`, err);
-          reject(err instanceof Error ? err : new Error(String(err)));
-        }
+      } catch (err) {
+        console.error(`[pdf] Error checking file stats:`, err);
+        reject(err instanceof Error ? err : new Error(String(err)));
+      }
       }, 200);
     });
 

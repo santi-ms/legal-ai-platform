@@ -164,129 +164,42 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
   // ==========================================
   app.post("/documents/generate", async (request, reply) => {
     try {
-      // 1️⃣ Validar body contra Zod
-      const parsed = GenerateDocumentSchema.safeParse(request.body);
-      if (!parsed.success) {
+      // 1️⃣ Normalizar request (acepta nuevo formato DTO o formato antiguo)
+      const { normalizeDocumentRequest } = await import("./modules/documents/services/document-mapper.js");
+      const normalized = await normalizeDocumentRequest(request.body);
+      
+      if (!normalized.success) {
         return reply.status(400).send({
           ok: false,
           error: "invalid_body",
-          details: parsed.error.format(),
+          message: normalized.error,
         });
       }
 
-      const data = parsed.data;
+      const { documentType, jurisdiction, tone, structuredData } = normalized;
 
       // 1.5️⃣ Sanitizar inputs para prevenir XSS
-      const sanitizedData = sanitizeObject(data, false) as typeof data;
+      const sanitizedData = sanitizeObject(structuredData, false) as typeof structuredData;
 
-      // 2️⃣ Construir prompt legal mejorado
-      const systemMessage = `Eres un abogado senior argentino especializado en derecho comercial con 20 años de experiencia. Generas documentos legales válidos, profesionales y completos según la normativa argentina vigente.`;
-
-      const prompt = `GENERA UN ${sanitizedData.type.toUpperCase()} PROFESIONAL
-
-ESPECIFICACIONES LEGALES:
-- Jurisdicción/Fuero: ${sanitizedData.jurisdiccion}
-- Legislación: Código de Comercio Argentino, Código Civil y Comercial
-- Jurisdicción competente: ${sanitizedData.jurisdiccion} (renuncia expresa a cualquier otro fuero)
-
-PARTES CONTRATANTES:
-
-PROVEEDOR:
-- Nombre/Razón Social: ${sanitizedData.proveedor_nombre}
-- Documento/CUIT: ${sanitizedData.proveedor_doc}
-- Domicilio: ${sanitizedData.proveedor_domicilio}
-
-CLIENTE:
-- Nombre/Razón Social: ${sanitizedData.cliente_nombre}
-- Documento/CUIT: ${sanitizedData.cliente_doc}
-- Domicilio: ${sanitizedData.cliente_domicilio}
-
-OBJETO Y CONDICIONES:
-- Servicio/Objeto del contrato: ${sanitizedData.descripcion_servicio}
-- Monto mensual: ${sanitizedData.monto_mensual}
-- Forma de pago: ${sanitizedData.forma_pago}
-- Inicio de vigencia: ${sanitizedData.inicio_vigencia}
-- Plazo mínimo: ${sanitizedData.plazo_minimo_meses} meses
-- Penalización por rescisión anticipada: ${sanitizedData.penalizacion_rescision ? "SÍ" : "NO"}${sanitizedData.penalizacion_rescision && sanitizedData.penalizacion_monto ? ` - Monto de penalización: ${sanitizedData.penalizacion_monto}` : ""}
-- Modalidad facturación: ${sanitizedData.preferencias_fiscales}
-
-INSTRUCCIONES DE REDACCIÓN:
-1. TONO: ${sanitizedData.tono === "formal" ? "Formal y técnico legal. Usar terminología jurídica precisa y cláusulas técnicas." : "Comercial y claro. Lenguaje entendible para PyMEs sin sacrificar validez legal."}
-2. ESTRUCTURA: Encabezado con datos completos de partes, luego cláusulas numeradas (PRIMERA, SEGUNDA, etc.)
-3. MÍNIMOS LEGALES: Incluir cláusulas obligatorias según tipo de contrato y normativa argentina
-4. VALIDEZ: El documento debe ser legalmente válido y ejecutable en Argentina
-5. ESPECIFICIDAD: Usar los datos concretos proporcionados (montos, fechas, domicilios)
-
-CLÁUSULAS OBLIGATORIAS A INCLUIR:
-- Identificación completa de partes con CUIT/documento
-- Domicilio constituido en ${sanitizedData.jurisdiccion}
-- Foro de competencia exclusivo en ${sanitizedData.jurisdiccion}
-- Ley aplicable (leyes argentinas)
-- Medios de resolución de disputas
-- Plazo de vigencia y condiciones de rescisión
-- Modalidades de pago y facturación
-- Objeto del contrato claramente definido
-
-FORMATO DE SALIDA:
-- SOLO el texto del contrato legal
-- SIN explicaciones, comentarios o contexto adicional
-- Numeración de cláusulas en mayúsculas (PRIMERA, SEGUNDA, etc.)
-- Sección final para FIRMAS con espacios en blanco:
-  * Firma y aclaración del Proveedor
-  * Firma y aclaración del Cliente
-  * Lugar y fecha
-
-IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
-
-      // 3️⃣ Generar contrato con IA (con fallback)
-      let contratoRaw = "";
-      let contrato = "";
-
-      try {
-        const completion = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: [
-            { role: "system", content: systemMessage },
-            { role: "user", content: prompt },
-          ],
-          temperature: 0.3,
-          max_tokens: 4000,
-          top_p: 0.9,
-          frequency_penalty: 0.1,
-          presence_penalty: 0.1,
-        });
-
-        contratoRaw = completion.choices?.[0]?.message?.content ?? "";
-        contrato = contratoRaw.trim();
-      } catch (primaryError) {
-        // Fallback a GPT-3.5 si falla
-        request.log.warn(
-          primaryError,
-          "Primary model failed, falling back to GPT-3.5",
-        );
-
-        const fallbackCompletion = await openai.chat.completions.create({
-          model: "gpt-3.5-turbo",
-          messages: [
-            { role: "system", content: systemMessage },
-            { role: "user", content: prompt },
-          ],
-          temperature: 0.3,
-          max_tokens: 3000,
-        });
-
-        contratoRaw = fallbackCompletion.choices?.[0]?.message?.content ?? "";
-        contrato = contratoRaw.trim();
-      }
-
-      // 4️⃣ Autenticación
+      // 2️⃣ Autenticación (antes de generar para tener tenant/user)
       const user = getUserFromRequest(request);
-
-      // Si no hay usuario autenticado, usar demo (compatibilidad temporal)
       const tenantId = user?.tenantId || "demo-tenant";
       const userId = user?.userId || "demo-user";
 
-      // 5️⃣ Guardar documento y versión en la base
+      // 3️⃣ Generar documento con nueva arquitectura
+      const { generateDocumentWithNewArchitecture } = await import("./modules/documents/services/generation-service.js");
+      
+      app.log.info(`[api] Generating ${documentType} document with new architecture`);
+      
+      const generationResult = await generateDocumentWithNewArchitecture(
+        documentType,
+        sanitizedData,
+        tone
+      );
+
+      const contrato = generationResult.aiEnhancedDraft;
+
+      // 4️⃣ Guardar documento y versión en la base con nueva estructura
       const { documentRecord, versionRecord } = await prisma.$transaction(
         async (tx: Prisma.TransactionClient) => {
           // Aseguramos tenant (o usar el existente si hay usuario)
@@ -326,22 +239,44 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
               create: {
                 id: userId,
                 email: "demo@example.com",
-                passwordHash: demoPasswordHash, // Usar passwordHash según el schema de Prisma
+                passwordHash: demoPasswordHash,
                 role: "owner",
                 tenantId: tenant.id,
               },
             });
           }
 
+          // Mapear documentType a formato antiguo para compatibilidad
+          const typeMap: Record<string, string> = {
+            service_contract: "contrato_servicios",
+            supply_contract: "contrato_suministro",
+            nda: "nda",
+            legal_notice: "carta_documento",
+            lease: "contrato_locacion",
+          };
+          
+          const oldType = typeMap[documentType] || documentType;
+          
+          // Mapear tone a formato antiguo
+          const toneMap: Record<string, string> = {
+            formal_technical: "formal",
+            commercial_clear: "comercial_claro",
+            balanced_professional: "comercial_claro",
+          };
+          
+          const oldTone = toneMap[tone] || tone;
+
           // Creamos el documento
           const documentData = {
             tenantId: tenant.id,
             createdById: finalUser.id,
-            type: sanitizedData.type,
-            jurisdiccion: sanitizedData.jurisdiccion,
-            tono: sanitizedData.tono,
-            estado: "generated_text", // Usar el valor correcto del schema
-            costUsd: 0,
+            type: oldType, // Mantener formato antiguo en DB por compatibilidad
+            jurisdiccion: jurisdiction,
+            tono: oldTone, // Mantener formato antiguo en DB por compatibilidad
+            estado: "generated_text",
+            costUsd: generationResult.metadata.aiTokens 
+              ? (generationResult.metadata.aiTokens.prompt + generationResult.metadata.aiTokens.completion) * 0.000001 
+              : 0,
           };
           
           request.log?.info({ documentData }, "Intentando crear documento con datos:");
@@ -350,13 +285,19 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
             data: documentData,
           });
 
-          // Creamos la versión inicial
+          // Creamos la versión inicial con nueva estructura
           const ver = await tx.documentVersion.create({
             data: {
               documentId: doc.id,
               versionNumber: 1,
               rawText: contrato,
-              generatedBy: "gpt-5",
+              generatedBy: generationResult.metadata.aiModel || "gpt-4o-mini",
+              // Nuevos campos estructurados
+              structuredData: generationResult.structuredData as any,
+              clausePlan: generationResult.clausePlan as any,
+              generationWarnings: generationResult.warnings as any,
+              templateVersion: generationResult.metadata.templateVersion,
+              status: "generated",
             },
           });
 
@@ -421,9 +362,26 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
         documentId: documentRecord.id,
         contrato,
         pdfUrl: pdfGenerated ? fileName : null,
+        // Nueva metadata estructurada
+        warnings: generationResult.warnings,
+        metadata: {
+          documentType,
+          templateVersion: generationResult.metadata.templateVersion,
+          generationTimestamp: generationResult.metadata.generationTimestamp,
+        },
       });
     } catch (err: any) {
       request.log?.error({ err }, "documents route error");
+      
+      // Handle validation errors (should return 400, not 500)
+      if (err.statusCode === 400 || err.message?.includes("Validation failed") || err.validationErrors) {
+        return reply.status(400).send({
+          ok: false,
+          message: err.message || "Validation failed",
+          error: "validation_error",
+          details: err.validationErrors || (err.message ? [err.message] : []),
+        });
+      }
       
       // Log detallado del error de Prisma
       if (err.code === "P2022" || err.message?.includes("P2022")) {
@@ -436,9 +394,11 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
       
       // Mensajes de error más descriptivos
       let errorMessage = "Error al generar el documento";
+      let statusCode = 500;
       
       if (err instanceof z.ZodError) {
         errorMessage = "Datos inválidos: " + err.errors.map((e: any) => e.message).join(", ");
+        statusCode = 400;
       } else if (err.message?.includes("OPENAI") || err.message?.includes("API key") || err.message?.includes("apiKey")) {
         errorMessage = "Error de configuración: La clave de API de OpenAI no está configurada o es inválida";
       } else if (err.code === "P2022" || err.message?.includes("P2022")) {
@@ -453,7 +413,7 @@ IMPORTANTE: Responde ÚNICAMENTE con el texto del contrato.`;
         errorMessage = err.message;
       }
       
-      return reply.status(500).send({ 
+      return reply.status(statusCode).send({ 
         ok: false, 
         message: errorMessage,
         error: err.message || "INTERNAL_ERROR",
