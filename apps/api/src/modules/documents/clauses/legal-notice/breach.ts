@@ -2,7 +2,7 @@
  * Legal Notice Clause: Breach
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
 
 export const legalNoticeBreachClause: ClauseDefinition = {
   id: "incumplimiento",

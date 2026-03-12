@@ -6,11 +6,11 @@
 
 import type {
   StructuredDocumentData,
-} from "./document-types";
+} from "./document-types.js";
 import type {
   SemanticValidationRule,
   WarningRule,
-} from "./validation-engine";
+} from "./validation-engine.js";
 
 /**
  * Get semantic validation rules for service_contract
@@ -21,7 +21,7 @@ export function getServiceContractSemanticRules(): SemanticValidationRule[] {
       id: "penalizacion_requiere_rescision",
       name: "Penalización requiere rescisión anticipada",
       description: "Si se define un monto de penalización, debe estar activada la opción de penalización por rescisión",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         if (data.penalizacion_monto && !data.penalizacion_rescision) {
           return "Si defines un monto de penalización, debes activar la opción de penalización por rescisión";
         }
@@ -33,7 +33,7 @@ export function getServiceContractSemanticRules(): SemanticValidationRule[] {
       id: "monto_requiere_moneda",
       name: "Monto requiere moneda",
       description: "Si se define un monto, debe especificarse la moneda",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         if (data.monto && !data.moneda) {
           return "Debes especificar la moneda del monto";
         }
@@ -45,7 +45,7 @@ export function getServiceContractSemanticRules(): SemanticValidationRule[] {
       id: "propiedad_intelectual_requiere_tipo",
       name: "Propiedad intelectual requiere tipo",
       description: "Si se activa propiedad intelectual, debe definirse el tipo de cesión/licencia",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         if (data.propiedad_intelectual && !data.tipo_propiedad_intelectual) {
           return "Si activas propiedad intelectual, debes especificar el tipo de cesión o licencia";
         }
@@ -57,7 +57,7 @@ export function getServiceContractSemanticRules(): SemanticValidationRule[] {
       id: "confidencialidad_requiere_plazo",
       name: "Confidencialidad requiere plazo",
       description: "Si se activa confidencialidad, debe definirse el plazo",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         if (data.confidencialidad && !data.plazo_confidencialidad) {
           return "Si activas confidencialidad, debes especificar el plazo en años";
         }
@@ -77,7 +77,7 @@ export function getServiceContractWarningRules(): WarningRule[] {
       id: "sin_confidencialidad",
       name: "Falta cláusula de confidencialidad",
       description: "No se definió confidencialidad en contrato de servicios",
-      check: (data) => !data.confidencialidad,
+      check: (data: StructuredDocumentData) => !data.confidencialidad,
       message: "No se incluyó una cláusula de confidencialidad. Esto puede ser importante si se compartirá información sensible.",
       suggestion: "Considera activar la opción de confidencialidad si se compartirá información comercial o técnica sensible.",
     },
@@ -85,7 +85,7 @@ export function getServiceContractWarningRules(): WarningRule[] {
       id: "sin_propiedad_intelectual",
       name: "Falta cláusula de propiedad intelectual",
       description: "No se definió propiedad intelectual en servicios",
-      check: (data) => !data.propiedad_intelectual,
+      check: (data: StructuredDocumentData) => !data.propiedad_intelectual,
       message: "No se incluyó una cláusula de propiedad intelectual. Esto puede ser relevante si se crearán trabajos, códigos o diseños.",
       suggestion: "Si el servicio implica creación de trabajos intelectuales, considera definir los derechos de propiedad.",
     },
@@ -93,7 +93,7 @@ export function getServiceContractWarningRules(): WarningRule[] {
       id: "precio_sin_impuestos",
       name: "Precio sin aclaración de impuestos",
       description: "No se aclaró si el precio incluye impuestos",
-      check: (data) => data.precio_incluye_impuestos === undefined || data.precio_incluye_impuestos === null,
+      check: (data: StructuredDocumentData) => data.precio_incluye_impuestos === undefined || data.precio_incluye_impuestos === null,
       message: "No se aclaró si el precio incluye impuestos. Esto puede generar confusiones en la facturación.",
       suggestion: "Especifica claramente si el monto incluye o no incluye impuestos.",
     },
@@ -101,7 +101,7 @@ export function getServiceContractWarningRules(): WarningRule[] {
       id: "sin_ajuste_precio",
       name: "Sin ajuste de precio definido",
       description: "No se definió ajuste de precio para contratos de largo plazo",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         const meses = Number(data.plazo_minimo_meses) || 0;
         return meses >= 12 && !data.ajuste_precio;
       },
@@ -112,7 +112,7 @@ export function getServiceContractWarningRules(): WarningRule[] {
       id: "alcance_poco_detallado",
       name: "Alcance del servicio poco detallado",
       description: "Falta detalle del alcance del servicio",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         const descripcion = String(data.descripcion_servicio || "").length;
         const alcance = String(data.alcance || "").length;
         return descripcion < 50 && alcance < 20;
@@ -132,7 +132,7 @@ export function getNDASemanticRules(): SemanticValidationRule[] {
       id: "definicion_requerida",
       name: "Definición de información confidencial requerida",
       description: "Debe definirse claramente qué información es confidencial",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         if (!data.definicion_informacion || String(data.definicion_informacion).length < 20) {
           return "Debes definir claramente qué información se considera confidencial";
         }
@@ -144,7 +144,7 @@ export function getNDASemanticRules(): SemanticValidationRule[] {
       id: "finalidad_requerida",
       name: "Finalidad permitida requerida",
       description: "Debe especificarse para qué propósito se comparte la información",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         if (!data.finalidad_permitida || String(data.finalidad_permitida).length < 20) {
           return "Debes especificar la finalidad para la cual se comparte la información confidencial";
         }
@@ -156,7 +156,7 @@ export function getNDASemanticRules(): SemanticValidationRule[] {
       id: "devolucion_requiere_plazo",
       name: "Devolución requiere plazo",
       description: "Si se activa devolución/destrucción, debe definirse el plazo",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         if (data.devolucion_destruccion && !data.plazo_devolucion) {
           return "Si activas la obligación de devolución/destrucción, debes especificar el plazo";
         }
@@ -176,7 +176,7 @@ export function getNDAWarningRules(): WarningRule[] {
       id: "plazo_muy_corto",
       name: "Plazo de confidencialidad muy corto",
       description: "El plazo de confidencialidad es muy corto",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         const años = Number(data.plazo_confidencialidad) || 0;
         return años < 2;
       },
@@ -187,7 +187,7 @@ export function getNDAWarningRules(): WarningRule[] {
       id: "sin_devolucion",
       name: "Falta obligación de devolución",
       description: "No se definió obligación de devolución/destrucción",
-      check: (data) => !data.devolucion_destruccion,
+      check: (data: StructuredDocumentData) => !data.devolucion_destruccion,
       message: "No se incluyó una obligación de devolución o destrucción de la información al finalizar el acuerdo.",
       suggestion: "Considera incluir esta obligación para mayor protección de la información confidencial.",
     },
@@ -195,7 +195,7 @@ export function getNDAWarningRules(): WarningRule[] {
       id: "exclusiones_poco_claras",
       name: "Exclusiones poco claras",
       description: "Las exclusiones no están bien definidas",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         const exclusiones = String(data.exclusiones || "");
         return exclusiones.length > 0 && exclusiones.length < 30;
       },
@@ -214,7 +214,7 @@ export function getLegalNoticeSemanticRules(): SemanticValidationRule[] {
       id: "intimacion_requerida",
       name: "Intimación concreta requerida",
       description: "Debe existir una intimación clara y específica",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         if (!data.intimacion || String(data.intimacion).length < 30) {
           return "La intimación debe ser clara, concreta y específica (mínimo 30 caracteres)";
         }
@@ -226,7 +226,7 @@ export function getLegalNoticeSemanticRules(): SemanticValidationRule[] {
       id: "plazo_requerido",
       name: "Plazo para cumplir requerido",
       description: "Debe especificarse un plazo para cumplir con la intimación",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         if (!data.plazo_cumplimiento) {
           return "Debes especificar un plazo para cumplir con la intimación";
         }
@@ -241,7 +241,7 @@ export function getLegalNoticeSemanticRules(): SemanticValidationRule[] {
       id: "hechos_requeridos",
       name: "Hechos requeridos",
       description: "Deben narrarse los hechos relevantes",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         if (!data.hechos || String(data.hechos).length < 30) {
           return "Debes narrar los hechos relevantes de manera clara (mínimo 30 caracteres)";
         }
@@ -253,7 +253,7 @@ export function getLegalNoticeSemanticRules(): SemanticValidationRule[] {
       id: "incumplimiento_requerido",
       name: "Incumplimiento requerido",
       description: "Debe describirse el incumplimiento",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         if (!data.incumplimiento || String(data.incumplimiento).length < 20) {
           return "Debes describir el incumplimiento o situación que motiva la carta documento";
         }
@@ -273,7 +273,7 @@ export function getLegalNoticeWarningRules(): WarningRule[] {
       id: "intimacion_ambigua",
       name: "Intimación ambigua o genérica",
       description: "La intimación parece ambigua o demasiado genérica",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         const intimacion = String(data.intimacion || "");
         const palabrasGenericas = ["cumplir", "resolver", "solucionar"];
         const tienePalabrasGenericas = palabrasGenericas.some(p => intimacion.toLowerCase().includes(p));
@@ -287,7 +287,7 @@ export function getLegalNoticeWarningRules(): WarningRule[] {
       id: "sin_relacion_previa",
       name: "Falta contexto de relación previa",
       description: "No se definió claramente la relación previa",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         const relacion = String(data.relacion_previa || "");
         return relacion.length < 30;
       },
@@ -298,7 +298,7 @@ export function getLegalNoticeWarningRules(): WarningRule[] {
       id: "apercibimiento_generico",
       name: "Apercibimiento genérico",
       description: "El apercibimiento es muy genérico",
-      check: (data) => {
+      check: (data: StructuredDocumentData) => {
         const apercibimiento = String(data.apercibimiento || "");
         return apercibimiento.length < 40;
       },

@@ -10,7 +10,7 @@ import type {
   DocumentTone,
   JurisdictionId,
   StructuredDocumentData,
-} from "../domain/document-types";
+} from "../domain/document-types.js";
 
 /**
  * Base DTO Schema

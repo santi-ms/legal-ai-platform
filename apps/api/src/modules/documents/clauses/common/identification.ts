@@ -2,8 +2,8 @@
  * Common Clause: Identification of Parties
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
-import type { StructuredDocumentData } from "../../domain/document-types";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
+import type { StructuredDocumentData } from "../../domain/document-types.js";
 
 export const identificationClause: ClauseDefinition = {
   id: "identificacion_partes",

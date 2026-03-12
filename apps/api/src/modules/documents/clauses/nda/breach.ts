@@ -2,7 +2,8 @@
  * NDA Clause: Breach and Penalties
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
+import type { StructuredDocumentData } from "../../domain/document-types.js";
 
 export const ndaBreachClause: ClauseDefinition = {
   id: "penalidad_incumplimiento",
@@ -18,6 +19,6 @@ En caso de incumplimiento de las obligaciones establecidas en el presente acuerd
 Sin perjuicio de lo anterior, el REVELADOR se reserva el derecho de reclamar daños y perjuicios adicionales que puedan derivarse del incumplimiento.
 
 El RECEPTOR reconoce que el incumplimiento de este acuerdo causará un daño irreparable al REVELADOR, por lo que el REVELADOR podrá solicitar medidas cautelares y/o definitivas ante los tribunales competentes.`,
-  condition: (data) => Boolean(data.penalidad_incumplimiento),
+  condition: (data: StructuredDocumentData) => Boolean(data.penalidad_incumplimiento),
 };
 

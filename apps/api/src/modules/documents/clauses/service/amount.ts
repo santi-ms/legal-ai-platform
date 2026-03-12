@@ -2,7 +2,7 @@
  * Service Contract Clause: Amount and Payment
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
 
 export const serviceAmountClause: ClauseDefinition = {
   id: "monto_pago",

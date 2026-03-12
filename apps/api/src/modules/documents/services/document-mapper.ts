@@ -9,8 +9,8 @@ import type { GenerateDocumentInput } from "../../../types.js";
 import type {
   DocumentTypeId,
   StructuredDocumentData,
-} from "../domain/document-types";
-import { validateGenerateDocumentRequest } from "../dto/generate-document.dto";
+} from "../domain/document-types.js";
+import { validateGenerateDocumentRequest } from "../dto/generate-document.dto.js";
 
 /**
  * Map old format to new structured format

@@ -4,28 +4,28 @@
  * Central export for all document clauses.
  */
 
-import type { ClauseDefinition } from "../domain/generation-engine";
-import { identificationClause } from "./common/identification";
-import { jurisdictionClause } from "./common/jurisdiction";
-import { disputesClause } from "./common/disputes";
-import { serviceObjectClause } from "./service/object";
-import { serviceAmountClause } from "./service/amount";
-import { serviceTermClause } from "./service/term";
-import { serviceTerminationClause } from "./service/termination";
-import { serviceConfidentialityClause } from "./service/confidentiality";
-import { serviceIntellectualPropertyClause } from "./service/intellectual-property";
-import { ndaDefinitionClause } from "./nda/definition";
-import { ndaPurposeClause } from "./nda/purpose";
-import { ndaObligationsClause } from "./nda/obligations";
-import { ndaTermClause } from "./nda/term";
-import { ndaReturnClause } from "./nda/return";
-import { ndaBreachClause } from "./nda/breach";
-import { legalNoticeContextClause } from "./legal-notice/context";
-import { legalNoticeFactsClause } from "./legal-notice/facts";
-import { legalNoticeBreachClause } from "./legal-notice/breach";
-import { legalNoticeDemandClause } from "./legal-notice/demand";
-import { legalNoticeDeadlineClause } from "./legal-notice/deadline";
-import { legalNoticeWarningClause } from "./legal-notice/warning";
+import type { ClauseDefinition } from "../domain/generation-engine.js";
+import { identificationClause } from "./common/identification.js";
+import { jurisdictionClause } from "./common/jurisdiction.js";
+import { disputesClause } from "./common/disputes.js";
+import { serviceObjectClause } from "./service/object.js";
+import { serviceAmountClause } from "./service/amount.js";
+import { serviceTermClause } from "./service/term.js";
+import { serviceTerminationClause } from "./service/termination.js";
+import { serviceConfidentialityClause } from "./service/confidentiality.js";
+import { serviceIntellectualPropertyClause } from "./service/intellectual-property.js";
+import { ndaDefinitionClause } from "./nda/definition.js";
+import { ndaPurposeClause } from "./nda/purpose.js";
+import { ndaObligationsClause } from "./nda/obligations.js";
+import { ndaTermClause } from "./nda/term.js";
+import { ndaReturnClause } from "./nda/return.js";
+import { ndaBreachClause } from "./nda/breach.js";
+import { legalNoticeContextClause } from "./legal-notice/context.js";
+import { legalNoticeFactsClause } from "./legal-notice/facts.js";
+import { legalNoticeBreachClause } from "./legal-notice/breach.js";
+import { legalNoticeDemandClause } from "./legal-notice/demand.js";
+import { legalNoticeDeadlineClause } from "./legal-notice/deadline.js";
+import { legalNoticeWarningClause } from "./legal-notice/warning.js";
 
 /**
  * Get all clauses for a document type

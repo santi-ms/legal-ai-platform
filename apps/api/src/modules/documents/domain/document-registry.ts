@@ -5,7 +5,7 @@
  * This mirrors the frontend registry but is used server-side.
  */
 
-import type { DocumentTypeId } from "./document-types";
+import type { DocumentTypeId } from "./document-types.js";
 
 /**
  * Document Type Metadata

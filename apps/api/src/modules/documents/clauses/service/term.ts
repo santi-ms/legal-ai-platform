@@ -2,7 +2,7 @@
  * Service Contract Clause: Term and Duration
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
 
 export const serviceTermClause: ClauseDefinition = {
   id: "vigencia_plazo",

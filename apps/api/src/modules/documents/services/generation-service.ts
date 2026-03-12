@@ -16,25 +16,25 @@ import type {
   DocumentGenerationResult,
   GenerationWarning,
   GenerationMetadata,
-} from "../domain/document-types";
+} from "../domain/document-types.js";
 import {
   validateDocumentData,
   getValidationRulesForType,
-} from "../domain/validation-engine";
+} from "../domain/validation-engine.js";
 import {
   generateDocument,
   enhanceDraftWithAI,
   generateClausePlan,
   assembleBaseDraft,
-} from "../domain/generation-engine";
-import type { TemplateBase } from "../domain/generation-engine";
-import type { ClauseDefinition } from "../domain/generation-engine";
-import { getTemplate } from "../templates";
+} from "../domain/generation-engine.js";
+import type { TemplateBase } from "../domain/generation-engine.js";
+import type { ClauseDefinition } from "../domain/generation-engine.js";
+import { getTemplate } from "../templates/index.js";
 import {
   getClausesForType,
   getRequiredClauseIds,
   getOptionalClauseIds,
-} from "../clauses";
+} from "../clauses/index.js";
 import { logger } from "../../../utils/logger.js";
 
 const openai = new OpenAI({

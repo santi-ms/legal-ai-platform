@@ -2,7 +2,7 @@
  * NDA Clause: Permitted Purpose
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
 
 export const ndaPurposeClause: ClauseDefinition = {
   id: "finalidad_permitida",

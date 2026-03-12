@@ -8,7 +8,7 @@
 import type {
   StructuredDocumentData,
   GenerationWarning,
-} from "./document-types";
+} from "./document-types.js";
 
 /**
  * Validation Result

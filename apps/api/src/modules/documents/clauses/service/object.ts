@@ -2,7 +2,7 @@
  * Service Contract Clause: Object
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
 
 export const serviceObjectClause: ClauseDefinition = {
   id: "objeto_contrato",

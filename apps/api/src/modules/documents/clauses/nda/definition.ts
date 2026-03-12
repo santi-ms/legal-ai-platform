@@ -2,7 +2,7 @@
  * NDA Clause: Definition of Confidential Information
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
 
 export const ndaDefinitionClause: ClauseDefinition = {
   id: "definicion_informacion",

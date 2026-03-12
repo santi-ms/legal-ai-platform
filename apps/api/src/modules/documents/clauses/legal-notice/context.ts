@@ -2,7 +2,7 @@
  * Legal Notice Clause: Context/Previous Relationship
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
 
 export const legalNoticeContextClause: ClauseDefinition = {
   id: "contexto_relacion",

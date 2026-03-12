@@ -4,10 +4,10 @@
  * Central export for all document templates.
  */
 
-import type { TemplateBase } from "../domain/generation-engine";
-import { serviceContractTemplate } from "./service-contract/template";
-import { ndaTemplate } from "./nda/template";
-import { legalNoticeTemplate } from "./legal-notice/template";
+import type { TemplateBase } from "../domain/generation-engine.js";
+import { serviceContractTemplate } from "./service-contract/template.js";
+import { ndaTemplate } from "./nda/template.js";
+import { legalNoticeTemplate } from "./legal-notice/template.js";
 
 /**
  * Get template for a document type

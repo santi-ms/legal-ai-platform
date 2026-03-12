@@ -2,7 +2,7 @@
  * Legal Notice Clause: Deadline
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
 
 export const legalNoticeDeadlineClause: ClauseDefinition = {
   id: "plazo_cumplimiento",

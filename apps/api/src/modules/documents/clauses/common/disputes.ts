@@ -2,7 +2,7 @@
  * Common Clause: Dispute Resolution
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
 
 export const disputesClause: ClauseDefinition = {
   id: "resolucion_disputas",

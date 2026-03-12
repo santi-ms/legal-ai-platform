@@ -2,7 +2,8 @@
  * NDA Clause: Return/Destruction of Information
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
+import type { StructuredDocumentData } from "../../domain/document-types.js";
 
 export const ndaReturnClause: ClauseDefinition = {
   id: "devolucion_destruccion",
@@ -18,6 +19,6 @@ b) Destruir todas las copias, extractos o resúmenes de la Información Confiden
 c) Certificar por escrito al REVELADOR el cumplimiento de las obligaciones anteriores.
 
 El RECEPTOR no podrá conservar ninguna copia de la Información Confidencial, salvo que la ley o una orden judicial lo requiera.`,
-  condition: (data) => Boolean(data.devolucion_destruccion && data.plazo_devolucion),
+  condition: (data: StructuredDocumentData) => Boolean(data.devolucion_destruccion && data.plazo_devolucion),
 };
 

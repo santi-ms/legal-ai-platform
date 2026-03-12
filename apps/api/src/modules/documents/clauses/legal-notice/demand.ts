@@ -2,7 +2,7 @@
  * Legal Notice Clause: Demand/Intimation
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
 
 export const legalNoticeDemandClause: ClauseDefinition = {
   id: "intimacion",

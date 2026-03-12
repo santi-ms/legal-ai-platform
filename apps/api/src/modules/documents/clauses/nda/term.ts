@@ -2,7 +2,7 @@
  * NDA Clause: Confidentiality Term
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
 
 export const ndaTermClause: ClauseDefinition = {
   id: "plazo_confidencialidad",

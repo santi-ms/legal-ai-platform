@@ -2,7 +2,7 @@
  * NDA Clause: Obligations of the Recipient
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
 
 export const ndaObligationsClause: ClauseDefinition = {
   id: "obligaciones_receptor",

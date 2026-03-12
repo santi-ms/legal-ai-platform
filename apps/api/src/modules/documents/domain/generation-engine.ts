@@ -13,7 +13,7 @@ import type {
   DocumentGenerationResult,
   GenerationWarning,
   GenerationMetadata,
-} from "./document-types";
+} from "./document-types.js";
 
 /**
  * Template Base
@@ -115,7 +115,7 @@ export function assembleBaseDraft(
   const clauseNumberMap = new Map<string, number>();
   
   // Insert clauses in order
-  clausePlan.order.forEach(clauseId => {
+  clausePlan.order.forEach((clauseId: string) => {
     const clause = clauses.get(clauseId);
     if (clause) {
       let clauseContent = clause.content;

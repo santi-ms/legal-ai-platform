@@ -2,7 +2,7 @@
  * Common Clause: Jurisdiction and Applicable Law
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
 
 export const jurisdictionClause: ClauseDefinition = {
   id: "foro_competencia",

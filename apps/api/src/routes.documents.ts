@@ -316,13 +316,13 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           process.env.PDF_SERVICE_URL || "http://localhost:4100";
         
         app.log.info(`[api] Calling PDF service at: ${pdfServiceUrl}/pdf/generate`);
-        app.log.info(`[api] PDF generation params: title=${sanitizedData.type}, fileName=${fileName}, textLength=${contrato.length}`);
+        app.log.info(`[api] PDF generation params: title=${documentType}, fileName=${fileName}, textLength=${contrato.length}`);
         
         const pdfResponse = await fetch(`${pdfServiceUrl}/pdf/generate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            title: sanitizedData.type.toUpperCase(),
+            title: documentType.toUpperCase(),
             rawText: contrato,
             fileName: fileName,
           }),

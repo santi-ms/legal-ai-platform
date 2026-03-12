@@ -2,7 +2,7 @@
  * Legal Notice Clause: Facts
  */
 
-import type { ClauseDefinition } from "../../domain/generation-engine";
+import type { ClauseDefinition } from "../../domain/generation-engine.js";
 
 export const legalNoticeFactsClause: ClauseDefinition = {
   id: "hechos",
