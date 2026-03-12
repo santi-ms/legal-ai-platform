@@ -336,8 +336,8 @@ export default function GuidedDocumentCreationPage() {
     return (
       <div className="space-y-6">
         <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold text-gray-900">¿Qué documento necesitás crear?</h2>
-          <p className="text-gray-600">Seleccioná el tipo de documento que mejor se adapte a tu necesidad</p>
+          <h2 className="text-2xl font-bold text-white">¿Qué documento necesitás crear?</h2>
+          <p className="text-gray-300">Seleccioná el tipo de documento que mejor se adapte a tu necesidad</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -345,25 +345,25 @@ export default function GuidedDocumentCreationPage() {
             <button
               key={schema.id}
               onClick={() => handleDocumentTypeSelect(schema.id)}
-              className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-lg transition-all text-left group"
+              className="p-6 border-2 border-gray-700 rounded-lg hover:border-blue-500 hover:bg-gray-900/50 hover:shadow-lg transition-all text-left group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black"
             >
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0">
-                  <FileText className="h-8 w-8 text-blue-600 group-hover:text-blue-700" />
+                  <FileText className="h-8 w-8 text-blue-500 group-hover:text-blue-400 transition-colors" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-blue-400 transition-colors">
                     {schema.label}
                   </h3>
-                  <p className="text-sm text-gray-600 mb-3">
+                  <p className="text-sm text-gray-300 mb-3">
                     {schema.description}
                   </p>
                   <div className="space-y-1">
-                    <p className="text-xs font-medium text-gray-700">Cuándo usarlo:</p>
-                    <ul className="text-xs text-gray-600 space-y-1">
+                    <p className="text-xs font-medium text-gray-200">Cuándo usarlo:</p>
+                    <ul className="text-xs text-gray-400 space-y-1">
                       {schema.useCases.slice(0, 2).map((useCase, i) => (
                         <li key={i} className="flex items-start">
-                          <span className="mr-1">•</span>
+                          <span className="mr-1 text-gray-500">•</span>
                           <span>{useCase}</span>
                         </li>
                       ))}
