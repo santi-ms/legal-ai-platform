@@ -1,0 +1,70 @@
+"use client";
+
+import { Search, Bell } from "lucide-react";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
+
+interface DashboardHeaderProps {
+  onSearch?: (query: string) => void;
+}
+
+export function DashboardHeader({ onSearch }: DashboardHeaderProps) {
+  const { data: session } = useSession();
+  const user = session?.user;
+
+  // Extraer nombre del usuario (puede venir como "name" o "firstName lastName")
+  const userName = user?.name || "Usuario";
+  const displayName = userName.split(" ")[0] ? `Dr. ${userName.split(" ")[0]}` : userName;
+  const role = "Socio Principal"; // TODO: obtener del perfil del usuario
+
+  return (
+    <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10 px-6 flex items-center justify-between">
+      {/* Search */}
+      <div className="flex items-center gap-4 flex-1">
+        <div className="relative w-full max-w-md hidden md:block">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+          <input
+            className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+            placeholder="Buscar expedientes, clientes o documentos..."
+            type="text"
+            onChange={(e) => onSearch?.(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* User Actions */}
+      <div className="flex items-center gap-4">
+        {/* Notifications */}
+        <button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg relative transition-colors">
+          <Bell className="w-5 h-5" />
+          <span className="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+        </button>
+
+        {/* Divider */}
+        <div className="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>
+
+        {/* User Profile */}
+        <div className="flex items-center gap-3 pl-2">
+          <div className="text-right hidden sm:block">
+            <p className="text-sm font-semibold leading-none">{displayName}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{role}</p>
+          </div>
+          <Link href="/profile" className="size-10 rounded-full bg-slate-200 dark:bg-slate-800 bg-cover bg-center ring-2 ring-primary/10 flex items-center justify-center text-slate-600 dark:text-slate-400 font-semibold">
+            {user?.image ? (
+              <img
+                src={user.image}
+                alt={userName}
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              <span className="text-sm">
+                {userName.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}
+

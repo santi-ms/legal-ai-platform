@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Save, CheckCircle2 } from "lucide-react";
+import { darkModeClasses } from "../styles/dark-mode";
 
 interface AutosaveIndicatorProps {
   isSaving: boolean;
@@ -36,15 +37,15 @@ export function AutosaveIndicator({
   }
 
   return (
-    <div className="flex items-center space-x-2 text-sm !text-gray-400">
+    <div className={`flex items-center space-x-2 text-sm ${darkModeClasses.helpText}`}>
       {isSaving ? (
         <>
-          <Save className="h-4 w-4 animate-pulse !text-blue-400" />
+          <Save className="h-4 w-4 animate-pulse text-blue-400" />
           <span>Guardando borrador...</span>
         </>
       ) : showSaved ? (
         <>
-          <CheckCircle2 className="h-4 w-4 !text-green-400" />
+          <CheckCircle2 className="h-4 w-4 text-green-400" />
           <span>Borrador guardado</span>
         </>
       ) : null}

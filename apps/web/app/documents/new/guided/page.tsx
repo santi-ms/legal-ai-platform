@@ -23,6 +23,7 @@ import confetti from "canvas-confetti";
 import { FileText, CheckCircle, AlertTriangle, Loader2, ArrowLeft, HelpCircle } from "lucide-react";
 import { AutosaveIndicator } from "@/src/features/documents/ui/autosave/AutosaveIndicator";
 import { ValidationErrorPanel } from "@/src/features/documents/ui/errors/ValidationErrorPanel";
+import { darkModeClasses, darkBorderColors } from "@/src/features/documents/ui/styles/dark-mode";
 import {
   trackFlowEntry,
   trackDocumentTypeSelected,
@@ -336,8 +337,8 @@ export default function GuidedDocumentCreationPage() {
     return (
       <div className="space-y-6">
         <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold !text-white">¿Qué documento necesitás crear?</h2>
-          <p className="!text-gray-300">Seleccioná el tipo de documento que mejor se adapte a tu necesidad</p>
+          <h2 className={`text-2xl font-bold ${darkModeClasses.title}`}>¿Qué documento necesitás crear?</h2>
+          <p className={darkModeClasses.subtitle}>Seleccioná el tipo de documento que mejor se adapte a tu necesidad</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -345,26 +346,26 @@ export default function GuidedDocumentCreationPage() {
             <button
               key={schema.id}
               onClick={() => handleDocumentTypeSelect(schema.id)}
-              className="p-6 !border-2 !border-gray-700 rounded-lg hover:!border-blue-500 hover:!bg-gray-900/50 hover:shadow-lg transition-all text-left group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black bg-transparent"
+              className="p-6 rounded-lg border-2 bg-transparent hover:shadow-lg transition-all text-left group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black border-gray-700 hover:border-blue-500 hover:bg-gray-900/50"
             >
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0">
-                  <FileText className="h-8 w-8 !text-blue-500 group-hover:!text-blue-400 transition-colors" />
+                  <FileText className="h-8 w-8 transition-colors text-blue-500 group-hover:text-blue-400" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold !text-white mb-1 group-hover:!text-blue-400 transition-colors">
+                  <h3 className={`text-lg font-semibold mb-1 transition-colors ${darkModeClasses.title} group-hover:text-blue-400`}>
                     {schema.label}
                   </h3>
-                  <p className="text-sm !text-gray-300 mb-3">
+                  <p className={`text-sm mb-3 ${darkModeClasses.subtitle}`}>
                     {schema.description}
                   </p>
                   <div className="space-y-1">
-                    <p className="text-xs font-medium !text-gray-200">Cuándo usarlo:</p>
-                    <ul className="text-xs !text-gray-400 space-y-1">
+                    <p className={`text-xs font-medium ${darkModeClasses.label}`}>Cuándo usarlo:</p>
+                    <ul className={`text-xs space-y-1 ${darkModeClasses.helpText}`}>
                       {schema.useCases.slice(0, 2).map((useCase, i) => (
                         <li key={i} className="flex items-start">
-                          <span className="mr-1 !text-gray-500">•</span>
-                          <span className="!text-gray-400">{useCase}</span>
+                          <span className="mr-1 text-gray-500">•</span>
+                          <span>{useCase}</span>
                         </li>
                       ))}
                     </ul>
@@ -395,14 +396,14 @@ export default function GuidedDocumentCreationPage() {
                 variant="ghost"
                 size="sm"
                 onClick={handleBackToSelection}
-                className="!text-gray-300 hover:!text-white transition-colors"
+                className={`transition-colors ${darkModeClasses.subtitle} hover:text-white`}
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Volver
               </Button>
             </div>
-            <h2 className="text-2xl font-bold !text-white">{schema.label}</h2>
-            <p className="!text-gray-300">{schema.description}</p>
+            <h2 className={`text-2xl font-bold ${darkModeClasses.title}`}>{schema.label}</h2>
+            <p className={darkModeClasses.subtitle}>{schema.description}</p>
           </div>
           <div className="flex items-center space-x-4">
             <AutosaveIndicator isSaving={isSaving} lastSaved={lastSaved} />
@@ -457,14 +458,14 @@ export default function GuidedDocumentCreationPage() {
                 size="sm"
                 onClick={handleBackToForm}
                 disabled={loading}
-                className="!text-gray-300 hover:!text-white transition-colors"
+                className={`transition-colors ${darkModeClasses.subtitle} hover:text-white`}
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Volver
               </Button>
             </div>
-            <h2 className="text-2xl font-bold !text-white">Resumen y Confirmación</h2>
-            <p className="!text-gray-300">Revisá los datos antes de generar el documento</p>
+            <h2 className={`text-2xl font-bold ${darkModeClasses.title}`}>Resumen y Confirmación</h2>
+            <p className={darkModeClasses.subtitle}>Revisá los datos antes de generar el documento</p>
           </div>
           <Button
             variant="outline"
@@ -483,20 +484,20 @@ export default function GuidedDocumentCreationPage() {
 
         {warnings.length > 0 && (
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold !text-white flex items-center">
-              <AlertTriangle className="h-5 w-5 !text-yellow-400 mr-2" />
+            <h3 className={`text-lg font-semibold flex items-center ${darkModeClasses.title}`}>
+              <AlertTriangle className="h-5 w-5 mr-2 text-yellow-400" />
               Advertencias
             </h3>
             <WarningsPanel warnings={warnings} />
-            <p className="text-sm !text-gray-400">
+            <p className={`text-sm ${darkModeClasses.helpText}`}>
               Estas advertencias no bloquean la generación, pero te recomendamos revisarlas.
             </p>
           </div>
         )}
 
         <div className="flex justify-between items-center pt-4 border-t">
-          <div className="flex items-center space-x-2 text-sm !text-gray-400">
-            <HelpCircle className="h-4 w-4 !text-gray-400" />
+          <div className={`flex items-center space-x-2 text-sm ${darkModeClasses.helpText}`}>
+            <HelpCircle className="h-4 w-4" />
             <span>Podés volver atrás para editar los datos antes de generar</span>
           </div>
           <div className="flex space-x-4">
@@ -526,24 +527,24 @@ export default function GuidedDocumentCreationPage() {
 
         {loading && (
           <div className="space-y-2">
-            <div className="w-full !bg-gray-800 rounded-full h-2">
+            <div className="w-full rounded-full h-2 bg-gray-800">
               <div
-                className="!bg-blue-500 h-2 rounded-full transition-all duration-300"
+                className="h-2 rounded-full transition-all duration-300 bg-blue-500"
                 style={{ width: `${loadingProgress}%` }}
               />
             </div>
-            <p className="text-sm !text-gray-300 text-center">{loadingStep}</p>
+            <p className={`text-sm text-center ${darkModeClasses.subtitle}`}>{loadingStep}</p>
           </div>
         )}
 
         {error && (
-          <div className="p-4 !bg-red-900/30 !border !border-red-700 rounded-lg">
+          <div className={`p-4 rounded-lg ${darkModeClasses.errorPanel}`}>
             <div className="flex items-start space-x-2">
-              <AlertTriangle className="h-5 w-5 !text-red-400 flex-shrink-0 mt-0.5" />
+              <AlertTriangle className={`h-5 w-5 flex-shrink-0 mt-0.5 ${darkModeClasses.errorText}`} />
               <div className="flex-1">
-                <h4 className="font-semibold !text-red-300 mb-1">Error al generar documento</h4>
-                <p className="text-sm !text-red-300">{error}</p>
-                <p className="text-xs !text-red-400 mt-2">
+                <h4 className={`font-semibold mb-1 text-red-300`}>Error al generar documento</h4>
+                <p className={`text-sm text-red-300`}>{error}</p>
+                <p className={`text-xs mt-2 ${darkModeClasses.errorText}`}>
                   Podés volver atrás para revisar y corregir los datos, o intentar nuevamente.
                 </p>
               </div>
@@ -561,13 +562,13 @@ export default function GuidedDocumentCreationPage() {
       <div className="space-y-6">
         <div className="text-center space-y-2">
           <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
-          <h2 className="text-2xl font-bold !text-white">¡Documento generado exitosamente!</h2>
-          <p className="!text-gray-300">Tu documento está listo para descargar o revisar</p>
+          <h2 className={`text-2xl font-bold ${darkModeClasses.title}`}>¡Documento generado exitosamente!</h2>
+          <p className={darkModeClasses.subtitle}>Tu documento está listo para descargar o revisar</p>
         </div>
 
-        <div className="!bg-gray-900 rounded-lg shadow-sm !border !border-gray-700 p-6">
+        <div className={`rounded-lg shadow-sm p-6 ${darkModeClasses.card}`}>
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold !text-white">Contenido Generado</h3>
+            <h3 className={`text-lg font-semibold ${darkModeClasses.title}`}>Contenido Generado</h3>
             <div className="space-x-2">
               <Button
                 onClick={async () => {
@@ -601,7 +602,7 @@ export default function GuidedDocumentCreationPage() {
           </div>
 
           <div className="prose max-w-none">
-            <pre className="whitespace-pre-wrap text-sm !bg-gray-800 !text-gray-200 p-4 rounded !border !border-gray-700">
+            <pre className={`whitespace-pre-wrap text-sm p-4 rounded bg-gray-800 text-gray-200 border ${darkBorderColors.default}`}>
               {result.contrato}
             </pre>
           </div>
@@ -609,7 +610,7 @@ export default function GuidedDocumentCreationPage() {
 
         {result.warnings && result.warnings.length > 0 && (
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold !text-white">Advertencias del Documento</h3>
+            <h3 className={`text-lg font-semibold ${darkModeClasses.title}`}>Advertencias del Documento</h3>
             <WarningsPanel warnings={result.warnings} />
           </div>
         )}

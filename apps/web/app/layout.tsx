@@ -1,12 +1,12 @@
 import "./globals.css";
 import { Inter } from "next/font/google";
-import { Navigation } from "@/components/ui/navigation";
 import { ToastProvider } from "@/components/ui/toast";
 import { SessionProvider } from "@/components/ui/session-provider";
+import { ConditionalNavigation } from "./components/ConditionalNavigation";
 
 export const metadata = {
-  title: "Legal AI Platform",
-  description: "Generación y gestión de documentos legales con IA",
+  title: "LegalTech AR - Documentos Legales con IA",
+  description: "La plataforma líder en Argentina para la generación automática de contratos y documentos con validez jurídica total.",
 };
 
 // Tipografía moderna y seria
@@ -22,10 +22,26 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className="h-full">
-      <body className={`${inter.className} h-full bg-black text-white antialiased`}>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&display=swap"
+          rel="stylesheet"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+          rel="stylesheet"
+        />
+        <style>{`
+          .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+          }
+        `}</style>
+      </head>
+      <body className={`${inter.className} h-full antialiased`}>
         <SessionProvider>
           <ToastProvider>
-            <Navigation />
+            {/* Only show Navigation on non-landing pages */}
+            <ConditionalNavigation />
             <main className="min-h-screen">
               {children}
             </main>

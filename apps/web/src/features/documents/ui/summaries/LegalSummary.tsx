@@ -8,6 +8,7 @@
 
 import React from "react";
 import type { StructuredDocumentData } from "../../core/types";
+import { darkModeClasses, darkBorderColors } from "../styles/dark-mode";
 
 interface LegalSummaryProps {
   documentType: string;
@@ -27,8 +28,8 @@ export function LegalSummary({
     return (
       <div className="space-y-4">
         <div>
-          <h4 className="font-semibold !text-gray-200">Partes</h4>
-          <p className="text-sm !text-gray-300">
+          <h4 className={`font-semibold ${darkModeClasses.label}`}>Partes</h4>
+          <p className={`text-sm ${darkModeClasses.subtitle}`}>
             <strong>Proveedor:</strong> {data.proveedor_nombre} ({data.proveedor_doc})
           </p>
           <p className="text-sm text-gray-600">
@@ -38,7 +39,7 @@ export function LegalSummary({
         
         <div>
           <h4 className="font-semibold text-gray-900">Servicio</h4>
-          <p className="text-sm !text-gray-300">{data.descripcion_servicio}</p>
+          <p className={`text-sm ${darkModeClasses.subtitle}`}>{data.descripcion_servicio}</p>
         </div>
         
         <div>
@@ -80,8 +81,8 @@ export function LegalSummary({
     return (
       <div className="space-y-4">
         <div>
-          <h4 className="font-semibold !text-gray-200">Partes</h4>
-          <p className="text-sm !text-gray-300">
+          <h4 className={`font-semibold ${darkModeClasses.label}`}>Partes</h4>
+          <p className={`text-sm ${darkModeClasses.subtitle}`}>
             <strong>Revelador:</strong> {data.revelador_nombre} ({data.revelador_doc})
           </p>
           <p className="text-sm text-gray-600">
@@ -111,8 +112,8 @@ export function LegalSummary({
     return (
       <div className="space-y-4">
         <div>
-          <h4 className="font-semibold !text-gray-200">Partes</h4>
-          <p className="text-sm !text-gray-300">
+          <h4 className={`font-semibold ${darkModeClasses.label}`}>Partes</h4>
+          <p className={`text-sm ${darkModeClasses.subtitle}`}>
             <strong>Remitente:</strong> {data.remitente_nombre} ({data.remitente_doc})
           </p>
           <p className="text-sm text-gray-600">
@@ -150,18 +151,18 @@ export function LegalSummary({
       case "legal_notice":
         return renderLegalNoticeSummary();
       default:
-        return <p className="text-sm !text-gray-300">Resumen no disponible</p>;
+        return <p className={`text-sm ${darkModeClasses.subtitle}`}>Resumen no disponible</p>;
     }
   };
 
   return (
-    <div className="!bg-gray-900 rounded-lg shadow-sm !border !border-gray-700 p-6">
+    <div className={`rounded-lg shadow-sm p-6 ${darkModeClasses.card}`}>
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold !text-white">Resumen Jurídico</h3>
+        <h3 className={`text-lg font-semibold ${darkModeClasses.title}`}>Resumen Jurídico</h3>
         {onEdit && (
           <button
             onClick={onEdit}
-            className="text-sm !text-blue-400 hover:!text-blue-300 transition-colors"
+            className={`text-sm transition-colors ${darkModeClasses.link}`}
           >
             Editar
           </button>
@@ -170,8 +171,8 @@ export function LegalSummary({
       
       {renderSummary()}
       
-      <div className="mt-6 pt-4 border-t !border-gray-700">
-        <p className="text-xs !text-gray-400">
+      <div className={`mt-6 pt-4 border-t ${darkBorderColors.default}`}>
+        <p className={`text-xs ${darkModeClasses.helpText}`}>
           Este es un resumen de la información proporcionada. Revisá los datos antes de generar el documento.
         </p>
       </div>

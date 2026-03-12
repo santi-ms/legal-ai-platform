@@ -1,11 +1,7 @@
 "use client";
 
-// Nota: Esta página es client-side y usa Suspense para manejar useSearchParams
-// El prerendering se evita automáticamente con Suspense boundary
-
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { DashboardShell } from "@/app/components/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
@@ -18,19 +14,24 @@ import {
   DocumentsParams,
   Document,
 } from "@/app/lib/webApi";
-import { FiltersBar } from "@/components/dashboard/FiltersBar";
-import { DocumentsTable } from "@/components/dashboard/DocumentsTable";
+import { StatsCard } from "@/components/dashboard/StatsCard";
+import { RecentDocumentsTable } from "@/components/dashboard/RecentDocumentsTable";
+import { QuickActions } from "@/components/dashboard/QuickActions";
+import { NextHearing } from "@/components/dashboard/NextHearing";
+import { TeamActivity } from "@/components/dashboard/TeamActivity";
 import { PDFPreviewModal } from "@/components/dashboard/PDFPreviewModal";
 import { ConfirmDialog } from "@/components/dashboard/ConfirmDialog";
-import { Pagination } from "@/components/dashboard/Pagination";
 import {
-  EmptyState,
-  ErrorState,
-  LoadingSkeleton,
-} from "@/components/dashboard/DashboardComponents";
+  FileText,
+  PenTool,
+  Gavel,
+  CheckCircle2,
+} from "lucide-react";
+import { useSession } from "next-auth/react";
 
 function DashboardContent() {
   const { isAuthenticated, isLoading: authLoading, isAdmin } = useAuth();
+  const { data: session } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { success, error: showError } = useToast();
@@ -39,8 +40,6 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(20);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -56,25 +55,6 @@ function DashboardContent() {
       pageSize: parseInt(searchParams.get("pageSize") || "20"),
       sort: (searchParams.get("sort") as "createdAt:asc" | "createdAt:desc") || "createdAt:desc",
     };
-  };
-
-  const [filters, setFilters] = useState<DocumentsParams>(getFiltersFromUrl());
-
-  // Sincronizar filtros con URL
-  const updateFilters = (newFilters: DocumentsParams) => {
-    setFilters(newFilters);
-    const params = new URLSearchParams();
-    
-    if (newFilters.query) params.set("query", newFilters.query);
-    if (newFilters.type) params.set("type", newFilters.type);
-    if (newFilters.jurisdiccion) params.set("jurisdiccion", newFilters.jurisdiccion);
-    if (newFilters.from) params.set("from", newFilters.from);
-    if (newFilters.to) params.set("to", newFilters.to);
-    if (newFilters.page) params.set("page", newFilters.page.toString());
-    if (newFilters.pageSize) params.set("pageSize", newFilters.pageSize.toString());
-    if (newFilters.sort) params.set("sort", newFilters.sort);
-
-    router.replace(`/dashboard?${params.toString()}`, { scroll: false });
   };
 
   // Cargar documentos
@@ -96,7 +76,6 @@ function DashboardContent() {
           ? response.documents.length
           : 0
       );
-      setCurrentPage(typeof response.page === "number" ? response.page : 1);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al cargar documentos";
       setError(message);
@@ -124,11 +103,6 @@ function DashboardContent() {
       const response = await duplicateDocument(id);
       success("Documento duplicado exitosamente");
       loadDocuments();
-      
-      // Opcional: navegar al nuevo documento
-      if (response.data?.id) {
-        // router.push(`/documents/${response.data.id}`);
-      }
     } catch (err) {
       showError(err instanceof Error ? err.message : "Error al duplicar documento");
     }
@@ -148,9 +122,16 @@ function DashboardContent() {
 
   if (authLoading) {
     return (
-      <DashboardShell title="Dashboard" description="Cargando...">
-        <LoadingSkeleton />
-      </DashboardShell>
+      <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-1/3"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-32 bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
+            ))}
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -158,55 +139,113 @@ function DashboardContent() {
     return null; // El useEffect maneja la redirección
   }
 
-  const totalPages = Math.ceil(total / pageSize);
+  // Calcular estadísticas
+  const activeDocuments = documents.length;
+  const pendingSignatures = documents.filter((d) => d.estado === "PENDIENTE").length;
+  const casesInProcess = documents.filter((d) => d.estado === "EN REVISIÓN").length;
+  const signedDocuments = documents.filter((d) => d.estado === "FIRMADO").length;
+  const winRate = activeDocuments > 0 ? Math.round((signedDocuments / activeDocuments) * 100) : 0;
+
+  // Obtener nombre del usuario
+  const userName = session?.user?.name || "Usuario";
+  const displayName = userName.split(" ")[0] ? `Dr. ${userName.split(" ")[0]}` : userName;
+  const currentDate = new Date().toLocaleDateString("es-AR", {
+    day: "numeric",
+    month: "long",
+  });
 
   return (
-    <DashboardShell
-      title="Dashboard de Documentos"
-      description={`${total} documento${total !== 1 ? "s" : ""} en total`}
-      action={
-        <Link href="/documents/new">
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo documento
+    <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
+      {/* Welcome & Summary */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-black tracking-tight">
+            Bienvenido de nuevo, {displayName}
+          </h2>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">
+            Aquí tienes el resumen de tu actividad legal para hoy, {currentDate}.
+          </p>
+        </div>
+        <Link href="/documents/new/guided">
+          <Button
+            size="lg"
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-semibold shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform"
+          >
+            <Plus className="w-5 h-5" />
+            Nuevo Documento
           </Button>
         </Link>
-      }
-    >
-      <div className="space-y-6">
-        {/* Filtros */}
-        <FiltersBar filters={filters} onFiltersChange={updateFilters} />
+      </div>
 
-        {/* Contenido */}
-        {loading ? (
-          <LoadingSkeleton />
-        ) : error ? (
-          <ErrorState message={error} onRetry={loadDocuments} />
-        ) : documents.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <>
-            <DocumentsTable
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatsCard
+          icon={FileText}
+          label="Documentos Activos"
+          value={activeDocuments}
+          change={{ value: "+12%", isPositive: true }}
+          iconBgColor="bg-blue-100 dark:bg-blue-900/30"
+          iconColor="text-blue-600 dark:text-blue-400"
+        />
+        <StatsCard
+          icon={PenTool}
+          label="Pendientes de Firma"
+          value={pendingSignatures}
+          change={{ value: "+5%", isPositive: true }}
+          iconBgColor="bg-amber-100 dark:bg-amber-900/30"
+          iconColor="text-amber-600 dark:text-amber-400"
+        />
+        <StatsCard
+          icon={Gavel}
+          label="Casos en Proceso"
+          value={casesInProcess}
+          change={{ value: "-2%", isPositive: false }}
+          iconBgColor="bg-purple-100 dark:bg-purple-900/30"
+          iconColor="text-purple-600 dark:text-purple-400"
+        />
+        <StatsCard
+          icon={CheckCircle2}
+          label="Casos Ganados"
+          value={`${winRate}%`}
+          change={{ value: "+18%", isPositive: true }}
+          iconBgColor="bg-emerald-100 dark:bg-emerald-900/30"
+          iconColor="text-emerald-600 dark:text-emerald-400"
+        />
+      </div>
+
+      {/* Main Area Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Recent Documents Table */}
+        <div className="lg:col-span-2">
+          {loading ? (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8">
+              <div className="animate-pulse space-y-4">
+                <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-1/4"></div>
+                <div className="space-y-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-16 bg-slate-200 dark:bg-slate-800 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8">
+              <p className="text-red-500">{error}</p>
+            </div>
+          ) : (
+            <RecentDocumentsTable
               documents={documents}
-              isAdmin={isAdmin}
-              onPreview={setPreviewId}
-              onDuplicate={handleDuplicate}
-              onDelete={(id) => setDeleteId(id)}
+              onViewAll={() => router.push("/documents")}
             />
-            {totalPages > 1 && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                pageSize={pageSize}
-                total={total}
-                onPageChange={(page) => {
-                  const currentFilters = getFiltersFromUrl();
-                  updateFilters({ ...currentFilters, page });
-                }}
-              />
-            )}
-          </>
-        )}
+          )}
+        </div>
+
+        {/* Side Widgets */}
+        <div className="space-y-6">
+          <QuickActions />
+          <NextHearing />
+          <TeamActivity />
+        </div>
       </div>
 
       {/* Modales */}
@@ -230,17 +269,21 @@ function DashboardContent() {
           onConfirm={() => deleteId && handleDelete(deleteId)}
         />
       )}
-    </DashboardShell>
+    </div>
   );
 }
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={
-      <DashboardShell title="Dashboard" description="Cargando...">
-        <LoadingSkeleton />
-      </DashboardShell>
-    }>
+    <Suspense
+      fallback={
+        <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-1/3"></div>
+          </div>
+        </div>
+      }
+    >
       <DashboardContent />
     </Suspense>
   );

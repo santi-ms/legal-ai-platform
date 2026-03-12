@@ -10,6 +10,7 @@ import React, { useState, useCallback } from "react";
 import type { DocumentSchemaDefinition } from "../../core/types";
 import { FieldRenderer } from "../fields/FieldRenderer";
 import { validateFormData, type ValidationResult } from "../../core/validation";
+import { darkModeClasses, darkBorderColors } from "../styles/dark-mode";
 
 interface DynamicFormProps {
   schema: DocumentSchemaDefinition;
@@ -84,11 +85,11 @@ export function DynamicForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {schema.sections.map((section) => (
-        <div key={section.id} className="border-b !border-gray-700 pb-6 last:border-b-0">
+        <div key={section.id} className={`border-b pb-6 last:border-b-0 ${darkBorderColors.default}`}>
           <div className="mb-4">
-            <h3 className="text-lg font-semibold !text-white">{section.title}</h3>
+            <h3 className={`text-lg font-semibold ${darkModeClasses.title}`}>{section.title}</h3>
             {section.description && (
-              <p className="mt-1 text-sm !text-gray-300">{section.description}</p>
+              <p className={`mt-1 text-sm ${darkModeClasses.subtitle}`}>{section.description}</p>
             )}
           </div>
           

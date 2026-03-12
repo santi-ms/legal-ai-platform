@@ -8,6 +8,7 @@
 
 import React from "react";
 import type { GenerationWarning } from "../../core/types";
+import { getSeverityClasses } from "../styles/dark-mode";
 
 interface WarningsPanelProps {
   warnings: GenerationWarning[];
@@ -25,18 +26,6 @@ export function WarningsPanel({
     return null;
   }
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case "error":
-        return "!bg-red-900/30 !border-red-700 !text-red-300";
-      case "warning":
-        return "!bg-yellow-900/30 !border-yellow-700 !text-yellow-300";
-      case "info":
-        return "!bg-blue-900/30 !border-blue-700 !text-blue-300";
-      default:
-        return "!bg-gray-800 !border-gray-700 !text-gray-300";
-    }
-  };
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
@@ -53,30 +42,35 @@ export function WarningsPanel({
 
   return (
     <div className="space-y-3">
-      {warnings.map((warning) => (
-        <div
-          key={warning.id}
-          className={`rounded-lg border p-4 ${getSeverityColor(warning.severity)}`}
-        >
-          <div className="flex items-start">
-            <span className="text-lg mr-2">{getSeverityIcon(warning.severity)}</span>
-            <div className="flex-1">
-              <p className="font-medium">{warning.message}</p>
-              {warning.suggestion && (
-                <p className="mt-1 text-sm !text-gray-400">{warning.suggestion}</p>
+      {warnings.map((warning) => {
+        const severityClasses = getSeverityClasses(
+          (warning.severity as 'error' | 'warning' | 'info') || 'default'
+        );
+        return (
+          <div
+            key={warning.id}
+            className={`rounded-lg border p-4 ${severityClasses.bg} ${severityClasses.border}`}
+          >
+            <div className="flex items-start">
+              <span className={`text-lg mr-2 ${severityClasses.icon}`}>{getSeverityIcon(warning.severity)}</span>
+              <div className="flex-1">
+                <p className={`font-medium ${severityClasses.text}`}>{warning.message}</p>
+                {warning.suggestion && (
+                  <p className={`mt-1 text-sm text-gray-400`}>{warning.suggestion}</p>
+                )}
+              </div>
+              {onDismiss && (
+                <button
+                  onClick={() => onDismiss(warning.id)}
+                  className="ml-2 text-sm text-gray-400 hover:text-gray-200 transition-colors"
+                >
+                  ✕
+                </button>
               )}
             </div>
-            {onDismiss && (
-              <button
-                onClick={() => onDismiss(warning.id)}
-                className="ml-2 text-sm !text-gray-400 hover:!text-gray-200 transition-colors"
-              >
-                ✕
-              </button>
-            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
