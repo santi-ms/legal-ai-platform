@@ -36,15 +36,15 @@ export function AutosaveIndicator({
   }
 
   return (
-    <div className="flex items-center space-x-2 text-sm text-gray-500">
+    <div className="flex items-center space-x-2 text-sm !text-gray-400">
       {isSaving ? (
         <>
-          <Save className="h-4 w-4 animate-pulse" />
+          <Save className="h-4 w-4 animate-pulse !text-blue-400" />
           <span>Guardando borrador...</span>
         </>
       ) : showSaved ? (
         <>
-          <CheckCircle2 className="h-4 w-4 text-green-500" />
+          <CheckCircle2 className="h-4 w-4 !text-green-400" />
           <span>Borrador guardado</span>
         </>
       ) : null}

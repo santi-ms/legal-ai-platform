@@ -395,14 +395,14 @@ export default function GuidedDocumentCreationPage() {
                 variant="ghost"
                 size="sm"
                 onClick={handleBackToSelection}
-                className="text-gray-600"
+                className="!text-gray-300 hover:!text-white transition-colors"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Volver
               </Button>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">{schema.label}</h2>
-            <p className="text-gray-600">{schema.description}</p>
+            <h2 className="text-2xl font-bold !text-white">{schema.label}</h2>
+            <p className="!text-gray-300">{schema.description}</p>
           </div>
           <div className="flex items-center space-x-4">
             <AutosaveIndicator isSaving={isSaving} lastSaved={lastSaved} />
@@ -457,14 +457,14 @@ export default function GuidedDocumentCreationPage() {
                 size="sm"
                 onClick={handleBackToForm}
                 disabled={loading}
-                className="text-gray-600"
+                className="!text-gray-300 hover:!text-white transition-colors"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Volver
               </Button>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Resumen y Confirmación</h2>
-            <p className="text-gray-600">Revisá los datos antes de generar el documento</p>
+            <h2 className="text-2xl font-bold !text-white">Resumen y Confirmación</h2>
+            <p className="!text-gray-300">Revisá los datos antes de generar el documento</p>
           </div>
           <Button
             variant="outline"
@@ -483,20 +483,20 @@ export default function GuidedDocumentCreationPage() {
 
         {warnings.length > 0 && (
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <AlertTriangle className="h-5 w-5 text-yellow-500 mr-2" />
+            <h3 className="text-lg font-semibold !text-white flex items-center">
+              <AlertTriangle className="h-5 w-5 !text-yellow-400 mr-2" />
               Advertencias
             </h3>
             <WarningsPanel warnings={warnings} />
-            <p className="text-sm text-gray-500">
+            <p className="text-sm !text-gray-400">
               Estas advertencias no bloquean la generación, pero te recomendamos revisarlas.
             </p>
           </div>
         )}
 
         <div className="flex justify-between items-center pt-4 border-t">
-          <div className="flex items-center space-x-2 text-sm text-gray-500">
-            <HelpCircle className="h-4 w-4" />
+          <div className="flex items-center space-x-2 text-sm !text-gray-400">
+            <HelpCircle className="h-4 w-4 !text-gray-400" />
             <span>Podés volver atrás para editar los datos antes de generar</span>
           </div>
           <div className="flex space-x-4">
@@ -526,24 +526,24 @@ export default function GuidedDocumentCreationPage() {
 
         {loading && (
           <div className="space-y-2">
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full !bg-gray-800 rounded-full h-2">
               <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                className="!bg-blue-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${loadingProgress}%` }}
               />
             </div>
-            <p className="text-sm text-gray-600 text-center">{loadingStep}</p>
+            <p className="text-sm !text-gray-300 text-center">{loadingStep}</p>
           </div>
         )}
 
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="p-4 !bg-red-900/30 !border !border-red-700 rounded-lg">
             <div className="flex items-start space-x-2">
-              <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="h-5 w-5 !text-red-400 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h4 className="font-semibold text-red-900 mb-1">Error al generar documento</h4>
-                <p className="text-sm text-red-800">{error}</p>
-                <p className="text-xs text-red-700 mt-2">
+                <h4 className="font-semibold !text-red-300 mb-1">Error al generar documento</h4>
+                <p className="text-sm !text-red-300">{error}</p>
+                <p className="text-xs !text-red-400 mt-2">
                   Podés volver atrás para revisar y corregir los datos, o intentar nuevamente.
                 </p>
               </div>
@@ -561,13 +561,13 @@ export default function GuidedDocumentCreationPage() {
       <div className="space-y-6">
         <div className="text-center space-y-2">
           <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
-          <h2 className="text-2xl font-bold text-gray-900">¡Documento generado exitosamente!</h2>
-          <p className="text-gray-600">Tu documento está listo para descargar o revisar</p>
+          <h2 className="text-2xl font-bold !text-white">¡Documento generado exitosamente!</h2>
+          <p className="!text-gray-300">Tu documento está listo para descargar o revisar</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="!bg-gray-900 rounded-lg shadow-sm !border !border-gray-700 p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Contenido Generado</h3>
+            <h3 className="text-lg font-semibold !text-white">Contenido Generado</h3>
             <div className="space-x-2">
               <Button
                 onClick={async () => {
@@ -601,7 +601,7 @@ export default function GuidedDocumentCreationPage() {
           </div>
 
           <div className="prose max-w-none">
-            <pre className="whitespace-pre-wrap text-sm bg-gray-50 p-4 rounded border">
+            <pre className="whitespace-pre-wrap text-sm !bg-gray-800 !text-gray-200 p-4 rounded !border !border-gray-700">
               {result.contrato}
             </pre>
           </div>
@@ -609,7 +609,7 @@ export default function GuidedDocumentCreationPage() {
 
         {result.warnings && result.warnings.length > 0 && (
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-gray-900">Advertencias del Documento</h3>
+            <h3 className="text-lg font-semibold !text-white">Advertencias del Documento</h3>
             <WarningsPanel warnings={result.warnings} />
           </div>
         )}

@@ -34,18 +34,18 @@ export function ValidationErrorPanel({
   }
 
   return (
-    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+    <div className="p-4 !bg-red-900/30 !border !border-red-700 rounded-lg">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center space-x-2">
-          <AlertCircle className="h-5 w-5 text-red-600" />
-          <h4 className="font-semibold text-red-900">
+          <AlertCircle className="h-5 w-5 !text-red-400" />
+          <h4 className="font-semibold !text-red-300">
             Errores de validación ({errors.length})
           </h4>
         </div>
         {onDismiss && (
           <button
             onClick={onDismiss}
-            className="text-red-600 hover:text-red-800"
+            className="!text-red-400 hover:!text-red-300 transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -55,13 +55,13 @@ export function ValidationErrorPanel({
       <ul className="space-y-2">
         {errors.map((error, index) => (
           <li key={index} className="flex items-start space-x-2">
-            <span className="text-red-600 mt-0.5">•</span>
-            <span className="text-sm text-red-800 flex-1">
+            <span className="!text-red-400 mt-0.5">•</span>
+            <span className="text-sm !text-red-300 flex-1">
               {error.message}
               {error.fieldId && onFieldClick && (
                 <button
                   onClick={() => onFieldClick(error.fieldId!)}
-                  className="ml-2 text-red-600 underline hover:text-red-800"
+                  className="ml-2 !text-red-400 underline hover:!text-red-300 transition-colors"
                 >
                   Ir al campo
                 </button>
@@ -71,7 +71,7 @@ export function ValidationErrorPanel({
         ))}
       </ul>
       
-      <p className="mt-3 text-xs text-red-700">
+      <p className="mt-3 text-xs !text-red-400">
         Corregí estos errores antes de continuar con la generación del documento.
       </p>
     </div>

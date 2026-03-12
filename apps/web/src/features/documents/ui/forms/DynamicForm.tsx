@@ -84,11 +84,11 @@ export function DynamicForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {schema.sections.map((section) => (
-        <div key={section.id} className="border-b border-gray-200 pb-6 last:border-b-0">
+        <div key={section.id} className="border-b !border-gray-700 pb-6 last:border-b-0">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">{section.title}</h3>
+            <h3 className="text-lg font-semibold !text-white">{section.title}</h3>
             {section.description && (
-              <p className="mt-1 text-sm text-gray-500">{section.description}</p>
+              <p className="mt-1 text-sm !text-gray-300">{section.description}</p>
             )}
           </div>
           
@@ -129,7 +129,7 @@ export function DynamicForm({
         <button
           type="submit"
           disabled={disabled || isSubmitting}
-          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="px-6 py-2 !bg-blue-600 !text-white rounded-md hover:!bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:!bg-gray-700 disabled:!text-gray-400 disabled:cursor-not-allowed"
         >
           {isSubmitting ? "Generando..." : "Generar Documento"}
         </button>
