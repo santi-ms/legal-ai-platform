@@ -26,6 +26,10 @@ model User {
   company       String?
   role          String   @default("user")
   tenantId      String?
+  
+  // Profile fields
+  bio                   String?  // Biografía profesional
+  notificationPreferences Json?   // Preferencias de notificación (JSON)
 
   tenant    Tenant?   @relation(fields: [tenantId], references: [id])
 

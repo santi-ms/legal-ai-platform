@@ -131,10 +131,56 @@ async function runMigrations() {
   }
 }
 
+// Verificar y aplicar migración de campos de usuario si es necesario
+async function ensureUserProfileFields() {
+  try {
+    const { PrismaClient } = await import("@prisma/client");
+    const prisma = new PrismaClient();
+    
+    // Verificar si las columnas existen
+    const result = await prisma.$queryRawUnsafe<Array<{ column_name: string }>>(`
+      SELECT column_name
+      FROM information_schema.columns 
+      WHERE table_name = 'User' 
+      AND column_name IN ('bio', 'notificationPreferences');
+    `);
+
+    const existingColumns = result.map(r => r.column_name);
+    const missingColumns = ['bio', 'notificationPreferences'].filter(
+      col => !existingColumns.includes(col)
+    );
+
+    if (missingColumns.length > 0) {
+      logger.info(`[migrate] 🔧 Aplicando migración para campos: ${missingColumns.join(', ')}`);
+      
+      // Aplicar cada columna por separado (IF NOT EXISTS requiere sentencias separadas)
+      if (missingColumns.includes('bio')) {
+        await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "bio" TEXT;`);
+      }
+      if (missingColumns.includes('notificationPreferences')) {
+        await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "notificationPreferences" JSONB;`);
+      }
+
+      logger.info("[migrate] ✅ Campos de usuario agregados exitosamente");
+    } else {
+      logger.info("[migrate] ✅ Campos de usuario ya existen");
+    }
+
+    await prisma.$disconnect();
+  } catch (error: any) {
+    // Si falla, solo loguear el error pero no bloquear el servidor
+    logger.warn("[migrate] ⚠️ No se pudieron verificar/aplicar campos de usuario:", error.message);
+    logger.warn("[migrate] 💡 Asegurate de que las columnas bio y notificationPreferences existan en la tabla User");
+  }
+}
+
 async function buildServer() {
   // Initialize document registry
   initializeDocumentRegistry();
   logger.info("[server] Document registry initialized");
+  
+  // Verificar y aplicar migración de campos de usuario
+  await ensureUserProfileFields();
   
   const app = Fastify({
     logger: true,

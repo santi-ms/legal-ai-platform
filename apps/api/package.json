@@ -14,7 +14,8 @@
     "prisma:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "db:seed": "tsx scripts/seed.ts",
     "test:generation": "tsx scripts/test-generation.ts",
-    "test:generation:sqlite": "DATABASE_URL=file:./test.db tsx scripts/test-generation.ts"
+    "test:generation:sqlite": "DATABASE_URL=file:./test.db tsx scripts/test-generation.ts",
+    "fix:user-profile": "tsx scripts/apply-user-profile-migration.ts"
   },
   "dependencies": {
     "@fastify/cors": "^8.5.0",
