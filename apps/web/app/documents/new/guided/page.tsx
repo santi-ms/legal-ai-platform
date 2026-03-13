@@ -341,22 +341,22 @@ export default function GuidedDocumentCreationPage() {
         <div className="flex-1 px-6 md:px-20 py-12">
           <div className="max-w-7xl mx-auto">
             {/* Header Section */}
-            <div className="mb-12">
-              <h1 className="text-4xl md:text-5xl font-black text-white mb-4 leading-tight">
+            <div className="mb-12 text-center">
+              <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-4 leading-tight">
                 Crear documento legal
               </h1>
-              <p className="text-lg text-slate-400">
+              <p className="text-lg text-slate-600 dark:text-slate-400">
                 Generá documentos profesionales con IA usando nuestro flujo guiado.
               </p>
             </div>
 
             {/* Selection Section */}
             <div className="space-y-8">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold text-white">
+              <div className="space-y-2 text-center">
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
                   ¿Qué documento necesitás crear?
                 </h2>
-                <p className="text-slate-400">
+                <p className="text-slate-600 dark:text-slate-400">
                   Seleccioná el tipo de documento que mejor se adapte a tu necesidad
                 </p>
               </div>
@@ -396,7 +396,7 @@ export default function GuidedDocumentCreationPage() {
                   variant="ghost"
                   size="sm"
                   onClick={handleBackToSelection}
-                  className="text-slate-400 hover:text-white transition-colors"
+                  className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   ← Volver
@@ -405,10 +405,10 @@ export default function GuidedDocumentCreationPage() {
               
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-white mb-2">
+                  <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
                     {schema.label}
                   </h1>
-                  <p className="text-slate-400">
+                  <p className="text-slate-600 dark:text-slate-400">
                     {schema.description}
                   </p>
                 </div>
@@ -417,7 +417,7 @@ export default function GuidedDocumentCreationPage() {
                   <Button
                     variant="outline"
                     onClick={handleBackToSelection}
-                    className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                    className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                   >
                     Cambiar tipo
                   </Button>
@@ -471,7 +471,7 @@ export default function GuidedDocumentCreationPage() {
                   size="sm"
                   onClick={handleBackToForm}
                   disabled={loading}
-                  className="text-slate-400 hover:text-white transition-colors"
+                  className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   ← Volver
@@ -480,10 +480,10 @@ export default function GuidedDocumentCreationPage() {
               
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-white mb-2">
+                  <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
                     Resumen y Confirmación
                   </h1>
-                  <p className="text-slate-400">
+                  <p className="text-slate-600 dark:text-slate-400">
                     Revisá los datos antes de generar el documento
                   </p>
                 </div>
@@ -491,7 +491,7 @@ export default function GuidedDocumentCreationPage() {
                   variant="outline"
                   onClick={handleBackToForm}
                   disabled={loading}
-                  className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                  className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                 >
                   Editar
                 </Button>
@@ -506,19 +506,19 @@ export default function GuidedDocumentCreationPage() {
 
             {warnings.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold flex items-center text-white">
-                  <AlertTriangle className="h-5 w-5 mr-2 text-yellow-400" />
+                <h3 className="text-lg font-semibold flex items-center text-slate-900 dark:text-white">
+                  <AlertTriangle className="h-5 w-5 mr-2 text-yellow-500" />
                   Advertencias
                 </h3>
                 <WarningsPanel warnings={warnings} />
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-slate-600 dark:text-slate-400">
                   Estas advertencias no bloquean la generación, pero te recomendamos revisarlas.
                 </p>
               </div>
             )}
 
-            <div className="flex justify-between items-center pt-6 border-t border-slate-800">
-              <div className="flex items-center space-x-2 text-sm text-slate-400">
+            <div className="flex justify-between items-center pt-6 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400">
                 <span>Podés volver atrás para editar los datos antes de generar</span>
               </div>
               <div className="flex space-x-4">
@@ -526,7 +526,7 @@ export default function GuidedDocumentCreationPage() {
                   variant="outline"
                   onClick={handleBackToForm}
                   disabled={loading}
-                  className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                  className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                 >
                   Volver
                 </Button>
@@ -549,24 +549,24 @@ export default function GuidedDocumentCreationPage() {
 
             {loading && (
               <div className="space-y-2">
-                <div className="w-full rounded-full h-2 bg-slate-800">
+                <div className="w-full rounded-full h-2 bg-slate-200 dark:bg-slate-800">
                   <div
                     className="h-2 rounded-full transition-all duration-300 bg-primary"
                     style={{ width: `${loadingProgress}%` }}
                   />
                 </div>
-                <p className="text-sm text-center text-slate-400">{loadingStep}</p>
+                <p className="text-sm text-center text-slate-600 dark:text-slate-400">{loadingStep}</p>
               </div>
             )}
 
             {error && (
-              <div className={`p-4 rounded-lg ${darkModeClasses.errorPanel}`}>
+              <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700">
                 <div className="flex items-start space-x-2">
-                  <AlertTriangle className={`h-5 w-5 flex-shrink-0 mt-0.5 ${darkModeClasses.errorText}`} />
+                  <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5 text-red-500 dark:text-red-400" />
                   <div className="flex-1">
-                    <h4 className={`font-semibold mb-1 text-red-300`}>Error al generar documento</h4>
-                    <p className={`text-sm text-red-300`}>{error}</p>
-                    <p className={`text-xs mt-2 ${darkModeClasses.errorText}`}>
+                    <h4 className="font-semibold mb-1 text-red-700 dark:text-red-300">Error al generar documento</h4>
+                    <p className="text-sm text-red-600 dark:text-red-300">{error}</p>
+                    <p className="text-xs mt-2 text-red-600 dark:text-red-400">
                       Podés volver atrás para revisar y corregir los datos, o intentar nuevamente.
                     </p>
                   </div>
@@ -589,18 +589,18 @@ export default function GuidedDocumentCreationPage() {
             {/* Success Header */}
             <div className="text-center space-y-4">
               <CheckCircle className="h-16 w-16 text-emerald-500 mx-auto" />
-              <h1 className="text-3xl font-bold text-white">
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
                 ¡Documento generado exitosamente!
               </h1>
-              <p className="text-slate-400">
+              <p className="text-slate-600 dark:text-slate-400">
                 Tu documento está listo para descargar o revisar
               </p>
             </div>
 
             {/* Document Content */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 shadow-lg">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-lg">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-white">Contenido Generado</h2>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Contenido Generado</h2>
                 <div className="flex gap-3">
                   <Button
                     onClick={async () => {
@@ -628,7 +628,7 @@ export default function GuidedDocumentCreationPage() {
                   <Button
                     variant="outline"
                     onClick={() => router.push(`/documents/${result.documentId}`)}
-                    className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                    className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                   >
                     Ver Detalle
                   </Button>
@@ -636,7 +636,7 @@ export default function GuidedDocumentCreationPage() {
               </div>
 
               <div className="prose max-w-none">
-                <pre className="whitespace-pre-wrap text-sm p-6 rounded-lg bg-slate-950 text-slate-200 border border-slate-800 font-mono overflow-x-auto">
+                <pre className="whitespace-pre-wrap text-sm p-6 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-mono overflow-x-auto">
                   {result.contrato}
                 </pre>
               </div>
@@ -645,13 +645,13 @@ export default function GuidedDocumentCreationPage() {
             {/* Warnings */}
             {result.warnings && result.warnings.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-white">Advertencias del Documento</h3>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Advertencias del Documento</h3>
                 <WarningsPanel warnings={result.warnings} />
               </div>
             )}
 
             {/* Actions */}
-            <div className="flex justify-center gap-4 pt-6 border-t border-slate-800">
+            <div className="flex justify-center gap-4 pt-6 border-t border-slate-200 dark:border-slate-800">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -664,7 +664,7 @@ export default function GuidedDocumentCreationPage() {
                   setValidationErrors([]);
                   setHasUnsavedChanges(false);
                 }}
-                className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 Crear Otro Documento
               </Button>
@@ -682,10 +682,10 @@ export default function GuidedDocumentCreationPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background-dark text-white">
+    <div className="min-h-screen flex flex-col bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
       <DocumentCreationPageHeader />
       
-      <main className="flex-1">
+      <main className="flex-1 bg-white dark:bg-slate-900">
         {currentStep === "selection" && renderSelectionStep()}
         {currentStep === "form" && renderFormStep()}
         {currentStep === "summary" && renderSummaryStep()}
