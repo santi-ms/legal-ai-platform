@@ -83,17 +83,17 @@ export function DynamicForm({
   );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-8">
       {schema.sections.map((section) => (
-        <div key={section.id} className={`border-b pb-6 last:border-b-0 ${darkBorderColors.default}`}>
-          <div className="mb-4">
-            <h3 className={`text-lg font-semibold ${darkModeClasses.title}`}>{section.title}</h3>
+        <div key={section.id} className="border-b border-slate-200 dark:border-slate-700 pb-6 last:border-b-0">
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{section.title}</h3>
             {section.description && (
-              <p className={`mt-1 text-sm ${darkModeClasses.subtitle}`}>{section.description}</p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{section.description}</p>
             )}
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {section.fields.map((field) => {
               // Check visibility conditions
               if (field.visibleWhen) {
@@ -130,7 +130,7 @@ export function DynamicForm({
         <button
           type="submit"
           disabled={disabled || isSubmitting}
-          className="px-6 py-2 !bg-blue-600 !text-white rounded-md hover:!bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:!bg-gray-700 disabled:!text-gray-400 disabled:cursor-not-allowed"
+          className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-slate-400 disabled:text-slate-200 disabled:cursor-not-allowed font-semibold transition-all"
         >
           {isSubmitting ? "Generando..." : "Generar Documento"}
         </button>

@@ -29,19 +29,22 @@ export function FieldRenderer({
   disabled = false,
 }: FieldRendererProps) {
   const baseClasses = `
-    w-full px-3 py-2 border rounded-md
-    ${darkModeClasses.input}
-    ${error ? darkBorderColors.error : darkBorderColors.default}
-    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-    disabled:bg-gray-800 disabled:text-gray-400 disabled:cursor-not-allowed
-    placeholder:text-gray-500
+    w-full px-3 py-2 border rounded-lg
+    bg-white dark:bg-slate-800
+    text-slate-900 dark:text-slate-100
+    border-slate-300 dark:border-slate-600
+    ${error ? 'border-red-500 dark:border-red-500' : ''}
+    focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
+    disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed
+    placeholder:text-slate-400 dark:placeholder:text-slate-500
+    transition-all
   `;
 
   switch (field.type) {
     case "text":
       return (
         <div data-field-id={field.id}>
-          <label className={`block text-sm font-medium mb-1 ${darkModeClasses.label}`}>
+          <label className="block text-sm font-semibold mb-2 text-slate-900 dark:text-slate-100">
             {field.label}
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
@@ -56,12 +59,12 @@ export function FieldRenderer({
             aria-describedby={field.helpText ? `${field.id}-help` : undefined}
           />
           {field.helpText && (
-            <p id={`${field.id}-help`} className={`mt-1 text-sm ${darkModeClasses.helpText}`}>
+            <p id={`${field.id}-help`} className="mt-1.5 text-xs text-slate-600 dark:text-slate-400">
               {field.helpText}
             </p>
           )}
           {error && (
-            <p className={`mt-1 text-sm ${darkModeClasses.errorText}`}>{error}</p>
+            <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{error}</p>
           )}
         </div>
       );
@@ -69,7 +72,7 @@ export function FieldRenderer({
     case "textarea":
       return (
         <div data-field-id={field.id}>
-          <label className={`block text-sm font-medium mb-1 ${darkModeClasses.label}`}>
+          <label className="block text-sm font-semibold mb-2 text-slate-900 dark:text-slate-100">
             {field.label}
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
@@ -84,12 +87,12 @@ export function FieldRenderer({
             aria-describedby={field.helpText ? `${field.id}-help` : undefined}
           />
           {field.helpText && (
-            <p id={`${field.id}-help`} className={`mt-1 text-sm ${darkModeClasses.helpText}`}>
+            <p id={`${field.id}-help`} className="mt-1.5 text-xs text-slate-600 dark:text-slate-400">
               {field.helpText}
             </p>
           )}
           {error && (
-            <p className={`mt-1 text-sm ${darkModeClasses.errorText}`}>{error}</p>
+            <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{error}</p>
           )}
         </div>
       );
@@ -97,7 +100,7 @@ export function FieldRenderer({
     case "number":
       return (
         <div data-field-id={field.id}>
-          <label className={`block text-sm font-medium mb-1 ${darkModeClasses.label}`}>
+          <label className="block text-sm font-semibold mb-2 text-slate-900 dark:text-slate-100">
             {field.label}
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
@@ -112,12 +115,12 @@ export function FieldRenderer({
             aria-describedby={field.helpText ? `${field.id}-help` : undefined}
           />
           {field.helpText && (
-            <p id={`${field.id}-help`} className={`mt-1 text-sm ${darkModeClasses.helpText}`}>
+            <p id={`${field.id}-help`} className="mt-1.5 text-xs text-slate-600 dark:text-slate-400">
               {field.helpText}
             </p>
           )}
           {error && (
-            <p className={`mt-1 text-sm ${darkModeClasses.errorText}`}>{error}</p>
+            <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{error}</p>
           )}
         </div>
       );
@@ -125,7 +128,7 @@ export function FieldRenderer({
     case "currency":
       return (
         <div data-field-id={field.id}>
-          <label className={`block text-sm font-medium mb-1 ${darkModeClasses.label}`}>
+          <label className="block text-sm font-semibold mb-2 text-slate-900 dark:text-slate-100">
             {field.label}
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
@@ -140,12 +143,12 @@ export function FieldRenderer({
             aria-describedby={field.helpText ? `${field.id}-help` : undefined}
           />
           {field.helpText && (
-            <p id={`${field.id}-help`} className={`mt-1 text-sm ${darkModeClasses.helpText}`}>
+            <p id={`${field.id}-help`} className="mt-1.5 text-xs text-slate-600 dark:text-slate-400">
               {field.helpText}
             </p>
           )}
           {error && (
-            <p className={`mt-1 text-sm ${darkModeClasses.errorText}`}>{error}</p>
+            <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{error}</p>
           )}
         </div>
       );
@@ -153,7 +156,7 @@ export function FieldRenderer({
     case "date":
       return (
         <div data-field-id={field.id}>
-          <label className={`block text-sm font-medium mb-1 ${darkModeClasses.label}`}>
+          <label className="block text-sm font-semibold mb-2 text-slate-900 dark:text-slate-100">
             {field.label}
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
@@ -167,12 +170,12 @@ export function FieldRenderer({
             aria-describedby={field.helpText ? `${field.id}-help` : undefined}
           />
           {field.helpText && (
-            <p id={`${field.id}-help`} className={`mt-1 text-sm ${darkModeClasses.helpText}`}>
+            <p id={`${field.id}-help`} className="mt-1.5 text-xs text-slate-600 dark:text-slate-400">
               {field.helpText}
             </p>
           )}
           {error && (
-            <p className={`mt-1 text-sm ${darkModeClasses.errorText}`}>{error}</p>
+            <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{error}</p>
           )}
         </div>
       );
@@ -180,7 +183,7 @@ export function FieldRenderer({
     case "select":
       return (
         <div data-field-id={field.id}>
-          <label className={`block text-sm font-medium mb-1 ${darkModeClasses.label}`}>
+          <label className="block text-sm font-semibold mb-2 text-slate-900 dark:text-slate-100">
             {field.label}
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
@@ -202,12 +205,12 @@ export function FieldRenderer({
             ))}
           </select>
           {field.helpText && (
-            <p id={`${field.id}-help`} className={`mt-1 text-sm ${darkModeClasses.helpText}`}>
+            <p id={`${field.id}-help`} className="mt-1.5 text-xs text-slate-600 dark:text-slate-400">
               {field.helpText}
             </p>
           )}
           {error && (
-            <p className={`mt-1 text-sm ${darkModeClasses.errorText}`}>{error}</p>
+            <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{error}</p>
           )}
         </div>
       );
@@ -221,20 +224,20 @@ export function FieldRenderer({
               checked={Boolean(value)}
               onChange={(e) => onChange(e.target.checked)}
               disabled={disabled}
-              className="mr-2 h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-600 rounded bg-gray-900"
+              className="mr-2 h-4 w-4 text-primary focus:ring-primary border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800"
             />
-            <span className={`text-sm font-medium ${darkModeClasses.label}`}>
+            <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
               {field.label}
               {field.required && <span className="text-red-500 ml-1">*</span>}
             </span>
           </label>
           {field.helpText && (
-            <p className={`mt-1 text-sm ml-6 ${darkModeClasses.helpText}`}>
+            <p className="mt-1 text-sm ml-6 text-slate-600 dark:text-slate-400">
               {field.helpText}
             </p>
           )}
           {error && (
-            <p className={`mt-1 text-sm ml-6 ${darkModeClasses.errorText}`}>{error}</p>
+            <p className="mt-1 text-sm ml-6 text-red-600 dark:text-red-400">{error}</p>
           )}
         </div>
       );
@@ -242,7 +245,7 @@ export function FieldRenderer({
     case "cuit":
       return (
         <div data-field-id={field.id}>
-          <label className={`block text-sm font-medium mb-1 ${darkModeClasses.label}`}>
+          <label className="block text-sm font-semibold mb-2 text-slate-900 dark:text-slate-100">
             {field.label}
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
@@ -258,12 +261,12 @@ export function FieldRenderer({
             aria-describedby={field.helpText ? `${field.id}-help` : undefined}
           />
           {field.helpText && (
-            <p id={`${field.id}-help`} className={`mt-1 text-sm ${darkModeClasses.helpText}`}>
+            <p id={`${field.id}-help`} className="mt-1.5 text-xs text-slate-600 dark:text-slate-400">
               {field.helpText}
             </p>
           )}
           {error && (
-            <p className={`mt-1 text-sm ${darkModeClasses.errorText}`}>{error}</p>
+            <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{error}</p>
           )}
         </div>
       );
@@ -271,7 +274,7 @@ export function FieldRenderer({
     case "address":
       return (
         <div data-field-id={field.id}>
-          <label className={`block text-sm font-medium mb-1 ${darkModeClasses.label}`}>
+          <label className="block text-sm font-semibold mb-2 text-slate-900 dark:text-slate-100">
             {field.label}
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
@@ -286,12 +289,12 @@ export function FieldRenderer({
             aria-describedby={field.helpText ? `${field.id}-help` : undefined}
           />
           {field.helpText && (
-            <p id={`${field.id}-help`} className={`mt-1 text-sm ${darkModeClasses.helpText}`}>
+            <p id={`${field.id}-help`} className="mt-1.5 text-xs text-slate-600 dark:text-slate-400">
               {field.helpText}
             </p>
           )}
           {error && (
-            <p className={`mt-1 text-sm ${darkModeClasses.errorText}`}>{error}</p>
+            <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{error}</p>
           )}
         </div>
       );
