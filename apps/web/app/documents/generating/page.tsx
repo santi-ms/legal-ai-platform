@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GenerationHeader } from "@/components/documents/GenerationHeader";
 import { GenerationHero } from "@/components/documents/GenerationHero";
@@ -48,7 +48,7 @@ const DEFAULT_ACTIVITIES: ActivityLogItem[] = [
   },
 ];
 
-export default function GeneratingDocumentPage() {
+function GeneratingDocumentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const documentType = (searchParams.get("type") as DocumentTypeId) || "service_contract";
@@ -160,3 +160,16 @@ export default function GeneratingDocumentPage() {
   );
 }
 
+export default function GeneratingDocumentPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-pulse text-slate-500">Cargando...</div>
+        </div>
+      }
+    >
+      <GeneratingDocumentContent />
+    </Suspense>
+  );
+}
