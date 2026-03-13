@@ -11,6 +11,7 @@ import { SettingsActions } from "@/components/settings/SettingsActions";
 import { SupportBanner } from "@/components/settings/SupportBanner";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/app/lib/hooks/useAuth";
+import { getUserProfile, updateUserProfile, type UserProfile } from "@/app/lib/webApi";
 
 interface ProfileFormData {
   firstName: string;
@@ -51,31 +52,64 @@ export default function SettingsPage() {
     notifications: NotificationPreferencesData;
   } | null>(null);
 
-  // Initialize form data from session
+  // Load profile data from API
   useEffect(() => {
-    if (session?.user) {
-      const nameParts = session.user.name?.split(" ") || [];
-      const initialProfile: ProfileFormData = {
-        firstName: nameParts[0] || "",
-        lastName: nameParts.slice(1).join(" ") || "",
-        email: session.user.email || "",
-        bio: "",
+    if (isAuthenticated && !authLoading) {
+      const loadProfile = async () => {
+        try {
+          setIsLoading(true);
+          const profile = await getUserProfile();
+          
+          const initialProfile: ProfileFormData = {
+            firstName: profile.firstName || "",
+            lastName: profile.lastName || "",
+            email: profile.email || "",
+            bio: profile.bio || "",
+          };
+
+          const initialNotifications: NotificationPreferencesData = {
+            emailNotifications: profile.notificationPreferences.emailNotifications ?? true,
+            securityAlerts: profile.notificationPreferences.securityAlerts ?? true,
+            productUpdates: profile.notificationPreferences.productUpdates ?? false,
+          };
+
+          setProfileData(initialProfile);
+          setNotificationPreferences(initialNotifications);
+          setInitialData({
+            profile: initialProfile,
+            notifications: initialNotifications,
+          });
+        } catch (err: any) {
+          console.error("Error loading profile:", err);
+          showError(err.message || "Error al cargar el perfil");
+          
+          // Fallback to session data if API fails
+          if (session?.user) {
+            const nameParts = session.user.name?.split(" ") || [];
+            const fallbackProfile: ProfileFormData = {
+              firstName: nameParts[0] || "",
+              lastName: nameParts.slice(1).join(" ") || "",
+              email: session.user.email || "",
+              bio: "",
+            };
+            setProfileData(fallbackProfile);
+            setInitialData({
+              profile: fallbackProfile,
+              notifications: {
+                emailNotifications: true,
+                securityAlerts: true,
+                productUpdates: false,
+              },
+            });
+          }
+        } finally {
+          setIsLoading(false);
+        }
       };
 
-      const initialNotifications: NotificationPreferencesData = {
-        emailNotifications: true,
-        securityAlerts: true,
-        productUpdates: false,
-      };
-
-      setProfileData(initialProfile);
-      setNotificationPreferences(initialNotifications);
-      setInitialData({
-        profile: initialProfile,
-        notifications: initialNotifications,
-      });
+      loadProfile();
     }
-  }, [session]);
+  }, [isAuthenticated, authLoading, session, showError]);
 
   // Check for changes
   useEffect(() => {
@@ -126,21 +160,66 @@ export default function SettingsPage() {
   };
 
   const handleSave = async () => {
+    // Validation
+    if (!profileData.firstName.trim()) {
+      showError("El nombre es requerido");
+      return;
+    }
+    if (!profileData.email.trim() || !profileData.email.includes("@")) {
+      showError("El email es inválido");
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // TODO: Implement actual API call to save settings
-      // For now, just simulate a save
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Combine firstName and lastName into name
+      const fullName = `${profileData.firstName.trim()} ${profileData.lastName.trim()}`.trim();
 
-      // Update initial data to reflect saved state
+      const updatedProfile = await updateUserProfile({
+        profile: {
+          name: fullName,
+          email: profileData.email.trim(),
+          bio: profileData.bio.trim() || null,
+        },
+        notificationPreferences: {
+          emailNotifications: notificationPreferences.emailNotifications,
+          securityAlerts: notificationPreferences.securityAlerts,
+          productUpdates: notificationPreferences.productUpdates,
+        },
+      });
+
+      // Update state with response
+      const updatedProfileData: ProfileFormData = {
+        firstName: updatedProfile.firstName,
+        lastName: updatedProfile.lastName,
+        email: updatedProfile.email,
+        bio: updatedProfile.bio,
+      };
+
+      const updatedNotifications: NotificationPreferencesData = {
+        emailNotifications: updatedProfile.notificationPreferences.emailNotifications,
+        securityAlerts: updatedProfile.notificationPreferences.securityAlerts,
+        productUpdates: updatedProfile.notificationPreferences.productUpdates,
+      };
+
+      setProfileData(updatedProfileData);
+      setNotificationPreferences(updatedNotifications);
       setInitialData({
-        profile: { ...profileData },
-        notifications: { ...notificationPreferences },
+        profile: updatedProfileData,
+        notifications: updatedNotifications,
       });
       setHasChanges(false);
       success("Configuración guardada exitosamente");
-    } catch (err) {
-      showError("Error al guardar la configuración");
+
+      // Refresh session to update user name/email in NextAuth
+      if (session) {
+        await fetch("/api/auth/session?update", { method: "GET" });
+        window.location.reload(); // Force refresh to update session
+      }
+    } catch (err: any) {
+      console.error("Error saving profile:", err);
+      const errorMessage = err.message || "Error al guardar la configuración";
+      showError(errorMessage);
     } finally {
       setIsLoading(false);
     }

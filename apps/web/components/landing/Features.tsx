@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, History, CloudUpload, Translate, Api } from "lucide-react";
+import { Check, History, CloudUpload, Languages, Code } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const mainFeatures = [
@@ -33,13 +33,13 @@ const featureCards = [
     highlighted: true,
   },
   {
-    icon: Translate,
+    icon: Languages,
     title: "Traducción Legal",
     description: "Traducciones precisas Inglés-Español.",
     highlighted: false,
   },
   {
-    icon: Api,
+    icon: Code,
     title: "API Integrations",
     description: "Conectá con tu CRM o sistema de gestión.",
     highlighted: false,

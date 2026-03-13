@@ -199,3 +199,59 @@ export async function patchDocument(
 export function getPdfUrl(id: string): string {
   return `${PROXY_BASE}/documents/${id}/pdf`;
 }
+
+// User Profile API
+export interface UserProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  company: string | null;
+  bio: string;
+  notificationPreferences: {
+    emailNotifications: boolean;
+    securityAlerts: boolean;
+    productUpdates: boolean;
+  };
+}
+
+export interface UpdateProfileData {
+  profile?: {
+    name?: string;
+    email?: string;
+    bio?: string | null;
+  };
+  notificationPreferences?: {
+    emailNotifications?: boolean;
+    securityAlerts?: boolean;
+    productUpdates?: boolean;
+  };
+}
+
+export async function getUserProfile(): Promise<UserProfile> {
+  const { data } = await proxyJson<{ ok: boolean; data: UserProfile }>("/user/profile");
+  if (!data.ok || !data.data) {
+    throw new Error("Error al obtener perfil");
+  }
+  return data.data;
+}
+
+export async function updateUserProfile(
+  payload: UpdateProfileData
+): Promise<UserProfile> {
+  const { data } = await proxyJson<{ ok: boolean; data: UserProfile; message?: string }>(
+    "/user/profile",
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+  if (!data.ok || !data.data) {
+    const errorMessage = data.message || "Error al actualizar perfil";
+    throw new Error(errorMessage);
+  }
+  return data.data;
+}

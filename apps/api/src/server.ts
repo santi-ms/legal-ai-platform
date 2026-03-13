@@ -224,6 +224,10 @@ async function buildServer() {
   // registrar endpoints /api/auth/*
   await registerAuthRoutes(app);
 
+  // registrar endpoints /api/user/*
+  const { registerUserRoutes } = await import("./routes.user.js");
+  await registerUserRoutes(app);
+
   return app;
 }
 
