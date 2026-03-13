@@ -9,7 +9,6 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardShell } from "@/app/components/DashboardShell";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { DynamicForm } from "@/src/features/documents/ui/forms/DynamicForm";
@@ -20,10 +19,13 @@ import type { DocumentTypeId, StructuredDocumentData, GenerationWarning } from "
 import { validateFormData } from "@/src/features/documents/core/validation";
 import { evaluateWarningRules } from "@/src/features/documents/core/warnings";
 import confetti from "canvas-confetti";
-import { FileText, CheckCircle, AlertTriangle, Loader2, ArrowLeft, HelpCircle } from "lucide-react";
+import { CheckCircle, AlertTriangle, Loader2, ArrowLeft } from "lucide-react";
 import { AutosaveIndicator } from "@/src/features/documents/ui/autosave/AutosaveIndicator";
 import { ValidationErrorPanel } from "@/src/features/documents/ui/errors/ValidationErrorPanel";
 import { darkModeClasses, darkBorderColors } from "@/src/features/documents/ui/styles/dark-mode";
+import { DocumentCreationPageHeader } from "@/components/documents/DocumentCreationPageHeader";
+import { DocumentCreationFooter } from "@/components/documents/DocumentCreationFooter";
+import { DocumentTypeCard } from "@/components/documents/DocumentTypeCard";
 import {
   trackFlowEntry,
   trackDocumentTypeSelected,
@@ -335,45 +337,41 @@ export default function GuidedDocumentCreationPage() {
     );
 
     return (
-      <div className="space-y-6">
-        <div className="text-center space-y-2">
-          <h2 className={`text-2xl font-bold ${darkModeClasses.title}`}>¿Qué documento necesitás crear?</h2>
-          <p className={darkModeClasses.subtitle}>Seleccioná el tipo de documento que mejor se adapte a tu necesidad</p>
-        </div>
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 px-6 md:px-20 py-12">
+          <div className="max-w-7xl mx-auto">
+            {/* Header Section */}
+            <div className="mb-12">
+              <h1 className="text-4xl md:text-5xl font-black text-white mb-4 leading-tight">
+                Crear documento legal
+              </h1>
+              <p className="text-lg text-slate-400">
+                Generá documentos profesionales con IA usando nuestro flujo guiado.
+              </p>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {availableSchemas.map((schema) => (
-            <button
-              key={schema.id}
-              onClick={() => handleDocumentTypeSelect(schema.id)}
-              className="p-6 rounded-lg border-2 bg-transparent hover:shadow-lg transition-all text-left group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black border-gray-700 hover:border-blue-500 hover:bg-gray-900/50"
-            >
-              <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0">
-                  <FileText className="h-8 w-8 transition-colors text-blue-500 group-hover:text-blue-400" />
-                </div>
-                <div className="flex-1">
-                  <h3 className={`text-lg font-semibold mb-1 transition-colors ${darkModeClasses.title} group-hover:text-blue-400`}>
-                    {schema.label}
-                  </h3>
-                  <p className={`text-sm mb-3 ${darkModeClasses.subtitle}`}>
-                    {schema.description}
-                  </p>
-                  <div className="space-y-1">
-                    <p className={`text-xs font-medium ${darkModeClasses.label}`}>Cuándo usarlo:</p>
-                    <ul className={`text-xs space-y-1 ${darkModeClasses.helpText}`}>
-                      {schema.useCases.slice(0, 2).map((useCase, i) => (
-                        <li key={i} className="flex items-start">
-                          <span className="mr-1 text-gray-500">•</span>
-                          <span>{useCase}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
+            {/* Selection Section */}
+            <div className="space-y-8">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold text-white">
+                  ¿Qué documento necesitás crear?
+                </h2>
+                <p className="text-slate-400">
+                  Seleccioná el tipo de documento que mejor se adapte a tu necesidad
+                </p>
               </div>
-            </button>
-          ))}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {availableSchemas.map((schema) => (
+                  <DocumentTypeCard
+                    key={schema.id}
+                    schema={schema}
+                    onSelect={() => handleDocumentTypeSelect(schema.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -388,56 +386,69 @@ export default function GuidedDocumentCreationPage() {
     }
 
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <div className="flex items-center space-x-2 mb-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBackToSelection}
-                className={`transition-colors ${darkModeClasses.subtitle} hover:text-white`}
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Volver
-              </Button>
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 px-6 md:px-20 py-8">
+          <div className="max-w-4xl mx-auto space-y-8">
+            {/* Header Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBackToSelection}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  ← Volver
+                </Button>
+              </div>
+              
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <h1 className="text-3xl font-bold text-white mb-2">
+                    {schema.label}
+                  </h1>
+                  <p className="text-slate-400">
+                    {schema.description}
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <AutosaveIndicator isSaving={isSaving} lastSaved={lastSaved} />
+                  <Button
+                    variant="outline"
+                    onClick={handleBackToSelection}
+                    className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                  >
+                    Cambiar tipo
+                  </Button>
+                </div>
+              </div>
             </div>
-            <h2 className={`text-2xl font-bold ${darkModeClasses.title}`}>{schema.label}</h2>
-            <p className={darkModeClasses.subtitle}>{schema.description}</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <AutosaveIndicator isSaving={isSaving} lastSaved={lastSaved} />
-            <Button
-              variant="outline"
-              onClick={handleBackToSelection}
-            >
-              Cambiar tipo
-            </Button>
+
+            {validationErrors.length > 0 && (
+              <ValidationErrorPanel
+                errors={validationErrors}
+                onDismiss={() => setValidationErrors([])}
+                onFieldClick={(fieldId) => {
+                  // Scroll to field
+                  const fieldElement = document.querySelector(`[data-field-id="${fieldId}"]`);
+                  if (fieldElement) {
+                    fieldElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                    (fieldElement as HTMLElement).focus();
+                  }
+                }}
+              />
+            )}
+
+            <DynamicForm
+              schema={schema}
+              initialData={formData}
+              onSubmit={handleFormSubmit}
+              onChange={(data) => setFormData(data)}
+              disabled={loading}
+            />
           </div>
         </div>
-
-        {validationErrors.length > 0 && (
-          <ValidationErrorPanel
-            errors={validationErrors}
-            onDismiss={() => setValidationErrors([])}
-            onFieldClick={(fieldId) => {
-              // Scroll to field
-              const fieldElement = document.querySelector(`[data-field-id="${fieldId}"]`);
-              if (fieldElement) {
-                fieldElement.scrollIntoView({ behavior: "smooth", block: "center" });
-                (fieldElement as HTMLElement).focus();
-              }
-            }}
-          />
-        )}
-
-        <DynamicForm
-          schema={schema}
-          initialData={formData}
-          onSubmit={handleFormSubmit}
-          onChange={(data) => setFormData(data)}
-          disabled={loading}
-        />
       </div>
     );
   };
@@ -449,32 +460,43 @@ export default function GuidedDocumentCreationPage() {
     if (!schema) return null;
 
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <div className="flex items-center space-x-2 mb-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBackToForm}
-                disabled={loading}
-                className={`transition-colors ${darkModeClasses.subtitle} hover:text-white`}
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Volver
-              </Button>
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 px-6 md:px-20 py-8">
+          <div className="max-w-4xl mx-auto space-y-8">
+            {/* Header Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBackToForm}
+                  disabled={loading}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  ← Volver
+                </Button>
+              </div>
+              
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <h1 className="text-3xl font-bold text-white mb-2">
+                    Resumen y Confirmación
+                  </h1>
+                  <p className="text-slate-400">
+                    Revisá los datos antes de generar el documento
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleBackToForm}
+                  disabled={loading}
+                  className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                >
+                  Editar
+                </Button>
+              </div>
             </div>
-            <h2 className={`text-2xl font-bold ${darkModeClasses.title}`}>Resumen y Confirmación</h2>
-            <p className={darkModeClasses.subtitle}>Revisá los datos antes de generar el documento</p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={handleBackToForm}
-            disabled={loading}
-          >
-            Editar
-          </Button>
-        </div>
 
         <LegalSummary
           documentType={selectedDocumentType}
@@ -482,75 +504,77 @@ export default function GuidedDocumentCreationPage() {
           onEdit={() => setCurrentStep("form")}
         />
 
-        {warnings.length > 0 && (
-          <div className="space-y-3">
-            <h3 className={`text-lg font-semibold flex items-center ${darkModeClasses.title}`}>
-              <AlertTriangle className="h-5 w-5 mr-2 text-yellow-400" />
-              Advertencias
-            </h3>
-            <WarningsPanel warnings={warnings} />
-            <p className={`text-sm ${darkModeClasses.helpText}`}>
-              Estas advertencias no bloquean la generación, pero te recomendamos revisarlas.
-            </p>
-          </div>
-        )}
-
-        <div className="flex justify-between items-center pt-4 border-t">
-          <div className={`flex items-center space-x-2 text-sm ${darkModeClasses.helpText}`}>
-            <HelpCircle className="h-4 w-4" />
-            <span>Podés volver atrás para editar los datos antes de generar</span>
-          </div>
-          <div className="flex space-x-4">
-            <Button
-              variant="outline"
-              onClick={handleBackToForm}
-              disabled={loading}
-            >
-              Volver
-            </Button>
-            <Button
-              onClick={handleGenerate}
-              disabled={loading}
-              className="min-w-[150px]"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {loadingStep}
-                </>
-              ) : (
-                "Generar Documento"
-              )}
-            </Button>
-          </div>
-        </div>
-
-        {loading && (
-          <div className="space-y-2">
-            <div className="w-full rounded-full h-2 bg-gray-800">
-              <div
-                className="h-2 rounded-full transition-all duration-300 bg-blue-500"
-                style={{ width: `${loadingProgress}%` }}
-              />
-            </div>
-            <p className={`text-sm text-center ${darkModeClasses.subtitle}`}>{loadingStep}</p>
-          </div>
-        )}
-
-        {error && (
-          <div className={`p-4 rounded-lg ${darkModeClasses.errorPanel}`}>
-            <div className="flex items-start space-x-2">
-              <AlertTriangle className={`h-5 w-5 flex-shrink-0 mt-0.5 ${darkModeClasses.errorText}`} />
-              <div className="flex-1">
-                <h4 className={`font-semibold mb-1 text-red-300`}>Error al generar documento</h4>
-                <p className={`text-sm text-red-300`}>{error}</p>
-                <p className={`text-xs mt-2 ${darkModeClasses.errorText}`}>
-                  Podés volver atrás para revisar y corregir los datos, o intentar nuevamente.
+            {warnings.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold flex items-center text-white">
+                  <AlertTriangle className="h-5 w-5 mr-2 text-yellow-400" />
+                  Advertencias
+                </h3>
+                <WarningsPanel warnings={warnings} />
+                <p className="text-sm text-slate-400">
+                  Estas advertencias no bloquean la generación, pero te recomendamos revisarlas.
                 </p>
               </div>
+            )}
+
+            <div className="flex justify-between items-center pt-6 border-t border-slate-800">
+              <div className="flex items-center space-x-2 text-sm text-slate-400">
+                <span>Podés volver atrás para editar los datos antes de generar</span>
+              </div>
+              <div className="flex space-x-4">
+                <Button
+                  variant="outline"
+                  onClick={handleBackToForm}
+                  disabled={loading}
+                  className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                >
+                  Volver
+                </Button>
+                <Button
+                  onClick={handleGenerate}
+                  disabled={loading}
+                  className="min-w-[150px] bg-primary hover:bg-primary/90 text-white"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {loadingStep}
+                    </>
+                  ) : (
+                    "Generar Documento"
+                  )}
+                </Button>
+              </div>
             </div>
+
+            {loading && (
+              <div className="space-y-2">
+                <div className="w-full rounded-full h-2 bg-slate-800">
+                  <div
+                    className="h-2 rounded-full transition-all duration-300 bg-primary"
+                    style={{ width: `${loadingProgress}%` }}
+                  />
+                </div>
+                <p className="text-sm text-center text-slate-400">{loadingStep}</p>
+              </div>
+            )}
+
+            {error && (
+              <div className={`p-4 rounded-lg ${darkModeClasses.errorPanel}`}>
+                <div className="flex items-start space-x-2">
+                  <AlertTriangle className={`h-5 w-5 flex-shrink-0 mt-0.5 ${darkModeClasses.errorText}`} />
+                  <div className="flex-1">
+                    <h4 className={`font-semibold mb-1 text-red-300`}>Error al generar documento</h4>
+                    <p className={`text-sm text-red-300`}>{error}</p>
+                    <p className={`text-xs mt-2 ${darkModeClasses.errorText}`}>
+                      Podés volver atrás para revisar y corregir los datos, o intentar nuevamente.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     );
   };
@@ -559,103 +583,117 @@ export default function GuidedDocumentCreationPage() {
     if (!result) return null;
 
     return (
-      <div className="space-y-6">
-        <div className="text-center space-y-2">
-          <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
-          <h2 className={`text-2xl font-bold ${darkModeClasses.title}`}>¡Documento generado exitosamente!</h2>
-          <p className={darkModeClasses.subtitle}>Tu documento está listo para descargar o revisar</p>
-        </div>
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 px-6 md:px-20 py-12">
+          <div className="max-w-4xl mx-auto space-y-8">
+            {/* Success Header */}
+            <div className="text-center space-y-4">
+              <CheckCircle className="h-16 w-16 text-emerald-500 mx-auto" />
+              <h1 className="text-3xl font-bold text-white">
+                ¡Documento generado exitosamente!
+              </h1>
+              <p className="text-slate-400">
+                Tu documento está listo para descargar o revisar
+              </p>
+            </div>
 
-        <div className={`rounded-lg shadow-sm p-6 ${darkModeClasses.card}`}>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className={`text-lg font-semibold ${darkModeClasses.title}`}>Contenido Generado</h3>
-            <div className="space-x-2">
-              <Button
-                onClick={async () => {
-                  if (result.pdfUrl) {
-                    window.open(result.pdfUrl, "_blank");
-                  } else if (result.contrato) {
-                    try {
-                      const { generatePdfFromText } = await import("@/app/lib/pdfGenerator");
-                      const schema = getDocumentSchema(selectedDocumentType || "service_contract");
-                      const documentTitle = schema?.label || "Documento";
-                      const fileName = result.documentId 
-                        ? `documento-${result.documentId}.pdf`
-                        : "documento.pdf";
-                      generatePdfFromText(documentTitle, result.contrato, fileName);
-                    } catch (err) {
-                      console.error("Error generating PDF:", err);
-                      showError("Error al generar el PDF. Intentá descargarlo desde el detalle del documento.");
-                    }
-                  }
-                }}
-              >
-                Descargar PDF
-              </Button>
+            {/* Document Content */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 shadow-lg">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-white">Contenido Generado</h2>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={async () => {
+                      if (result.pdfUrl) {
+                        window.open(result.pdfUrl, "_blank");
+                      } else if (result.contrato) {
+                        try {
+                          const { generatePdfFromText } = await import("@/app/lib/pdfGenerator");
+                          const schema = getDocumentSchema(selectedDocumentType || "service_contract");
+                          const documentTitle = schema?.label || "Documento";
+                          const fileName = result.documentId 
+                            ? `documento-${result.documentId}.pdf`
+                            : "documento.pdf";
+                          generatePdfFromText(documentTitle, result.contrato, fileName);
+                        } catch (err) {
+                          console.error("Error generating PDF:", err);
+                          showError("Error al generar el PDF. Intentá descargarlo desde el detalle del documento.");
+                        }
+                      }
+                    }}
+                    className="bg-primary hover:bg-primary/90 text-white"
+                  >
+                    Descargar PDF
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push(`/documents/${result.documentId}`)}
+                    className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                  >
+                    Ver Detalle
+                  </Button>
+                </div>
+              </div>
+
+              <div className="prose max-w-none">
+                <pre className="whitespace-pre-wrap text-sm p-6 rounded-lg bg-slate-950 text-slate-200 border border-slate-800 font-mono overflow-x-auto">
+                  {result.contrato}
+                </pre>
+              </div>
+            </div>
+
+            {/* Warnings */}
+            {result.warnings && result.warnings.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-white">Advertencias del Documento</h3>
+                <WarningsPanel warnings={result.warnings} />
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-center gap-4 pt-6 border-t border-slate-800">
               <Button
                 variant="outline"
-                onClick={() => router.push(`/documents/${result.documentId}`)}
+                onClick={() => {
+                  trackStepNavigation("result", "selection", selectedDocumentType);
+                  setCurrentStep("selection");
+                  setSelectedDocumentType(null);
+                  setFormData({});
+                  setResult(null);
+                  setError(null);
+                  setValidationErrors([]);
+                  setHasUnsavedChanges(false);
+                }}
+                className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
               >
-                Ver Detalle
+                Crear Otro Documento
+              </Button>
+              <Button
+                onClick={() => router.push("/documents")}
+                className="bg-primary hover:bg-primary/90 text-white"
+              >
+                Ir al Dashboard
               </Button>
             </div>
           </div>
-
-          <div className="prose max-w-none">
-            <pre className={`whitespace-pre-wrap text-sm p-4 rounded bg-gray-800 text-gray-200 border ${darkBorderColors.default}`}>
-              {result.contrato}
-            </pre>
-          </div>
-        </div>
-
-        {result.warnings && result.warnings.length > 0 && (
-          <div className="space-y-3">
-            <h3 className={`text-lg font-semibold ${darkModeClasses.title}`}>Advertencias del Documento</h3>
-            <WarningsPanel warnings={result.warnings} />
-          </div>
-        )}
-
-        <div className="flex justify-center space-x-4 pt-4">
-          <Button
-            variant="outline"
-            onClick={() => {
-              trackStepNavigation("result", "selection", selectedDocumentType);
-              setCurrentStep("selection");
-              setSelectedDocumentType(null);
-              setFormData({});
-              setResult(null);
-              setError(null);
-              setValidationErrors([]);
-              setHasUnsavedChanges(false);
-            }}
-          >
-            Crear Otro Documento
-          </Button>
-          <Button
-            onClick={() => router.push("/documents")}
-          >
-            Ir al Dashboard
-          </Button>
         </div>
       </div>
     );
   };
 
   return (
-    <DashboardShell
-      title="Crear documento legal"
-      description="Generá documentos profesionales con IA usando nuestro flujo guiado."
-      action={null}
-    >
-      <div className="flex justify-center">
-        <div className="w-full max-w-4xl space-y-8">
-          {currentStep === "selection" && renderSelectionStep()}
-          {currentStep === "form" && renderFormStep()}
-          {currentStep === "summary" && renderSummaryStep()}
-          {currentStep === "result" && renderResultStep()}
-        </div>
-      </div>
-    </DashboardShell>
+    <div className="min-h-screen flex flex-col bg-background-dark text-white">
+      <DocumentCreationPageHeader />
+      
+      <main className="flex-1">
+        {currentStep === "selection" && renderSelectionStep()}
+        {currentStep === "form" && renderFormStep()}
+        {currentStep === "summary" && renderSummaryStep()}
+        {currentStep === "result" && renderResultStep()}
+      </main>
+
+      <DocumentCreationFooter />
+    </div>
   );
 }
 

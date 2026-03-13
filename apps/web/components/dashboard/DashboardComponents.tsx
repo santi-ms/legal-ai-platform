@@ -22,7 +22,7 @@ export function EmptyState({ onCreateClick }: { onCreateClick?: () => void }) {
           Crear documento
         </Button>
       ) : (
-        <Link href="/documents/new">
+        <Link href="/documents/new/guided">
           <Button>
             <Plus className="w-4 h-4 mr-2" />
             Crear documento

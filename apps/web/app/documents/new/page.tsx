@@ -79,6 +79,22 @@ const initialFormData: FormData = {
 
 export default function NewDocumentPage() {
   const router = useRouter();
+  
+  // Redirect to new guided flow immediately
+  useEffect(() => {
+    router.replace("/documents/new/guided");
+  }, [router]);
+  
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-background-dark">
+      <div className="animate-pulse text-slate-400">Redirigiendo al nuevo flujo guiado...</div>
+    </div>
+  );
+}
+
+// Legacy code below - kept for reference but not used
+function LegacyNewDocumentPage() {
+  const router = useRouter();
   // Toast para notificaciones
   const { success, error: showError } = useToast();
   
@@ -742,32 +758,16 @@ export default function NewDocumentPage() {
     }
   };
 
+  // Redirect to new guided flow
+  useEffect(() => {
+    router.replace("/documents/new/guided");
+  }, [router]);
+
   return (
-    <DashboardShell
-      title="Crear documento legal"
-      description="Generá contratos profesionales con IA en cuatro pasos simples."
-      action={
-        <Button
-          variant="outline"
-          onClick={() => router.push("/documents/new/guided")}
-        >
-          Usar Flujo Guiado (Nuevo)
-        </Button>
-      }
-    >
-      {/* Legacy Wizard - TODO: Deprecate in favor of guided flow */}
-      <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <p className="text-sm text-yellow-800">
-          <strong>Nota:</strong> Este es el wizard genérico. Te recomendamos usar el{" "}
-          <button
-            onClick={() => router.push("/documents/new/guided")}
-            className="underline font-medium"
-          >
-            nuevo flujo guiado
-          </button>{" "}
-          que ofrece formularios específicos por tipo de documento.
-        </p>
-      </div>
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-pulse text-slate-500">Redirigiendo al nuevo flujo...</div>
+    </div>
+  );
 
       {/* Wizard (pasos + contenido dinámico) */}
       <div className="flex justify-center">
