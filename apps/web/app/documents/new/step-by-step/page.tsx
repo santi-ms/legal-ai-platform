@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { DocumentCreationHeader } from "@/components/documents/DocumentCreationHeader";
@@ -35,7 +35,7 @@ const LEGAL_TIPS: Record<string, string> = {
   firma: "Una vez firmado, el documento tendrá validez jurídica. Asegúrese de que todas las partes estén de acuerdo con los términos.",
 };
 
-export default function StepByStepDocumentCreationPage() {
+function StepByStepDocumentCreationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -247,3 +247,16 @@ export default function StepByStepDocumentCreationPage() {
   );
 }
 
+export default function StepByStepDocumentCreationPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-pulse text-slate-500">Cargando...</div>
+        </div>
+      }
+    >
+      <StepByStepDocumentCreationContent />
+    </Suspense>
+  );
+}
