@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock } from "lucide-react";
+import { Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,7 @@ export function LoginForm() {
   const { success, error: showError } = useToast();
   const [emailVerified, setEmailVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Redirigir si ya está autenticado
   useEffect(() => {
@@ -46,6 +47,7 @@ export function LoginForm() {
 
   const onSubmit = async (data: LoginInput) => {
     setIsLoading(true);
+    setApiError(null);
 
     try {
       const result = await signIn("credentials", {
@@ -55,11 +57,9 @@ export function LoginForm() {
       });
 
       if (result?.error) {
-        showError(
-          result.error === "CredentialsSignin"
-            ? "Credenciales inválidas o email no verificado"
-            : "Error al iniciar sesión"
-        );
+        // NextAuth no distingue el tipo de fallo en CredentialsSignin;
+        // usamos un mensaje genérico y seguro sin especular la causa exacta.
+        setApiError("Email o contraseña incorrectos. Revisá los datos e intentá de nuevo.");
         setIsLoading(false);
         return;
       }
@@ -68,21 +68,14 @@ export function LoginForm() {
         success("Sesión iniciada exitosamente");
         router.push("/documents");
         router.refresh();
+        return;
       }
-    } catch (err) {
-      showError("Error al iniciar sesión. Por favor intentá nuevamente.");
-      setIsLoading(false);
-    }
-  };
 
-  const handleSocialLogin = async (provider: "google" | "apple") => {
-    setIsLoading(true);
-    try {
-      // Por ahora solo mostrar mensaje si no está configurado
-      showError(`Login con ${provider} aún no está disponible`);
+      // Fallback: result sin error ni ok (edge case de timeout o respuesta inesperada)
+      setApiError("No pudimos procesar el inicio de sesión. Intentá nuevamente.");
       setIsLoading(false);
-    } catch (error) {
-      showError(`Error al iniciar sesión con ${provider}`);
+    } catch (err) {
+      setApiError("Error de conexión. Revisá tu internet e intentá de nuevo.");
       setIsLoading(false);
     }
   };
@@ -100,7 +93,7 @@ export function LoginForm() {
               Bienvenido de nuevo
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm">
-              Acceda a su portal legal seguro
+              Accedé a tu espacio legal seguro
             </p>
           </div>
 
@@ -150,7 +143,7 @@ export function LoginForm() {
                   href="/auth/reset"
                   className="text-xs text-primary font-medium hover:underline"
                 >
-                  ¿Olvidó su contraseña?
+                  ¿Olvidaste tu contraseña?
                 </Link>
               </div>
               <div className="relative">
@@ -189,6 +182,18 @@ export function LoginForm() {
               </Label>
             </div>
 
+            {/* Inline API error */}
+            {apiError && (
+              <div
+                className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+                role="alert"
+                aria-live="polite"
+              >
+                <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700 dark:text-red-300 leading-snug">{apiError}</p>
+              </div>
+            )}
+
             {/* Submit Button */}
             <Button
               type="submit"
@@ -197,7 +202,7 @@ export function LoginForm() {
             >
               {isLoading ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 inline-block"></div>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Iniciando sesión...
                 </>
               ) : (
@@ -218,16 +223,12 @@ export function LoginForm() {
             </div>
           </div>
 
-          {/* Social Login */}
-          <SocialLoginButtons
-            onGoogleClick={() => handleSocialLogin("google")}
-            onAppleClick={() => handleSocialLogin("apple")}
-            isLoading={isLoading}
-          />
+          {/* Social Login — deshabilitado hasta implementación */}
+          <SocialLoginButtons />
 
           {/* Sign Up Link */}
           <p className="mt-8 text-center text-sm text-slate-600 dark:text-slate-400">
-            ¿No tiene una cuenta?{" "}
+            ¿No tenés cuenta?{" "}
             <Link href="/auth/register" className="text-primary font-bold hover:underline">
               Crear cuenta
             </Link>
@@ -237,50 +238,59 @@ export function LoginForm() {
 
       {/* Footer Links */}
       <div className="mt-8 flex justify-center gap-6 text-xs text-slate-500 dark:text-slate-400">
-        <Link href="#privacidad" className="hover:text-primary transition-colors">
+        <a
+          href={`mailto:soporte@legaltech.ar?subject=${encodeURIComponent("Consulta sobre Política de Privacidad")}`}
+          className="hover:text-primary transition-colors"
+        >
           Privacidad
-        </Link>
-        <Link href="#terminos" className="hover:text-primary transition-colors">
+        </a>
+        <a
+          href={`mailto:soporte@legaltech.ar?subject=${encodeURIComponent("Consulta sobre Términos y Condiciones")}`}
+          className="hover:text-primary transition-colors"
+        >
           Términos
-        </Link>
-        <Link href="#contacto" className="hover:text-primary transition-colors">
+        </a>
+        <a
+          href={`mailto:soporte@legaltech.ar?subject=${encodeURIComponent("Contacto")}`}
+          className="hover:text-primary transition-colors"
+        >
           Contacto
-        </Link>
+        </a>
       </div>
     </div>
   );
 }
 
-interface SocialLoginButtonsProps {
-  onGoogleClick: () => void;
-  onAppleClick: () => void;
-  isLoading: boolean;
-}
-
-function SocialLoginButtons({
-  onGoogleClick,
-  onAppleClick,
-  isLoading,
-}: SocialLoginButtonsProps) {
+function SocialLoginButtons() {
   return (
     <div className="grid grid-cols-2 gap-4">
       <button
         type="button"
-        onClick={onGoogleClick}
-        disabled={isLoading}
-        className="flex items-center justify-center gap-2 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled
+        aria-disabled="true"
+        tabIndex={-1}
+        title="Próximamente"
+        className="flex items-center justify-center gap-2 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg opacity-50 cursor-not-allowed relative"
       >
         <GoogleIcon />
         <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Google</span>
+        <span className="absolute -top-2 -right-2 text-[9px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-full leading-none">
+          Pronto
+        </span>
       </button>
       <button
         type="button"
-        onClick={onAppleClick}
-        disabled={isLoading}
-        className="flex items-center justify-center gap-2 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled
+        aria-disabled="true"
+        tabIndex={-1}
+        title="Próximamente"
+        className="flex items-center justify-center gap-2 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg opacity-50 cursor-not-allowed relative"
       >
         <AppleIcon />
         <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Apple</span>
+        <span className="absolute -top-2 -right-2 text-[9px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-full leading-none">
+          Pronto
+        </span>
       </button>
     </div>
   );

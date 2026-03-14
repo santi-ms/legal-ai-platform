@@ -9,6 +9,16 @@ interface SupportBannerProps {
 }
 
 export function SupportBanner({ onContactSupport, className }: SupportBannerProps) {
+  const handleContactSupport = () => {
+    if (onContactSupport) {
+      onContactSupport();
+    } else {
+      const subject = encodeURIComponent("Soporte - Consulta sobre mi cuenta");
+      const body = encodeURIComponent("Hola, necesito ayuda con mi cuenta.");
+      window.location.href = `mailto:soporte@legaltech.ar?subject=${subject}&body=${body}`;
+    }
+  };
+
   return (
     <div className={cn("px-4 pb-12", className)}>
       <div className="p-6 rounded-2xl bg-gradient-to-br from-primary to-indigo-700 text-white">
@@ -20,7 +30,7 @@ export function SupportBanner({ onContactSupport, className }: SupportBannerProp
             </p>
           </div>
           <Button
-            onClick={onContactSupport}
+            onClick={handleContactSupport}
             variant="outline"
             className="bg-white text-primary px-6 py-3 rounded-xl font-bold text-sm whitespace-nowrap hover:bg-slate-100 transition-colors border-0"
           >

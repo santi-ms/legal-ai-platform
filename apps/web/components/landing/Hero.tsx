@@ -1,10 +1,36 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowRight, Play, Sparkles, FileText, Shield, CheckCircle2, MessageSquare } from "lucide-react";
+import { ArrowRight, Play, Sparkles, FileText, Shield, CheckCircle2, MessageSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function Hero() {
+  const [showDemoModal, setShowDemoModal] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar con ESC
+  useEffect(() => {
+    if (showDemoModal) {
+      const handleEscape = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          setShowDemoModal(false);
+        }
+      };
+      document.addEventListener("keydown", handleEscape);
+      // Focus en botón de cerrar al abrir
+      setTimeout(() => closeButtonRef.current?.focus(), 100);
+      return () => document.removeEventListener("keydown", handleEscape);
+    }
+  }, [showDemoModal]);
+
+  // Cerrar al hacer click fuera del modal
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setShowDemoModal(false);
+    }
+  };
   return (
     <header className="relative pt-20 pb-16 px-6 md:px-20 overflow-hidden" id="inicio">
       {/* Abstract background elements */}
@@ -45,6 +71,7 @@ export function Hero() {
             <Button
               variant="outline"
               size="lg"
+              onClick={() => setShowDemoModal(true)}
               className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-lg font-semibold h-14 px-8 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
             >
               <Play className="w-5 h-5" />
@@ -112,6 +139,63 @@ export function Hero() {
           </div>
         </div>
       </div>
+
+      {/* Demo Modal */}
+      {showDemoModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={handleBackdropClick}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="demo-modal-title"
+        >
+          <div 
+            ref={modalRef}
+            className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              ref={closeButtonRef}
+              onClick={() => setShowDemoModal(false)}
+              className="absolute top-4 right-4 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              aria-label="Cerrar modal"
+            >
+              <X className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+            </button>
+
+            <div className="space-y-4">
+              <h3 id="demo-modal-title" className="text-2xl font-bold text-slate-900 dark:text-white">
+                Demo Interactiva
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400">
+                Estamos preparando una demo interactiva para mostrarte todas las funcionalidades de LegalTech AR. 
+                Mientras tanto, podés solicitar una demostración personalizada con nuestro equipo.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                onClick={() => {
+                  setShowDemoModal(false);
+                  const subject = encodeURIComponent("Solicitud de Demo");
+                  const body = encodeURIComponent("Hola, me gustaría agendar una demostración personalizada.");
+                  window.location.href = `mailto:soporte@legaltech.ar?subject=${subject}&body=${body}`;
+                }}
+                className="flex-1 bg-primary text-white hover:bg-primary/90"
+              >
+                Solicitar Demo Personalizada
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowDemoModal(false)}
+                className="flex-1"
+              >
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

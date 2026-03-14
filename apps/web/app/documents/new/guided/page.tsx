@@ -7,7 +7,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import type { DocumentTypeId, StructuredDocumentData, GenerationWarning } from "
 import { validateFormData } from "@/src/features/documents/core/validation";
 import { evaluateWarningRules } from "@/src/features/documents/core/warnings";
 import confetti from "canvas-confetti";
-import { CheckCircle, AlertTriangle, Loader2, ArrowLeft } from "lucide-react";
+import { CheckCircle, AlertTriangle, Loader2, ArrowLeft, Search, Brain, FileCheck, Sparkles } from "lucide-react";
 import { AutosaveIndicator } from "@/src/features/documents/ui/autosave/AutosaveIndicator";
 import { ValidationErrorPanel } from "@/src/features/documents/ui/errors/ValidationErrorPanel";
 import { darkModeClasses, darkBorderColors } from "@/src/features/documents/ui/styles/dark-mode";
@@ -76,6 +76,15 @@ export default function GuidedDocumentCreationPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Ref para scroll automático al bloque de error de generación
+  const generationErrorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (error && generationErrorRef.current) {
+      generationErrorRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [error]);
 
   // Track flow entry
   useEffect(() => {
@@ -296,7 +305,7 @@ export default function GuidedDocumentCreationPage() {
       
       trackUnexpectedError(selectedDocumentType, errorMsg, "summary");
       
-      showError(`No se pudo generar el documento: ${errorMsg}`);
+      showError("Error al generar. Revisá los datos e intentá de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -533,43 +542,68 @@ export default function GuidedDocumentCreationPage() {
                 <Button
                   onClick={handleGenerate}
                   disabled={loading}
-                  className="min-w-[150px] bg-primary hover:bg-primary/90 text-white"
+                  className="min-w-[160px] bg-primary hover:bg-primary/90 text-white"
                 >
                   {loading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {loadingStep}
+                      Generando...
                     </>
                   ) : (
-                    "Generar Documento"
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generar Documento
+                    </>
                   )}
                 </Button>
               </div>
             </div>
 
-            {loading && (
-              <div className="space-y-2">
-                <div className="w-full rounded-full h-2 bg-slate-200 dark:bg-slate-800">
-                  <div
-                    className="h-2 rounded-full transition-all duration-300 bg-primary"
-                    style={{ width: `${loadingProgress}%` }}
-                  />
-                </div>
-                <p className="text-sm text-center text-slate-600 dark:text-slate-400">{loadingStep}</p>
-              </div>
-            )}
-
             {error && (
-              <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700">
-                <div className="flex items-start space-x-2">
-                  <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5 text-red-500 dark:text-red-400" />
-                  <div className="flex-1">
-                    <h4 className="font-semibold mb-1 text-red-700 dark:text-red-300">Error al generar documento</h4>
-                    <p className="text-sm text-red-600 dark:text-red-300">{error}</p>
-                    <p className="text-xs mt-2 text-red-600 dark:text-red-400">
-                      Podés volver atrás para revisar y corregir los datos, o intentar nuevamente.
+              <div
+                ref={generationErrorRef}
+                className="p-5 rounded-xl bg-red-50 dark:bg-red-900/30 border-2 border-red-200 dark:border-red-700 scroll-mt-8"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="size-9 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center shrink-0 mt-0.5">
+                    <AlertTriangle className="h-4 w-4 text-red-500 dark:text-red-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-red-700 dark:text-red-300 mb-1">
+                      No se pudo generar el documento
+                    </h4>
+                    <p className="text-sm text-red-600 dark:text-red-300 break-words">
+                      {error}
+                    </p>
+                    <p className="text-xs mt-2 text-red-500 dark:text-red-400">
+                      Revisá los datos ingresados o intentá nuevamente.
                     </p>
                   </div>
+                </div>
+                <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBackToForm}
+                    className="border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
+                  >
+                    Revisar datos
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleGenerate}
+                    disabled={loading}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                        Reintentando...
+                      </>
+                    ) : (
+                      "Intentar de nuevo"
+                    )}
+                  </Button>
                 </div>
               </div>
             )}
@@ -681,10 +715,21 @@ export default function GuidedDocumentCreationPage() {
     );
   };
 
+  // Resolución del icono y mensaje según el progreso actual
+  const generationStepMeta = (() => {
+    if (loadingProgress < 25)
+      return { Icon: Search, label: "Validando datos del documento...", hint: "Verificando campos y estructura" };
+    if (loadingProgress < 70)
+      return { Icon: Brain, label: "Generando con inteligencia artificial...", hint: "Esto puede tomar unos segundos" };
+    if (loadingProgress < 100)
+      return { Icon: FileCheck, label: "Guardando el documento...", hint: "Procesando y almacenando el resultado" };
+    return { Icon: CheckCircle, label: "¡Completado!", hint: "El documento está listo" };
+  })();
+
   return (
     <div className="min-h-screen flex flex-col bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
       <DocumentCreationPageHeader />
-      
+
       <main className="flex-1 bg-white dark:bg-slate-900">
         {currentStep === "selection" && renderSelectionStep()}
         {currentStep === "form" && renderFormStep()}
@@ -693,6 +738,57 @@ export default function GuidedDocumentCreationPage() {
       </main>
 
       <DocumentCreationFooter />
+
+      {/* Overlay de generación
+          - Siempre montado mientras loading === true para que CSS pueda hacer fade-in
+          - animate-in viene de Tailwind (fade-in + zoom-in desde el centro)
+          - No bloquea scroll si la carga es muy corta gracias al delay de 150ms en backdrop */}
+      {loading && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Generando documento"
+          aria-live="polite"
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl w-full max-w-sm p-6 sm:p-8 flex flex-col items-center gap-5 animate-in zoom-in-95 duration-200">
+            {/* Icono animado */}
+            <div className="relative flex items-center justify-center mt-2">
+              <div className="absolute size-16 rounded-full bg-primary/10 animate-ping opacity-50" />
+              <div className="relative size-14 rounded-full bg-primary/10 flex items-center justify-center">
+                {loadingProgress === 100 ? (
+                  <generationStepMeta.Icon className="w-7 h-7 text-emerald-500" />
+                ) : (
+                  <generationStepMeta.Icon className="w-7 h-7 text-primary" />
+                )}
+              </div>
+            </div>
+
+            {/* Texto principal */}
+            <div className="text-center space-y-1.5">
+              <p className="text-base font-semibold text-slate-900 dark:text-white leading-snug">
+                {generationStepMeta.label}
+              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {generationStepMeta.hint}
+              </p>
+            </div>
+
+            {/* Barra de progreso */}
+            <div className="w-full space-y-1.5">
+              <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                <div
+                  className="h-2 rounded-full bg-primary transition-all duration-500 ease-out"
+                  style={{ width: `${loadingProgress}%` }}
+                />
+              </div>
+              <p className="text-xs text-right text-slate-400 dark:text-slate-500 tabular-nums">
+                {loadingProgress}%
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

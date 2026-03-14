@@ -3,15 +3,15 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, AlertTriangle, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useToast } from "@/components/ui/toast";
-import { listDocuments, DocumentsParams, Document } from "@/app/lib/webApi";
+import { listDocuments, deleteDocument, DocumentsParams, Document } from "@/app/lib/webApi";
 import { DocumentsPageHeader } from "@/components/documents/DocumentsPageHeader";
 import { DocumentsStatsCards } from "@/components/documents/DocumentsStatsCards";
 import { DocumentsFiltersBar } from "@/components/documents/DocumentsFiltersBar";
-import { DocumentsTableEnhanced } from "@/components/documents/DocumentsTableEnhanced";
+import { DocumentsTableEnhanced, DocumentsTableSkeleton } from "@/components/documents/DocumentsTableEnhanced";
 import { DocumentsPagination } from "@/components/documents/DocumentsPagination";
 import { DocumentsPageFooter } from "@/components/documents/DocumentsPageFooter";
 
@@ -27,6 +27,7 @@ function DocumentsContent() {
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState("");
@@ -176,9 +177,20 @@ function DocumentsContent() {
     handleFiltersChange({ page });
   };
 
-  const handleExport = () => {
-    // TODO: Implement export functionality
-    console.log("Exporting documents...");
+  const handleDelete = async (id: string) => {
+    // Guard: evitar doble-click o llamadas concurrentes
+    if (deletingId) return;
+    setDeletingId(id);
+    try {
+      await deleteDocument(id);
+      success("Documento eliminado correctamente");
+      await loadDocuments();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error al eliminar el documento";
+      showError(message);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if (authLoading) {
@@ -213,8 +225,9 @@ function DocumentsContent() {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              onClick={handleExport}
-              className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 transition-colors"
+              disabled
+              title="Próximamente"
+              className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-200 opacity-50 cursor-not-allowed"
             >
               <Download className="w-4 h-4" />
               Exportar
@@ -247,16 +260,45 @@ function DocumentsContent() {
 
         {/* Table Container */}
         {loading ? (
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-12 text-center">
-            <div className="animate-pulse text-slate-500">Cargando documentos...</div>
-          </div>
+          <DocumentsTableSkeleton />
         ) : error ? (
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-12 text-center">
-            <div className="text-red-500">{error}</div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-10 flex flex-col items-center text-center gap-4">
+            <div className="size-12 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-red-500 dark:text-red-400" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+                No pudimos cargar tus documentos
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+                {error}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={loadDocuments}
+              className="flex items-center gap-2 mt-2 text-sm border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              <RefreshCcw className="w-4 h-4" />
+              Reintentar
+            </Button>
           </div>
         ) : (
           <>
-            <DocumentsTableEnhanced documents={documents} />
+            <DocumentsTableEnhanced
+              documents={documents}
+              onDelete={handleDelete}
+              onDownloadError={showError}
+              deletingId={deletingId}
+              hasActiveFilters={
+                !!(
+                  searchParams.get("query") ||
+                  (searchParams.get("type") && searchParams.get("type") !== "all") ||
+                  searchParams.get("from") ||
+                  searchParams.get("to")
+                )
+              }
+            />
             {totalPages > 1 && (
               <DocumentsPagination
                 currentPage={currentPage}
@@ -279,8 +321,12 @@ export default function DocumentsPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-pulse text-slate-500">Cargando...</div>
+        <div className="layout-container flex h-full grow flex-col bg-background-light dark:bg-background-dark min-h-screen">
+          <div className="max-w-[1280px] mx-auto w-full px-4 md:px-10 py-8 flex-1">
+            <div className="h-10 w-64 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse mb-2" />
+            <div className="h-4 w-96 rounded bg-slate-100 dark:bg-slate-800 animate-pulse mb-10" />
+            <DocumentsTableSkeleton />
+          </div>
         </div>
       }
     >

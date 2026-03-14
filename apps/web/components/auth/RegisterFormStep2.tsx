@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,12 +15,14 @@ interface RegisterFormStep2Props {
   onSubmit: (data: RegisterStep2Input) => void;
   onBack: () => void;
   isLoading?: boolean;
+  apiError?: string | null;
 }
 
 export function RegisterFormStep2({
   onSubmit,
   onBack,
   isLoading = false,
+  apiError,
 }: RegisterFormStep2Props) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -117,6 +119,18 @@ export function RegisterFormStep2({
           )}
         </div>
 
+        {/* Inline API error */}
+        {apiError && (
+          <div
+            className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+            role="alert"
+            aria-live="polite"
+          >
+            <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700 dark:text-red-300 leading-snug">{apiError}</p>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="pt-4 flex gap-4">
           <Button
@@ -136,7 +150,7 @@ export function RegisterFormStep2({
           >
             {isLoading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Creando cuenta...
               </>
             ) : (
@@ -162,15 +176,24 @@ export function RegisterFormStep2({
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] text-slate-400 uppercase tracking-widest font-bold">
           <span>© 2024 LegalTech AR. Todos los derechos reservados.</span>
           <div className="flex gap-4">
-            <Link href="#terminos" className="hover:text-primary transition-colors">
+            <a
+              href={`mailto:soporte@legaltech.ar?subject=${encodeURIComponent("Consulta sobre Términos y Condiciones")}`}
+              className="hover:text-primary transition-colors"
+            >
               Términos
-            </Link>
-            <Link href="#privacidad" className="hover:text-primary transition-colors">
+            </a>
+            <a
+              href={`mailto:soporte@legaltech.ar?subject=${encodeURIComponent("Consulta sobre Política de Privacidad")}`}
+              className="hover:text-primary transition-colors"
+            >
               Privacidad
-            </Link>
-            <Link href="#contacto" className="hover:text-primary transition-colors">
+            </a>
+            <a
+              href={`mailto:soporte@legaltech.ar?subject=${encodeURIComponent("Contacto")}`}
+              className="hover:text-primary transition-colors"
+            >
               Contacto
-            </Link>
+            </a>
           </div>
         </div>
       </div>

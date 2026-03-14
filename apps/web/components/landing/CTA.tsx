@@ -28,6 +28,11 @@ export function CTA() {
             <Button
               variant="outline"
               size="lg"
+              onClick={() => {
+                const subject = encodeURIComponent("Consulta - Hablar con un Asesor");
+                const body = encodeURIComponent("Hola, me gustaría hablar con un asesor sobre LegalTech AR.");
+                window.location.href = `mailto:soporte@legaltech.ar?subject=${subject}&body=${body}`;
+              }}
               className="bg-transparent border border-slate-700 text-lg font-bold h-14 px-10 rounded-xl hover:bg-slate-800 transition-colors text-white"
             >
               Hablar con un Asesor

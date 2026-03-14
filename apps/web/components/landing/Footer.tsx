@@ -3,23 +3,29 @@
 import Link from "next/link";
 import { Gavel, Mail, Globe, MapPin } from "lucide-react";
 
+// Helper para crear mailto links con encoding correcto
+const createMailtoLink = (subject: string) => {
+  const encodedSubject = encodeURIComponent(subject);
+  return `mailto:soporte@legaltech.ar?subject=${encodedSubject}`;
+};
+
 const footerLinks = {
   producto: [
-    { name: "Funciones", href: "#funciones" },
-    { name: "Plantillas", href: "#plantillas" },
-    { name: "Precios", href: "#precios" },
-    { name: "API", href: "#api" },
+    { name: "Funciones", href: "#funciones", isAnchor: true }, // Existe en Features
+    { name: "Plantillas", href: createMailtoLink("Consulta sobre Plantillas"), isAnchor: false },
+    { name: "Precios", href: createMailtoLink("Consulta sobre Precios"), isAnchor: false },
+    { name: "API", href: createMailtoLink("Consulta sobre API"), isAnchor: false },
   ],
   compañía: [
-    { name: "Sobre nosotros", href: "#sobre-nosotros" },
-    { name: "Blog", href: "#blog" },
-    { name: "Carreras", href: "#carreras" },
-    { name: "Contacto", href: "#contacto" },
+    { name: "Sobre nosotros", href: createMailtoLink("Consulta sobre la empresa"), isAnchor: false },
+    { name: "Blog", href: createMailtoLink("Consulta sobre Blog"), isAnchor: false },
+    { name: "Carreras", href: createMailtoLink("Consulta sobre Carreras"), isAnchor: false },
+    { name: "Contacto", href: createMailtoLink("Contacto"), isAnchor: false },
   ],
   legal: [
-    { name: "Privacidad", href: "#privacidad" },
-    { name: "Términos", href: "#terminos" },
-    { name: "Cookies", href: "#cookies" },
+    { name: "Privacidad", href: createMailtoLink("Consulta sobre Privacidad"), isAnchor: false },
+    { name: "Términos", href: createMailtoLink("Consulta sobre Términos"), isAnchor: false },
+    { name: "Cookies", href: createMailtoLink("Consulta sobre Cookies"), isAnchor: false },
   ],
 };
 
@@ -42,14 +48,16 @@ export function Footer() {
           </p>
           <div className="flex gap-4">
             <a
-              href="#"
+              href="mailto:soporte@legaltech.ar"
               className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-primary hover:text-white transition-all text-slate-600 dark:text-slate-400"
               aria-label="Email"
             >
               <Mail className="w-5 h-5" />
             </a>
             <a
-              href="#"
+              href="https://legaltech.ar"
+              target="_blank"
+              rel="noopener noreferrer"
               className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-primary hover:text-white transition-all text-slate-600 dark:text-slate-400"
               aria-label="Website"
             >
@@ -64,12 +72,28 @@ export function Footer() {
           <ul className="space-y-4 text-sm text-slate-500 dark:text-slate-400">
             {footerLinks.producto.map((link) => (
               <li key={link.name}>
-                <Link
-                  href={link.href}
-                  className="hover:text-primary transition-colors"
-                >
-                  {link.name}
-                </Link>
+                {link.isAnchor ? (
+                  <Link
+                    href={link.href}
+                    className="hover:text-primary transition-colors"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const element = document.querySelector(link.href);
+                      if (element) {
+                        element.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }
+                    }}
+                  >
+                    {link.name}
+                  </Link>
+                ) : (
+                  <a
+                    href={link.href}
+                    className="hover:text-primary transition-colors"
+                  >
+                    {link.name}
+                  </a>
+                )}
               </li>
             ))}
           </ul>
@@ -81,12 +105,12 @@ export function Footer() {
           <ul className="space-y-4 text-sm text-slate-500 dark:text-slate-400">
             {footerLinks.compañía.map((link) => (
               <li key={link.name}>
-                <Link
+                <a
                   href={link.href}
                   className="hover:text-primary transition-colors"
                 >
                   {link.name}
-                </Link>
+                </a>
               </li>
             ))}
           </ul>
@@ -98,12 +122,12 @@ export function Footer() {
           <ul className="space-y-4 text-sm text-slate-500 dark:text-slate-400">
             {footerLinks.legal.map((link) => (
               <li key={link.name}>
-                <Link
+                <a
                   href={link.href}
                   className="hover:text-primary transition-colors"
                 >
                   {link.name}
-                </Link>
+                </a>
               </li>
             ))}
           </ul>

@@ -15,6 +15,7 @@ export default function RegisterPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [step1Data, setStep1Data] = useState<RegisterStep1Input | null>(null);
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const router = useRouter();
   const { data: session, status } = useSession();
   const { success, error: showError } = useToast();
@@ -33,11 +34,12 @@ export default function RegisterPage() {
 
   const handleStep2Submit = async (data: RegisterStep2Input) => {
     if (!step1Data) {
-      showError("Error: faltan datos del paso anterior");
+      setApiError("Error interno: faltan datos del paso anterior. Volvé al paso 1.");
       return;
     }
 
     setLoading(true);
+    setApiError(null);
 
     try {
       // Transformar datos para el backend (compatibilidad)
@@ -90,14 +92,15 @@ export default function RegisterPage() {
       if (!apiResponse.ok) {
         logger.error("[register] Registration failed", undefined, { error: apiResponse.error });
         if (apiResponse.fieldErrors) {
-          Object.entries(apiResponse.fieldErrors).forEach(([field, messages]) => {
-            const msgArray = Array.isArray(messages) ? messages : [];
-            if (msgArray.length > 0) {
-              showError(`${field}: ${msgArray[0]}`);
-            }
-          });
+          // Construir mensaje legible sin exponer nombres técnicos de campos
+          const fieldErrors = apiResponse.fieldErrors as Record<string, string[]>;
+          if (fieldErrors.email?.length) {
+            setApiError("Este email ya está registrado. Probá iniciar sesión o usá otro email.");
+          } else {
+            setApiError("Algunos datos son inválidos. Revisá la información ingresada.");
+          }
         } else {
-          showError(apiResponse.message || "Error al registrar usuario");
+          setApiError(apiResponse.message || "No pudimos crear la cuenta. Intentá nuevamente.");
         }
         setLoading(false);
         return;
@@ -109,12 +112,13 @@ export default function RegisterPage() {
       router.push("/auth/verify-email?sent=1");
     } catch (err: any) {
       logger.error("[register] Exception in onSubmit", err);
-      showError(err.message || "Error al crear cuenta");
+      setApiError(err.message || "Error de conexión. Revisá tu internet e intentá de nuevo.");
       setLoading(false);
     }
   };
 
   const handleBack = () => {
+    setApiError(null);
     setCurrentStep(1);
   };
 
@@ -137,6 +141,7 @@ export default function RegisterPage() {
               onSubmit={handleStep2Submit}
               onBack={handleBack}
               isLoading={loading}
+              apiError={apiError}
             />
           )}
         </div>

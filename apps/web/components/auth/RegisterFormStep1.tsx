@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { Mail, Building2, ArrowRight } from "lucide-react";
+import { Mail, Building2, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -175,7 +175,7 @@ export function RegisterFormStep1({ onSubmit, isLoading = false }: RegisterFormS
           >
             {isLoading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Procesando...
               </>
             ) : (
@@ -199,17 +199,26 @@ export function RegisterFormStep1({ onSubmit, isLoading = false }: RegisterFormS
       {/* Footer */}
       <div className="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] text-slate-400 uppercase tracking-widest font-bold">
-          <span>© 2024 LegalTech AR. Todos los derechos reservados.</span>
+          <span>© {new Date().getFullYear()} LegalTech AR. Todos los derechos reservados.</span>
           <div className="flex gap-4">
-            <Link href="#terminos" className="hover:text-primary transition-colors">
+            <a 
+              href={`mailto:soporte@legaltech.ar?subject=${encodeURIComponent("Consulta sobre Términos y Condiciones")}`}
+              className="hover:text-primary transition-colors"
+            >
               Términos
-            </Link>
-            <Link href="#privacidad" className="hover:text-primary transition-colors">
+            </a>
+            <a 
+              href={`mailto:soporte@legaltech.ar?subject=${encodeURIComponent("Consulta sobre Política de Privacidad")}`}
+              className="hover:text-primary transition-colors"
+            >
               Privacidad
-            </Link>
-            <Link href="#contacto" className="hover:text-primary transition-colors">
+            </a>
+            <a 
+              href={`mailto:soporte@legaltech.ar?subject=${encodeURIComponent("Contacto")}`}
+              className="hover:text-primary transition-colors"
+            >
               Contacto
-            </Link>
+            </a>
           </div>
         </div>
       </div>
