@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useToast } from "@/components/ui/toast";
@@ -20,7 +20,7 @@ import { QuickActions } from "@/components/dashboard/QuickActions";
 import { NextHearing } from "@/components/dashboard/NextHearing";
 import { TeamActivity } from "@/components/dashboard/TeamActivity";
 import { PDFPreviewModal } from "@/components/dashboard/PDFPreviewModal";
-import { ConfirmDialog } from "@/components/dashboard/ConfirmDialog";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   FileText,
   PenTool,
@@ -30,7 +30,7 @@ import {
 import { useSession } from "next-auth/react";
 
 function DashboardContent() {
-  const { isAuthenticated, isLoading: authLoading, isAdmin } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -42,6 +42,7 @@ function DashboardContent() {
   const [total, setTotal] = useState(0);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Parsear filtros desde URL
   const getFiltersFromUrl = (): DocumentsParams => {
@@ -78,8 +79,8 @@ function DashboardContent() {
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al cargar documentos";
+      // Sólo error inline — sin toast duplicado para fallas de carga
       setError(message);
-      showError(message);
     } finally {
       setLoading(false);
     }
@@ -100,7 +101,7 @@ function DashboardContent() {
 
   const handleDuplicate = async (id: string) => {
     try {
-      const response = await duplicateDocument(id);
+      await duplicateDocument(id);
       success("Documento duplicado exitosamente");
       loadDocuments();
     } catch (err) {
@@ -109,6 +110,7 @@ function DashboardContent() {
   };
 
   const handleDelete = async (id: string) => {
+    setDeletingId(id);
     try {
       await deleteDocument(id);
       success("Documento eliminado exitosamente");
@@ -116,7 +118,8 @@ function DashboardContent() {
       setDeleteId(null);
     } catch (err) {
       showError(err instanceof Error ? err.message : "Error al eliminar documento");
-      setDeleteId(null);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -136,19 +139,19 @@ function DashboardContent() {
   }
 
   if (!isAuthenticated) {
-    return null; // El useEffect maneja la redirección
+    return null;
   }
 
-  // Calcular estadísticas
+  // ── Estadísticas basadas en datos reales ──────────────────────────────────
   const activeDocuments = documents.length;
   const pendingSignatures = documents.filter((d) => d.estado === "PENDIENTE").length;
   const casesInProcess = documents.filter((d) => d.estado === "EN REVISIÓN").length;
   const signedDocuments = documents.filter((d) => d.estado === "FIRMADO").length;
-  const winRate = activeDocuments > 0 ? Math.round((signedDocuments / activeDocuments) * 100) : 0;
 
-  // Obtener nombre del usuario
+  // Nombre del usuario — sin prefijo "Dr." inventado
   const userName = session?.user?.name || "Usuario";
-  const displayName = userName.split(" ")[0] ? `Dr. ${userName.split(" ")[0]}` : userName;
+  const firstName = userName.split(" ")[0] || userName;
+
   const currentDate = new Date().toLocaleDateString("es-AR", {
     day: "numeric",
     month: "long",
@@ -160,10 +163,10 @@ function DashboardContent() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-3xl font-black tracking-tight">
-            Bienvenido de nuevo, {displayName}
+            Bienvenido de nuevo, {firstName}
           </h2>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Aquí tienes el resumen de tu actividad legal para hoy, {currentDate}.
+            Acá tenés el resumen de tu actividad legal para hoy, {currentDate}.
           </p>
         </div>
         <Link href="/documents/new/guided">
@@ -177,13 +180,12 @@ function DashboardContent() {
         </Link>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid — valores reales, sin porcentajes de cambio inventados */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           icon={FileText}
           label="Documentos Activos"
           value={activeDocuments}
-          change={{ value: "+12%", isPositive: true }}
           iconBgColor="bg-blue-100 dark:bg-blue-900/30"
           iconColor="text-blue-600 dark:text-blue-400"
         />
@@ -191,7 +193,6 @@ function DashboardContent() {
           icon={PenTool}
           label="Pendientes de Firma"
           value={pendingSignatures}
-          change={{ value: "+5%", isPositive: true }}
           iconBgColor="bg-amber-100 dark:bg-amber-900/30"
           iconColor="text-amber-600 dark:text-amber-400"
         />
@@ -199,15 +200,13 @@ function DashboardContent() {
           icon={Gavel}
           label="Casos en Proceso"
           value={casesInProcess}
-          change={{ value: "-2%", isPositive: false }}
           iconBgColor="bg-purple-100 dark:bg-purple-900/30"
           iconColor="text-purple-600 dark:text-purple-400"
         />
         <StatsCard
           icon={CheckCircle2}
-          label="Casos Ganados"
-          value={`${winRate}%`}
-          change={{ value: "+18%", isPositive: true }}
+          label="Documentos Firmados"
+          value={signedDocuments}
           iconBgColor="bg-emerald-100 dark:bg-emerald-900/30"
           iconColor="text-emerald-600 dark:text-emerald-400"
         />
@@ -230,7 +229,25 @@ function DashboardContent() {
             </div>
           ) : error ? (
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8">
-              <p className="text-red-500">{error}</p>
+              <div className="flex flex-col items-center text-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-red-500 dark:text-red-400" />
+                </div>
+                <div className="space-y-1">
+                  <p className="font-semibold text-slate-900 dark:text-white">
+                    No pudimos cargar los documentos
+                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{error}</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadDocuments}
+                  className="mt-1"
+                >
+                  Reintentar
+                </Button>
+              </div>
             </div>
           ) : (
             <RecentDocumentsTable
@@ -248,7 +265,7 @@ function DashboardContent() {
         </div>
       </div>
 
-      {/* Modales */}
+      {/* Modal de preview */}
       {previewId && (
         <PDFPreviewModal
           open={!!previewId}
@@ -257,18 +274,18 @@ function DashboardContent() {
         />
       )}
 
-      {deleteId && (
-        <ConfirmDialog
-          open={!!deleteId}
-          onOpenChange={(open) => !open && setDeleteId(null)}
-          title="Eliminar documento"
-          message="¿Estás seguro de que querés eliminar este documento? Esta acción no se puede deshacer."
-          confirmText="Eliminar"
-          cancelText="Cancelar"
-          variant="destructive"
-          onConfirm={() => deleteId && handleDelete(deleteId)}
-        />
-      )}
+      {/* ConfirmDialog reutilizable (components/ui/ConfirmDialog) */}
+      <ConfirmDialog
+        open={!!deleteId}
+        title="Eliminar documento"
+        description="¿Estás seguro de que querés eliminar este documento? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        variant="destructive"
+        isLoading={!!deletingId}
+        onConfirm={() => deleteId && handleDelete(deleteId)}
+        onCancel={() => { if (!deletingId) setDeleteId(null); }}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/app/lib/utils";
 
@@ -51,7 +51,7 @@ export function DocumentNavigationButtons({
         >
           {isLoading ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Procesando...
             </>
           ) : (

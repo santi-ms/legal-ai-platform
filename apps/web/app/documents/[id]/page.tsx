@@ -1,10 +1,10 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { DashboardShell } from "@/app/components/DashboardShell";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, AlertCircle } from "lucide-react";
 import { SkeletonDocumentDetail } from "@/components/ui/skeleton";
 import { sanitizeInput } from "@/app/lib/sanitize";
 import type {
@@ -22,6 +22,8 @@ export default function DocumentDetailPage() {
   const [data, setData] = useState<DocumentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const downloadErrorRef = useRef<HTMLDivElement>(null);
 
   // carga el documento
   useEffect(() => {
@@ -43,19 +45,23 @@ export default function DocumentDetailPage() {
   }, [id]);
 
   async function handleDownload() {
+    setDownloadError(null);
+
     if (!id || !data?.document?.lastVersion?.rawText) {
-      alert("Error: No hay contenido para generar el PDF");
+      setDownloadError("No hay contenido disponible para generar el PDF.");
+      setTimeout(() => downloadErrorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
       return;
     }
-    
+
     try {
       const { generatePdfFromText } = await import("@/app/lib/pdfGenerator");
       const documentTitle = data.document.type || "DOCUMENTO";
       const fileName = `${id}.pdf`;
       generatePdfFromText(documentTitle, data.document.lastVersion.rawText, fileName);
-    } catch (error) {
-      console.error("[document-detail] Error al generar PDF:", error);
-      alert(`Error: ${error instanceof Error ? error.message : String(error)}`);
+      // Descarga iniciada con éxito — no hay error
+    } catch (err) {
+      setDownloadError("No se pudo generar el PDF. Revisá tu conexión e intentá de nuevo.");
+      setTimeout(() => downloadErrorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
     }
   }
 
@@ -121,10 +127,9 @@ export default function DocumentDetailPage() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log("[document-detail] BUTTON CLICKED - onClick handler");
                 handleDownload();
               }}
-              className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm ring-1 ring-inset ring-teal-700/30 hover:bg-teal-500 hover:shadow-md transition-all"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-primary/20 hover:bg-primary/90 hover:shadow-md transition-all"
             >
               <Download className="h-4 w-4" />
               Descargar PDF
@@ -141,6 +146,32 @@ export default function DocumentDetailPage() {
       }
     >
       <div className="flex flex-col gap-8">
+        {/* ERROR DE DESCARGA */}
+        {downloadError && (
+          <div
+            ref={downloadErrorRef}
+            className="flex items-start gap-3 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 p-4"
+            role="alert"
+          >
+            <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400 mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-red-700 dark:text-red-400">
+                Error al descargar
+              </p>
+              <p className="text-sm text-red-600 dark:text-red-500 mt-0.5">
+                {downloadError}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="shrink-0 text-sm font-semibold text-red-700 dark:text-red-400 hover:underline"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
+
         {/* CARD DE METADATOS */}
         <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm ring-1 ring-black/[0.02]">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
@@ -175,10 +206,8 @@ export default function DocumentDetailPage() {
             />
             {last?.pdfUrl && (
               <MetaField
-                label="Ruta interna PDF"
-                value={last.pdfUrl}
-                mono
-                small
+                label="PDF"
+                value="Disponible para descarga"
               />
             )}
           </div>

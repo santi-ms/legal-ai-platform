@@ -1,53 +1,28 @@
 "use client";
 
 import { Calendar } from "lucide-react";
-import Link from "next/link";
 
-interface NextHearingProps {
-  caseName?: string;
-  date?: string;
-  time?: string;
-  onViewDetails?: () => void;
-}
-
-export function NextHearing({
-  caseName = "Caso TechCorp vs. InnovaSoft",
-  date = "Mañana",
-  time = "09:30 AM",
-  onViewDetails,
-}: NextHearingProps) {
+export function NextHearing() {
   return (
-    <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl relative overflow-hidden group">
+    <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
       {/* Background decoration */}
-      <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl group-hover:bg-primary/30 transition-colors"></div>
+      <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl" />
 
-      {/* Content */}
       <div className="relative z-10">
-        <h3 className="font-bold mb-2">Próxima Audiencia</h3>
-        <p className="text-slate-400 text-sm mb-4">{caseName}</p>
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-3">
           <Calendar className="w-4 h-4 text-primary" />
-          <span className="text-sm">
-            {date}, {time}
+          <h3 className="font-bold text-sm">Próxima Audiencia</h3>
+        </div>
+
+        <div className="py-4 text-center space-y-2">
+          <p className="text-slate-300 text-sm leading-relaxed">
+            Esta sección estará disponible próximamente.
+          </p>
+          <span className="inline-block px-3 py-1 text-xs font-semibold bg-white/10 text-slate-300 rounded-full">
+            Próximamente
           </span>
         </div>
-        {onViewDetails ? (
-          <button
-            onClick={onViewDetails}
-            className="w-full py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm font-semibold"
-          >
-            Ver Detalles
-          </button>
-        ) : (
-          <Link
-            href="#"
-            className="block w-full py-2 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-sm font-semibold text-center"
-          >
-            Ver Detalles
-          </Link>
-        )}
       </div>
     </div>
   );
 }
-

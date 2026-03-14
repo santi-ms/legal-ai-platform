@@ -20,6 +20,7 @@ import { validateFormData } from "@/src/features/documents/core/validation";
 import { evaluateWarningRules } from "@/src/features/documents/core/warnings";
 import confetti from "canvas-confetti";
 import { CheckCircle, AlertTriangle, Loader2, ArrowLeft, Search, Brain, FileCheck, Sparkles } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { AutosaveIndicator } from "@/src/features/documents/ui/autosave/AutosaveIndicator";
 import { ValidationErrorPanel } from "@/src/features/documents/ui/errors/ValidationErrorPanel";
 import { darkModeClasses, darkBorderColors } from "@/src/features/documents/ui/styles/dark-mode";
@@ -76,6 +77,7 @@ export default function GuidedDocumentCreationPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [confirmBackOpen, setConfirmBackOpen] = useState(false);
 
   // Ref para scroll automático al bloque de error de generación
   const generationErrorRef = useRef<HTMLDivElement>(null);
@@ -320,15 +322,17 @@ export default function GuidedDocumentCreationPage() {
 
   const handleBackToSelection = () => {
     if (hasUnsavedChanges && selectedDocumentType) {
-      const confirmed = window.confirm(
-        "Tenés cambios sin guardar. ¿Estás seguro de que querés cambiar el tipo de documento? Se perderán los datos ingresados."
-      );
-      if (!confirmed) {
-        return;
-      }
+      // Abre el ConfirmDialog en lugar de window.confirm
+      setConfirmBackOpen(true);
+      return;
+    }
+    executeBackToSelection();
+  };
+
+  const executeBackToSelection = () => {
+    if (selectedDocumentType) {
       trackDraftDiscarded(selectedDocumentType);
     }
-    
     trackStepNavigation(currentStep, "selection", selectedDocumentType);
     setCurrentStep("selection");
     setSelectedDocumentType(null);
@@ -337,6 +341,7 @@ export default function GuidedDocumentCreationPage() {
     setError(null);
     setValidationErrors([]);
     setHasUnsavedChanges(false);
+    setConfirmBackOpen(false);
   };
 
   const renderSelectionStep = () => {
@@ -789,6 +794,18 @@ export default function GuidedDocumentCreationPage() {
           </div>
         </div>
       )}
+
+      {/* Confirmación de descarte de borrador */}
+      <ConfirmDialog
+        open={confirmBackOpen}
+        variant="destructive"
+        title="¿Descartás los cambios?"
+        description="Tenés datos ingresados que aún no se guardaron. Si volvés a la selección, se perderán. Esta acción no se puede deshacer."
+        confirmLabel="Sí, descartar"
+        cancelLabel="Seguir editando"
+        onConfirm={executeBackToSelection}
+        onCancel={() => setConfirmBackOpen(false)}
+      />
     </div>
   );
 }

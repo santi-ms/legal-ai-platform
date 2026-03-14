@@ -7,6 +7,7 @@ import { SupportBanner } from "@/components/settings/SupportBanner";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 export default function IntegrationsSettingsPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -21,7 +22,7 @@ export default function IntegrationsSettingsPage() {
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse text-slate-500">Cargando...</div>
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
@@ -44,7 +45,7 @@ export default function IntegrationsSettingsPage() {
                   Ajustes del Sistema
                 </p>
                 <p className="text-slate-500 dark:text-slate-400 text-base font-normal leading-normal">
-                  Administra tu cuenta, suscripciones y preferencias de seguridad.
+                  Administrá tu cuenta, suscripciones y preferencias de seguridad.
                 </p>
               </div>
             </div>

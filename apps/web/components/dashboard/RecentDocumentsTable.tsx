@@ -89,7 +89,6 @@ export function RecentDocumentsTable({
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
               <th className="px-6 py-4 font-semibold">Nombre del Documento</th>
-              <th className="px-6 py-4 font-semibold">Cliente</th>
               <th className="px-6 py-4 font-semibold">Estado</th>
               <th className="px-6 py-4 font-semibold">Fecha</th>
             </tr>
@@ -97,7 +96,7 @@ export function RecentDocumentsTable({
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {recentDocs.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
+                <td colSpan={3} className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
                   No hay documentos recientes
                 </td>
               </tr>
@@ -105,7 +104,6 @@ export function RecentDocumentsTable({
               recentDocs.map((doc) => {
                 const status = doc.estado || "BORRADOR";
                 const statusInfo = getStatusConfig(status);
-                const clientName = doc.clientName || "Sin cliente"; // TODO: obtener del documento
 
                 return (
                   <Link key={doc.id} href={`/documents/${doc.id}`}>
@@ -115,9 +113,6 @@ export function RecentDocumentsTable({
                           <FileText className="w-5 h-5 text-primary" />
                           <span className="font-medium">{formatDocumentType(doc.type)}</span>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                        {clientName}
                       </td>
                       <td className="px-6 py-4">
                         <span

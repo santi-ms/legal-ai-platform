@@ -17,7 +17,7 @@ export default function NewDocumentPage() {
   useEffect(() => {
     router.replace("/documents/new/guided");
   }, [router]);
-  
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-background-dark">
       <div className="animate-pulse text-slate-400">Redirigiendo al nuevo flujo guiado...</div>

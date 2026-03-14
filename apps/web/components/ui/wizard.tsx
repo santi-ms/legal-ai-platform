@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Loader2 } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 export interface WizardStep {
@@ -79,28 +79,34 @@ export function Wizard({
                 disabled={!isClickable}
                 className={cn(
                   "flex flex-col items-center text-xs font-medium transition-all flex-1",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded",
                   isClickable ? "cursor-pointer" : "cursor-not-allowed",
                   isCurrent
-                    ? "text-emerald-400"
+                    ? "text-primary"
                     : isCompleted
-                    ? "text-emerald-300 hover:text-emerald-200"
-                    : "text-neutral-500"
+                    ? "text-primary/70 hover:text-primary"
+                    : "text-slate-400 dark:text-slate-600"
                 )}
               >
                 <div
                   className={cn(
                     "flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all mb-2",
                     isCurrent
-                      ? "border-emerald-400 bg-emerald-400/10"
+                      ? "border-primary bg-primary/10 dark:bg-primary/20"
                       : isCompleted
-                      ? "border-emerald-500 bg-emerald-500 text-black"
-                      : "border-neutral-600 bg-neutral-800"
+                      ? "border-primary bg-primary text-white"
+                      : "border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
                   )}
                 >
                   {isCompleted ? (
                     <Check className="w-4 h-4" />
                   ) : (
-                    <span className="text-xs font-semibold">{index + 1}</span>
+                    <span className={cn(
+                      "text-xs font-semibold",
+                      isCurrent ? "text-primary" : "text-slate-400 dark:text-slate-500"
+                    )}>
+                      {index + 1}
+                    </span>
                   )}
                 </div>
                 <div className="text-center">
@@ -113,15 +119,13 @@ export function Wizard({
 
         {/* Progress Bar */}
         <div className="mt-6">
-          <div className="bg-neutral-800 rounded-full h-2">
+          <div className="bg-slate-200 dark:bg-slate-700 rounded-full h-2">
             <div
-              className="bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full h-2 transition-all duration-300"
-              style={{
-                width: `${((currentStep + 1) / steps.length) * 100}%`,
-              }}
+              className="bg-primary rounded-full h-2 transition-all duration-300"
+              style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
             />
           </div>
-          <div className="flex justify-between mt-2 text-xs text-neutral-500">
+          <div className="flex justify-between mt-2 text-xs text-slate-500 dark:text-slate-400">
             <span>Paso {currentStep + 1} de {steps.length}</span>
             <span>{Math.round(((currentStep + 1) / steps.length) * 100)}% completado</span>
           </div>
@@ -131,50 +135,54 @@ export function Wizard({
       {/* Current Step Content */}
       <div className="mb-8">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-white mb-2">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
             {currentStepData.title}
           </h2>
           {currentStepData.description && (
-            <p className="text-neutral-400">{currentStepData.description}</p>
+            <p className="text-slate-500 dark:text-slate-400">{currentStepData.description}</p>
           )}
         </div>
 
-        <div className="bg-neutral-900/50 rounded-xl border border-neutral-800 p-6 md:p-8">
+        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 p-6 md:p-8">
           {children}
         </div>
       </div>
 
       {/* Navigation Buttons */}
       <div className="flex justify-between items-center">
+        {/* Botón Anterior */}
         <button
           type="button"
           onClick={handlePrevious}
           disabled={isFirstStep || isLoading}
           className={cn(
             "inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
             isFirstStep || isLoading
-              ? "text-neutral-600 cursor-not-allowed"
-              : "text-neutral-300 hover:text-white hover:bg-neutral-800"
+              ? "text-slate-300 dark:text-slate-600 cursor-not-allowed"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
           )}
         >
           <ChevronLeft className="w-4 h-4 mr-1" />
           {previousButtonText}
         </button>
 
+        {/* Botón Siguiente / Finalizar */}
         <button
           type="button"
           onClick={handleNext}
           disabled={!canProceed || isLoading}
           className={cn(
             "inline-flex items-center px-6 py-3 text-sm font-semibold rounded-lg transition-all",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
             !canProceed || isLoading
-              ? "bg-neutral-700 text-neutral-400 cursor-not-allowed"
-              : "bg-emerald-500 text-black hover:bg-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+              ? "bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed"
+              : "bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20"
           )}
         >
           {isLoading ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2"></div>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Procesando...
             </>
           ) : (
@@ -189,12 +197,12 @@ export function Wizard({
   );
 }
 
-export function WizardStepContent({ 
-  children, 
-  className 
-}: { 
-  children: React.ReactNode; 
-  className?: string; 
+export function WizardStepContent({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
 }) {
   return (
     <div className={cn("space-y-6", className)}>
@@ -202,9 +210,3 @@ export function WizardStepContent({
     </div>
   );
 }
-
-
-
-
-
-

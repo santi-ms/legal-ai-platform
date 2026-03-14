@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 
 interface DashboardHeaderProps {
+  // onSearch reservado para cuando la búsqueda sea funcional
   onSearch?: (query: string) => void;
 }
 
@@ -14,22 +15,27 @@ export function DashboardHeader({ onSearch }: DashboardHeaderProps) {
 
   // Extraer nombre del usuario (puede venir como "name" o "firstName lastName")
   const userName = user?.name || "Usuario";
-  const displayName = userName.split(" ")[0] ? `Dr. ${userName.split(" ")[0]}` : userName;
-  const role = "Socio Principal"; // TODO: obtener del perfil del usuario
+  const displayName = userName.split(" ")[0] || userName;
+  const role = (user as any)?.role as string | undefined;
 
   return (
     <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10 px-6 flex items-center justify-between">
       {/* Search */}
       <div className="flex items-center gap-4 flex-1">
-        <div className="relative w-full max-w-md hidden md:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-          <input
-            className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-            placeholder="Buscar expedientes, clientes o documentos..."
-            type="text"
-            onChange={(e) => onSearch?.(e.target.value)}
-          />
-        </div>
+        <div
+            className="relative w-full max-w-md hidden md:block"
+            title="Próximamente"
+          >
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 w-4 h-4 pointer-events-none" />
+            <input
+              className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg pl-10 pr-4 py-2 text-sm outline-none opacity-50 cursor-not-allowed"
+              placeholder="Buscar... (próximamente)"
+              type="text"
+              disabled
+              aria-disabled="true"
+              tabIndex={-1}
+            />
+          </div>
       </div>
 
       {/* User Actions */}
@@ -47,7 +53,9 @@ export function DashboardHeader({ onSearch }: DashboardHeaderProps) {
         <div className="flex items-center gap-3 pl-2">
           <div className="text-right hidden sm:block">
             <p className="text-sm font-semibold leading-none">{displayName}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{role}</p>
+            {role && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{role}</p>
+            )}
           </div>
           <Link href="/profile" className="size-10 rounded-full bg-slate-200 dark:bg-slate-800 bg-cover bg-center ring-2 ring-primary/10 flex items-center justify-center text-slate-600 dark:text-slate-400 font-semibold">
             {user?.image ? (
