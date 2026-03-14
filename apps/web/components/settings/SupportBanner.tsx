@@ -26,7 +26,7 @@ export function SupportBanner({ onContactSupport, className }: SupportBannerProp
           <div className="flex flex-col gap-1">
             <h4 className="text-xl font-bold">¿Necesitas ayuda con tu cuenta?</h4>
             <p className="text-white/80 text-sm">
-              Nuestro equipo de soporte está disponible 24/7 para ayudarte.
+              Nuestro equipo está listo para ayudarte con cualquier consulta.
             </p>
           </div>
           <Button

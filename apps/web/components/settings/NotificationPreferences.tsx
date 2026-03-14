@@ -27,7 +27,7 @@ export function NotificationPreferences({
             Preferencias de Notificación
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Elige qué avisos quieres recibir.
+            Elegí qué avisos querés recibir.
           </p>
         </div>
       </div>
@@ -35,7 +35,7 @@ export function NotificationPreferences({
         <NotificationToggle
           id="email-notifications"
           title="Notificaciones por Email"
-          description="Recibe resúmenes diarios de actividad."
+          description="Recibí resúmenes diarios de actividad."
           checked={preferences.emailNotifications}
           onChange={(checked) => onPreferenceChange("emailNotifications", checked)}
         />

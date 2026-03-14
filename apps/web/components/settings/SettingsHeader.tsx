@@ -21,8 +21,11 @@ export function SettingsHeader() {
       <div className="flex flex-1 justify-end gap-4 md:gap-8 items-center">
         <div className="flex gap-2">
           <button
-            className="flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-            aria-label="Notificaciones"
+            className="flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary opacity-50 cursor-not-allowed"
+            aria-label="Notificaciones (próximamente)"
+            aria-disabled="true"
+            tabIndex={-1}
+            title="Próximamente"
           >
             <Bell className="w-5 h-5" />
           </button>

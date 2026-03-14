@@ -44,7 +44,7 @@ export default function BillingSettingsPage() {
                   Ajustes del Sistema
                 </p>
                 <p className="text-slate-500 dark:text-slate-400 text-base font-normal leading-normal">
-                  Administra tu cuenta, suscripciones y preferencias de seguridad.
+                  Administrá tu cuenta, suscripciones y preferencias de seguridad.
                 </p>
               </div>
             </div>

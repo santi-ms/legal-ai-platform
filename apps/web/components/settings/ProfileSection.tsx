@@ -33,7 +33,7 @@ export function ProfileSection({ formData, onFieldChange }: ProfileSectionProps)
         <div>
           <h3 className="text-xl font-bold text-slate-900 dark:text-white">Información del Perfil</h3>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Actualiza tus datos personales y de contacto.
+            Actualizá tus datos personales y de contacto.
           </p>
         </div>
       </div>
@@ -78,7 +78,7 @@ export function ProfileSection({ formData, onFieldChange }: ProfileSectionProps)
             value={formData.bio || ""}
             onChange={(e) => onFieldChange("bio", e.target.value)}
             className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-primary focus:border-primary transition-all p-3 text-sm resize-none"
-            placeholder="Cuéntanos un poco sobre ti..."
+            placeholder="Contanos un poco sobre vos..."
             rows={3}
           />
         </div>

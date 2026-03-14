@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 
 interface SettingsActionsProps {
@@ -38,7 +39,7 @@ export function SettingsActions({
         >
           {isLoading ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 inline-block"></div>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Guardando...
             </>
           ) : (

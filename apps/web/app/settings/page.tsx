@@ -12,6 +12,8 @@ import { SupportBanner } from "@/components/settings/SupportBanner";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { getUserProfile, updateUserProfile, type UserProfile } from "@/app/lib/webApi";
+import { AlertTriangle, Loader2, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ProfileFormData {
   firstName: string;
@@ -52,66 +54,78 @@ export default function SettingsPage() {
     notifications: NotificationPreferencesData;
   } | null>(null);
 
-  // Load profile data from API
-  useEffect(() => {
-    if (isAuthenticated && !authLoading) {
-      const loadProfile = async () => {
-        try {
-          setIsLoading(true);
-          const profile = await getUserProfile();
-          
-          const initialProfile: ProfileFormData = {
-            firstName: profile.firstName || "",
-            lastName: profile.lastName || "",
-            email: profile.email || "",
-            bio: profile.bio || "",
-          };
+  // loadError: falla al cargar el perfil desde la API
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-          const initialNotifications: NotificationPreferencesData = {
-            emailNotifications: profile.notificationPreferences.emailNotifications ?? true,
-            securityAlerts: profile.notificationPreferences.securityAlerts ?? true,
-            productUpdates: profile.notificationPreferences.productUpdates ?? false,
-          };
+  // formError: error de validación o falla al guardar
+  const [formError, setFormError] = useState<string | null>(null);
 
-          setProfileData(initialProfile);
-          setNotificationPreferences(initialNotifications);
-          setInitialData({
-            profile: initialProfile,
-            notifications: initialNotifications,
-          });
-        } catch (err: any) {
-          console.error("Error loading profile:", err);
-          showError(err.message || "Error al cargar el perfil");
-          
-          // Fallback to session data if API fails
-          if (session?.user) {
-            const nameParts = session.user.name?.split(" ") || [];
-            const fallbackProfile: ProfileFormData = {
-              firstName: nameParts[0] || "",
-              lastName: nameParts.slice(1).join(" ") || "",
-              email: session.user.email || "",
-              bio: "",
-            };
-            setProfileData(fallbackProfile);
-            setInitialData({
-              profile: fallbackProfile,
-              notifications: {
-                emailNotifications: true,
-                securityAlerts: true,
-                productUpdates: false,
-              },
-            });
-          }
-        } finally {
-          setIsLoading(false);
-        }
+  // ── Carga del perfil ──────────────────────────────────────────────────────
+  const loadProfile = async () => {
+    setLoadError(null);
+    try {
+      setIsLoading(true);
+      const profile = await getUserProfile();
+
+      const initialProfile: ProfileFormData = {
+        firstName: profile.firstName || "",
+        lastName: profile.lastName || "",
+        email: profile.email || "",
+        bio: profile.bio || "",
       };
 
+      const initialNotifications: NotificationPreferencesData = {
+        emailNotifications: profile.notificationPreferences.emailNotifications ?? true,
+        securityAlerts: profile.notificationPreferences.securityAlerts ?? true,
+        productUpdates: profile.notificationPreferences.productUpdates ?? false,
+      };
+
+      setProfileData(initialProfile);
+      setNotificationPreferences(initialNotifications);
+      setInitialData({
+        profile: initialProfile,
+        notifications: initialNotifications,
+      });
+    } catch (err: any) {
+      console.error("Error loading profile:", err);
+
+      // Fallback a datos de sesión si están disponibles
+      if (session?.user) {
+        const nameParts = session.user.name?.split(" ") || [];
+        const fallbackProfile: ProfileFormData = {
+          firstName: nameParts[0] || "",
+          lastName: nameParts.slice(1).join(" ") || "",
+          email: session.user.email || "",
+          bio: "",
+        };
+        setProfileData(fallbackProfile);
+        setInitialData({
+          profile: fallbackProfile,
+          notifications: {
+            emailNotifications: true,
+            securityAlerts: true,
+            productUpdates: false,
+          },
+        });
+        // Mostramos el error pero permitimos operar con datos de sesión
+        setLoadError("No pudimos cargar tu perfil completo. Algunos datos pueden estar desactualizados.");
+      } else {
+        // Sin datos de sesión: bloquear con error claro y opción de reintentar
+        setLoadError("No pudimos cargar tu perfil. Revisá tu conexión e intentá de nuevo.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
       loadProfile();
     }
-  }, [isAuthenticated, authLoading, session, showError]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, authLoading]);
 
-  // Check for changes
+  // ── Detectar cambios ──────────────────────────────────────────────────────
   useEffect(() => {
     if (initialData) {
       const profileChanged =
@@ -129,25 +143,21 @@ export default function SettingsPage() {
     }
   }, [profileData, notificationPreferences, initialData]);
 
-  // Redirect if not authenticated
+  // ── Redirección si no autenticado ─────────────────────────────────────────
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push("/auth/login?callbackUrl=/settings");
     }
   }, [authLoading, isAuthenticated, router]);
 
+  // ── Handlers ──────────────────────────────────────────────────────────────
   const handleProfileFieldChange = (field: keyof ProfileFormData, value: string) => {
-    setProfileData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormError(null);
+    setProfileData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handlePreferenceChange = (key: keyof NotificationPreferencesData, value: boolean) => {
-    setNotificationPreferences((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    setNotificationPreferences((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleDiscard = () => {
@@ -155,24 +165,26 @@ export default function SettingsPage() {
       setProfileData(initialData.profile);
       setNotificationPreferences(initialData.notifications);
       setHasChanges(false);
+      setFormError(null);
       success("Cambios descartados");
     }
   };
 
   const handleSave = async () => {
-    // Validation
+    setFormError(null);
+
+    // Validación inline — no toasts
     if (!profileData.firstName.trim()) {
-      showError("El nombre es requerido");
+      setFormError("El nombre es requerido para guardar los cambios.");
       return;
     }
     if (!profileData.email.trim() || !profileData.email.includes("@")) {
-      showError("El email es inválido");
+      setFormError("El correo electrónico no es válido. Verificá que tenga el formato correcto.");
       return;
     }
 
     setIsLoading(true);
     try {
-      // Combine firstName and lastName into name
       const fullName = `${profileData.firstName.trim()} ${profileData.lastName.trim()}`.trim();
 
       const updatedProfile = await updateUserProfile({
@@ -188,7 +200,6 @@ export default function SettingsPage() {
         },
       });
 
-      // Update state with response
       const updatedProfileData: ProfileFormData = {
         firstName: updatedProfile.firstName,
         lastName: updatedProfile.lastName,
@@ -211,35 +222,35 @@ export default function SettingsPage() {
       setHasChanges(false);
       success("Configuración guardada exitosamente");
 
-      // Refresh session to update user name/email in NextAuth
+      // Refresca datos del servidor sin reload destructivo
       if (session) {
-        await fetch("/api/auth/session?update", { method: "GET" });
-        window.location.reload(); // Force refresh to update session
+        router.refresh();
       }
     } catch (err: any) {
       console.error("Error saving profile:", err);
-      const errorMessage = err.message || "Error al guardar la configuración";
-      showError(errorMessage);
+      setFormError(err.message || "No pudimos guardar la configuración. Intentá nuevamente.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleContactSupport = () => {
-    // TODO: Implement support contact
-    window.open("mailto:support@legaltech.ar", "_blank");
+    const subject = encodeURIComponent("Soporte - Consulta sobre mi cuenta");
+    const body = encodeURIComponent("Hola, necesito ayuda con mi cuenta.");
+    window.location.href = `mailto:soporte@legaltech.ar?subject=${subject}&body=${body}`;
   };
 
+  // ── Guards de render ──────────────────────────────────────────────────────
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse text-slate-500">Cargando...</div>
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    return null; // El useEffect maneja la redirección
+    return null;
   }
 
   return (
@@ -253,16 +264,34 @@ export default function SettingsPage() {
             <div className="flex flex-wrap justify-between gap-3 p-4 mt-6">
               <div className="flex min-w-72 flex-col gap-3">
                 <p className="text-4xl font-black leading-tight tracking-[-0.033em] text-slate-900 dark:text-white">
-                  Ajustes del Sistema
+                  Ajustes del sistema
                 </p>
                 <p className="text-slate-500 dark:text-slate-400 text-base font-normal leading-normal">
-                  Administra tu cuenta, suscripciones y preferencias de seguridad.
+                  Administrá tu cuenta, suscripciones y preferencias de seguridad.
                 </p>
               </div>
             </div>
 
             {/* Navigation Tabs */}
             <SettingsTabs activeTab="profile" />
+
+            {/* Error de carga — con opción de reintentar */}
+            {loadError && (
+              <div className="mx-4 mt-4 flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                    {loadError}
+                  </p>
+                  <button
+                    onClick={loadProfile}
+                    className="mt-1 text-xs text-amber-700 dark:text-amber-300 font-semibold hover:underline"
+                  >
+                    Reintentar
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Profile Section */}
             <ProfileSection
@@ -275,6 +304,14 @@ export default function SettingsPage() {
               preferences={notificationPreferences}
               onPreferenceChange={handlePreferenceChange}
             />
+
+            {/* Error de formulario — validación o falla al guardar */}
+            {formError && (
+              <div className="mx-4 flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700 dark:text-red-300 leading-snug">{formError}</p>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <SettingsActions
@@ -292,4 +329,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
