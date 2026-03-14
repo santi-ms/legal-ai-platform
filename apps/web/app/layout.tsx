@@ -2,7 +2,6 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
 import { SessionProvider } from "@/components/ui/session-provider";
-import { ConditionalNavigation } from "./components/ConditionalNavigation";
 
 export const metadata = {
   title: "LegalTech AR - Documentos Legales con IA",
@@ -40,8 +39,6 @@ export default function RootLayout({
       <body className={`${inter.className} h-full antialiased`}>
         <SessionProvider>
           <ToastProvider>
-            {/* Only show Navigation on non-landing pages */}
-            <ConditionalNavigation />
             <main className="min-h-screen">
               {children}
             </main>
