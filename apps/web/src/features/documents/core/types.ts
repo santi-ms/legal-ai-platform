@@ -14,7 +14,9 @@ export type DocumentTypeId =
   | "supply_contract"
   | "nda"
   | "legal_notice"
-  | "lease";
+  | "lease"
+  | "debt_recognition"
+  | "simple_authorization";
 
 /**
  * Document Tone Options

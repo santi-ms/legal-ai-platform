@@ -8,6 +8,7 @@ import type {
   DocumentSchemaDefinition,
 } from "../core/types";
 import { registerDocumentSchema } from "../core/registry";
+import { additionalClausesSection } from "./common-fields";
 
 export const ndaSchema: DocumentSchemaDefinition = {
   id: "nda",
@@ -212,6 +213,7 @@ export const ndaSchema: DocumentSchemaDefinition = {
         },
       ],
     },
+    additionalClausesSection,
   ],
   
   semanticValidations: [

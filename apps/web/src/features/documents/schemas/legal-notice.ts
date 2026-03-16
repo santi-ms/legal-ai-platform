@@ -8,6 +8,7 @@ import type {
   DocumentSchemaDefinition,
 } from "../core/types";
 import { registerDocumentSchema } from "../core/registry";
+import { additionalClausesSection } from "./common-fields";
 
 export const legalNoticeSchema: DocumentSchemaDefinition = {
   id: "legal_notice",
@@ -207,6 +208,7 @@ export const legalNoticeSchema: DocumentSchemaDefinition = {
         },
       ],
     },
+    additionalClausesSection,
   ],
   
   semanticValidations: [

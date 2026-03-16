@@ -359,3 +359,4 @@ apps/api/src/modules/documents/
 
 **Siguiente paso**: Comenzar con FASE 2 - Crear arquitectura de dominio documental.
 
+

@@ -64,3 +64,4 @@ export function DocumentsStatsCards({ stats }: { stats: StatCardProps[] }) {
   );
 }
 
+

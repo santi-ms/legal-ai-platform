@@ -40,10 +40,13 @@ import {
   trackDraftDiscarded,
 } from "@/src/features/documents/utils/analytics";
 
-// Initialize schemas
+// Initialize schemas — all document types
 import "@/src/features/documents/schemas/service-contract";
 import "@/src/features/documents/schemas/nda";
 import "@/src/features/documents/schemas/legal-notice";
+import "@/src/features/documents/schemas/lease-agreement";
+import "@/src/features/documents/schemas/debt-recognition";
+import "@/src/features/documents/schemas/simple-authorization";
 
 type FlowStep = "selection" | "form" | "summary" | "result";
 
@@ -345,10 +348,19 @@ export default function GuidedDocumentCreationPage() {
   };
 
   const renderSelectionStep = () => {
-    const schemas = getAllDocumentSchemas();
-    const availableSchemas = schemas.filter(s => 
-      ["service_contract", "nda", "legal_notice"].includes(s.id)
-    );
+    // Show all registered schemas in a stable order
+    const orderedIds = [
+      "service_contract",
+      "nda",
+      "legal_notice",
+      "lease",
+      "debt_recognition",
+      "simple_authorization",
+    ];
+    const allSchemas = getAllDocumentSchemas();
+    const availableSchemas = orderedIds
+      .map((id) => allSchemas.find((s) => s.id === id))
+      .filter(Boolean) as typeof allSchemas;
 
     return (
       <div className="min-h-screen flex flex-col">
@@ -375,7 +387,7 @@ export default function GuidedDocumentCreationPage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {availableSchemas.map((schema) => (
                   <DocumentTypeCard
                     key={schema.id}

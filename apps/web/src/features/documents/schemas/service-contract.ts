@@ -11,6 +11,7 @@ import type {
   JurisdictionId,
 } from "../core/types";
 import { registerDocumentSchema } from "../core/registry";
+import { additionalClausesSection } from "./common-fields";
 
 /**
  * Service Contract Schema Definition
@@ -462,6 +463,7 @@ export const serviceContractSchema: DocumentSchemaDefinition = {
         },
       ],
     },
+    additionalClausesSection,
   ],
   
   semanticValidations: [

@@ -9,6 +9,9 @@
 import "./service-contract";
 import "./nda";
 import "./legal-notice";
+import "./lease-agreement";
+import "./debt-recognition";
+import "./simple-authorization";
 
 // Export registry functions
 export {

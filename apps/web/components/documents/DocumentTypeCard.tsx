@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Lock, Mail } from "lucide-react";
+import { FileText, Lock, Mail, Home, Receipt, UserCheck } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import type { DocumentSchemaDefinition } from "@/src/features/documents/core/types";
 
@@ -14,6 +14,9 @@ const documentIcons: Record<string, typeof FileText> = {
   service_contract: FileText,
   nda: Lock,
   legal_notice: Mail,
+  lease: Home,
+  debt_recognition: Receipt,
+  simple_authorization: UserCheck,
 };
 
 export function DocumentTypeCard({ schema, onSelect, className }: DocumentTypeCardProps) {
@@ -63,4 +66,3 @@ export function DocumentTypeCard({ schema, onSelect, className }: DocumentTypeCa
     </button>
   );
 }
-
