@@ -655,14 +655,12 @@ export default function GuidedDocumentCreationPage() {
                 <div className="flex gap-3">
                   <Button
                     onClick={async () => {
-                      if (result.pdfUrl) {
-                        window.open(result.pdfUrl, "_blank");
-                      } else if (result.contrato) {
+                      if (result.contrato) {
                         try {
                           const { generatePdfFromText } = await import("@/app/lib/pdfGenerator");
                           const schema = getDocumentSchema(selectedDocumentType || "service_contract");
                           const documentTitle = schema?.label || "Documento";
-                          const fileName = result.documentId 
+                          const fileName = result.documentId
                             ? `documento-${result.documentId}.pdf`
                             : "documento.pdf";
                           generatePdfFromText(documentTitle, result.contrato, fileName);
