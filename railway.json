@@ -5,6 +5,6 @@
     "buildCommand": "npm install && npm run build"
   },
   "deploy": {
-    "startCommand": "(npx prisma migrate resolve --applied 20251115000000_add_user_profile_fields --schema prisma/schema.prisma || true) && npm run migrate:deploy && npm run start"
+    "startCommand": "npm run start"
   }
 }
