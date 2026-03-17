@@ -68,6 +68,14 @@ model DocumentVersion {
   pdfUrl          String?
   hashSha256      String?
   generatedBy     String    // "gpt-5", "claude", etc.
+
+  // Structured data fields (nullable for backward compatibility)
+  structuredData      Json?
+  clausePlan          Json?
+  generationWarnings  Json?
+  templateVersion     String?
+  status              String?
+
   createdAt       DateTime  @default(now())
 }
 

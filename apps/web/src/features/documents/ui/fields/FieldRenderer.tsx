@@ -82,7 +82,7 @@ export function FieldRenderer({
             placeholder={field.placeholder}
             required={field.required}
             disabled={disabled}
-            rows={field.type === "textarea" ? 4 : undefined}
+            rows={field.rows ?? 4}
             className={baseClasses}
             aria-describedby={field.helpText ? `${field.id}-help` : undefined}
           />
