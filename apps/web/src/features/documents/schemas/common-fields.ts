@@ -28,6 +28,7 @@ export const additionalClausesSection: DocumentSection = {
         "Ej.: incluir cláusula de confidencialidad reforzada, establecer una multa específica por incumplimiento, aclarar una condición especial de pago, limitar el alcance de la autorización, etc.",
       helpText:
         "Agregá acá cualquier detalle, condición o cláusula que quieras incluir en el documento y que no haya sido contemplada en las preguntas anteriores.",
+      rows: 8,
       validation: {
         maxLength: 3000,
       },

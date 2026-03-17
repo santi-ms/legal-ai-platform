@@ -70,6 +70,7 @@ export interface DocumentFieldConfig {
   visibleWhen?: string[]; // Array of field IDs that must be truthy for this field to be visible
   validation?: FieldValidation;
   defaultValue?: unknown;
+  rows?: number;
 }
 
 /**
