@@ -1,4 +1,4 @@
 -- AlterTable
-ALTER TABLE "User" ADD COLUMN "bio" TEXT,
-ADD COLUMN "notificationPreferences" JSONB;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "bio" TEXT,
+ADD COLUMN IF NOT EXISTS "notificationPreferences" JSONB;
 
