@@ -89,8 +89,8 @@ export function RecentDocumentsTable({
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
               <th className="px-6 py-4 font-semibold">Nombre del Documento</th>
-              <th className="px-6 py-4 font-semibold">Estado</th>
-              <th className="px-6 py-4 font-semibold">Fecha</th>
+              <th className="px-6 py-4 font-semibold text-center">Estado</th>
+              <th className="px-6 py-4 font-semibold text-center">Fecha</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -114,7 +114,7 @@ export function RecentDocumentsTable({
                           <span className="font-medium">{formatDocumentType(doc.type)}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-center">
                         <span
                           className={cn(
                             "px-2.5 py-1 rounded-full text-[11px] font-bold uppercase",
@@ -124,7 +124,7 @@ export function RecentDocumentsTable({
                           {statusInfo.label}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
+                      <td className="px-6 py-4 text-center text-sm text-slate-500 dark:text-slate-400">
                         {formatRelativeDate(doc.createdAt)}
                       </td>
                     </tr>
