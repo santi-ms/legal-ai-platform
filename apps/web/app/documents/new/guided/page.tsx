@@ -19,7 +19,7 @@ import type { DocumentTypeId, StructuredDocumentData, GenerationWarning } from "
 import { validateFormData } from "@/src/features/documents/core/validation";
 import { evaluateWarningRules } from "@/src/features/documents/core/warnings";
 import confetti from "canvas-confetti";
-import { CheckCircle, AlertTriangle, Loader2, ArrowLeft, Search, Brain, FileCheck, Sparkles } from "lucide-react";
+import { CheckCircle, AlertTriangle, Loader2, ArrowLeft, Search, Brain, FileCheck, Sparkles, Save, RotateCcw, Download, CheckCircle2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { AutosaveIndicator } from "@/src/features/documents/ui/autosave/AutosaveIndicator";
 import { ValidationErrorPanel } from "@/src/features/documents/ui/errors/ValidationErrorPanel";
@@ -92,6 +92,15 @@ export default function GuidedDocumentCreationPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [confirmBackOpen, setConfirmBackOpen] = useState(false);
+
+  // Estado de edición inline del documento generado
+  const [editedContent, setEditedContent] = useState("");
+  const [isContentDirty, setIsContentDirty] = useState(false);
+  const [isSavingContent, setIsSavingContent] = useState(false);
+  const [contentSaveStatus, setContentSaveStatus] = useState<"idle" | "saved" | "error">("idle");
+  const [contentSaveError, setContentSaveError] = useState<string | null>(null);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [pdfDownloadError, setPdfDownloadError] = useState<string | null>(null);
 
   // Ref para scroll automático al bloque de error de generación
   const generationErrorRef = useRef<HTMLDivElement>(null);
@@ -301,6 +310,10 @@ export default function GuidedDocumentCreationPage() {
       setResult(generationResult);
       setCurrentStep("result");
       setHasUnsavedChanges(false);
+      setEditedContent(generationResult.contrato);
+      setIsContentDirty(false);
+      setContentSaveStatus("idle");
+      setPdfDownloadError(null);
       
       trackGenerationSuccess(
         selectedDocumentType,
@@ -358,6 +371,67 @@ export default function GuidedDocumentCreationPage() {
     setValidationErrors([]);
     setHasUnsavedChanges(false);
     setConfirmBackOpen(false);
+  };
+
+  // Guarda el contenido editado en el backend. Devuelve true si tuvo éxito.
+  const handleSaveContent = async (): Promise<boolean> => {
+    if (!result) return true;
+    if (!isContentDirty) return true;
+    setIsSavingContent(true);
+    setContentSaveError(null);
+    try {
+      const { saveEditedContent } = await import("@/app/lib/webApi");
+      await saveEditedContent(result.documentId, editedContent);
+      setIsContentDirty(false);
+      setContentSaveStatus("saved");
+      setTimeout(() => setContentSaveStatus("idle"), 4000);
+      return true;
+    } catch (err: any) {
+      setContentSaveError(err?.message || "Error al guardar los cambios");
+      setContentSaveStatus("error");
+      return false;
+    } finally {
+      setIsSavingContent(false);
+    }
+  };
+
+  const handleRestoreOriginalContent = () => {
+    if (!result) return;
+    if (!window.confirm("¿Restaurar el texto original generado por IA? Se perderán los cambios realizados.")) return;
+    setEditedContent(result.contrato);
+    setIsContentDirty(true);
+    setContentSaveStatus("idle");
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!result) return;
+    if (isContentDirty) {
+      const saved = await handleSaveContent();
+      if (!saved) return;
+    }
+    setIsDownloadingPdf(true);
+    setPdfDownloadError(null);
+    try {
+      const response = await fetch(`/api/_proxy/documents/${result.documentId}/pdf`);
+      if (!response.ok) {
+        const json = await response.json().catch(() => ({}));
+        setPdfDownloadError((json as any).message || "No se pudo generar el PDF.");
+        return;
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${result.documentId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      setPdfDownloadError("Error al descargar el PDF. Revisá tu conexión e intentá de nuevo.");
+    } finally {
+      setIsDownloadingPdf(false);
+    }
   };
 
   const renderSelectionStep = () => {
@@ -649,37 +723,38 @@ export default function GuidedDocumentCreationPage() {
     return (
       <div className="min-h-screen flex flex-col">
         <div className="flex-1 px-6 md:px-20 py-12">
-          <div className="max-w-4xl mx-auto space-y-8">
+          <div className="max-w-4xl mx-auto space-y-6">
+
             {/* Header — condicional según calidad del documento */}
             {result.incompleteDocument ? (
-              <div className="text-center space-y-4">
-                <AlertTriangle className="h-16 w-16 text-amber-500 mx-auto" />
+              <div className="text-center space-y-3">
+                <AlertTriangle className="h-14 w-14 text-amber-500 mx-auto" />
                 <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
                   Documento generado con advertencias
                 </h1>
                 <p className="text-slate-600 dark:text-slate-400">
-                  El sistema detectó posibles problemas de calidad. Revisá el contenido antes de usarlo.
+                  El sistema detectó posibles problemas. Revisá y editá el contenido antes de descargar el PDF.
                 </p>
               </div>
             ) : (
-              <div className="text-center space-y-4">
-                <CheckCircle className="h-16 w-16 text-emerald-500 mx-auto" />
+              <div className="text-center space-y-3">
+                <CheckCircle className="h-14 w-14 text-emerald-500 mx-auto" />
                 <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
                   ¡Documento generado exitosamente!
                 </h1>
                 <p className="text-slate-600 dark:text-slate-400">
-                  Tu documento está listo para descargar o revisar
+                  Revisá el contenido, editalo si necesitás, y descargá el PDF.
                 </p>
               </div>
             )}
 
-            {/* Alerta de validación de output — solo si hay problemas */}
+            {/* Alerta de validación de output */}
             {result.incompleteDocument && result.outputWarnings && result.outputWarnings.length > 0 && (
               <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 p-5 space-y-3">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
                   <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">
-                    Se detectaron {result.outputWarnings.filter(w => w.severity === "error").length} problema(s) que deben revisarse
+                    Se detectaron {result.outputWarnings.filter(w => w.severity === "error").length} problema(s) — editá el contenido para corregirlos antes de descargar
                   </p>
                 </div>
                 <ul className="space-y-1.5 pl-7">
@@ -694,75 +769,123 @@ export default function GuidedDocumentCreationPage() {
                     </li>
                   ))}
                 </ul>
-                <p className="text-xs text-amber-600 dark:text-amber-500 pl-7">
-                  El documento fue guardado para revisión. El PDF final no se generó automáticamente.
-                </p>
               </div>
             )}
 
-            {/* Document Content */}
-            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-lg">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Contenido Generado</h2>
-                <div className="flex gap-3">
-                  {result.incompleteDocument ? (
-                    <Button
-                      disabled
-                      title="El documento requiere revisión antes de generar el PDF final"
-                      className="bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed opacity-70"
-                    >
-                      PDF no disponible
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={async () => {
-                        if (result.contrato) {
-                          try {
-                            const { generatePdfFromText } = await import("@/app/lib/pdfGenerator");
-                            const schema = getDocumentSchema(selectedDocumentType || "service_contract");
-                            const documentTitle = schema?.label || "Documento";
-                            const fileName = result.documentId
-                              ? `documento-${result.documentId}.pdf`
-                              : "documento.pdf";
-                            generatePdfFromText(documentTitle, result.contrato, fileName);
-                          } catch (err) {
-                            console.error("Error generating PDF:", err);
-                            showError("Error al generar el PDF. Intentá descargarlo desde el detalle del documento.");
-                          }
-                        }
-                      }}
-                      className="bg-primary hover:bg-primary/90 text-white"
-                    >
-                      Descargar PDF
-                    </Button>
+            {/* ─── Editor de documento ───────────────────────────────── */}
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg overflow-hidden">
+
+              {/* Toolbar del editor */}
+              <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-base font-semibold text-slate-900 dark:text-white">Contenido del documento</h2>
+                  {isContentDirty && (
+                    <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-full px-2 py-0.5">
+                      Sin guardar
+                    </span>
                   )}
-                  <Button
-                    variant="outline"
-                    onClick={() => router.push(`/documents/${result.documentId}`)}
-                    className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  {contentSaveStatus === "saved" && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 rounded-full px-2 py-0.5">
+                      <CheckCircle2 className="h-3 w-3" /> Guardado
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {editedContent !== result.contrato && (
+                    <button
+                      type="button"
+                      onClick={handleRestoreOriginalContent}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Restaurar original
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSaveContent}
+                    disabled={isSavingContent || !isContentDirty}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 text-xs font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
-                    Ver Detalle
-                  </Button>
+                    <Save className="h-3.5 w-3.5" />
+                    {isSavingContent ? "Guardando…" : "Guardar"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDownloadPdf}
+                    disabled={isDownloadingPdf}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary/90 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    {isDownloadingPdf ? "Generando PDF…" : "Descargar PDF"}
+                  </button>
                 </div>
               </div>
 
-              <div className="prose max-w-none">
-                <pre className="whitespace-pre-wrap text-sm p-6 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-mono overflow-x-auto">
-                  {result.contrato}
-                </pre>
+              {/* Feedback errores */}
+              {contentSaveStatus === "error" && contentSaveError && (
+                <div className="flex items-center gap-2 px-6 py-2.5 bg-red-50 dark:bg-red-950/30 border-b border-red-100 dark:border-red-900/50 text-sm text-red-700 dark:text-red-400">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  {contentSaveError}
+                </div>
+              )}
+              {pdfDownloadError && (
+                <div className="flex items-center justify-between gap-2 px-6 py-2.5 bg-red-50 dark:bg-red-950/30 border-b border-red-100 dark:border-red-900/50 text-sm text-red-700 dark:text-red-400">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    {pdfDownloadError}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPdfDownloadError(null)}
+                    className="text-xs underline shrink-0"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              )}
+
+              {/* Área de edición — apariencia de documento */}
+              <div className="relative bg-white dark:bg-slate-900">
+                <textarea
+                  value={editedContent}
+                  onChange={(e) => {
+                    setEditedContent(e.target.value);
+                    setIsContentDirty(true);
+                    setContentSaveStatus("idle");
+                  }}
+                  spellCheck
+                  className="w-full min-h-[60vh] resize-none bg-transparent px-8 py-8 text-sm leading-7 text-slate-800 dark:text-slate-200 focus:outline-none font-sans"
+                  style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+                  placeholder="El contenido del documento aparecerá aquí…"
+                  aria-label="Contenido del documento"
+                />
+              </div>
+
+              {/* Footer del editor */}
+              <div className="flex items-center justify-between px-6 py-2.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                  {isContentDirty
+                    ? "Guardá los cambios antes de descargar, o hacé clic en \"Descargar PDF\" para guardar y descargar en un paso."
+                    : "El PDF se generará usando este contenido."}
+                </p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 tabular-nums">
+                  {editedContent.length.toLocaleString("es-AR")} caracteres
+                </p>
               </div>
             </div>
 
-            {/* Warnings */}
+            {/* Advertencias pre-generación */}
             {result.warnings && result.warnings.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Advertencias del Documento</h3>
+                <h3 className="text-base font-semibold text-slate-900 dark:text-white">Advertencias del formulario</h3>
                 <WarningsPanel warnings={result.warnings} />
               </div>
             )}
 
             {/* Actions */}
-            <div className="flex justify-center gap-4 pt-6 border-t border-slate-200 dark:border-slate-800">
+            <div className="flex flex-wrap justify-between items-center gap-4 pt-4 border-t border-slate-200 dark:border-slate-800">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -777,15 +900,25 @@ export default function GuidedDocumentCreationPage() {
                 }}
                 className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
-                Crear Otro Documento
+                Crear otro documento
               </Button>
-              <Button
-                onClick={() => router.push("/documents")}
-                className="bg-primary hover:bg-primary/90 text-white"
-              >
-                Ir al Dashboard
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => router.push(`/documents/${result.documentId}`)}
+                  className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  Ver detalle
+                </Button>
+                <Button
+                  onClick={() => router.push("/documents")}
+                  className="bg-primary hover:bg-primary/90 text-white"
+                >
+                  Ir al Dashboard
+                </Button>
+              </div>
             </div>
+
           </div>
         </div>
       </div>
