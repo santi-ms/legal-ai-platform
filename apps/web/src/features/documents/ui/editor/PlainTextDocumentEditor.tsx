@@ -41,6 +41,7 @@ interface PlainTextDocumentEditorProps {
   content: string;
   originalContent: string;
   isDirty: boolean;
+  isManualSaving: boolean;
   isSaving: boolean;
   isAutosaveRetrying: boolean;
   saveStatus: DocumentEditorSaveStatus;
@@ -49,7 +50,7 @@ interface PlainTextDocumentEditorProps {
   isDownloadingPdf: boolean;
   pdfDownloadError: string | null;
   editorRef: React.RefObject<HTMLDivElement | null>;
-  onSave: () => void | Promise<void>;
+  onSave: () => void | Promise<boolean>;
   onRestoreOriginal: () => void;
   onDownloadPdf: () => void | Promise<void>;
   onDismissPdfDownloadError: () => void;
@@ -63,6 +64,7 @@ export function PlainTextDocumentEditor({
   content,
   originalContent,
   isDirty,
+  isManualSaving,
   isSaving,
   isAutosaveRetrying,
   saveStatus,
@@ -136,16 +138,16 @@ export function PlainTextDocumentEditor({
           <button
             type="button"
             onClick={onSave}
-            disabled={isSaving || !isDirty}
+            disabled={isManualSaving || isDownloadingPdf || !isDirty}
             className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 text-xs font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <Save className="h-3.5 w-3.5" />
-            {isSaving ? "Guardando…" : "Guardar"}
+            {isManualSaving ? "Guardando…" : "Guardar"}
           </button>
           <button
             type="button"
             onClick={onDownloadPdf}
-            disabled={isDownloadingPdf}
+            disabled={isDownloadingPdf || isManualSaving}
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary/90 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
           >
             <Download className="h-3.5 w-3.5" />

@@ -711,6 +711,7 @@ export default function GuidedDocumentCreationPage() {
               content={documentEditor.content}
               originalContent={documentEditor.originalContent}
               isDirty={documentEditor.isDirty}
+              isManualSaving={documentEditor.isManualSaving}
               isSaving={documentEditor.isSaving}
               isAutosaveRetrying={documentEditor.isAutosaveRetrying}
               saveStatus={documentEditor.saveStatus}

@@ -104,6 +104,7 @@ export function usePlainTextDocumentEditor({
 
   const [content, setContent] = useState(initialContent);
   const [isDirty, setIsDirty] = useState(false);
+  const [isManualSaving, setIsManualSaving] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isAutosaveRetrying, setIsAutosaveRetrying] = useState(false);
   const [saveStatus, setSaveStatus] = useState<DocumentEditorSaveStatus>("idle");
@@ -125,7 +126,19 @@ export function usePlainTextDocumentEditor({
   const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestContentRef = useRef(initialContent);
   const lastPersistedContentRef = useRef(initialContent);
+  const isManualSavingRef = useRef(false);
+  const isDownloadingPdfRef = useRef(false);
   const inFlightSavePromiseRef = useRef<Promise<boolean> | null>(null);
+
+  const setManualSavingState = useCallback((value: boolean) => {
+    isManualSavingRef.current = value;
+    setIsManualSaving(value);
+  }, []);
+
+  const setDownloadingPdfState = useCallback((value: boolean) => {
+    isDownloadingPdfRef.current = value;
+    setIsDownloadingPdf(value);
+  }, []);
 
   const clearAutosaveTimeout = useCallback(() => {
     if (autosaveTimeoutRef.current) {
@@ -155,11 +168,13 @@ export function usePlainTextDocumentEditor({
   useEffect(() => {
     setContent(initialContent);
     setIsDirty(false);
+    setManualSavingState(false);
     setIsSaving(false);
     setIsAutosaveRetrying(false);
     setSaveStatus("idle");
     setSaveError(null);
     setLastSavedAt(null);
+    setDownloadingPdfState(false);
     setPdfDownloadError(null);
     latestContentRef.current = initialContent;
     lastPersistedContentRef.current = initialContent;
@@ -167,14 +182,20 @@ export function usePlainTextDocumentEditor({
 
     if (editorRef.current) {
       editorRef.current.textContent = initialContent;
-
-        setIsAutosaveRetrying(false);
     }
 
     clearAutosaveTimeout();
     clearAutosaveRetryTimeout(true);
     clearSaveStatusTimeout();
-  }, [clearAutosaveRetryTimeout, clearAutosaveTimeout, clearSaveStatusTimeout, documentId, initialContent]);
+  }, [
+    clearAutosaveRetryTimeout,
+    clearAutosaveTimeout,
+    clearSaveStatusTimeout,
+    documentId,
+    initialContent,
+    setDownloadingPdfState,
+    setManualSavingState,
+  ]);
 
   const performSave = useCallback(async ({
     source,
@@ -188,6 +209,10 @@ export function usePlainTextDocumentEditor({
     contentSnapshot?: string;
   }): Promise<boolean> => {
     if (!enabled || !documentId) return true;
+
+    if (source === "manual" && (isManualSavingRef.current || isDownloadingPdfRef.current)) {
+      return false;
+    }
 
     clearAutosaveTimeout();
 
@@ -225,6 +250,10 @@ export function usePlainTextDocumentEditor({
         setIsAutosaveRetrying(false);
       }
       return true;
+    }
+
+    if (source === "manual") {
+      setManualSavingState(true);
     }
 
     setIsSaving(true);
@@ -299,13 +328,23 @@ export function usePlainTextDocumentEditor({
         return false;
       } finally {
         inFlightSavePromiseRef.current = null;
+        if (source === "manual") {
+          setManualSavingState(false);
+        }
         setIsSaving(false);
       }
     })();
 
     inFlightSavePromiseRef.current = savePromise;
     return savePromise;
-  }, [clearAutosaveRetryTimeout, clearAutosaveTimeout, clearSaveStatusTimeout, documentId, enabled]);
+  }, [
+    clearAutosaveRetryTimeout,
+    clearAutosaveTimeout,
+    clearSaveStatusTimeout,
+    documentId,
+    enabled,
+    setManualSavingState,
+  ]);
 
   const save = useCallback(async (): Promise<boolean> => {
     return performSave({ source: "manual" });
@@ -498,7 +537,8 @@ export function usePlainTextDocumentEditor({
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
-        save();
+        if (isManualSavingRef.current || isDownloadingPdfRef.current) return;
+        void save();
       }
     };
 
@@ -551,13 +591,14 @@ export function usePlainTextDocumentEditor({
 
   const downloadPdf = useCallback(async () => {
     if (!enabled || !documentId) return;
+    if (isManualSavingRef.current || isDownloadingPdfRef.current) return;
 
     if (isDirty) {
       const saved = await save();
       if (!saved) return;
     }
 
-    setIsDownloadingPdf(true);
+    setDownloadingPdfState(true);
     setPdfDownloadError(null);
     try {
       const response = await fetch(`/api/_proxy/documents/${documentId}/pdf`);
@@ -579,9 +620,9 @@ export function usePlainTextDocumentEditor({
     } catch {
       setPdfDownloadError("Error al descargar el PDF. Revisá tu conexión e intentá de nuevo.");
     } finally {
-      setIsDownloadingPdf(false);
+      setDownloadingPdfState(false);
     }
-  }, [documentId, enabled, isDirty, save]);
+  }, [documentId, enabled, isDirty, save, setDownloadingPdfState]);
 
   const handleEditorInput = useCallback(() => {
     const nextContent = normalizeEditableText(editorRef.current?.innerText ?? "");
@@ -626,6 +667,7 @@ export function usePlainTextDocumentEditor({
     content,
     originalContent,
     isDirty,
+    isManualSaving,
     isSaving,
     isAutosaveRetrying,
     saveStatus,

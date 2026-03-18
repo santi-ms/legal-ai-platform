@@ -21,6 +21,7 @@ import { Document } from "@/app/lib/webApi";
 import { formatDate, formatDocumentType } from "@/app/lib/format";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { cn } from "@/lib/utils";
 
 interface DocumentsTableEnhancedProps {
   documents: Document[];
@@ -368,12 +369,25 @@ export function DocumentsTableEnhanced({
 
                     {/* Actions */}
                     <td className="px-6 py-4 text-right">
-                      <div
-                        className={cn(
-                          "flex items-center justify-end gap-2 transition-opacity",
-                          isHovered ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                      <div className="flex items-center justify-end gap-2">
+                        {onEdit && (
+                          <button
+                            type="button"
+                            onClick={() => onEdit(doc.id)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                            title="Editar"
+                            aria-label="Editar documento"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                            Editar
+                          </button>
                         )}
-                      >
+                        <div
+                          className={cn(
+                            "flex items-center justify-end gap-2 transition-opacity",
+                            isHovered ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                          )}
+                        >
                         {doc.lastVersion?.rawText && (
                           <>
                             <button
@@ -398,16 +412,6 @@ export function DocumentsTableEnhanced({
                               <Eye className="w-4 h-4" />
                             </Link>
                           </>
-                        )}
-                        {status === "DRAFT" && onEdit && (
-                          <Link
-                            href={`/documents/${doc.id}/review`}
-                            className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors text-slate-600 dark:text-slate-400"
-                            title="Editar"
-                            aria-label="Editar documento"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Link>
                         )}
                         {status === "PENDIENTE" && (
                           <button
@@ -440,6 +444,7 @@ export function DocumentsTableEnhanced({
                         >
                           <MoreVertical className="w-4 h-4" />
                         </button>
+                        </div>
                       </div>
                     </td>
                   </tr>
