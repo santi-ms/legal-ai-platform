@@ -50,11 +50,22 @@ import "@/src/features/documents/schemas/simple-authorization";
 
 type FlowStep = "selection" | "form" | "summary" | "result";
 
+interface OutputWarning {
+  code: string;
+  message: string;
+  match?: string;
+  severity: "error" | "warning";
+}
+
 interface GenerationResult {
   documentId: string;
   contrato: string;
   pdfUrl?: string | null;
   warnings?: GenerationWarning[];
+  /** true when the backend detected placeholders or incomplete content */
+  incompleteDocument?: boolean;
+  /** list of issues detected by post-generation validation */
+  outputWarnings?: OutputWarning[];
   metadata?: {
     documentType: string;
     templateVersion: string;
@@ -282,6 +293,8 @@ export default function GuidedDocumentCreationPage() {
         contrato: json.contrato,
         pdfUrl: json.pdfUrl,
         warnings: json.warnings || [],
+        incompleteDocument: json.incompleteDocument || false,
+        outputWarnings: json.outputWarnings || [],
         metadata: json.metadata,
       };
 
@@ -637,43 +650,92 @@ export default function GuidedDocumentCreationPage() {
       <div className="min-h-screen flex flex-col">
         <div className="flex-1 px-6 md:px-20 py-12">
           <div className="max-w-4xl mx-auto space-y-8">
-            {/* Success Header */}
-            <div className="text-center space-y-4">
-              <CheckCircle className="h-16 w-16 text-emerald-500 mx-auto" />
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-                ¡Documento generado exitosamente!
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400">
-                Tu documento está listo para descargar o revisar
-              </p>
-            </div>
+            {/* Header — condicional según calidad del documento */}
+            {result.incompleteDocument ? (
+              <div className="text-center space-y-4">
+                <AlertTriangle className="h-16 w-16 text-amber-500 mx-auto" />
+                <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
+                  Documento generado con advertencias
+                </h1>
+                <p className="text-slate-600 dark:text-slate-400">
+                  El sistema detectó posibles problemas de calidad. Revisá el contenido antes de usarlo.
+                </p>
+              </div>
+            ) : (
+              <div className="text-center space-y-4">
+                <CheckCircle className="h-16 w-16 text-emerald-500 mx-auto" />
+                <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
+                  ¡Documento generado exitosamente!
+                </h1>
+                <p className="text-slate-600 dark:text-slate-400">
+                  Tu documento está listo para descargar o revisar
+                </p>
+              </div>
+            )}
+
+            {/* Alerta de validación de output — solo si hay problemas */}
+            {result.incompleteDocument && result.outputWarnings && result.outputWarnings.length > 0 && (
+              <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">
+                    Se detectaron {result.outputWarnings.filter(w => w.severity === "error").length} problema(s) que deben revisarse
+                  </p>
+                </div>
+                <ul className="space-y-1.5 pl-7">
+                  {result.outputWarnings.map((w, i) => (
+                    <li key={i} className="text-sm text-amber-700 dark:text-amber-400 list-disc">
+                      {w.message}
+                      {w.match && (
+                        <code className="ml-1 px-1 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-mono">
+                          {w.match}
+                        </code>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-amber-600 dark:text-amber-500 pl-7">
+                  El documento fue guardado para revisión. El PDF final no se generó automáticamente.
+                </p>
+              </div>
+            )}
 
             {/* Document Content */}
             <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-lg">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">Contenido Generado</h2>
                 <div className="flex gap-3">
-                  <Button
-                    onClick={async () => {
-                      if (result.contrato) {
-                        try {
-                          const { generatePdfFromText } = await import("@/app/lib/pdfGenerator");
-                          const schema = getDocumentSchema(selectedDocumentType || "service_contract");
-                          const documentTitle = schema?.label || "Documento";
-                          const fileName = result.documentId
-                            ? `documento-${result.documentId}.pdf`
-                            : "documento.pdf";
-                          generatePdfFromText(documentTitle, result.contrato, fileName);
-                        } catch (err) {
-                          console.error("Error generating PDF:", err);
-                          showError("Error al generar el PDF. Intentá descargarlo desde el detalle del documento.");
+                  {result.incompleteDocument ? (
+                    <Button
+                      disabled
+                      title="El documento requiere revisión antes de generar el PDF final"
+                      className="bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed opacity-70"
+                    >
+                      PDF no disponible
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={async () => {
+                        if (result.contrato) {
+                          try {
+                            const { generatePdfFromText } = await import("@/app/lib/pdfGenerator");
+                            const schema = getDocumentSchema(selectedDocumentType || "service_contract");
+                            const documentTitle = schema?.label || "Documento";
+                            const fileName = result.documentId
+                              ? `documento-${result.documentId}.pdf`
+                              : "documento.pdf";
+                            generatePdfFromText(documentTitle, result.contrato, fileName);
+                          } catch (err) {
+                            console.error("Error generating PDF:", err);
+                            showError("Error al generar el PDF. Intentá descargarlo desde el detalle del documento.");
+                          }
                         }
-                      }
-                    }}
-                    className="bg-primary hover:bg-primary/90 text-white"
-                  >
-                    Descargar PDF
-                  </Button>
+                      }}
+                      className="bg-primary hover:bg-primary/90 text-white"
+                    >
+                      Descargar PDF
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     onClick={() => router.push(`/documents/${result.documentId}`)}

@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { DashboardShell } from "@/app/components/DashboardShell";
 import { Button } from "@/components/ui/button";
-import { Download, AlertCircle } from "lucide-react";
+import { Download, AlertCircle, AlertTriangle } from "lucide-react";
 import { SkeletonDocumentDetail } from "@/components/ui/skeleton";
 import { sanitizeInput } from "@/app/lib/sanitize";
 import type {
@@ -122,18 +122,30 @@ export default function DocumentDetailPage() {
       action={
         <div className="flex flex-col sm:flex-row gap-2">
           {last?.rawText && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleDownload();
-              }}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-primary/20 hover:bg-primary/90 hover:shadow-md transition-all"
-            >
-              <Download className="h-4 w-4" />
-              Descargar PDF
-            </button>
+            doc.estado === "needs_review" ? (
+              <button
+                type="button"
+                disabled
+                title="El documento requiere revisión antes de generar el PDF final"
+                className="inline-flex items-center gap-2 rounded-lg bg-slate-200 dark:bg-slate-700 px-4 py-2 text-sm font-semibold text-slate-400 dark:text-slate-500 cursor-not-allowed"
+              >
+                <AlertTriangle className="h-4 w-4" />
+                PDF no disponible
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDownload();
+                }}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-primary/20 hover:bg-primary/90 hover:shadow-md transition-all"
+              >
+                <Download className="h-4 w-4" />
+                Descargar PDF
+              </button>
+            )
           )}
 
           {/* Podrías agregar acá un botón Volver a /documents si querés */}
@@ -146,6 +158,21 @@ export default function DocumentDetailPage() {
       }
     >
       <div className="flex flex-col gap-8">
+        {/* BANNER NEEDS REVIEW */}
+        {doc.estado === "needs_review" && (
+          <div className="flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 p-4">
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                Este documento requiere revisión
+              </p>
+              <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
+                El sistema detectó posibles placeholders o contenido incompleto durante la generación. Revisá el texto antes de usarlo. El PDF no se generó automáticamente.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ERROR DE DESCARGA */}
         {downloadError && (
           <div
@@ -185,10 +212,16 @@ export default function DocumentDetailPage() {
             />
             <MetaField
               label="Estado"
-              value={sanitizeInput(doc.estado || "")}
+              value={
+                doc.estado === "needs_review" ? "Requiere revisión"
+                : doc.estado === "generated" || doc.estado === "generated_text" ? "Generado"
+                : sanitizeInput(doc.estado || "")
+              }
               valueClassName={
-                doc.estado === "GENERATED"
-                  ? "text-emerald-700"
+                doc.estado === "GENERATED" || doc.estado === "generated" || doc.estado === "generated_text"
+                  ? "text-emerald-700 dark:text-emerald-400"
+                  : doc.estado === "needs_review"
+                  ? "text-amber-600 dark:text-amber-400 font-semibold"
                   : doc.estado === "DRAFT"
                   ? "text-amber-700"
                   : "text-gray-700"

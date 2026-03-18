@@ -12,6 +12,24 @@ interface RecentDocumentsTableProps {
 }
 
 const statusConfig: Record<string, { label: string; className: string }> = {
+  // Backend values (lowercase)
+  generated: {
+    label: "Generado",
+    className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
+  },
+  generated_text: {
+    label: "Generado",
+    className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
+  },
+  needs_review: {
+    label: "Requiere revisión",
+    className: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
+  },
+  draft: {
+    label: "Borrador",
+    className: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400",
+  },
+  // Legacy Spanish values
   PENDIENTE: {
     label: "Pendiente",
     className: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
