@@ -26,7 +26,6 @@ import { cn } from "@/lib/utils";
 interface DocumentsTableEnhancedProps {
   documents: Document[];
   onPreview?: (id: string) => void;
-  onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onDownloadError?: (message: string) => void;
 }
@@ -370,18 +369,15 @@ export function DocumentsTableEnhanced({
                     {/* Actions */}
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {onEdit && (
-                          <button
-                            type="button"
-                            onClick={() => onEdit(doc.id)}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                            title="Editar"
-                            aria-label="Editar documento"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                            Editar
-                          </button>
-                        )}
+                        <Link
+                          href={`/documents/${doc.id}/edit`}
+                          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                          title="Editar"
+                          aria-label="Editar documento"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          Editar
+                        </Link>
                         <div
                           className={cn(
                             "flex items-center justify-end gap-2 transition-opacity",

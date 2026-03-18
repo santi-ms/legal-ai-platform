@@ -281,7 +281,6 @@ function DocumentsContent() {
           <>
             <DocumentsTableEnhanced
               documents={documents}
-              onEdit={(id) => router.push(`/documents/${id}/edit`)}
               onDelete={handleDelete}
               onDownloadError={showError}
               deletingId={deletingId}
