@@ -87,7 +87,22 @@ export async function generateDocumentWithNewArchitecture(
   );
 
   // 5. Assemble base draft
-  const baseDraft = assembleBaseDraft(template, clauses, clausePlan, data);
+  const rawBaseDraft = assembleBaseDraft(template, clauses, clausePlan, data);
+
+  // 5b. Append additionalClauses as a physical section in the baseDraft.
+  //
+  // This guarantees the content is present in two scenarios:
+  //   a) AI path: the AI sees it as document content (not just instructions)
+  //      and is instructed to keep/incorporate it as mandatory clauses.
+  //   b) Fallback path: if OpenAI fails and baseDraft is returned as-is,
+  //      additionalClauses is still visible to the user.
+  //
+  // NOTE (future): if a user writes clauses that contradict the document type
+  // (e.g., a payment clause in a legal_notice), the AI should flag or ignore it.
+  // Until that logic is implemented, the AI receives a strict instruction not to
+  // invent content — conflicting clauses will be reformulated but not removed.
+  const baseDraft = appendAdditionalClauses(rawBaseDraft, data);
+
   logger.info(`[generation-service] Base draft generated (${baseDraft.length} chars)`);
 
   // 6. Enhance with AI — now passes full data alongside the baseDraft
@@ -341,10 +356,8 @@ async function enhanceDraftWithAIWrapper(
   const jurisdiccionTexto = formatJurisdictionText(String(data.jurisdiccion || ""));
   const structuredContext = buildStructuredContextForAI(data, documentType);
 
-  const additionalClausesBlock =
-    data.additionalClauses && String(data.additionalClauses).trim().length > 0
-      ? `\n\nCLÁUSULAS ADICIONALES SOLICITADAS POR EL USUARIO (incorporar al documento):\n${String(data.additionalClauses).trim()}`
-      : "";
+  const hasAdditionalClauses =
+    data.additionalClauses && String(data.additionalClauses).trim().length > 0;
 
   const userPrompt = `Generá el documento legal final completo del siguiente tipo: ${documentType}
 
@@ -359,13 +372,13 @@ ${baseDraft}
 DATOS ESTRUCTURADOS DEL FORMULARIO (fuente de verdad — completar el documento con estos datos):
 ---
 ${structuredContext}
----${additionalClausesBlock}
+---
 
 INSTRUCCIONES DE SALIDA:
 ${promptConfig.baseInstructions.map((i) => `- ${i}`).join("\n")}
 - Usá el borrador base como estructura principal del documento
 - Completá y mejorá el texto con los datos estructurados cuando aporten información adicional o más precisa que el borrador
-- Si un dato del formulario ya está en el borrador, no lo repitas — solo mejorá la redacción
+- Si un dato del formulario ya está en el borrador, no lo repitas — solo mejorá la redacción${hasAdditionalClauses ? "\n- El borrador incluye una sección CLÁUSULAS ADICIONALES con contenido solicitado por el usuario — es OBLIGATORIA, incorporarla y numerarla correctamente como cláusula dentro del documento" : ""}
 - NO dejés placeholders como [indicar], [COMPLETAR], [___], {{VARIABLE}} — si falta un dato usá lo que ya está en el borrador
 - NO inventés información que no esté en los datos estructurados ni en el borrador
 - NO incluyas explicaciones, comentarios ni meta-texto
@@ -507,6 +520,50 @@ function getPromptConfigForType(
 // ---------------------------------------------------------------------------
 // Private helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Appends the user's additionalClauses as a dedicated section in the baseDraft,
+ * positioned before the signatures block.
+ *
+ * Inserting BEFORE signatures (rather than at the very end) ensures the final
+ * document structure is: main clauses → additional clauses → signatures.
+ *
+ * If no additionalClauses are present, the draft is returned unchanged.
+ *
+ * NOTE (future): clause conflict detection should be added here.
+ * If additionalClauses contains content that contradicts the document type
+ * (e.g., a payment obligation in a legal_notice), a warning should be added
+ * to generationWarnings and the offending text should be flagged for review.
+ */
+function appendAdditionalClauses(
+  draft: string,
+  data: StructuredDocumentData
+): string {
+  const text =
+    data.additionalClauses ? String(data.additionalClauses).trim() : "";
+
+  if (text.length === 0) return draft;
+
+  const additionalSection = `\nCLÁUSULAS ADICIONALES\n\n${text}\n`;
+
+  // Try to insert before the signatures block.
+  // Signatures are identified by a line starting with underscores (___) or
+  // common labels like "Firma", "FIRMA", "Lugar:", "Fecha:" at the bottom.
+  const signaturesPattern = /\n(?=_{3,}|\s*Lugar:|FIRMAS|En prueba)/i;
+  const signaturesIndex = draft.search(signaturesPattern);
+
+  if (signaturesIndex !== -1) {
+    return (
+      draft.slice(0, signaturesIndex) +
+      "\n" +
+      additionalSection +
+      draft.slice(signaturesIndex)
+    );
+  }
+
+  // Fallback: append at the end
+  return `${draft}\n${additionalSection}`;
+}
 
 function formatJurisdictionText(jurisdiction: string): string {
   const map: Record<string, string> = {
