@@ -414,6 +414,12 @@ async function enhanceDraftWithAIWrapper(
   },
   data: StructuredDocumentData
 ): Promise<{ text: string; tokens: { prompt: number; completion: number } }> {
+  // Allow tests to skip the AI call and receive the assembled baseDraft directly.
+  // Set SKIP_AI_ENHANCEMENT=true when starting the server in test/CI mode.
+  if (process.env.SKIP_AI_ENHANCEMENT === "true") {
+    return { text: baseDraft, tokens: { prompt: 0, completion: 0 } };
+  }
+
   const toneInstruction =
     promptConfig.toneInstructions[tone] ||
     promptConfig.toneInstructions.commercial_clear;
