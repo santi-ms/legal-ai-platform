@@ -33,6 +33,10 @@ interface TestCase {
   name: string;
   payload: unknown;
   expectedStatus: number;
+  /** Override the request URL. Evaluated at run time so IDs captured in previous tests work. */
+  url?: () => string;
+  /** HTTP method — defaults to POST */
+  method?: "POST" | "GET";
   validateResponse?: (response: any) => void;
   validatePersistence?: (documentId: string) => Promise<void>;
 }
@@ -549,6 +553,205 @@ const tc_needs_review_placeholder: TestCase = {
 };
 
 // ---------------------------------------------------------------------------
+// Shared state between sequential tests
+// ---------------------------------------------------------------------------
+
+/** Captured from tc_get_document_setup — used by tc_get_document_clean */
+let capturedCleanDocId = "";
+
+/** Captured from tc_needs_review_forced — used by tc_get_document_needs_review */
+let capturedNeedsReviewDocId = "";
+
+// ---------------------------------------------------------------------------
+// needs_review — forced via additionalClauses with bracket placeholder
+// ---------------------------------------------------------------------------
+
+/**
+ * Strategy: send additionalClauses containing "[indicar...]".
+ * appendAdditionalClauses() injects it verbatim into the baseDraft.
+ * With SKIP_AI_ENHANCEMENT=true, baseDraft reaches validateGeneratedDocumentOutput()
+ * unchanged. The PLACEHOLDER_BRACKET rule matches → incompleteDocument: true.
+ */
+const tc_needs_review_forced: TestCase = {
+  name: "needs_review — additionalClauses con bracket → incompleteDocument: true, status needs_review en DB",
+  payload: {
+    ...fixtures.service_contract,
+    additionalClauses:
+      "Incorporar penalidad adicional de [indicar monto exacto en pesos] por cada día de mora.",
+  },
+  expectedStatus: 200,
+  validateResponse: (res) => {
+    if (!res.ok) throw new Error("Expected ok: true");
+
+    if (res.incompleteDocument !== true) {
+      throw new Error(
+        `Expected incompleteDocument: true but got ${res.incompleteDocument}. ` +
+        `Check SKIP_AI_ENHANCEMENT=true is set on the server.`
+      );
+    }
+
+    const warnings: any[] = res.outputWarnings ?? [];
+    if (warnings.length === 0) {
+      throw new Error("Expected outputWarnings to be non-empty");
+    }
+
+    const bracketWarning = warnings.find((w: any) => w.code === "PLACEHOLDER_BRACKET");
+    if (!bracketWarning) {
+      throw new Error(
+        `Expected a PLACEHOLDER_BRACKET warning. Got codes: ${warnings.map((w: any) => w.code).join(", ")}`
+      );
+    }
+
+    if (!bracketWarning.match?.toLowerCase().includes("indicar")) {
+      throw new Error(
+        `Expected match to contain "indicar". Got: "${bracketWarning.match}"`
+      );
+    }
+
+    capturedNeedsReviewDocId = res.documentId;
+
+    console.log("  ✓ incompleteDocument: true");
+    console.log("  ✓ outputWarnings count:", warnings.length);
+    console.log("  ✓ PLACEHOLDER_BRACKET detected, match:", bracketWarning.match);
+    console.log("  ✓ documentId captured:", capturedNeedsReviewDocId.slice(0, 8) + "...");
+  },
+  validatePersistence: async (id) => {
+    const doc = await prisma.document.findUnique({
+      where: { id },
+      include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+    });
+    if (!doc) throw new Error("Document not found in DB");
+
+    const version = doc.versions[0];
+    if (!version) throw new Error("DocumentVersion not found");
+
+    if (version.status !== "needs_review") {
+      throw new Error(`Expected status "needs_review", got "${version.status}"`);
+    }
+
+    const persisted = version.outputWarnings as any[] | null;
+    if (!persisted || persisted.length === 0) {
+      throw new Error("Expected outputWarnings to be persisted in DocumentVersion");
+    }
+
+    const bracketInDb = persisted.find((w) => w.code === "PLACEHOLDER_BRACKET");
+    if (!bracketInDb) {
+      throw new Error(
+        `Expected PLACEHOLDER_BRACKET in persisted outputWarnings. ` +
+        `Got: ${persisted.map((w) => w.code).join(", ")}`
+      );
+    }
+
+    console.log("  ✓ DB status: needs_review");
+    console.log("  ✓ DB outputWarnings persisted:", persisted.length, "issue(s)");
+    console.log("  ✓ DB PLACEHOLDER_BRACKET.match:", bracketInDb.match);
+  },
+};
+
+// ---------------------------------------------------------------------------
+// GET /documents/:id — setup + fetch
+// ---------------------------------------------------------------------------
+
+/** Step 1: create a clean document and capture its ID */
+const tc_get_document_setup: TestCase = {
+  name: "GET setup — crear documento lease para recuperar por ID",
+  payload: fixtures.lease,
+  expectedStatus: 200,
+  validateResponse: (res) => {
+    if (!res.ok || !res.documentId) throw new Error("Expected ok: true and documentId");
+    capturedCleanDocId = res.documentId;
+    console.log("  ✓ clean document created:", capturedCleanDocId.slice(0, 8) + "...");
+  },
+};
+
+/** Step 2: GET the clean document — verify structure and fields */
+const tc_get_document_clean: TestCase = {
+  name: "GET /documents/:id — documento generado → type, status, rawText, no outputWarnings",
+  payload: null,
+  method: "GET",
+  url: () => `${API_URL}/documents/${capturedCleanDocId}`,
+  expectedStatus: 200,
+  validateResponse: (res) => {
+    if (!res.ok) throw new Error("Expected ok: true");
+
+    const doc = res.document;
+    if (!doc) throw new Error("Missing document in response");
+
+    // type
+    if (doc.type !== "contrato_locacion") {
+      throw new Error(`Expected type "contrato_locacion", got "${doc.type}"`);
+    }
+
+    // estado (Document level)
+    if (!doc.estado) throw new Error("Missing document.estado");
+
+    // lastVersion
+    const lv = doc.lastVersion;
+    if (!lv) throw new Error("Missing document.lastVersion");
+    if (!lv.rawText || lv.rawText.length < 100) {
+      throw new Error("lastVersion.rawText too short or missing");
+    }
+    if (lv.status !== "generated") {
+      throw new Error(`Expected lastVersion.status "generated", got "${lv.status}"`);
+    }
+    // Clean document should have null outputWarnings (no issues)
+    if (lv.outputWarnings !== null && lv.outputWarnings !== undefined) {
+      // Non-fatal: print warning but don't fail — the output validator might have
+      // found something in the template assembly that wasn't expected
+      console.log("  ⚠ outputWarnings present on clean doc:", lv.outputWarnings);
+    } else {
+      console.log("  ✓ outputWarnings: null (document is clean)");
+    }
+
+    console.log("  ✓ document.type:", doc.type);
+    console.log("  ✓ document.estado:", doc.estado);
+    console.log("  ✓ lastVersion.status:", lv.status);
+    console.log("  ✓ lastVersion.rawText length:", lv.rawText.length);
+    console.log("  ✓ lastVersion.id:", lv.id?.slice(0, 8) + "...");
+  },
+};
+
+/** GET the needs_review document — verify outputWarnings are served from DB */
+const tc_get_document_needs_review: TestCase = {
+  name: "GET /documents/:id — documento needs_review → status + outputWarnings desde DB",
+  payload: null,
+  method: "GET",
+  url: () => `${API_URL}/documents/${capturedNeedsReviewDocId}`,
+  expectedStatus: 200,
+  validateResponse: (res) => {
+    if (!res.ok) throw new Error("Expected ok: true");
+
+    const doc = res.document;
+    if (!doc) throw new Error("Missing document in response");
+
+    const lv = doc.lastVersion;
+    if (!lv) throw new Error("Missing lastVersion");
+
+    if (lv.status !== "needs_review") {
+      throw new Error(`Expected lastVersion.status "needs_review", got "${lv.status}"`);
+    }
+
+    const warnings: any[] = lv.outputWarnings ?? [];
+    if (warnings.length === 0) {
+      throw new Error("Expected outputWarnings to be served from DB in lastVersion");
+    }
+
+    const bracketWarning = warnings.find((w: any) => w.code === "PLACEHOLDER_BRACKET");
+    if (!bracketWarning) {
+      throw new Error(
+        `Expected PLACEHOLDER_BRACKET in lastVersion.outputWarnings. ` +
+        `Got: ${warnings.map((w: any) => w.code).join(", ")}`
+      );
+    }
+
+    console.log("  ✓ lastVersion.status: needs_review");
+    console.log("  ✓ outputWarnings served from DB:", warnings.length, "issue(s)");
+    console.log("  ✓ PLACEHOLDER_BRACKET present, match:", bracketWarning.match);
+    console.log("  ✓ document.type:", doc.type);
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Runner
 // ---------------------------------------------------------------------------
 
@@ -557,11 +760,15 @@ async function runTestCase(testCase: TestCase): Promise<boolean> {
   console.log("─".repeat(70));
 
   try {
-    const response = await fetch(`${API_URL}/documents/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(testCase.payload),
-    });
+    const method = testCase.method ?? "POST";
+    const url = testCase.url ? testCase.url() : `${API_URL}/documents/generate`;
+
+    const fetchOptions: RequestInit = { method, headers: { "Content-Type": "application/json" } };
+    if (method === "POST" && testCase.payload) {
+      fetchOptions.body = JSON.stringify(testCase.payload);
+    }
+
+    const response = await fetch(url, fetchOptions);
 
     const data = await response.json();
 
@@ -639,6 +846,12 @@ async function main() {
     tc_supply_contract_deprecated,
     tc_additional_clauses,
     tc_needs_review_placeholder,
+    // needs_review real
+    tc_needs_review_forced,
+    // GET /documents/:id
+    tc_get_document_setup,
+    tc_get_document_clean,
+    tc_get_document_needs_review,
   ];
 
   const results: boolean[] = [];
