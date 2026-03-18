@@ -7,7 +7,6 @@ import { ChevronRight } from "lucide-react";
 import { DocumentReviewHeader } from "@/components/documents/review/DocumentReviewHeader";
 import { AIAssistantSidebar } from "@/components/documents/review/AIAssistantSidebar";
 import { DocumentToolbar } from "@/components/documents/review/DocumentToolbar";
-import { InlineAISuggestion } from "@/components/documents/review/InlineAISuggestion";
 import { SmartRevisionsSidebar } from "@/components/documents/review/SmartRevisionsSidebar";
 import { getDocument } from "@/app/lib/webApi";
 import { sanitizeInput } from "@/app/lib/sanitize";
@@ -52,53 +51,32 @@ export default function DocumentReviewPage() {
     router.push(`/documents/${id}`);
   };
 
+  const [aiNotice, setAiNotice] = useState<string | null>(null);
+
+  const showAiNotice = (msg: string) => {
+    setAiNotice(msg);
+    setTimeout(() => setAiNotice(null), 3000);
+  };
+
   const handleApplyAll = () => {
-    // TODO: Apply all AI suggestions
-    console.log("Applying all suggestions");
+    showAiNotice("La revisión automática con IA estará disponible próximamente.");
   };
 
-  const handleApplyChange = (changeId: string) => {
-    // TODO: Apply specific change
-    console.log("Applying change:", changeId);
+  const handleApplyChange = (_changeId: string) => {
+    showAiNotice("La aprobación de cambios con IA estará disponible próximamente.");
   };
 
-  const handleIgnoreChange = (changeId: string) => {
-    // TODO: Ignore specific change
-    console.log("Ignoring change:", changeId);
+  const handleIgnoreChange = (_changeId: string) => {
+    showAiNotice("La gestión de sugerencias estará disponible próximamente.");
   };
 
-  const handleAskAI = (question: string) => {
-    // TODO: Send question to AI
-    console.log("AI question:", question);
+  const handleAskAI = (_question: string) => {
+    showAiNotice("El asistente de IA estará disponible próximamente.");
   };
 
-  // Example data for demonstration
-  const suggestedChanges = [
-    {
-      id: "1",
-      section: "Confidencialidad",
-      original: "stricta reserva",
-      suggested: "máxima confidencialidad contractual",
-      explanation:
-        "Este cambio mejora la solidez jurídica según los estándares internacionales de servicios de software.",
-    },
-  ];
-
-  const comments = [
-    {
-      id: "1",
-      author: "Lucía M.",
-      content:
-        "¿Hemos verificado si los 15.000€ incluyen IVA o es base imponible? Deberíamos aclararlo.",
-      timeAgo: "Hace 1h",
-    },
-    {
-      id: "2",
-      author: "Carlos R.",
-      content: "Revisado. El anexo A ya está adjunto en la carpeta del proyecto.",
-      timeAgo: "Hace 5m",
-    },
-  ];
+  // No hay sugerencias ni comentarios hasta que el backend los provea
+  const suggestedChanges: never[] = [];
+  const comments: never[] = [];
 
   if (loading) {
     return (
@@ -120,11 +98,13 @@ export default function DocumentReviewPage() {
   const documentTitle = doc.type || "Documento";
   const fileName = `${documentTitle}_V2.pdf`;
 
-  // Parse document content into sections for display
-  const sections = documentContent.split(/\n(?=\d+\.)/).filter(Boolean);
-
   return (
     <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100">
+      {aiNotice && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-slate-800 text-white text-sm px-5 py-3 rounded-lg shadow-lg">
+          {aiNotice}
+        </div>
+      )}
       <DocumentReviewHeader
         documentId={id!}
         documentTitle={documentTitle}
@@ -206,15 +186,7 @@ export default function DocumentReviewPage() {
                       );
                     })}
 
-                    {/* Example inline AI suggestion */}
-                    {sections.length > 0 && (
-                      <InlineAISuggestion
-                        quote="Los plazos de entrega serán acordados mutuamente..."
-                        recommendation="Recomendamos especificar fechas exactas o intervalos semanales para evitar ambigüedades en la ejecución."
-                        onAccept={() => console.log("Accepted suggestion")}
-                        onDiscard={() => console.log("Discarded suggestion")}
-                      />
-                    )}
+
                   </div>
                 ) : (
                   <p className="text-slate-500 dark:text-slate-400">

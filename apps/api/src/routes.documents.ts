@@ -605,12 +605,15 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         });
       }
 
-      // Verificar RBAC: solo admin puede eliminar
-      if (user.role !== "admin" && user.role !== "owner") {
+      // Verificar RBAC: admin/owner puede eliminar cualquier documento del tenant;
+      // usuarios normales solo pueden eliminar sus propios documentos
+      const isAdminOrOwner = user.role === "admin" || user.role === "owner";
+      const isCreator = document.createdById === user.userId;
+      if (!isAdminOrOwner && !isCreator) {
         return reply.status(403).send({
           ok: false,
           error: "FORBIDDEN",
-          message: "No tienes permiso para eliminar documentos",
+          message: "No tienes permiso para eliminar este documento",
         });
       }
 
