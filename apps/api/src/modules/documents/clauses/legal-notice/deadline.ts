@@ -1,5 +1,9 @@
 /**
  * Legal Notice Clause: Deadline
+ *
+ * States the compliance deadline in plain terms.
+ * The deadline value comes from formatDeadline() in generation-engine.ts,
+ * which maps enum values like "10_dias" to "10 días hábiles".
  */
 
 import type { ClauseDefinition } from "../../domain/generation-engine.js";
@@ -9,10 +13,7 @@ export const legalNoticeDeadlineClause: ClauseDefinition = {
   name: "Plazo para Cumplir",
   category: "type_specific",
   required: true,
-  content: `{{CLAUSE_NUMBER}}: PLAZO PARA CUMPLIR
+  content: `V. PLAZO PARA CUMPLIR
 
-Se otorga un plazo de {{DEADLINE}} para cumplir con la intimación formulada en la cláusula anterior, contado desde la recepción de la presente carta documento.
-
-Vencido dicho plazo sin cumplimiento, se procederá conforme a lo establecido en la cláusula de apercibimiento.`,
+Se otorga el plazo de {{DEADLINE}} a partir de la recepción de la presente para dar cumplimiento a lo intimado.`,
 };
-

@@ -35,12 +35,16 @@ import { legalNoticeWarningClause } from "./legal-notice/warning.js";
  */
 export function getClausesForType(documentType: string): Map<string, ClauseDefinition> {
   const clauses = new Map<string, ClauseDefinition>();
-  
-  // Common clauses (always available)
-  clauses.set(identificationClause.id, identificationClause);
-  clauses.set(jurisdictionClause.id, jurisdictionClause);
-  clauses.set(disputesClause.id, disputesClause);
-  
+
+  // Contract-style common clauses: only for document types that are actual contracts.
+  // Legal notices (carta documento) use a different structure: parties are in the
+  // header, and jurisdiction/disputes clauses are inappropriate for this format.
+  if (documentType !== "legal_notice") {
+    clauses.set(identificationClause.id, identificationClause);
+    clauses.set(jurisdictionClause.id, jurisdictionClause);
+    clauses.set(disputesClause.id, disputesClause);
+  }
+
   // Type-specific clauses
   if (documentType === "service_contract") {
     clauses.set(serviceObjectClause.id, serviceObjectClause);
@@ -79,12 +83,26 @@ export function getClausesForType(documentType: string): Map<string, ClauseDefin
  * @returns Array of required clause IDs
  */
 export function getRequiredClauseIds(documentType: string): string[] {
+  // Legal notice has its own clause structure — no contract-style required clauses.
+  // Parties are identified in the template header via {{PARTIES}}, so
+  // "identificacion_partes" is not needed as a numbered clause here.
+  if (documentType === "legal_notice") {
+    return [
+      "contexto_relacion",
+      "hechos",
+      "incumplimiento",
+      "intimacion",
+      "plazo_cumplimiento",
+    ];
+  }
+
+  // Default: contract-style required clauses
   const required: string[] = [
     "identificacion_partes",
     "foro_competencia",
     "resolucion_disputas",
   ];
-  
+
   if (documentType === "service_contract") {
     required.push(
       "objeto_contrato",
@@ -92,7 +110,7 @@ export function getRequiredClauseIds(documentType: string): string[] {
       "vigencia_plazo"
     );
   }
-  
+
   if (documentType === "nda") {
     required.push(
       "definicion_informacion",
@@ -101,17 +119,7 @@ export function getRequiredClauseIds(documentType: string): string[] {
       "plazo_confidencialidad"
     );
   }
-  
-  if (documentType === "legal_notice") {
-    required.push(
-      "contexto_relacion",
-      "hechos",
-      "incumplimiento",
-      "intimacion",
-      "plazo_cumplimiento"
-    );
-  }
-  
+
   return required;
 }
 

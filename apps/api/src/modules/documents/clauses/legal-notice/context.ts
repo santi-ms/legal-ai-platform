@@ -1,18 +1,18 @@
 /**
- * Legal Notice Clause: Context/Previous Relationship
+ * Legal Notice Clause: Context / Previous Relationship
+ *
+ * Presents the factual background that gives rise to the notice.
+ * Written in first-person narrative, not as a contract recital.
  */
 
 import type { ClauseDefinition } from "../../domain/generation-engine.js";
 
 export const legalNoticeContextClause: ClauseDefinition = {
   id: "contexto_relacion",
-  name: "Contexto de Relación Previa",
+  name: "Relación Previa y Contexto",
   category: "type_specific",
   required: true,
-  content: `{{CLAUSE_NUMBER}}: CONTEXTO Y RELACIÓN PREVIA
+  content: `I. RELACIÓN PREVIA Y CONTEXTO
 
-{{CONTEXT}}
-
-En virtud de la relación establecida, se han producido los hechos que se detallan a continuación.`,
+{{CONTEXT}}`,
 };
-

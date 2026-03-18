@@ -1,5 +1,9 @@
 /**
- * Legal Notice Clause: Demand/Intimation
+ * Legal Notice Clause: Demand / Intimation
+ *
+ * The core of the carta documento: a clear, specific, enforceable demand.
+ * Uses "INTIMA FEHACIENTEMENTE" — the standard Argentine legal phrase
+ * that signals formal notice with legal consequences.
  */
 
 import type { ClauseDefinition } from "../../domain/generation-engine.js";
@@ -9,12 +13,9 @@ export const legalNoticeDemandClause: ClauseDefinition = {
   name: "Intimación",
   category: "type_specific",
   required: true,
-  content: `{{CLAUSE_NUMBER}}: INTIMACIÓN
+  content: `IV. INTIMACIÓN
 
-Por la presente, se INTIMA a {{DESTINATARIO_NOMBRE}} a:
+Por la presente se INTIMA FEHACIENTEMENTE a {{DESTINATARIO_NOMBRE}} a:
 
-{{DEMAND}}
-
-Esta intimación es clara, concreta y específica, y debe ser cumplida en los términos establecidos.`,
+{{DEMAND}}`,
 };
-

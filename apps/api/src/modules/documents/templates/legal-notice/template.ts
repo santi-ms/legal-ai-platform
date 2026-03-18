@@ -1,13 +1,22 @@
 /**
- * Legal Notice Template
- * 
- * Base template for Legal Notices (Carta Documento) with placeholders.
+ * Legal Notice Template (Carta Documento)
+ *
+ * Structure follows Argentine legal practice for cartas documento:
+ * - Header: city, date, remitente → destinatario
+ * - Title: CARTA DOCUMENTO
+ * - Body: context → facts → breach → demand → deadline → warning
+ * - Footer: place, date, signature
+ *
+ * Intentionally excludes contract-style clauses (foro de competencia,
+ * resolución de disputas) — those are inappropriate for this document type.
  */
 
 export const legalNoticeTemplate = {
   id: "legal_notice_v1",
-  version: "1.0.0",
-  content: `{{PARTIES}}
+  version: "1.1.0",
+  content: `{{JURISDICTION}}, {{FECHA_ACTUAL}}
+
+{{PARTIES}}
 
 CARTA DOCUMENTO
 
@@ -23,16 +32,9 @@ CARTA DOCUMENTO
 
 {{CLAUSE_WARNING}}
 
-{{CLAUSE_JURISDICTION}}
-
-{{CLAUSE_DISPUTES}}
-
-Lugar: {{JURISDICTION}}
-Fecha: {{FECHA_ACTUAL}}
-
 ___________________________
 {{REMITENTE_NOMBRE}}
-Firma y aclaración / DNI
+Firma y aclaración
 `,
   variablePlaceholders: [
     "{{PARTIES}}",
@@ -47,8 +49,5 @@ Firma y aclaración / DNI
     "{{CLAUSE_DEMAND}}",
     "{{CLAUSE_DEADLINE}}",
     "{{CLAUSE_WARNING}}",
-    "{{CLAUSE_JURISDICTION}}",
-    "{{CLAUSE_DISPUTES}}",
   ],
 };
-

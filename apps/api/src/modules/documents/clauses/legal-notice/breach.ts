@@ -1,20 +1,18 @@
 /**
  * Legal Notice Clause: Breach
+ *
+ * Describes the specific failure or non-compliance.
+ * States facts, not legal conclusions — conclusions belong in the demand clause.
  */
 
 import type { ClauseDefinition } from "../../domain/generation-engine.js";
 
 export const legalNoticeBreachClause: ClauseDefinition = {
   id: "incumplimiento",
-  name: "Descripción del Incumplimiento",
+  name: "Incumplimiento",
   category: "type_specific",
   required: true,
-  content: `{{CLAUSE_NUMBER}}: INCUMPLIMIENTO
+  content: `III. INCUMPLIMIENTO
 
-Como consecuencia de los hechos narrados, se ha producido el siguiente incumplimiento:
-
-{{BREACH}}
-
-Este incumplimiento genera responsabilidad y obliga a la parte incumplidora a reparar los daños causados.`,
+{{BREACH}}`,
 };
-

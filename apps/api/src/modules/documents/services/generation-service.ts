@@ -478,11 +478,16 @@ function getPromptConfigForType(
       systemMessage:
         "Eres un abogado senior argentino especializado en cartas documento y notificaciones legales con efectos fehacientes. Generás cartas documento CERRADAS y DEFINITIVAS — con todos los datos completos, sin dejar espacios en blanco ni placeholders. El documento debe poder enviarse sin ninguna modificación adicional.",
       baseInstructions: [
-        ...commonInstructions,
-        "Incluir obligatoriamente: identificación completa de remitente y destinatario, relación previa o contexto, narración cronológica de hechos, descripción del incumplimiento, intimación concreta y específica, plazo para cumplir, apercibimiento con consecuencias legales, foro de competencia",
-        "La intimación debe ser clara, específica y no dejar lugar a ambigüedades",
-        "El documento es definitivo — todos los campos deben estar completos con los datos del formulario",
-        "Cerrar con lugar, fecha y sección de FIRMA del remitente",
+        "El documento debe ser legalmente válido y ejecutable en Argentina",
+        "Usar todos los datos concretos proporcionados (nombres, CUITs, domicilios, montos, fechas)",
+        "Estructura: encabezado con ciudad y fecha, identificación de remitente y destinatario, título CARTA DOCUMENTO, luego secciones I a VI (o las que correspondan)",
+        "NO incluir cláusulas contractuales como 'foro de competencia', 'resolución de disputas' ni lenguaje de contrato",
+        "La narración debe ser directa y cronológica — primero el contexto, luego los hechos, luego el incumplimiento",
+        "La intimación debe ser concreta: qué debe hacer el destinatario, en qué plazo y con qué datos específicos",
+        "El plazo debe reflejar exactamente el valor indicado (ej: '10 días hábiles')",
+        "El apercibimiento debe enunciar las acciones legales concretas que se iniciarán",
+        "Cerrar con lugar, fecha y espacio para firma del remitente",
+        "El documento es definitivo — todos los campos completos con los datos del formulario",
       ],
       toneInstructions,
     };
