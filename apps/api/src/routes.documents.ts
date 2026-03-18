@@ -20,11 +20,15 @@ interface DocumentWithVersion {
   tono: string | null;
   estado: string | null;
   costUsd: number | null;
+  tenantId: string;
   createdAt: Date;
+  updatedAt: Date;
   versions: Array<{
     id: string;
     rawText: string;
     pdfUrl: string | null;
+    status: string | null;
+    outputWarnings: unknown;
     createdAt: Date;
   }>;
 }
@@ -129,6 +133,8 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
               id: true,
               rawText: true,
               pdfUrl: true,
+              status: true,
+              outputWarnings: true,
               createdAt: true,
             },
           },
@@ -147,7 +153,9 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           tono: doc.tono,
           estado: doc.estado,
           costUsd: doc.costUsd,
+          tenantId: doc.tenantId,
           createdAt: doc.createdAt.toISOString(),
+          updatedAt: doc.updatedAt.toISOString(),
           lastVersion: doc.versions[0] ?? null,
         })),
         total,
@@ -785,6 +793,9 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           tono: document.tono,
           estado: document.estado,
           costUsd: document.costUsd,
+          tenantId: document.tenantId,
+          createdAt: document.createdAt.toISOString(),
+          updatedAt: document.updatedAt.toISOString(),
           lastVersion,
         },
       });

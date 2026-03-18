@@ -97,12 +97,12 @@ function DocumentsContent() {
     const docDate = new Date(d.createdAt);
     const now = new Date();
     return (
-      d.estado === "GENERATED" &&
+      d.lastVersion?.status === "generated" &&
       docDate.getMonth() === now.getMonth() &&
       docDate.getFullYear() === now.getFullYear()
     );
   }).length;
-  const activeDrafts = documents.filter((d) => d.estado === "DRAFT").length;
+  const activeDrafts = documents.filter((d) => d.lastVersion?.status === "needs_review").length;
 
   const stats = [
     {
@@ -156,14 +156,8 @@ function DocumentsContent() {
 
   const handleStatusChange = (newStatus: string) => {
     setStatus(newStatus);
-    // Map UI status to backend status
-    const statusMap: Record<string, string | undefined> = {
-      all: undefined,
-      GENERATED: "GENERATED",
-      DRAFT: "DRAFT",
-      PENDIENTE: "PENDIENTE",
-    };
-    handleFiltersChange({ page: 1 });
+    // El filtro por estado se aplica client-side sobre los documentos ya cargados
+    // El backend no expone un filtro de estado en GET /documents todavía
   };
 
   const handleClearFilters = () => {

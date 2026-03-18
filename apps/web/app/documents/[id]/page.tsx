@@ -46,19 +46,26 @@ export default function DocumentDetailPage() {
 
   async function handleDownload() {
     setDownloadError(null);
-
-    if (!id || !data?.document?.lastVersion?.rawText) {
-      setDownloadError("No hay contenido disponible para generar el PDF.");
-      setTimeout(() => downloadErrorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
-      return;
-    }
+    if (!id) return;
 
     try {
-      const { generatePdfFromText } = await import("@/app/lib/pdfGenerator");
-      const documentTitle = data.document.type || "DOCUMENTO";
-      const fileName = `${id}.pdf`;
-      generatePdfFromText(documentTitle, data.document.lastVersion.rawText, fileName);
-      // Descarga iniciada con éxito — no hay error
+      const response = await fetch(`/api/_proxy/documents/${id}/pdf`);
+      if (!response.ok) {
+        const json = await response.json().catch(() => ({}));
+        const msg = (json as any).message || "No se pudo descargar el PDF.";
+        setDownloadError(msg);
+        setTimeout(() => downloadErrorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+        return;
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch (err) {
       setDownloadError("No se pudo generar el PDF. Revisá tu conexión e intentá de nuevo.");
       setTimeout(() => downloadErrorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
@@ -122,7 +129,7 @@ export default function DocumentDetailPage() {
       action={
         <div className="flex flex-col sm:flex-row gap-2">
           {last?.rawText && (
-            doc.estado === "needs_review" ? (
+            last?.status === "needs_review" ? (
               <button
                 type="button"
                 disabled
@@ -159,7 +166,7 @@ export default function DocumentDetailPage() {
     >
       <div className="flex flex-col gap-8">
         {/* BANNER NEEDS REVIEW — con detalle de issues si están disponibles */}
-        {doc.estado === "needs_review" && (
+        {last?.status === "needs_review" && (
           <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 p-4 space-y-3">
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />

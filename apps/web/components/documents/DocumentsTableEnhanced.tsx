@@ -17,10 +17,8 @@ import {
   FolderOpen,
   Loader2,
 } from "lucide-react";
-import { Document, getDocument } from "@/app/lib/webApi";
+import { Document } from "@/app/lib/webApi";
 import { formatDate, formatDocumentType } from "@/app/lib/format";
-import { generatePdfFromText } from "@/app/lib/pdfGenerator";
-import { cn } from "@/app/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
@@ -135,6 +133,28 @@ function DocumentsEmptyState({ hasActiveFilters }: { hasActiveFilters?: boolean 
 }
 
 const statusConfig: Record<string, { label: string; className: string; dotColor: string }> = {
+  // Valores reales del backend
+  generated_text: {
+    label: "Generado",
+    className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400",
+    dotColor: "bg-emerald-500",
+  },
+  generated: {
+    label: "Generado",
+    className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400",
+    dotColor: "bg-emerald-500",
+  },
+  needs_review: {
+    label: "Requiere revisión",
+    className: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
+    dotColor: "bg-amber-500",
+  },
+  ready_pdf: {
+    label: "PDF listo",
+    className: "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400",
+    dotColor: "bg-blue-500",
+  },
+  // Valores legacy (por compatibilidad con datos antiguos)
   GENERATED: {
     label: "Completado",
     className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400",
@@ -222,31 +242,30 @@ export function DocumentsTableEnhanced({
     }
   }, [deletingId]);
 
-  const handleDownload = async (id: string, doc: Document) => {
+  const handleDownload = async (id: string, _doc: Document) => {
     // Guard: evitar doble-click mientras descarga
     if (downloadingId) return;
     setDownloadingId(id);
     try {
-      let rawText = doc.lastVersion?.rawText;
-      let documentType = doc.type || "DOCUMENTO";
-
-      if (!rawText) {
-        const documentData = await getDocument(id);
-        rawText = documentData.document?.lastVersion?.rawText;
-        documentType = documentData.document?.type || "DOCUMENTO";
-      }
-
-      if (!rawText) {
-        const msg = "No hay contenido disponible para generar el PDF.";
-        console.error("[documents-table]", msg);
+      const response = await fetch(`/api/_proxy/documents/${id}/pdf`);
+      if (!response.ok) {
+        const json = await response.json().catch(() => ({}));
+        const msg = (json as any).message || "No se pudo descargar el PDF.";
         onDownloadError?.(msg);
         return;
       }
-
-      generatePdfFromText(documentType, rawText, `${id}.pdf`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Error al generar el PDF";
-      console.error("[documents-table] Error generating PDF:", error);
+      const msg = error instanceof Error ? error.message : "Error al descargar el PDF";
+      console.error("[documents-table] Error downloading PDF:", error);
       onDownloadError?.(msg);
     } finally {
       setDownloadingId(null);

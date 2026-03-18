@@ -142,11 +142,12 @@ function DashboardContent() {
     return null;
   }
 
-  // ── Estadísticas basadas en datos reales ──────────────────────────────────
+  // Estadísticas basadas en datos reales del backend
+  // estado="generated_text" es el único valor que escribe el backend actualmente
   const activeDocuments = documents.length;
-  const pendingSignatures = documents.filter((d) => d.estado === "PENDIENTE").length;
-  const casesInProcess = documents.filter((d) => d.estado === "EN REVISIÓN").length;
-  const signedDocuments = documents.filter((d) => d.estado === "FIRMADO").length;
+  const pendingSignatures = 0; // Flujo de firma no implementado en backend
+  const casesInProcess = documents.filter((d) => d.lastVersion?.status === "needs_review").length;
+  const signedDocuments = documents.filter((d) => d.lastVersion?.status === "generated").length;
 
   // Nombre del usuario — sin prefijo "Dr." inventado
   const userName = session?.user?.name || "Usuario";
@@ -180,7 +181,7 @@ function DashboardContent() {
         </Link>
       </div>
 
-      {/* Stats Grid — valores reales, sin porcentajes de cambio inventados */}
+      {/* Stats Grid — valores reales */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           icon={FileText}
@@ -198,14 +199,14 @@ function DashboardContent() {
         />
         <StatsCard
           icon={Gavel}
-          label="Casos en Proceso"
+          label="Requieren Revisión"
           value={casesInProcess}
           iconBgColor="bg-purple-100 dark:bg-purple-900/30"
           iconColor="text-purple-600 dark:text-purple-400"
         />
         <StatsCard
           icon={CheckCircle2}
-          label="Documentos Firmados"
+          label="Generados"
           value={signedDocuments}
           iconBgColor="bg-emerald-100 dark:bg-emerald-900/30"
           iconColor="text-emerald-600 dark:text-emerald-400"
