@@ -199,6 +199,18 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
 
       const contrato = generationResult.aiEnhancedDraft;
 
+      // 3.5️⃣ Validación post-generación: placeholders, instrucciones meta, contenido incompleto
+      const { validateGeneratedDocumentOutput } = await import("./modules/documents/domain/output-validator.js");
+      const outputValidation = validateGeneratedDocumentOutput(contrato, documentType);
+      const hasOutputErrors = !outputValidation.valid;
+
+      if (hasOutputErrors) {
+        app.log.warn(
+          { documentType, issueCount: outputValidation.issues.length, issues: outputValidation.issues },
+          "[api] Post-generation validation: document has placeholders or incomplete content — PDF will be skipped"
+        );
+      }
+
       // 4️⃣ Guardar documento y versión en la base con nueva estructura
       const { documentRecord, versionRecord } = await prisma.$transaction(
         async (tx: Prisma.TransactionClient) => {
@@ -297,7 +309,10 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
               clausePlan: generationResult.clausePlan as any,
               generationWarnings: generationResult.warnings as any,
               templateVersion: generationResult.metadata.templateVersion,
-              status: "generated",
+              // "needs_review" when post-generation validation detected placeholders
+              // or incomplete content — signals the document needs human review
+              // before being treated as final.
+              status: hasOutputErrors ? "needs_review" : "generated",
             },
           });
 
@@ -309,43 +324,50 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       const fileName = `${versionRecord.id}.pdf`;
       app.log.info(`[api] Generating PDF with fileName: ${fileName}`);
 
-      // 7️⃣ Llamar microservicio PDF
+      // 7️⃣ Llamar microservicio PDF — solo si el documento pasó la validación de output.
+      // Si hasOutputErrors=true, el documento tiene placeholders o contenido incompleto:
+      // se omite el PDF para no exportar un documento jurídicamente inválido.
       let pdfGenerated = false;
-      try {
-        const pdfServiceUrl =
-          process.env.PDF_SERVICE_URL || "http://localhost:4100";
-        
-        app.log.info(`[api] Calling PDF service at: ${pdfServiceUrl}/pdf/generate`);
-        app.log.info(`[api] PDF generation params: title=${documentType}, fileName=${fileName}, textLength=${contrato.length}`);
-        
-        const pdfResponse = await fetch(`${pdfServiceUrl}/pdf/generate`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: documentType.toUpperCase(),
-            rawText: contrato,
-            fileName: fileName,
-          }),
-        });
 
-        app.log.info(`[api] PDF service response status: ${pdfResponse.status}`);
-        
-        if (pdfResponse.ok) {
-          const pdfJson = await pdfResponse.json();
-          app.log.info({ pdfJson }, `[api] PDF service response`);
-          if (pdfJson.ok && pdfJson.fileName === fileName) {
-            pdfGenerated = true;
-            app.log.info(`[api] PDF generated successfully: ${fileName}`);
+      if (hasOutputErrors) {
+        app.log.info("[api] Skipping PDF generation — document marked as needs_review due to output validation failures");
+      } else {
+        try {
+          const pdfServiceUrl =
+            process.env.PDF_SERVICE_URL || "http://localhost:4100";
+          
+          app.log.info(`[api] Calling PDF service at: ${pdfServiceUrl}/pdf/generate`);
+          app.log.info(`[api] PDF generation params: title=${documentType}, fileName=${fileName}, textLength=${contrato.length}`);
+          
+          const pdfResponse = await fetch(`${pdfServiceUrl}/pdf/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: documentType.toUpperCase(),
+              rawText: contrato,
+              fileName: fileName,
+            }),
+          });
+
+          app.log.info(`[api] PDF service response status: ${pdfResponse.status}`);
+          
+          if (pdfResponse.ok) {
+            const pdfJson = await pdfResponse.json();
+            app.log.info({ pdfJson }, `[api] PDF service response`);
+            if (pdfJson.ok && pdfJson.fileName === fileName) {
+              pdfGenerated = true;
+              app.log.info(`[api] PDF generated successfully: ${fileName}`);
+            } else {
+              app.log.warn({ pdfJson }, `[api] PDF generation response invalid`);
+            }
           } else {
-            app.log.warn({ pdfJson }, `[api] PDF generation response invalid`);
+            const errorText = await pdfResponse.text().catch(() => "Could not read error");
+            app.log.error({ status: pdfResponse.status, errorText }, `[api] PDF service error`);
           }
-        } else {
-          const errorText = await pdfResponse.text().catch(() => "Could not read error");
-          app.log.error({ status: pdfResponse.status, errorText }, `[api] PDF service error`);
+        } catch (err) {
+          app.log.error(err, "Error al llamar al pdf-service");
+          app.log.error(`[api] PDF service URL was: ${process.env.PDF_SERVICE_URL || "http://localhost:4100"}`);
         }
-      } catch (err) {
-        app.log.error(err, "Error al llamar al pdf-service");
-        app.log.error(`[api] PDF service URL was: ${process.env.PDF_SERVICE_URL || "http://localhost:4100"}`);
       }
 
       // 8️⃣ Guardar fileName en DB
@@ -362,8 +384,13 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         documentId: documentRecord.id,
         contrato,
         pdfUrl: pdfGenerated ? fileName : null,
-        // Nueva metadata estructurada
+        // Pre-generation warnings (business rules on form data)
         warnings: generationResult.warnings,
+        // Post-generation validation: placeholders, incomplete content, etc.
+        // incompleteDocument=true means the PDF was NOT generated and the document
+        // needs manual review before it can be considered final.
+        incompleteDocument: hasOutputErrors,
+        outputWarnings: outputValidation.issues,
         metadata: {
           documentType,
           templateVersion: generationResult.metadata.templateVersion,
