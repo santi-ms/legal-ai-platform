@@ -19,11 +19,12 @@ import type { DocumentTypeId, StructuredDocumentData, GenerationWarning } from "
 import { validateFormData } from "@/src/features/documents/core/validation";
 import { evaluateWarningRules } from "@/src/features/documents/core/warnings";
 import confetti from "canvas-confetti";
-import { CheckCircle, AlertTriangle, Loader2, ArrowLeft, Search, Brain, FileCheck, Sparkles, Save, RotateCcw, Download, CheckCircle2 } from "lucide-react";
+import { CheckCircle, AlertTriangle, Loader2, ArrowLeft, Search, Brain, FileCheck, Sparkles } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { AutosaveIndicator } from "@/src/features/documents/ui/autosave/AutosaveIndicator";
 import { ValidationErrorPanel } from "@/src/features/documents/ui/errors/ValidationErrorPanel";
-import { darkModeClasses, darkBorderColors } from "@/src/features/documents/ui/styles/dark-mode";
+import { PlainTextDocumentEditor } from "@/src/features/documents/ui/editor/PlainTextDocumentEditor";
+import { usePlainTextDocumentEditor } from "@/src/features/documents/ui/editor/usePlainTextDocumentEditor";
 import { DocumentCreationPageHeader } from "@/components/documents/DocumentCreationPageHeader";
 import { DocumentCreationFooter } from "@/components/documents/DocumentCreationFooter";
 import { DocumentTypeCard } from "@/components/documents/DocumentTypeCard";
@@ -93,17 +94,15 @@ export default function GuidedDocumentCreationPage() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [confirmBackOpen, setConfirmBackOpen] = useState(false);
 
-  // Estado de edición inline del documento generado
-  const [editedContent, setEditedContent] = useState("");
-  const [isContentDirty, setIsContentDirty] = useState(false);
-  const [isSavingContent, setIsSavingContent] = useState(false);
-  const [contentSaveStatus, setContentSaveStatus] = useState<"idle" | "saved" | "error">("idle");
-  const [contentSaveError, setContentSaveError] = useState<string | null>(null);
-  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const [pdfDownloadError, setPdfDownloadError] = useState<string | null>(null);
-
   // Ref para scroll automático al bloque de error de generación
   const generationErrorRef = useRef<HTMLDivElement>(null);
+
+  const documentEditor = usePlainTextDocumentEditor({
+    documentId: result?.documentId,
+    initialContent: result?.contrato ?? "",
+    originalContent: result?.contrato ?? "",
+    enabled: currentStep === "result" && Boolean(result?.documentId),
+  });
 
   useEffect(() => {
     if (error && generationErrorRef.current) {
@@ -310,10 +309,6 @@ export default function GuidedDocumentCreationPage() {
       setResult(generationResult);
       setCurrentStep("result");
       setHasUnsavedChanges(false);
-      setEditedContent(generationResult.contrato);
-      setIsContentDirty(false);
-      setContentSaveStatus("idle");
-      setPdfDownloadError(null);
       
       trackGenerationSuccess(
         selectedDocumentType,
@@ -371,67 +366,6 @@ export default function GuidedDocumentCreationPage() {
     setValidationErrors([]);
     setHasUnsavedChanges(false);
     setConfirmBackOpen(false);
-  };
-
-  // Guarda el contenido editado en el backend. Devuelve true si tuvo éxito.
-  const handleSaveContent = async (): Promise<boolean> => {
-    if (!result) return true;
-    if (!isContentDirty) return true;
-    setIsSavingContent(true);
-    setContentSaveError(null);
-    try {
-      const { saveEditedContent } = await import("@/app/lib/webApi");
-      await saveEditedContent(result.documentId, editedContent);
-      setIsContentDirty(false);
-      setContentSaveStatus("saved");
-      setTimeout(() => setContentSaveStatus("idle"), 4000);
-      return true;
-    } catch (err: any) {
-      setContentSaveError(err?.message || "Error al guardar los cambios");
-      setContentSaveStatus("error");
-      return false;
-    } finally {
-      setIsSavingContent(false);
-    }
-  };
-
-  const handleRestoreOriginalContent = () => {
-    if (!result) return;
-    if (!window.confirm("¿Restaurar el texto original generado por IA? Se perderán los cambios realizados.")) return;
-    setEditedContent(result.contrato);
-    setIsContentDirty(true);
-    setContentSaveStatus("idle");
-  };
-
-  const handleDownloadPdf = async () => {
-    if (!result) return;
-    if (isContentDirty) {
-      const saved = await handleSaveContent();
-      if (!saved) return;
-    }
-    setIsDownloadingPdf(true);
-    setPdfDownloadError(null);
-    try {
-      const response = await fetch(`/api/_proxy/documents/${result.documentId}/pdf`);
-      if (!response.ok) {
-        const json = await response.json().catch(() => ({}));
-        setPdfDownloadError((json as any).message || "No se pudo generar el PDF.");
-        return;
-      }
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${result.documentId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch {
-      setPdfDownloadError("Error al descargar el PDF. Revisá tu conexión e intentá de nuevo.");
-    } finally {
-      setIsDownloadingPdf(false);
-    }
   };
 
   const renderSelectionStep = () => {
@@ -773,108 +707,27 @@ export default function GuidedDocumentCreationPage() {
             )}
 
             {/* ─── Editor de documento ───────────────────────────────── */}
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg overflow-hidden">
-
-              {/* Toolbar del editor */}
-              <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-base font-semibold text-slate-900 dark:text-white">Contenido del documento</h2>
-                  {isContentDirty && (
-                    <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-full px-2 py-0.5">
-                      Sin guardar
-                    </span>
-                  )}
-                  {contentSaveStatus === "saved" && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 rounded-full px-2 py-0.5">
-                      <CheckCircle2 className="h-3 w-3" /> Guardado
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {editedContent !== result.contrato && (
-                    <button
-                      type="button"
-                      onClick={handleRestoreOriginalContent}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" />
-                      Restaurar original
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleSaveContent}
-                    disabled={isSavingContent || !isContentDirty}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 text-xs font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <Save className="h-3.5 w-3.5" />
-                    {isSavingContent ? "Guardando…" : "Guardar"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDownloadPdf}
-                    disabled={isDownloadingPdf}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary/90 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    {isDownloadingPdf ? "Generando PDF…" : "Descargar PDF"}
-                  </button>
-                </div>
-              </div>
-
-              {/* Feedback errores */}
-              {contentSaveStatus === "error" && contentSaveError && (
-                <div className="flex items-center gap-2 px-6 py-2.5 bg-red-50 dark:bg-red-950/30 border-b border-red-100 dark:border-red-900/50 text-sm text-red-700 dark:text-red-400">
-                  <AlertTriangle className="h-4 w-4 shrink-0" />
-                  {contentSaveError}
-                </div>
-              )}
-              {pdfDownloadError && (
-                <div className="flex items-center justify-between gap-2 px-6 py-2.5 bg-red-50 dark:bg-red-950/30 border-b border-red-100 dark:border-red-900/50 text-sm text-red-700 dark:text-red-400">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 shrink-0" />
-                    {pdfDownloadError}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setPdfDownloadError(null)}
-                    className="text-xs underline shrink-0"
-                  >
-                    Cerrar
-                  </button>
-                </div>
-              )}
-
-              {/* Área de edición — apariencia de documento */}
-              <div className="relative bg-white dark:bg-slate-900">
-                <textarea
-                  value={editedContent}
-                  onChange={(e) => {
-                    setEditedContent(e.target.value);
-                    setIsContentDirty(true);
-                    setContentSaveStatus("idle");
-                  }}
-                  spellCheck
-                  className="w-full min-h-[60vh] resize-none bg-transparent px-8 py-8 text-sm leading-7 text-slate-800 dark:text-slate-200 focus:outline-none font-sans"
-                  style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
-                  placeholder="El contenido del documento aparecerá aquí…"
-                  aria-label="Contenido del documento"
-                />
-              </div>
-
-              {/* Footer del editor */}
-              <div className="flex items-center justify-between px-6 py-2.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                  {isContentDirty
-                    ? "Guardá los cambios antes de descargar, o hacé clic en \"Descargar PDF\" para guardar y descargar en un paso."
-                    : "El PDF se generará usando este contenido."}
-                </p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500 tabular-nums">
-                  {editedContent.length.toLocaleString("es-AR")} caracteres
-                </p>
-              </div>
-            </div>
+            <PlainTextDocumentEditor
+              content={documentEditor.content}
+              originalContent={documentEditor.originalContent}
+              isDirty={documentEditor.isDirty}
+              isSaving={documentEditor.isSaving}
+              isAutosaveRetrying={documentEditor.isAutosaveRetrying}
+              saveStatus={documentEditor.saveStatus}
+              saveError={documentEditor.saveError}
+              lastSavedAt={documentEditor.lastSavedAt}
+              isDownloadingPdf={documentEditor.isDownloadingPdf}
+              pdfDownloadError={documentEditor.pdfDownloadError}
+              editorRef={documentEditor.editorRef}
+              onSave={documentEditor.save}
+              onRestoreOriginal={documentEditor.restoreOriginal}
+              onDownloadPdf={documentEditor.downloadPdf}
+              onDismissPdfDownloadError={documentEditor.dismissPdfDownloadError}
+              onEditorInput={documentEditor.handleEditorInput}
+              onEditorPaste={documentEditor.handleEditorPaste}
+              onEditorDrop={documentEditor.handleEditorDrop}
+              onEditorKeyDown={documentEditor.handleEditorKeyDown}
+            />
 
             {/* Advertencias pre-generación */}
             {result.warnings && result.warnings.length > 0 && (
@@ -888,7 +741,7 @@ export default function GuidedDocumentCreationPage() {
             <div className="flex flex-wrap justify-between items-center gap-4 pt-4 border-t border-slate-200 dark:border-slate-800">
               <Button
                 variant="outline"
-                onClick={() => {
+                onClick={() => documentEditor.requestNavigation(() => {
                   trackStepNavigation("result", "selection", selectedDocumentType);
                   setCurrentStep("selection");
                   setSelectedDocumentType(null);
@@ -897,7 +750,7 @@ export default function GuidedDocumentCreationPage() {
                   setError(null);
                   setValidationErrors([]);
                   setHasUnsavedChanges(false);
-                }}
+                })}
                 className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 Crear otro documento
@@ -905,13 +758,13 @@ export default function GuidedDocumentCreationPage() {
               <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => router.push(`/documents/${result.documentId}`)}
+                  onClick={() => documentEditor.requestNavigation(() => router.push(`/documents/${result.documentId}`))}
                   className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                 >
                   Ver detalle
                 </Button>
                 <Button
-                  onClick={() => router.push("/documents")}
+                  onClick={() => documentEditor.requestNavigation(() => router.push("/documents"))}
                   className="bg-primary hover:bg-primary/90 text-white"
                 >
                   Ir al Dashboard
@@ -1010,6 +863,17 @@ export default function GuidedDocumentCreationPage() {
         cancelLabel="Seguir editando"
         onConfirm={executeBackToSelection}
         onCancel={() => setConfirmBackOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={documentEditor.confirmNavigationOpen}
+        variant="destructive"
+        title="Hay cambios sin guardar"
+        description="Si continuás con esta navegación, vas a perder las ediciones del documento que todavía no guardaste."
+        confirmLabel="Salir igual"
+        cancelLabel="Seguir editando"
+        onConfirm={documentEditor.confirmNavigation}
+        onCancel={documentEditor.cancelNavigation}
       />
     </div>
   );
