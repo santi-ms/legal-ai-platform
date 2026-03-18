@@ -19,6 +19,15 @@ export interface Document {
     id: string;
     rawText: string;
     pdfUrl: string | null;
+    /** Version status: "generated" | "needs_review" | "draft" | "reviewed" | "final" */
+    status: string | null;
+    /** Post-generation output validation issues. Present when status === "needs_review". */
+    outputWarnings: Array<{
+      code: string;
+      message: string;
+      match?: string;
+      severity: "error" | "warning";
+    }> | null;
     createdAt: string;
   } | null;
 }

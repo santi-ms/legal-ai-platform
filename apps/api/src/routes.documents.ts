@@ -308,6 +308,9 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
               structuredData: generationResult.structuredData as any,
               clausePlan: generationResult.clausePlan as any,
               generationWarnings: generationResult.warnings as any,
+              outputWarnings: outputValidation.issues.length > 0
+                ? outputValidation.issues as any
+                : null,
               templateVersion: generationResult.metadata.templateVersion,
               // "needs_review" when post-generation validation detected placeholders
               // or incomplete content — signals the document needs human review
@@ -702,6 +705,8 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
               id: true,
               rawText: true,
               pdfUrl: true,
+              status: true,
+              outputWarnings: true,
               createdAt: true,
             },
           },

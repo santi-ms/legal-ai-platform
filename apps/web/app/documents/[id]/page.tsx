@@ -158,18 +158,34 @@ export default function DocumentDetailPage() {
       }
     >
       <div className="flex flex-col gap-8">
-        {/* BANNER NEEDS REVIEW */}
+        {/* BANNER NEEDS REVIEW — con detalle de issues si están disponibles */}
         {doc.estado === "needs_review" && (
-          <div className="flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 p-4">
-            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                Este documento requiere revisión
-              </p>
-              <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
-                El sistema detectó posibles placeholders o contenido incompleto durante la generación. Revisá el texto antes de usarlo. El PDF no se generó automáticamente.
-              </p>
+          <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                  Este documento requiere revisión
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
+                  El sistema detectó posibles placeholders o contenido incompleto durante la generación. Revisá el texto antes de usarlo. El PDF no se generó automáticamente.
+                </p>
+              </div>
             </div>
+            {last?.outputWarnings && last.outputWarnings.length > 0 && (
+              <ul className="space-y-1 pl-8">
+                {last.outputWarnings.map((w, i) => (
+                  <li key={i} className="text-sm text-amber-700 dark:text-amber-400 list-disc">
+                    {w.message}
+                    {w.match && (
+                      <code className="ml-1 px-1 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-mono">
+                        {w.match}
+                      </code>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
 

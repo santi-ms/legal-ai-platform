@@ -72,9 +72,10 @@ model DocumentVersion {
   // Structured data fields (nullable for backward compatibility)
   structuredData      Json?
   clausePlan          Json?
-  generationWarnings  Json?
+  generationWarnings  Json?     // Pre-generation warnings (semantic validation rules)
+  outputWarnings      Json?     // Post-generation warnings (placeholder/completeness detection)
   templateVersion     String?
-  status              String?
+  status              String?   // "draft" | "generated" | "reviewed" | "final" | "needs_review"
 
   createdAt       DateTime  @default(now())
 }
