@@ -181,10 +181,19 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       // 1.5️⃣ Sanitizar inputs para prevenir XSS
       const sanitizedData = sanitizeObject(structuredData, false) as typeof structuredData;
 
-      // 2️⃣ Autenticación (antes de generar para tener tenant/user)
+      // 2️⃣ Autenticación — requerida en producción, fallback demo solo en dev/test
       const user = getUserFromRequest(request);
+
+      if (!user && process.env.NODE_ENV === "production") {
+        return reply.status(401).send({
+          ok: false,
+          error: "UNAUTHORIZED",
+          message: "Autenticación requerida para generar documentos",
+        });
+      }
+
       const tenantId = user?.tenantId || "demo-tenant";
-      const userId = user?.userId || "demo-user";
+      const userId   = user?.userId   || "demo-user";
 
       // 3️⃣ Generar documento con nueva arquitectura
       const { generateDocumentWithNewArchitecture } = await import("./modules/documents/services/generation-service.js");
@@ -690,6 +699,16 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
   // GET /documents/:id
   // ==========================================
   app.get("/documents/:id", async (request, reply) => {
+    // Auth required — no unauthenticated access to document details
+    const user = getUserFromRequest(request);
+    if (!user) {
+      return reply.status(401).send({
+        ok: false,
+        error: "UNAUTHORIZED",
+        message: "Autenticación requerida",
+      });
+    }
+
     const ParamsSchema = z.object({ id: z.string().uuid() });
     const parsed = ParamsSchema.safeParse(request.params);
 
@@ -700,8 +719,11 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
     const { id } = parsed.data;
 
     try {
-      const document = await prisma.document.findUnique({
-        where: { id },
+      // Tenant-scoped lookup: using findFirst with tenantId ensures a document
+      // belonging to a different tenant returns 404 (not 403) — this deliberately
+      // avoids leaking whether a document UUID exists in another tenant.
+      const document = await prisma.document.findFirst({
+        where: { id, tenantId: user.tenantId },
         include: {
           versions: {
             orderBy: { createdAt: "desc" },
@@ -719,9 +741,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       });
 
       if (!document) {
-        return reply
-          .status(404)
-          .send({ ok: false, error: "DOCUMENT_NOT_FOUND" });
+        return reply.status(404).send({ ok: false, error: "DOCUMENT_NOT_FOUND" });
       }
 
       const lastVersion = document.versions[0] ?? null;
@@ -739,14 +759,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         },
       });
     } catch (err: any) {
-      if (err.message === "UNAUTHORIZED") {
-        return reply.status(401).send({
-          ok: false,
-          error: "UNAUTHORIZED",
-          message: "Autenticación requerida",
-        });
-      }
-      request.log?.error({ err }, "documents route error");
+      request.log?.error({ err }, "GET /documents/:id error");
       return reply.status(500).send({ ok: false, message: "Internal error" });
     }
   });

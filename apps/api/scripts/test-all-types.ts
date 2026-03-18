@@ -10,20 +10,55 @@
  *   npm run test:all-types
  *
  * SKIP_AI_ENHANCEMENT=true makes the server return the assembled baseDraft
- * without calling OpenAI. Tests validate the full pipeline except AI polish:
- * - Payload parsing and DTO validation
- * - Semantic validation (400 for invalid inputs)
- * - Template assembly and clause interpolation
- * - DB persistence (type, status, structuredData)
- * - Placeholder absence ({{VAR}}, [indicar], [describir])
- * - additionalClauses injection
- * - supply_contract returns clear 400
+ * without calling OpenAI. Tests validate the full pipeline except AI polish.
+ *
+ * Auth: a test JWT is generated from NEXTAUTH_SECRET (loaded via dotenv).
+ * All requests include the Authorization: Bearer header so they hit the
+ * authenticated code path — same as a real browser session.
  */
 
+import "dotenv/config";
+import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 
 const API_URL = process.env.API_URL || "http://localhost:4001";
 const prisma = new PrismaClient();
+
+// ---------------------------------------------------------------------------
+// Test auth token
+// ---------------------------------------------------------------------------
+
+/**
+ * Generates a short-lived JWT using NEXTAUTH_SECRET so all test requests
+ * go through the authenticated code path.
+ *
+ * Uses "demo-tenant" as the tenantId so documents created by tests are
+ * isolated under that tenant (same as the server-side demo fallback).
+ * The tenant is auto-created by the server in non-production mode.
+ */
+function generateTestToken(): string {
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    console.warn(
+      "[test-auth] NEXTAUTH_SECRET not set — requests will be unauthenticated.\n" +
+      "  Add NEXTAUTH_SECRET to your .env file to test the authenticated code path."
+    );
+    return "";
+  }
+  return jwt.sign(
+    {
+      id: "test-user-id",
+      sub: "test-user-id",
+      email: "test@legalai.dev",
+      tenantId: "demo-tenant",
+      role: "owner",
+    },
+    secret,
+    { expiresIn: "1h" }
+  );
+}
+
+let TEST_TOKEN = "";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -763,7 +798,12 @@ async function runTestCase(testCase: TestCase): Promise<boolean> {
     const method = testCase.method ?? "POST";
     const url = testCase.url ? testCase.url() : `${API_URL}/documents/generate`;
 
-    const fetchOptions: RequestInit = { method, headers: { "Content-Type": "application/json" } };
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (TEST_TOKEN) {
+      headers["Authorization"] = `Bearer ${TEST_TOKEN}`;
+    }
+
+    const fetchOptions: RequestInit = { method, headers };
     if (method === "POST" && testCase.payload) {
       fetchOptions.body = JSON.stringify(testCase.payload);
     }
@@ -815,9 +855,16 @@ async function waitForBackend(maxAttempts = 30): Promise<boolean> {
 async function main() {
   console.log("🚀 Integration Tests — All Document Types");
   console.log("=".repeat(70));
-  console.log(
-    "ℹ  Tip: start the server with SKIP_AI_ENHANCEMENT=true to avoid real OpenAI calls\n"
-  );
+  console.log("ℹ  Tip: start the server with SKIP_AI_ENHANCEMENT=true to avoid real OpenAI calls");
+
+  // Initialize test auth token (requires NEXTAUTH_SECRET in .env)
+  TEST_TOKEN = generateTestToken();
+  if (TEST_TOKEN) {
+    console.log("🔑 Test JWT generated — requests will use authenticated code path");
+  } else {
+    console.log("⚠️  No test JWT — requests will be unauthenticated (GET tests will fail)");
+  }
+  console.log();
 
   const backendReady = await waitForBackend();
   if (!backendReady) process.exit(1);
