@@ -196,3 +196,4 @@ Después de Fase 2, considerar:
 **¿Proceder con Fase 2 Reducida (Dashboard + Creación)?**
 
 
+

@@ -464,3 +464,4 @@ export const debtRecognitionSchema: DocumentSchemaDefinition = {
 registerDocumentSchema(debtRecognitionSchema);
 
 
+

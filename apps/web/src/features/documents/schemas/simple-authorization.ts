@@ -387,3 +387,4 @@ export const simpleAuthorizationSchema: DocumentSchemaDefinition = {
 registerDocumentSchema(simpleAuthorizationSchema);
 
 
+

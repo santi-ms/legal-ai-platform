@@ -306,3 +306,4 @@ Con los estilos inline aplicados, **todos los elementos deberían verse correcta
 Los estilos inline garantizan máxima especificidad y aplicación inmediata.
 
 
+
