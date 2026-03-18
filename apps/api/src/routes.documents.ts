@@ -73,9 +73,15 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
 
       // Multi-tenant: solo documentos del tenant del usuario
       if (user) {
+        if (!user.tenantId) {
+          return reply.status(403).send({
+            ok: false,
+            error: "TENANT_REQUIRED",
+            message: "El usuario no tiene un tenant asignado. Contactá al administrador.",
+          });
+        }
         where.tenantId = user.tenantId;
       } else {
-        // Sin autenticación, no mostrar documentos (o devolver 401)
         return reply.status(401).send({
           ok: false,
           error: "UNAUTHORIZED",
@@ -189,6 +195,16 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           ok: false,
           error: "UNAUTHORIZED",
           message: "Autenticación requerida para generar documentos",
+        });
+      }
+
+      // Si el usuario está autenticado pero no tiene tenant asignado, es un error
+      // de configuración de cuenta — no usar demo-tenant como fallback silencioso.
+      if (user && !user.tenantId) {
+        return reply.status(403).send({
+          ok: false,
+          error: "TENANT_REQUIRED",
+          message: "El usuario no tiene un tenant asignado. Contactá al administrador.",
         });
       }
 
@@ -473,6 +489,9 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
   app.post("/documents/:id/duplicate", async (request, reply) => {
     try {
       const user = requireAuth(request);
+      if (!user.tenantId) {
+        return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED", message: "El usuario no tiene un tenant asignado. Contactá al administrador." });
+      }
 
       const ParamsSchema = z.object({ id: z.string().uuid() });
       const parsed = ParamsSchema.safeParse(request.params);
@@ -563,6 +582,9 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
   app.delete("/documents/:id", async (request, reply) => {
     try {
       const user = requireAuth(request);
+      if (!user.tenantId) {
+        return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED", message: "El usuario no tiene un tenant asignado. Contactá al administrador." });
+      }
 
       const ParamsSchema = z.object({ id: z.string().uuid() });
       const parsed = ParamsSchema.safeParse(request.params);
@@ -625,6 +647,9 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
   app.patch("/documents/:id", async (request, reply) => {
     try {
       const user = requireAuth(request);
+      if (!user.tenantId) {
+        return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED", message: "El usuario no tiene un tenant asignado. Contactá al administrador." });
+      }
 
       const ParamsSchema = z.object({ id: z.string().uuid() });
       const BodySchema = z.object({
@@ -708,6 +733,13 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         message: "Autenticación requerida",
       });
     }
+    if (!user.tenantId) {
+      return reply.status(403).send({
+        ok: false,
+        error: "TENANT_REQUIRED",
+        message: "El usuario no tiene un tenant asignado. Contactá al administrador.",
+      });
+    }
 
     const ParamsSchema = z.object({ id: z.string().uuid() });
     const parsed = ParamsSchema.safeParse(request.params);
@@ -770,6 +802,9 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
   app.get("/documents/:id/pdf", async (request, reply) => {
     try {
       const user = requireAuth(request);
+      if (!user.tenantId) {
+        return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED", message: "El usuario no tiene un tenant asignado. Contactá al administrador." });
+      }
 
       const ParamsSchema = z.object({ id: z.string().uuid() });
       const parsed = ParamsSchema.safeParse(request.params);
