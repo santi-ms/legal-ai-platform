@@ -638,7 +638,7 @@ export const serviceContractSchema: DocumentSchemaDefinition = {
       id: "ajuste_precio",
       name: "Ajuste de Precio",
       description: "Mecanismo de actualización del precio",
-      condition: (data) => data.ajuste_precio && data.ajuste_precio !== "ninguno",
+      condition: (data) => Boolean(data.ajuste_precio && data.ajuste_precio !== "ninguno"),
       category: "type_specific",
     },
   ],

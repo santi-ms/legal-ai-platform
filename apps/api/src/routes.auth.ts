@@ -1,13 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { sanitizeInput } from "./utils/sanitize.js";
-
-// Crear instancia de PrismaClient
-const prisma = new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["error", "warn", "query"] : ["error", "warn"],
-    errorFormat: "pretty",
-  });
+import { prisma } from "./db.js";
 import rateLimit from "@fastify/rate-limit";
 import { z } from "zod";
 import {

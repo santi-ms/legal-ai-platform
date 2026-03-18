@@ -8,9 +8,6 @@ function getBaseUrl() {
 }
 
 export const authOptions: NextAuthOptions = {
-  // Configuración para Vercel/producción
-  trustHost: true,
-  
   providers: [
     CredentialsProvider({
       name: "credentials",

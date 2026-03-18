@@ -151,12 +151,12 @@ export default function SettingsPage() {
   }, [authLoading, isAuthenticated, router]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
-  const handleProfileFieldChange = (field: keyof ProfileFormData, value: string) => {
+  const handleProfileFieldChange = (field: string, value: string) => {
     setFormError(null);
     setProfileData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handlePreferenceChange = (key: keyof NotificationPreferencesData, value: boolean) => {
+  const handlePreferenceChange = (key: string, value: boolean) => {
     setNotificationPreferences((prev) => ({ ...prev, [key]: value }));
   };
 

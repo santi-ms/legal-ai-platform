@@ -6,12 +6,8 @@
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
-import { PrismaClient } from "@prisma/client";
 import { requireAuth } from "./utils/auth.js";
-
-const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-});
+import { prisma } from "./db.js";
 
 // Schema for profile update
 const UpdateProfileSchema = z.object({

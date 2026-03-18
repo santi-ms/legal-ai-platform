@@ -271,12 +271,12 @@ async function handler(
     if (isBinary) {
       // Para archivos binarios (PDFs, imágenes, etc.), usar arrayBuffer
       const arrayBuffer = await backendResponse.arrayBuffer();
+      const disposition = backendResponse.headers.get("content-disposition");
+      const binaryHeaders: Record<string, string> = { "Content-Type": contentType };
+      if (disposition) binaryHeaders["Content-Disposition"] = disposition;
       return new NextResponse(arrayBuffer, {
         status: backendResponse.status,
-        headers: {
-          "Content-Type": contentType,
-          "Content-Disposition": backendResponse.headers.get("content-disposition") || undefined,
-        },
+        headers: binaryHeaders,
       });
     } else {
       // Para JSON y texto, usar text()

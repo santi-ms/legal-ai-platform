@@ -61,7 +61,7 @@ export function LegalSummary({ documentType, data, onEdit }: LegalSummaryProps) 
         <SummaryRow label="Inicio" value={data.inicio_vigencia} />
         <SummaryRow label="Plazo mínimo" value={data.plazo_minimo_meses ? `${data.plazo_minimo_meses} meses` : undefined} />
       </SummarySection>
-      {data.confidencialidad && (
+      {!!data.confidencialidad && (
         <SummarySection title="Confidencialidad">
           <SummaryRow label="Plazo" value={data.plazo_confidencialidad ? `${data.plazo_confidencialidad} años` : undefined} />
         </SummarySection>
@@ -123,7 +123,7 @@ export function LegalSummary({ documentType, data, onEdit }: LegalSummaryProps) 
       <SummarySection title="Condiciones Económicas">
         <SummaryRow label="Canon mensual" value={`${data.monto_alquiler} ${data.moneda}`} />
         <SummaryRow label="Forma de pago" value={data.forma_pago} />
-        {data.ajuste_precio && data.ajuste_precio !== "ninguno" && (
+        {!!data.ajuste_precio && data.ajuste_precio !== "ninguno" && (
           <SummaryRow label="Ajuste" value={data.ajuste_precio} />
         )}
       </SummarySection>
@@ -131,7 +131,7 @@ export function LegalSummary({ documentType, data, onEdit }: LegalSummaryProps) 
         <SummaryRow label="Inicio" value={data.fecha_inicio} />
         <SummaryRow label="Duración" value={data.duracion_meses ? `${data.duracion_meses} meses` : undefined} />
       </SummarySection>
-      {data.deposito && (
+      {!!data.deposito && (
         <SummarySection title="Depósito de Garantía">
           <SummaryRow label="Meses" value={data.deposito_meses} />
         </SummarySection>
@@ -156,7 +156,7 @@ export function LegalSummary({ documentType, data, onEdit }: LegalSummaryProps) 
       </SummarySection>
       <SummarySection title="Forma de Pago">
         <SummaryRow label="Modalidad" value={data.pago_en_cuotas ? "En cuotas" : "Pago único"} />
-        {data.pago_en_cuotas && (
+        {!!data.pago_en_cuotas && (
           <>
             <SummaryRow label="Cuotas" value={data.cantidad_cuotas} />
             <SummaryRow label="Monto por cuota" value={data.monto_cuota ? `${data.monto_cuota} ${data.moneda}` : undefined} />
@@ -164,7 +164,7 @@ export function LegalSummary({ documentType, data, onEdit }: LegalSummaryProps) 
         )}
         <SummaryRow label="Primer vencimiento" value={data.fecha_primer_vencimiento} />
         <SummaryRow label="Forma" value={data.forma_pago} />
-        {data.incluye_intereses && (
+        {!!data.incluye_intereses && (
           <SummaryRow label="Intereses" value={data.tasa_interes} />
         )}
       </SummarySection>
@@ -184,7 +184,7 @@ export function LegalSummary({ documentType, data, onEdit }: LegalSummaryProps) 
           <strong className="text-slate-700 dark:text-slate-200">Alcance:</strong>{" "}
           {String(data.descripcion_alcance ?? "")}
         </p>
-        {data.limitaciones && (
+        {!!data.limitaciones && (
           <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">
             <strong className="text-slate-700 dark:text-slate-200">Límites:</strong>{" "}
             {String(data.limitaciones)}
@@ -244,7 +244,7 @@ export function LegalSummary({ documentType, data, onEdit }: LegalSummaryProps) 
         {renderTypeSpecificSummary()}
 
         {/* Generic additionalClauses block — shown for ALL types when present */}
-        {data.additionalClauses && String(data.additionalClauses).trim().length > 0 && (
+        {!!data.additionalClauses && String(data.additionalClauses).trim().length > 0 && (
           <div className={`pt-4 border-t ${darkBorderColors.default}`}>
             <SummarySection title="Información Adicional / Cláusulas Especiales">
               <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">

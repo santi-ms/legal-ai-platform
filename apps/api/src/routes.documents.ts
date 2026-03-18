@@ -1,17 +1,12 @@
 import { FastifyInstance } from "fastify";
 import { GenerateDocumentSchema } from "./types.js";
 import OpenAI from "openai";
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { getUserFromRequest, requireAuth } from "./utils/auth.js";
 import bcrypt from "bcryptjs";
 import { sanitizeObject } from "./utils/sanitize.js";
-
-// Crear instancia de PrismaClient
-const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === "development" ? ["error", "warn", "query"] : ["error", "warn"],
-  errorFormat: "pretty",
-});
+import { prisma } from "./db.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

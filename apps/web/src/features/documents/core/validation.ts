@@ -9,6 +9,8 @@
 
 import type {
   DocumentFieldConfig,
+  DocumentSchemaDefinition,
+  DocumentSection,
   SemanticValidationRule,
   WarningRule,
   StructuredDocumentData,
@@ -307,8 +309,8 @@ export function validateFormData(
   const errors: Array<{ fieldId?: string; ruleId?: string; message: string }> = [];
   
   // Validate all fields
-  schema.sections.forEach(section => {
-    section.fields.forEach(field => {
+  schema.sections.forEach((section: DocumentSection) => {
+    section.fields.forEach((field: DocumentFieldConfig) => {
       const result = validateField(field, data[field.id], data);
       if (!result.valid && result.error) {
         errors.push({ fieldId: field.id, message: result.error });

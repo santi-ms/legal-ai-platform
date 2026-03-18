@@ -16,10 +16,10 @@ async function getBackendJWT(): Promise<string> {
   let role: string | null = null;
 
   try {
-    const session = await getServerSession(authOptions as any);
-    sub = (session?.user as any)?.id ?? null;
-    tenantId = (session?.user as any)?.tenantId ?? null;
-    role = (session?.user as any)?.role ?? null;
+    const session = (await getServerSession(authOptions as any)) as any;
+    sub = session?.user?.id ?? null;
+    tenantId = session?.user?.tenantId ?? null;
+    role = session?.user?.role ?? null;
   } catch {
     // sesión no disponible, continuamos con payload mínimo
   }
