@@ -1,10 +1,11 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { DashboardShell } from "@/app/components/DashboardShell";
 import { Button } from "@/components/ui/button";
-import { Download, AlertCircle, AlertTriangle } from "lucide-react";
+import { Download, AlertCircle, AlertTriangle, Pencil } from "lucide-react";
 import { SkeletonDocumentDetail } from "@/components/ui/skeleton";
 import { sanitizeInput } from "@/app/lib/sanitize";
 import type {
@@ -128,6 +129,15 @@ export default function DocumentDetailPage() {
       description={headerDescription}
       action={
         <div className="flex flex-col sm:flex-row gap-2">
+          {last?.rawText && (
+            <Link
+              href={`/documents/${doc.id}/edit`}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 transition-all"
+            >
+              <Pencil className="h-4 w-4" />
+              Editar
+            </Link>
+          )}
           {last?.rawText && (
             last?.status === "needs_review" ? (
               <button
@@ -277,20 +287,30 @@ export default function DocumentDetailPage() {
                 Contenido legal
               </h2>
               <p className="text-xs text-gray-500">
-                Texto generado automáticamente listo para revisión.
+                {last?.editedContent
+                  ? "Contenido editado manualmente · el PDF usará esta versión."
+                  : "Texto generado automáticamente listo para revisión."}
               </p>
             </div>
 
-            {last && (
-              <span className="text-[11px] text-gray-500">
-                Versión #{last.id.slice(0, 6)}
-              </span>
-            )}
+            <div className="flex items-center gap-3">
+              {last?.editedContent && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">
+                  <Pencil className="h-3 w-3" />
+                  Editado
+                </span>
+              )}
+              {last && (
+                <span className="text-[11px] text-gray-500">
+                  Versión #{last.id.slice(0, 6)}
+                </span>
+              )}
+            </div>
           </div>
 
           {last ? (
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm ring-1 ring-black/[0.02] text-sm leading-relaxed text-gray-800 whitespace-pre-wrap max-h-[70vh] overflow-y-auto">
-              {sanitizeInput(last.rawText)}
+              {sanitizeInput(last.editedContent ?? last.rawText)}
             </div>
           ) : (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 shadow-sm">

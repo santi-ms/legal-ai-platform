@@ -18,6 +18,8 @@ export interface Document {
   lastVersion: {
     id: string;
     rawText: string;
+    /** Contenido editado manualmente por el usuario. Si existe, tiene prioridad sobre rawText para el PDF. */
+    editedContent?: string | null;
     pdfUrl: string | null;
     /** Version status: "generated" | "needs_review" | "draft" | "reviewed" | "final" */
     status: string | null;
@@ -207,6 +209,25 @@ export async function patchDocument(
 
 export function getPdfUrl(id: string): string {
   return `${PROXY_BASE}/documents/${id}/pdf`;
+}
+
+/**
+ * Guarda el contenido editado manualmente por el usuario.
+ * Invalida el PDF previo en el servidor (se regenerará desde este contenido al descargar).
+ */
+export async function saveEditedContent(
+  id: string,
+  content: string
+): Promise<{ ok: boolean; versionId?: string; message?: string }> {
+  const { data } = await proxyJson<{ ok: boolean; versionId?: string; message?: string }>(
+    `/documents/${id}/content`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    }
+  );
+  return data;
 }
 
 // User Profile API

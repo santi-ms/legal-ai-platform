@@ -727,6 +727,88 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
   });
 
   // ==========================================
+  // PATCH /documents/:id/content — Guardar edición manual
+  // ==========================================
+  app.patch("/documents/:id/content", async (request, reply) => {
+    try {
+      const user = requireAuth(request);
+      if (!user.tenantId) {
+        return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED", message: "El usuario no tiene un tenant asignado." });
+      }
+
+      const ParamsSchema = z.object({ id: z.string().uuid() });
+      const BodySchema = z.object({
+        content: z.string().min(1, "El contenido no puede estar vacío").max(500_000, "El contenido supera el límite de 500.000 caracteres"),
+      });
+
+      const paramsParsed = ParamsSchema.safeParse(request.params);
+      const bodyParsed = BodySchema.safeParse(request.body);
+
+      if (!paramsParsed.success) {
+        return reply.status(400).send({ ok: false, error: "INVALID_ID" });
+      }
+      if (!bodyParsed.success) {
+        return reply.status(400).send({ ok: false, error: "INVALID_BODY", details: bodyParsed.error.format() });
+      }
+
+      const { id } = paramsParsed.data;
+      const { content } = bodyParsed.data;
+
+      // Verificar que el documento existe y pertenece al tenant
+      const document = await prisma.document.findFirst({
+        where: { id, tenantId: user.tenantId },
+        include: {
+          versions: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { id: true, rawText: true },
+          },
+        },
+      });
+
+      if (!document) {
+        return reply.status(404).send({ ok: false, error: "DOCUMENT_NOT_FOUND" });
+      }
+
+      // RBAC: admin/owner puede editar cualquier documento del tenant; el creador puede editar el suyo
+      const isAdminOrOwner = user.role === "admin" || user.role === "owner";
+      const isCreator = document.createdById === user.userId;
+      if (!isAdminOrOwner && !isCreator) {
+        return reply.status(403).send({ ok: false, error: "FORBIDDEN", message: "No tienes permiso para editar este documento" });
+      }
+
+      const latestVersion = document.versions[0];
+      if (!latestVersion) {
+        return reply.status(404).send({ ok: false, error: "VERSION_NOT_FOUND", message: "El documento no tiene versiones generadas" });
+      }
+
+      // Sanitizar contenido (remover caracteres de control excepto newlines/tabs)
+      const sanitizedContent = sanitizeObject({ content }, false) as { content: string };
+
+      // Actualizar editedContent e invalidar PDF previo (forzar regeneración con contenido nuevo)
+      await prisma.documentVersion.update({
+        where: { id: latestVersion.id },
+        data: {
+          editedContent: sanitizedContent.content,
+          pdfUrl: null, // Invalida el PDF previo; se regenerará desde editedContent al descargar
+        },
+      });
+
+      return reply.status(200).send({
+        ok: true,
+        message: "Contenido guardado exitosamente",
+        versionId: latestVersion.id,
+      });
+    } catch (err: any) {
+      if (err.message === "UNAUTHORIZED") {
+        return reply.status(401).send({ ok: false, error: "UNAUTHORIZED", message: "Autenticación requerida" });
+      }
+      request.log?.error({ err }, "PATCH /documents/:id/content error");
+      return reply.status(500).send({ ok: false, message: "Internal error" });
+    }
+  });
+
+  // ==========================================
   // GET /documents/:id
   // ==========================================
   app.get("/documents/:id", async (request, reply) => {
@@ -769,6 +851,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
             select: {
               id: true,
               rawText: true,
+              editedContent: true,
               pdfUrl: true,
               status: true,
               outputWarnings: true,
@@ -838,6 +921,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
               id: true,
               pdfUrl: true,
               rawText: true,
+              editedContent: true,
             },
           },
         },
@@ -852,11 +936,14 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       const version = document.versions[0];
       let fileName = version?.pdfUrl;
 
+      // Usar editedContent si existe, de lo contrario rawText
+      const contentForPdf = version?.editedContent ?? version?.rawText;
+
       // Si no hay PDF, intentar regenerarlo automáticamente
-      if (!fileName || !version?.rawText) {
+      if (!fileName || !contentForPdf) {
         app.log.info(`[api] PDF not found for document ${id}, attempting to regenerate...`);
         
-        if (!version?.rawText) {
+        if (!contentForPdf) {
           return reply.status(404).send({ 
             ok: false, 
             error: "PDF_NOT_FOUND",
@@ -877,7 +964,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               title: document.type.toUpperCase(),
-              rawText: version.rawText,
+              rawText: contentForPdf,
               fileName: fileName,
             }),
           });
@@ -931,7 +1018,8 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         if (pdfResponse.status === 404) {
           app.log.warn(`[api] PDF not found in service, attempting to regenerate...`);
           
-          if (!version?.rawText) {
+          const contentForRegen = version?.editedContent ?? version?.rawText;
+          if (!contentForRegen) {
             return reply.status(404).send({ 
               ok: false, 
               error: "PDF_NOT_FOUND",
@@ -951,7 +1039,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 title: document.type.toUpperCase(),
-                rawText: version.rawText,
+                rawText: contentForRegen,
                 fileName: regenerateFileName,
               }),
             });
