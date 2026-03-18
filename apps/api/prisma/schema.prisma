@@ -74,7 +74,8 @@ model DocumentVersion {
   document        Document  @relation(fields: [documentId], references: [id])
 
   versionNumber   Int
-  rawText         String
+  rawText         String    // Contenido original generado por IA (inmutable)
+  editedContent   String?   // Contenido editado manualmente por el usuario (nullable)
   pdfUrl          String?
   hashSha256      String?
   generatedBy     String    // "gpt-5", "claude", etc.
