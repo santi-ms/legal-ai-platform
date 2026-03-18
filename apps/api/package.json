@@ -39,6 +39,6 @@
     "@types/node": "^22.0.0",
     "@types/nodemailer": "^6.4.14",
     "tsx": "^4.16.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.9.3"
   }
 }

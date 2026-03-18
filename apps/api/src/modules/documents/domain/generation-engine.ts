@@ -174,6 +174,19 @@ export function assembleBaseDraft(
         clauseId === "intimacion" ? "{{CLAUSE_DEMAND}}" : null,
         clauseId === "plazo_cumplimiento" ? "{{CLAUSE_DEADLINE}}" : null,
         clauseId === "apercibimiento" ? "{{CLAUSE_WARNING}}" : null,
+        // Map clause IDs to template slot names - Lease
+        clauseId === "objeto_locacion" ? "{{CLAUSE_PROPERTY}}" : null,
+        clauseId === "canon_locativo" ? "{{CLAUSE_AMOUNT}}" : null,
+        clauseId === "plazo_locacion" ? "{{CLAUSE_TERM}}" : null,
+        clauseId === "condiciones_locacion" ? "{{CLAUSE_CONDITIONS}}" : null,
+        // Map clause IDs to template slot names - Debt Recognition
+        clauseId === "reconocimiento_deuda" ? "{{CLAUSE_DEBT}}" : null,
+        clauseId === "forma_pago_deuda" ? "{{CLAUSE_PAYMENT}}" : null,
+        clauseId === "incumplimiento_deuda" ? "{{CLAUSE_DEFAULT}}" : null,
+        // Map clause IDs to template slot names - Simple Authorization
+        clauseId === "alcance_autorizacion" ? "{{CLAUSE_SCOPE}}" : null,
+        clauseId === "vigencia_autorizacion" ? "{{CLAUSE_VALIDITY}}" : null,
+        clauseId === "observaciones_autorizacion" ? "{{CLAUSE_OBSERVATIONS}}" : null,
       ].filter(Boolean) as string[];
       
       let replaced = false;
@@ -243,7 +256,12 @@ function getPlaceholderValue(placeholder: string, data: StructuredDocumentData):
   
   // Map common placeholders to data fields
   const mapping: Record<string, string> = {
+    // ---- Shared ----
     PARTIES: formatParties(data),
+    JURISDICTION: formatJurisdiction(data),
+    FECHA_ACTUAL: new Date().toLocaleDateString("es-AR"),
+
+    // ---- Service contract ----
     OBJECT: String(data.descripcion_servicio || data.definicion_informacion || data.hechos || ""),
     SCOPE: String(data.alcance || ""),
     DELIVERABLES: String(data.entregables || ""),
@@ -267,58 +285,120 @@ function getPlaceholderValue(placeholder: string, data: StructuredDocumentData):
     IP_TYPE_TEXT: formatIPTypeText(data),
     IP_DISPOSITION: formatIPDisposition(data),
     NOTIFICATIONS: formatNotifications(data),
-    JURISDICTION: formatJurisdiction(data),
     PROVEEDOR_NOMBRE: String(data.proveedor_nombre || ""),
     CLIENTE_NOMBRE: String(data.cliente_nombre || ""),
+
+    // ---- NDA ----
     REVELADOR_NOMBRE: String(data.revelador_nombre || ""),
     RECEPTOR_NOMBRE: String(data.receptor_nombre || ""),
-    REMITENTE_NOMBRE: String(data.remitente_nombre || ""),
-    DESTINATARIO_NOMBRE: String(data.destinatario_nombre || ""),
     DEFINITION: String(data.definicion_informacion || ""),
     PURPOSE: String(data.finalidad_permitida || ""),
     EXCLUSIONS: String(data.exclusiones || ""),
     PLAZO_DEVOLUCION: String(data.plazo_devolucion ? `${data.plazo_devolucion} días` : ""),
     PENALIDAD_INCUMPLIMIENTO: String(data.penalidad_incumplimiento || ""),
+
+    // ---- Legal notice ----
+    REMITENTE_NOMBRE: String(data.remitente_nombre || ""),
+    DESTINATARIO_NOMBRE: String(data.destinatario_nombre || ""),
     CONTEXT: String(data.relacion_previa || ""),
     FACTS: String(data.hechos || ""),
     BREACH: String(data.incumplimiento || ""),
     DEMAND: String(data.intimacion || ""),
     DEADLINE: formatDeadline(data),
     WARNING: String(data.apercibimiento || ""),
-    FECHA_ACTUAL: new Date().toLocaleDateString("es-AR"),
+
+    // ---- Lease ----
+    LOCADOR_NOMBRE: String(data.locador_nombre || ""),
+    LOCATARIO_NOMBRE: String(data.locatario_nombre || ""),
+    PROPERTY_DESC: String(data.descripcion_inmueble || ""),
+    PROPERTY_ADDRESS: String(data.domicilio_inmueble || ""),
+    PROPERTY_USE: formatDestinoUso(data),
+    RENT_AMOUNT: formatRentAmount(data),
+    DIA_PAGO: String(data.dia_pago ? `día ${data.dia_pago}` : ""),
+    LEASE_TERM: formatLeaseTerm(data),
+    LEASE_RENEWAL: formatLeaseRenewal(data),
+    AJUSTE_CANON: formatAjusteCanon(data),
+    DEPOSITO: formatDeposito(data),
+    SERVICIOS_LOCATARIO: data.servicios_cargo_locatario
+      ? `Servicios a cargo del locatario: ${String(data.servicios_cargo_locatario)}.`
+      : "",
+
+    // ---- Debt Recognition ----
+    ACREEDOR_NOMBRE: String(data.acreedor_nombre || ""),
+    DEUDOR_NOMBRE: String(data.deudor_nombre || ""),
+    DEBT_AMOUNT: formatDebtAmount(data),
+    DEBT_CAUSE: String(data.causa_deuda || ""),
+    RECOGNITION_DATE: String(data.fecha_reconocimiento || ""),
+    PAYMENT_PLAN: formatPaymentPlan(data),
+    INTEREST_CLAUSE: formatInterestClause(data),
+    DEFAULT_CLAUSE: formatDefaultClause(data),
+
+    // ---- Simple Authorization ----
+    AUTORIZANTE_NOMBRE: String(data.autorizante_nombre || ""),
+    AUTORIZADO_NOMBRE: String(data.autorizado_nombre || ""),
+    TRAMITE: String(data.tramite_autorizado || ""),
+    SCOPE_DESC: String(data.descripcion_alcance || ""),
+    LIMITATIONS: data.limitaciones
+      ? `Limitaciones: ${String(data.limitaciones)}`
+      : "",
+    AUTH_DATE: String(data.fecha_autorizacion || ""),
+    AUTH_VALIDITY: formatAuthValidity(data),
+    SPECIAL_CONDITIONS: formatSpecialConditions(data),
   };
   
   return mapping[key] || "";
 }
 
 /**
- * Format parties section
+ * Format parties section — one branch per document type, keyed by party field names.
  */
 function formatParties(data: StructuredDocumentData): string {
-  // Service contract
+  const p = (label: string, nombre: unknown, doc: unknown, domicilio: unknown) =>
+    `${label}: ${String(nombre || "")}, ${String(doc || "")}, con domicilio en ${String(domicilio || "")}`;
+
   if (data.proveedor_nombre && data.cliente_nombre) {
-    return `PROVEEDOR: ${data.proveedor_nombre}, ${data.proveedor_doc}, con domicilio en ${data.proveedor_domicilio}\nCLIENTE: ${data.cliente_nombre}, ${data.cliente_doc}, con domicilio en ${data.cliente_domicilio}`;
+    return `${p("PROVEEDOR", data.proveedor_nombre, data.proveedor_doc, data.proveedor_domicilio)}\n${p("CLIENTE", data.cliente_nombre, data.cliente_doc, data.cliente_domicilio)}`;
   }
-  
-  // NDA
   if (data.revelador_nombre && data.receptor_nombre) {
-    return `REVELADOR: ${data.revelador_nombre}, ${data.revelador_doc}, con domicilio en ${data.revelador_domicilio}\nRECEPTOR: ${data.receptor_nombre}, ${data.receptor_doc}, con domicilio en ${data.receptor_domicilio}`;
+    return `${p("REVELADOR", data.revelador_nombre, data.revelador_doc, data.revelador_domicilio)}\n${p("RECEPTOR", data.receptor_nombre, data.receptor_doc, data.receptor_domicilio)}`;
   }
-  
-  // Legal notice
   if (data.remitente_nombre && data.destinatario_nombre) {
-    return `REMITENTE: ${data.remitente_nombre}, ${data.remitente_doc}, con domicilio en ${data.remitente_domicilio}\nDESTINATARIO: ${data.destinatario_nombre}, ${data.destinatario_doc}, con domicilio en ${data.destinatario_domicilio}`;
+    return `${p("REMITENTE", data.remitente_nombre, data.remitente_doc, data.remitente_domicilio)}\n${p("DESTINATARIO", data.destinatario_nombre, data.destinatario_doc, data.destinatario_domicilio)}`;
   }
-  
+  if (data.locador_nombre && data.locatario_nombre) {
+    return `${p("LOCADOR", data.locador_nombre, data.locador_doc, data.locador_domicilio)}\n${p("LOCATARIO", data.locatario_nombre, data.locatario_doc, data.locatario_domicilio)}`;
+  }
+  if (data.acreedor_nombre && data.deudor_nombre) {
+    return `${p("ACREEDOR", data.acreedor_nombre, data.acreedor_doc, data.acreedor_domicilio)}\n${p("DEUDOR", data.deudor_nombre, data.deudor_doc, data.deudor_domicilio)}`;
+  }
+  if (data.autorizante_nombre && data.autorizado_nombre) {
+    return `${p("AUTORIZANTE", data.autorizante_nombre, data.autorizante_doc, data.autorizante_domicilio)}\n${p("AUTORIZADO", data.autorizado_nombre, data.autorizado_doc, data.autorizado_domicilio)}`;
+  }
   return "";
 }
 
 /**
- * Format amount section
+ * Format amount section (service contract: uses data.monto)
  */
 function formatAmount(data: StructuredDocumentData): string {
   if (data.monto && data.moneda) {
     return `${data.moneda} ${data.monto}`;
+  }
+  return "";
+}
+
+/** Lease: uses data.monto_alquiler */
+function formatRentAmount(data: StructuredDocumentData): string {
+  if (data.monto_alquiler && data.moneda) {
+    return `${data.moneda} ${data.monto_alquiler}`;
+  }
+  return "";
+}
+
+/** Debt recognition: uses data.monto_deuda */
+function formatDebtAmount(data: StructuredDocumentData): string {
+  if (data.monto_deuda && data.moneda) {
+    return `${data.moneda} ${data.monto_deuda}`;
   }
   return "";
 }
@@ -375,6 +455,7 @@ function formatPriceAdjustment(data: StructuredDocumentData): string {
   
   const ajusteMap: Record<string, string> = {
     inflacion: "El precio se ajustará mensualmente según el índice de precios al consumidor (IPC) publicado por el INDEC.",
+    icl: "El canon se ajustará según el Índice Casa Propia (ICL) publicado por el BCRA.",
     dolar: "El precio se ajustará según la cotización del dólar oficial.",
     acuerdo: "El precio podrá ser ajustado por acuerdo mutuo entre las partes.",
   };
@@ -422,24 +503,141 @@ function formatPaymentTerms(data: StructuredDocumentData): string {
 }
 
 /**
- * Format term section
+ * Format term section (service contract: uses inicio_vigencia + plazo_minimo_meses)
  */
 function formatTerm(data: StructuredDocumentData): string {
   const parts: string[] = [];
-  
-  if (data.inicio_vigencia) {
-    parts.push(`Inicio: ${data.inicio_vigencia}`);
-  }
-  
-  if (data.plazo_minimo_meses) {
-    parts.push(`Plazo mínimo: ${data.plazo_minimo_meses} meses`);
-  }
-  
-  if (data.plazo_confidencialidad) {
-    parts.push(`Plazo de confidencialidad: ${data.plazo_confidencialidad} años`);
-  }
-  
+
+  if (data.inicio_vigencia) parts.push(`Inicio: ${data.inicio_vigencia}`);
+  if (data.plazo_minimo_meses) parts.push(`Plazo mínimo: ${data.plazo_minimo_meses} meses`);
+  if (data.plazo_confidencialidad) parts.push(`Plazo de confidencialidad: ${data.plazo_confidencialidad} años`);
+
   return parts.join(", ");
+}
+
+/** Lease: uses fecha_inicio + duracion_meses */
+function formatLeaseTerm(data: StructuredDocumentData): string {
+  const parts: string[] = [];
+  if (data.fecha_inicio) parts.push(`${data.duracion_meses || ""} meses a partir del ${String(data.fecha_inicio)}`);
+  else if (data.duracion_meses) parts.push(`${data.duracion_meses} meses`);
+  return parts.join("") || "";
+}
+
+/** Lease: destino de uso */
+function formatDestinoUso(data: StructuredDocumentData): string {
+  const map: Record<string, string> = {
+    vivienda:  "Vivienda familiar",
+    comercial: "Local / comercio",
+    oficina:   "Oficina / consultorio",
+    deposito:  "Depósito / galpón",
+    otro:      "Otro uso permitido",
+  };
+  return map[String(data.destino_uso || "")] || String(data.destino_uso || "");
+}
+
+/** Lease renewal clause */
+function formatLeaseRenewal(data: StructuredDocumentData): string {
+  if (data.renovacion_automatica === true) {
+    return "Al vencimiento del plazo, el contrato se renovará automáticamente por períodos iguales, salvo que cualquiera de las partes notifique su voluntad de no renovar con al menos 60 días de anticipación.";
+  }
+  return "El presente contrato no se renovará automáticamente al vencimiento.";
+}
+
+/** Lease: ajuste del canon (reuses formatPriceAdjustment but exposed as separate alias for clarity) */
+function formatAjusteCanon(data: StructuredDocumentData): string {
+  return formatPriceAdjustment(data);
+}
+
+/** Lease: depósito de garantía */
+function formatDeposito(data: StructuredDocumentData): string {
+  if (data.deposito && data.deposito_meses) {
+    const monto = data.monto_alquiler
+      ? ` (equivalente a ${data.deposito_meses} mes/es de canon)`
+      : "";
+    return `Depósito de garantía: ${data.deposito_meses} mes/es de alquiler${monto}, a devolver al finalizar la locación en las condiciones pactadas.`;
+  }
+  if (data.deposito) {
+    return "Se establece un depósito de garantía cuyo monto se acordará entre las partes.";
+  }
+  return "";
+}
+
+/** Debt recognition: payment plan */
+function formatPaymentPlan(data: StructuredDocumentData): string {
+  const formaPagoMap: Record<string, string> = {
+    transferencia_bancaria: "transferencia bancaria",
+    efectivo: "efectivo",
+    cheque: "cheque",
+    mercado_pago: "Mercado Pago",
+    otro: "otro medio acordado",
+  };
+  const forma = formaPagoMap[String(data.forma_pago || "")] || String(data.forma_pago || "");
+
+  if (data.pago_en_cuotas && data.cantidad_cuotas) {
+    const parts: string[] = [
+      `La deuda reconocida se cancelará en ${data.cantidad_cuotas} cuota/s`,
+    ];
+    if (data.monto_cuota && data.moneda) {
+      parts.push(`de ${data.moneda} ${data.monto_cuota} cada una`);
+    }
+    if (data.fecha_primer_vencimiento) {
+      parts.push(`siendo el primer vencimiento el ${String(data.fecha_primer_vencimiento)}`);
+    }
+    if (forma) parts.push(`mediante ${forma}`);
+    return parts.join(", ") + ".";
+  }
+
+  const parts: string[] = ["La deuda se cancelará mediante pago único"];
+  if (data.fecha_primer_vencimiento) {
+    parts.push(`con vencimiento el ${String(data.fecha_primer_vencimiento)}`);
+  }
+  if (forma) parts.push(`mediante ${forma}`);
+  return parts.join(", ") + ".";
+}
+
+/** Debt recognition: interest clause */
+function formatInterestClause(data: StructuredDocumentData): string {
+  if (data.incluye_intereses && data.tasa_interes) {
+    return `Se pactan intereses a la tasa de ${String(data.tasa_interes)}, aplicables sobre el saldo adeudado desde la fecha de reconocimiento hasta la cancelación total.`;
+  }
+  if (data.incluye_intereses) {
+    return "Se pactan intereses sobre el monto adeudado, cuya tasa será acordada entre las partes.";
+  }
+  return "No se pactan intereses adicionales sobre el monto reconocido.";
+}
+
+/** Debt recognition: default / mora consequences */
+function formatDefaultClause(data: StructuredDocumentData): string {
+  const parts: string[] = [];
+  if (data.clausula_aceleracion) {
+    parts.push("Ante el incumplimiento de cualquier cuota, el total adeudado se tornará exigible de inmediato (cláusula de aceleración).");
+  }
+  if (data.consecuencias_mora) {
+    parts.push(String(data.consecuencias_mora));
+  }
+  if (parts.length === 0) {
+    parts.push("El incumplimiento en los pagos pactados dará derecho al acreedor a reclamar la totalidad de la deuda, más los intereses y costas que correspondan.");
+  }
+  return parts.join(" ");
+}
+
+/** Simple authorization: validity */
+function formatAuthValidity(data: StructuredDocumentData): string {
+  if (data.acto_unico) {
+    return `La presente autorización es otorgada para el acto único indicado y quedará extinguida de pleno derecho una vez realizado el mismo. Fecha de otorgamiento: ${String(data.fecha_autorizacion || "")}.`;
+  }
+  if (data.vigencia_hasta) {
+    return `La presente autorización tiene vigencia desde el ${String(data.fecha_autorizacion || "")} hasta el ${String(data.vigencia_hasta)}, pudiendo ser revocada anticipadamente por el autorizante mediante notificación fehaciente.`;
+  }
+  return `La presente autorización es otorgada con fecha ${String(data.fecha_autorizacion || "")} y permanecerá vigente hasta su revocación expresa por parte del autorizante.`;
+}
+
+/** Simple authorization: special conditions and documentation */
+function formatSpecialConditions(data: StructuredDocumentData): string {
+  const parts: string[] = [];
+  if (data.condiciones_especiales) parts.push(String(data.condiciones_especiales));
+  if (data.documentacion_asociada) parts.push(`Documentación asociada: ${String(data.documentacion_asociada)}`);
+  return parts.join("\n");
 }
 
 /**

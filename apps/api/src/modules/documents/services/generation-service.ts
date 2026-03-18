@@ -316,12 +316,64 @@ export function buildStructuredContextForAI(
     addBool("Renovación automática", data.renovacion_automatica);
 
     section("Condiciones adicionales");
-    if (data.deposito_garantia) {
-      addBool("Depósito de garantía", data.deposito_garantia);
-      add("Meses de depósito", data.meses_deposito);
+    if (data.deposito) {
+      addBool("Depósito de garantía", data.deposito);
+      add("Meses de depósito", data.deposito_meses);
     }
-    add("Servicios a cargo del locatario", data.servicios_locatario);
+    add("Servicios a cargo del locatario", data.servicios_cargo_locatario);
     add("Preaviso para rescisión (días)", data.preaviso_rescision);
+
+  } else if (documentType === "debt_recognition") {
+    section("Partes");
+    add("Acreedor", data.acreedor_nombre);
+    add("CUIT/Doc Acreedor", data.acreedor_doc);
+    add("Domicilio Acreedor", data.acreedor_domicilio);
+    add("Deudor", data.deudor_nombre);
+    add("CUIT/Doc Deudor", data.deudor_doc);
+    add("Domicilio Deudor", data.deudor_domicilio);
+
+    section("Datos de la deuda");
+    if (data.monto_deuda && data.moneda) add("Monto total reconocido", `${data.moneda} ${data.monto_deuda}`);
+    add("Origen / causa de la deuda", data.causa_deuda);
+    add("Fecha de reconocimiento", data.fecha_reconocimiento);
+
+    section("Forma de pago");
+    addBool("Pago en cuotas", data.pago_en_cuotas);
+    if (data.pago_en_cuotas) {
+      add("Cantidad de cuotas", data.cantidad_cuotas);
+      if (data.monto_cuota && data.moneda) add("Monto por cuota", `${data.moneda} ${data.monto_cuota}`);
+    }
+    add("Fecha primer vencimiento", data.fecha_primer_vencimiento);
+    add("Forma de pago", data.forma_pago);
+    addBool("Incluye intereses", data.incluye_intereses);
+    if (data.incluye_intereses) add("Tasa de interés", data.tasa_interes);
+
+    section("Incumplimiento");
+    addBool("Cláusula de aceleración", data.clausula_aceleracion);
+    add("Consecuencias por mora", data.consecuencias_mora);
+
+  } else if (documentType === "simple_authorization") {
+    section("Partes");
+    add("Autorizante", data.autorizante_nombre);
+    add("CUIT/Doc Autorizante", data.autorizante_doc);
+    add("Domicilio Autorizante", data.autorizante_domicilio);
+    add("Autorizado", data.autorizado_nombre);
+    add("CUIT/Doc Autorizado", data.autorizado_doc);
+    add("Domicilio Autorizado", data.autorizado_domicilio);
+
+    section("Alcance de la autorización");
+    add("Trámite o acto autorizado", data.tramite_autorizado);
+    add("Descripción detallada del alcance", data.descripcion_alcance);
+    add("Limitaciones / restricciones", data.limitaciones);
+
+    section("Vigencia");
+    add("Fecha de otorgamiento", data.fecha_autorizacion);
+    addBool("Autorización por acto único", data.acto_unico);
+    add("Vigente hasta", data.vigencia_hasta);
+
+    section("Observaciones");
+    add("Condiciones especiales", data.condiciones_especiales);
+    add("Documentación asociada", data.documentacion_asociada);
   }
 
   return lines.join("\n");
@@ -503,6 +555,38 @@ function getPromptConfigForType(
         "Aplicar normativa de la Ley de Alquileres vigente en Argentina",
         "Numerar cláusulas en mayúsculas: PRIMERA, SEGUNDA, etc.",
         "Cerrar con sección de FIRMAS",
+      ],
+      toneInstructions,
+    };
+  }
+
+  if (documentType === "debt_recognition") {
+    return {
+      systemMessage:
+        "Eres un abogado senior argentino especializado en derecho comercial y reconocimientos de deuda. Generás instrumentos de reconocimiento de deuda válidos, completos y ejecutables según el Código Civil y Comercial de la Nación.",
+      baseInstructions: [
+        ...commonInstructions,
+        "Incluir obligatoriamente: identificación de acreedor y deudor, monto exacto en letras y números, causa de la deuda, fecha de reconocimiento, plan de pago detallado, consecuencias del incumplimiento, foro de competencia",
+        "El monto debe expresarse en números y en letras",
+        "Si hay cuotas, detallar fecha de cada vencimiento o periodicidad",
+        "Numerar cláusulas en mayúsculas: PRIMERA, SEGUNDA, etc.",
+        "Cerrar con sección de FIRMAS de acreedor y deudor",
+      ],
+      toneInstructions,
+    };
+  }
+
+  if (documentType === "simple_authorization") {
+    return {
+      systemMessage:
+        "Eres un abogado senior argentino especializado en actos jurídicos de representación y autorización. Generás autorizaciones y poderes especiales válidos, concretos y limitados al acto indicado.",
+      baseInstructions: [
+        ...commonInstructions,
+        "Incluir obligatoriamente: identificación completa de autorizante y autorizado, descripción precisa del trámite o acto autorizado, alcance y limitaciones, vigencia",
+        "La autorización debe ser específica y no dejar lugar a interpretaciones amplias no deseadas",
+        "Si es por acto único, indicarlo expresamente",
+        "Si tiene fecha de vencimiento, indicarla expresamente",
+        "Cerrar con lugar, fecha y sección de FIRMA del autorizante",
       ],
       toneInstructions,
     };
