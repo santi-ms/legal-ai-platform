@@ -17,19 +17,25 @@ interface DocumentsFiltersBarProps {
   className?: string;
 }
 
+// Values must match what is stored in Document.type in the DB.
+// New types (debt_recognition, simple_authorization) use their canonical English ID directly.
+// Legacy types use the Spanish slug that was stored when they were created.
 const documentTypes = [
-  { value: "all", label: "Tipo: Todos" },
-  { value: "service_contract", label: "Contrato de Servicios" },
-  { value: "nda", label: "Acuerdo de Confidencialidad" },
-  { value: "legal_notice", label: "Carta Documento" },
-  { value: "lease", label: "Contrato Arrendamiento" },
+  { value: "all",                  label: "Tipo: Todos" },
+  { value: "contrato_servicios",   label: "Contrato de Servicios" },
+  { value: "nda",                  label: "Acuerdo de Confidencialidad" },
+  { value: "carta_documento",      label: "Carta Documento" },
+  { value: "contrato_locacion",    label: "Contrato de Locación" },
+  { value: "debt_recognition",     label: "Reconocimiento de Deuda" },
+  { value: "simple_authorization", label: "Poder / Autorización" },
 ];
 
 const statusOptions = [
-  { value: "all", label: "Estado: Todos" },
-  { value: "GENERATED", label: "Completado" },
-  { value: "DRAFT", label: "Borrador" },
-  { value: "PENDIENTE", label: "Pendiente de firma" },
+  { value: "all",           label: "Estado: Todos" },
+  { value: "generated_text", label: "Generado" },
+  { value: "needs_review",  label: "Requiere revisión" },
+  { value: "PENDIENTE",     label: "Pendiente de firma" },
+  { value: "FIRMADO",       label: "Firmado" },
 ];
 
 export function DocumentsFiltersBar({

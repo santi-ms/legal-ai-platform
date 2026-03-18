@@ -8,14 +8,25 @@
 /**
  * Document Type Identifiers
  */
+/**
+ * Canonical document type identifiers — source of truth for all backend modules.
+ *
+ * Active types (have template + clauses + validation rules):
+ *   service_contract | nda | legal_notice | lease | debt_recognition | simple_authorization
+ *
+ * Legacy / not implemented:
+ *   supply_contract — kept for backward compatibility with existing DB records that
+ *   use "contrato_suministro". Attempting to generate it returns HTTP 400.
+ *   Do NOT add new features for this type without first implementing its template.
+ */
 export type DocumentTypeId =
   | "service_contract"
-  | "supply_contract"
   | "nda"
   | "legal_notice"
   | "lease"
   | "debt_recognition"
-  | "simple_authorization";
+  | "simple_authorization"
+  | "supply_contract"; // @deprecated — not implemented, returns 400 on generation
 
 /**
  * Document Tone Options

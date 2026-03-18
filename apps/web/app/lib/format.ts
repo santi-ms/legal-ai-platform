@@ -20,13 +20,21 @@ export function formatCurrency(amount: number, currency: string = "USD") {
 
 export function formatDocumentType(type: string) {
   const typeMap: Record<string, string> = {
-    "contrato_servicios": "Contrato de Servicios",
-    "contrato_suministro": "Contrato de Suministro", 
-    "nda": "Acuerdo de Confidencialidad",
-    "carta_documento": "Carta Documento",
-    "contrato_locacion": "Contrato de Locación",
+    // Canonical English IDs (new types stored directly in DB)
+    "service_contract":     "Contrato de Servicios",
+    "nda":                  "Acuerdo de Confidencialidad (NDA)",
+    "legal_notice":         "Carta Documento",
+    "lease":                "Contrato de Locación",
+    "debt_recognition":     "Reconocimiento de Deuda",
+    "simple_authorization": "Poder / Autorización",
+    "supply_contract":      "Contrato de Suministro",
+    // Legacy Spanish slugs (existing DB records for older types)
+    "contrato_servicios":   "Contrato de Servicios",
+    "contrato_suministro":  "Contrato de Suministro",
+    "carta_documento":      "Carta Documento",
+    "contrato_locacion":    "Contrato de Locación",
   };
-  
+
   return typeMap[type] || type;
 }
 

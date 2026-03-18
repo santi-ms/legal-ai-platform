@@ -19,10 +19,12 @@ import type {
 const BaseDocumentDTOSchema = z.object({
   documentType: z.enum([
     "service_contract",
-    "supply_contract",
     "nda",
     "legal_notice",
     "lease",
+    "debt_recognition",
+    "simple_authorization",
+    "supply_contract", // kept for legacy compatibility — not implemented, returns 400 on generation
   ]),
   jurisdiction: z.enum([
     "caba",
@@ -137,12 +139,41 @@ export const LegalNoticeDTOSchema = BaseDocumentDTOSchema.extend({
 });
 
 /**
+ * Passthrough DTO for types whose field-level validation is handled
+ * by the backend validation-engine (validation-rules.ts).
+ * All form fields are forwarded as structuredData.
+ */
+const LooseDocumentDTOSchema = BaseDocumentDTOSchema.passthrough();
+
+export const LeaseDTOSchema = LooseDocumentDTOSchema.extend({
+  documentType: z.literal("lease"),
+});
+
+export const DebtRecognitionDTOSchema = LooseDocumentDTOSchema.extend({
+  documentType: z.literal("debt_recognition"),
+});
+
+export const SimpleAuthorizationDTOSchema = LooseDocumentDTOSchema.extend({
+  documentType: z.literal("simple_authorization"),
+});
+
+// supply_contract is kept in the base enum for legacy compatibility.
+// Attempting to generate it returns a 400 from generation-service.ts.
+export const SupplyContractDTOSchema = LooseDocumentDTOSchema.extend({
+  documentType: z.literal("supply_contract"),
+});
+
+/**
  * Union of all DTO schemas
  */
 export const GenerateDocumentDTOSchema = z.discriminatedUnion("documentType", [
   ServiceContractDTOSchema,
   NDADTOSchema,
   LegalNoticeDTOSchema,
+  LeaseDTOSchema,
+  DebtRecognitionDTOSchema,
+  SimpleAuthorizationDTOSchema,
+  SupplyContractDTOSchema,
 ]);
 
 /**

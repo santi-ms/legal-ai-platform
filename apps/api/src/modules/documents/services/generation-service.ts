@@ -52,10 +52,23 @@ export async function generateDocumentWithNewArchitecture(
 ): Promise<DocumentGenerationResult> {
   logger.info(`[generation-service] Generating ${documentType} document`);
 
+  // Guard: supply_contract is declared for legacy compatibility but has no template.
+  // Return a clear 400 instead of an opaque "Template not found" 500.
+  if (documentType === "supply_contract") {
+    const err = new Error(
+      "El tipo 'Contrato de Suministro' (supply_contract) no está implementado todavía. " +
+      "Para contratos de prestación de servicios usá 'Contrato de Servicios' (service_contract)."
+    );
+    (err as any).statusCode = 400;
+    throw err;
+  }
+
   // 1. Get template
   const template = getTemplate(documentType);
   if (!template) {
-    throw new Error(`Template not found for document type: ${documentType}`);
+    const err = new Error(`Tipo documental '${documentType}' no reconocido por el motor de generación.`);
+    (err as any).statusCode = 400;
+    throw err;
   }
 
   // 2. Get clauses

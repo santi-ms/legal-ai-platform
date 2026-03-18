@@ -9,14 +9,20 @@
  * Document Type Identifiers
  * Each document type has a unique identifier used throughout the system.
  */
+/**
+ * Canonical document type identifiers — kept in sync with the backend DocumentTypeId.
+ *
+ * Active: service_contract | nda | legal_notice | lease | debt_recognition | simple_authorization
+ * Legacy: supply_contract (no frontend schema, kept only for display compatibility)
+ */
 export type DocumentTypeId =
   | "service_contract"
-  | "supply_contract"
   | "nda"
   | "legal_notice"
   | "lease"
   | "debt_recognition"
-  | "simple_authorization";
+  | "simple_authorization"
+  | "supply_contract"; // @deprecated — no frontend schema, no wizard support
 
 /**
  * Document Tone Options

@@ -12,13 +12,16 @@ interface FiltersBarProps {
   onFiltersChange: (filters: DocumentsParams) => void;
 }
 
+// Values must match what is stored in Document.type in the DB.
+// Legacy types use Spanish slugs; new types use their canonical English ID.
 const documentTypes = [
-  { value: "", label: "Todos los tipos" },
-  { value: "contrato_servicios", label: "Contrato de Servicios" },
-  { value: "contrato_suministro", label: "Contrato de Suministro" },
-  { value: "nda", label: "Acuerdo de Confidencialidad" },
-  { value: "carta_documento", label: "Carta Documento" },
-  { value: "contrato_locacion", label: "Contrato de Locación" },
+  { value: "",                     label: "Todos los tipos" },
+  { value: "contrato_servicios",   label: "Contrato de Servicios" },
+  { value: "nda",                  label: "Acuerdo de Confidencialidad" },
+  { value: "carta_documento",      label: "Carta Documento" },
+  { value: "contrato_locacion",    label: "Contrato de Locación" },
+  { value: "debt_recognition",     label: "Reconocimiento de Deuda" },
+  { value: "simple_authorization", label: "Poder / Autorización" },
 ];
 
 const sortOptions = [

@@ -259,12 +259,17 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           }
 
           // Mapear documentType a formato antiguo para compatibilidad
+          // Maps canonical type IDs to the legacy Spanish slugs stored in the DB.
+          // New types (debt_recognition, simple_authorization) have no legacy alias —
+          // they are stored as their canonical English name (|| documentType fallback).
           const typeMap: Record<string, string> = {
-            service_contract: "contrato_servicios",
-            supply_contract: "contrato_suministro",
-            nda: "nda",
-            legal_notice: "carta_documento",
-            lease: "contrato_locacion",
+            service_contract:     "contrato_servicios",
+            supply_contract:      "contrato_suministro",  // legacy — no template
+            nda:                  "nda",
+            legal_notice:         "carta_documento",
+            lease:                "contrato_locacion",
+            debt_recognition:     "debt_recognition",     // stored as-is (no legacy alias)
+            simple_authorization: "simple_authorization", // stored as-is (no legacy alias)
           };
           
           const oldType = typeMap[documentType] || documentType;
