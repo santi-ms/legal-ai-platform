@@ -50,11 +50,14 @@ export default function RegisterPage() {
 
       const transformedBody = {
         name: `${step1Data.firstName} ${step1Data.lastName}`.trim(),
+        firstName: step1Data.firstName.trim(),
+        lastName: step1Data.lastName.trim(),
         email: step1Data.email,
         password: data.password,
         company: step1Data.companyName && step1Data.companyName.trim().length > 0 
           ? step1Data.companyName.trim() 
           : null,
+        professionalRole: step1Data.role,
       };
 
       const response = await fetch(backendUrl, {

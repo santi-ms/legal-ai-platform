@@ -12,7 +12,7 @@ import { SupportBanner } from "@/components/settings/SupportBanner";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { getUserProfile, updateUserProfile, type UserProfile } from "@/app/lib/webApi";
-import { AlertTriangle, Loader2, AlertCircle, LogOut } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, AlertCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ProfileFormData {
@@ -265,7 +265,19 @@ export default function SettingsPage() {
             <SettingsHeader />
 
             {/* Hero Section */}
-            <div className="flex flex-wrap justify-between gap-3 p-4 mt-6">
+            <div className="flex flex-col gap-4 p-4 mt-6">
+              <div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push("/dashboard")}
+                  className="inline-flex items-center gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Volver al panel
+                </Button>
+              </div>
               <div className="flex min-w-72 flex-col gap-3">
                 <p className="text-4xl font-black leading-tight tracking-[-0.033em] text-slate-900 dark:text-white">
                   Ajustes del sistema

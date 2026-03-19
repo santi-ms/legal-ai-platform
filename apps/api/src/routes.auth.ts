@@ -83,20 +83,26 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   // POST /api/register - Registro con email verificado por defecto
   const RegisterSchema = z.object({
     name: z.string().min(1),
+    firstName: z.string().min(1),
+    lastName: z.string().min(1),
     email: z.string().email(),
     company: z.string().optional().nullable(),
+    professionalRole: z.string().min(1),
     password: z.string().min(6),
   });
 
   type RegisterBody = z.infer<typeof RegisterSchema>;
   app.post<{ Body: RegisterBody }>("/api/register", async (request, reply) => {
     try {
-      const { name, email, password, company } = RegisterSchema.parse(request.body);
+      const { name, firstName, lastName, email, password, company, professionalRole } = RegisterSchema.parse(request.body);
       
       // Sanitizar inputs para prevenir XSS
       const sanitizedName = sanitizeInput(name || "");
+      const sanitizedFirstName = sanitizeInput(firstName || "");
+      const sanitizedLastName = sanitizeInput(lastName || "");
       const sanitizedEmail = sanitizeInput(email.trim().toLowerCase());
       const sanitizedCompany = company ? sanitizeInput(company) : null;
+      const sanitizedProfessionalRole = sanitizeInput(professionalRole || "");
       
       const normEmail = sanitizedEmail;
 
@@ -177,9 +183,12 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       // NO incluir emailVerified por ahora, ya que la columna puede no existir
       const baseData: any = {
         name: sanitizedName,
+        firstName: sanitizedFirstName,
+        lastName: sanitizedLastName,
         email: normEmail,
         passwordHash,
         role: "user",
+        professionalRole: sanitizedProfessionalRole,
       };
 
       const dataBase: Prisma.UserCreateInput = tenantId

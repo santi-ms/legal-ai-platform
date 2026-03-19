@@ -20,11 +20,14 @@ model Tenant {
 model User {
   id            String   @id @default(cuid())
   name          String?
+  firstName     String?
+  lastName      String?
   email         String   @unique
   passwordHash  String   @map("password") // Mapeado a columna "password" existente en DB
   emailVerified DateTime?
   company       String?
   role          String   @default("user")
+  professionalRole String?
   tenantId      String?
   
   // Profile fields

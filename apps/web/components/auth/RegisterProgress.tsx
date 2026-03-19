@@ -4,14 +4,16 @@ interface RegisterProgressProps {
   currentStep: number;
   totalSteps: number;
   stepTitle: string;
+  progressPercentage?: number;
 }
 
 export function RegisterProgress({
   currentStep,
   totalSteps,
   stepTitle,
+  progressPercentage,
 }: RegisterProgressProps) {
-  const percentage = (currentStep / totalSteps) * 100;
+  const percentage = progressPercentage ?? (currentStep / totalSteps) * 100;
 
   return (
     <div className="mb-10">

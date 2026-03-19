@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx src/server.ts",
-    "build": "tsc && npm run prisma:generate",
+    "build": "npm run prisma:generate && tsc",
     "prestart": "npm run prisma:generate && (npx prisma migrate resolve --applied 20251115000000_add_user_profile_fields --schema prisma/schema.prisma || true) && npm run migrate:deploy",
     "start": "node dist/server.js",
     "postinstall": "npm run prisma:generate || echo 'Prisma generate failed, will retry on start'",

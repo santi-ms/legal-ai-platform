@@ -30,9 +30,12 @@ export async function POST(req: Request) {
     const body = await req.json();
     logger.debug("[_auth/register][POST] Request body", { 
       hasName: !!body.name, 
+      hasFirstName: !!body.firstName,
+      hasLastName: !!body.lastName,
       hasEmail: !!body.email, 
       hasPassword: !!body.password,
-      hasCompanyName: !!body.companyName 
+      hasCompanyName: !!body.companyName,
+      hasProfessionalRole: !!body.professionalRole,
     });
     
     // Transformar companyName a company para que coincida con el backend
@@ -40,17 +43,23 @@ export async function POST(req: Request) {
     const companyValue = body.companyName || body.company;
     const transformedBody = {
       name: body.name,
+      firstName: body.firstName,
+      lastName: body.lastName,
       email: body.email,
       password: body.password,
       company: companyValue && companyValue.trim().length > 0 ? companyValue.trim() : null,
+      professionalRole: body.professionalRole || body.role,
     };
     
     logger.debug("[_auth/register][POST] Calling backend", { url: `${API_BASE}/api/register` });
     logger.debug("[_auth/register][POST] Transformed body", { 
       name: transformedBody.name, 
+      firstName: transformedBody.firstName,
+      lastName: transformedBody.lastName,
       email: transformedBody.email, 
       hasPassword: !!transformedBody.password,
-      company: transformedBody.company 
+      company: transformedBody.company,
+      professionalRole: transformedBody.professionalRole,
     });
     
     const r = await fetch(`${API_BASE}/api/register`, {

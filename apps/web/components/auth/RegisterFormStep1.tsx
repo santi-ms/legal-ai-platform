@@ -16,17 +16,48 @@ interface RegisterFormStep1Props {
 }
 
 export function RegisterFormStep1({ onSubmit, isLoading = false }: RegisterFormStep1Props) {
+  const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<RegisterStep1Input>({
     resolver: zodResolver(registerStep1Schema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      companyName: "",
+      role: "",
+    },
   });
+
+  const [firstName = "", lastName = "", email = "", companyName = "", role = ""] = watch([
+    "firstName",
+    "lastName",
+    "email",
+    "companyName",
+    "role",
+  ]);
+
+  const completedFields = [
+    firstName.trim().length > 0,
+    lastName.trim().length > 0,
+    isValidEmail(email.trim()),
+    companyName.trim().length > 0,
+    role.trim().length > 0,
+  ].filter(Boolean).length;
+  const progressPercentage = (completedFields / 5) * 100;
 
   return (
     <div className="w-full max-w-xl">
-      <RegisterProgress currentStep={1} totalSteps={2} stepTitle="Información de la Cuenta" />
+      <RegisterProgress
+        currentStep={1}
+        totalSteps={2}
+        stepTitle="Información de la Cuenta"
+        progressPercentage={progressPercentage}
+      />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Name fields */}

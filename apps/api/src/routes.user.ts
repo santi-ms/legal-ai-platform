@@ -30,6 +30,14 @@ const UpdateSettingsSchema = z.object({
 
 type UpdateSettingsBody = z.infer<typeof UpdateSettingsSchema>;
 
+function splitDisplayName(name: string | null | undefined) {
+  const nameParts = name?.trim().split(/\s+/).filter(Boolean) || [];
+  return {
+    firstName: nameParts[0] || "",
+    lastName: nameParts.slice(1).join(" ") || "",
+  };
+}
+
 function sendSuccess(reply: FastifyReply, message: string, data?: any) {
   return reply.status(200).send({
     ok: true,
@@ -64,6 +72,8 @@ export async function registerUserRoutes(app: FastifyInstance) {
         select: {
           id: true,
           name: true,
+          firstName: true,
+          lastName: true,
           email: true,
           company: true,
           bio: true,
@@ -100,9 +110,9 @@ export async function registerUserRoutes(app: FastifyInstance) {
       }
 
       // Split name into firstName and lastName
-      const nameParts = dbUser.name?.split(" ") || [];
-      const firstName = nameParts[0] || "";
-      const lastName = nameParts.slice(1).join(" ") || "";
+      const fallbackName = splitDisplayName(dbUser.name);
+      const firstName = dbUser.firstName || fallbackName.firstName;
+      const lastName = dbUser.lastName || fallbackName.lastName;
 
       return sendSuccess(reply, "Perfil obtenido exitosamente", {
         id: dbUser.id,
@@ -148,6 +158,9 @@ export async function registerUserRoutes(app: FastifyInstance) {
         if (profile) {
           if (profile.name !== undefined) {
             updateData.name = profile.name;
+            const parsedName = splitDisplayName(profile.name);
+            updateData.firstName = parsedName.firstName || null;
+            updateData.lastName = parsedName.lastName || null;
           }
           if (profile.email !== undefined) {
             // Check if email is already taken by another user
@@ -217,6 +230,8 @@ export async function registerUserRoutes(app: FastifyInstance) {
           select: {
             id: true,
             name: true,
+            firstName: true,
+            lastName: true,
             email: true,
             company: true,
             bio: true,
@@ -243,9 +258,9 @@ export async function registerUserRoutes(app: FastifyInstance) {
         }
 
         // Split name for response
-        const nameParts = updatedUser.name?.split(" ") || [];
-        const firstName = nameParts[0] || "";
-        const lastName = nameParts.slice(1).join(" ") || "";
+        const fallbackName = splitDisplayName(updatedUser.name);
+        const firstName = updatedUser.firstName || fallbackName.firstName;
+        const lastName = updatedUser.lastName || fallbackName.lastName;
 
         return sendSuccess(reply, "Perfil actualizado exitosamente", {
           id: updatedUser.id,
