@@ -367,80 +367,39 @@ export function DocumentsTableEnhanced({
                     </td>
 
                     {/* Actions */}
-                    <td className="min-w-[220px] px-6 py-4 text-right whitespace-nowrap">
-                      <div className="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
+                    <td className="min-w-[320px] px-6 py-4 text-right whitespace-nowrap">
+                      <div className="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap text-sm">
                         <Link
                           href={`/documents/${doc.id}/edit`}
-                          className="inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                          title="Editar"
-                          aria-label="Editar documento"
+                          className="inline-flex shrink-0 whitespace-nowrap px-2 py-1 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
                         >
-                          <Edit className="w-3.5 h-3.5" />
                           Editar
                         </Link>
-                        <div
-                          className={cn(
-                            "flex shrink-0 items-center justify-end gap-2 transition-opacity",
-                            isHovered ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                          )}
+                        <span className="text-slate-300 dark:text-slate-600">|</span>
+                        <Link
+                          href={`/documents/${doc.id}`}
+                          className="inline-flex shrink-0 whitespace-nowrap px-2 py-1 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
                         >
-                        {doc.lastVersion?.rawText && (
-                          <>
-                            <button
-                              onClick={() => handleDownload(doc.id, doc)}
-                              disabled={downloadingId === doc.id}
-                              className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors text-slate-600 dark:text-slate-400 disabled:opacity-40 disabled:cursor-not-allowed"
-                              title={downloadingId === doc.id ? "Generando..." : "Descargar"}
-                              aria-label={downloadingId === doc.id ? "Generando PDF" : "Descargar"}
-                            >
-                              {downloadingId === doc.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Download className="w-4 h-4" />
-                              )}
-                            </button>
-                            <Link
-                              href={`/documents/${doc.id}`}
-                              className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors text-slate-600 dark:text-slate-400"
-                              title="Ver"
-                              aria-label="Ver documento"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Link>
-                          </>
-                        )}
-                        {status === "PENDIENTE" && (
-                          <button
-                            className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors text-primary"
-                            title="Recordar firma"
-                            aria-label="Recordar firma pendiente"
-                          >
-                            <Mail className="w-4 h-4" />
-                          </button>
-                        )}
-                        {onDelete && (
-                          <button
-                            onClick={() => setConfirmingId(doc.id)}
-                            disabled={deletingId === doc.id}
-                            className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors text-slate-400 hover:text-red-500 dark:hover:text-red-400 disabled:opacity-40 disabled:cursor-not-allowed"
-                            title="Eliminar"
-                            aria-label="Eliminar documento"
-                          >
-                            {deletingId === doc.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
-                            )}
-                          </button>
-                        )}
+                          Ver
+                        </Link>
+                        <span className="text-slate-300 dark:text-slate-600">|</span>
                         <button
-                          className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors text-slate-600 dark:text-slate-400"
-                          title="Más opciones"
-                          aria-label="Más opciones"
+                          type="button"
+                          onClick={() => handleDownload(doc.id, doc)}
+                          disabled={downloadingId === doc.id}
+                          className="inline-flex shrink-0 whitespace-nowrap px-2 py-1 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          <MoreVertical className="w-4 h-4" />
+                          {downloadingId === doc.id ? "Descargando..." : "Descargar"}
                         </button>
-                        </div>
+                        <span className="text-slate-300 dark:text-slate-600">|</span>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingId(doc.id)}
+                          disabled={deletingId === doc.id}
+                          className="inline-flex shrink-0 whitespace-nowrap px-2 py-1 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {deletingId === doc.id ? "Eliminando..." : "Eliminar"}
+                        </button>
                       </div>
                     </td>
                   </tr>
