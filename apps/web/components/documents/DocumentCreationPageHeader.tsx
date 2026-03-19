@@ -1,21 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { Gavel } from "lucide-react";
+import { ArrowLeft, Gavel } from "lucide-react";
 
 export function DocumentCreationPageHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md px-6 md:px-20 py-4">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/dashboard" className="flex items-center gap-3 group">
-          <div className="bg-primary p-2 rounded-lg group-hover:bg-primary/90 transition-colors">
-            <Gavel className="w-5 h-5 text-white" />
-          </div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Legal AI Platform
-          </h2>
-        </Link>
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4 min-w-0">
+          <Link
+            href="/documents"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver
+          </Link>
+
+          {/* Logo */}
+          <Link href="/dashboard" className="flex items-center gap-3 group min-w-0">
+            <div className="bg-primary p-2 rounded-lg group-hover:bg-primary/90 transition-colors shrink-0">
+              <Gavel className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white truncate">
+              Legal AI Platform
+            </h2>
+          </Link>
+        </div>
 
         {/* Tagline */}
         <div className="hidden md:block text-right">
