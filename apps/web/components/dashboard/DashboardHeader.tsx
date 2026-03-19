@@ -57,7 +57,7 @@ export function DashboardHeader({ onSearch }: DashboardHeaderProps) {
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{role}</p>
             )}
           </div>
-          <Link href="/profile" className="size-10 rounded-full bg-slate-200 dark:bg-slate-800 bg-cover bg-center ring-2 ring-primary/10 flex items-center justify-center text-slate-600 dark:text-slate-400 font-semibold">
+          <Link href="/settings" className="size-10 rounded-full bg-slate-200 dark:bg-slate-800 bg-cover bg-center ring-2 ring-primary/10 flex items-center justify-center text-slate-600 dark:text-slate-400 font-semibold">
             {user?.image ? (
               <img
                 src={user.image}

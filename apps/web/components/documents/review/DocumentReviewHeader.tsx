@@ -98,7 +98,7 @@ export function DocumentReviewHeader({
           <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
 
           <Link
-            href="/profile"
+            href="/settings"
             className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-400 font-semibold"
           >
             {user?.image ? (

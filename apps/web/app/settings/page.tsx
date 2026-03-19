@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { SettingsHeader } from "@/components/settings/SettingsHeader";
 import { SettingsTabs } from "@/components/settings/SettingsTabs";
 import { ProfileSection } from "@/components/settings/ProfileSection";
@@ -12,7 +12,7 @@ import { SupportBanner } from "@/components/settings/SupportBanner";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { getUserProfile, updateUserProfile, type UserProfile } from "@/app/lib/webApi";
-import { AlertTriangle, Loader2, AlertCircle } from "lucide-react";
+import { AlertTriangle, Loader2, AlertCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ProfileFormData {
@@ -240,6 +240,10 @@ export default function SettingsPage() {
     window.location.href = `mailto:soporte@legaltech.ar?subject=${subject}&body=${body}`;
   };
 
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: "/auth/login" });
+  };
+
   // ── Guards de render ──────────────────────────────────────────────────────
   if (authLoading) {
     return (
@@ -320,6 +324,26 @@ export default function SettingsPage() {
               hasChanges={hasChanges}
               isLoading={isLoading}
             />
+
+            <section className="mx-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <h3 className="text-base font-semibold text-slate-900 dark:text-white">Sesión actual</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Cerrá la sesión de este dispositivo si terminaste de usar tu cuenta.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSignOut}
+                  className="inline-flex items-center gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Cerrar sesión
+                </Button>
+              </div>
+            </section>
 
             {/* Support Banner */}
             <SupportBanner onContactSupport={handleContactSupport} />

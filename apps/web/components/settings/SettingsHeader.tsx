@@ -30,7 +30,7 @@ export function SettingsHeader() {
             <Bell className="w-5 h-5" />
           </button>
           <Link
-            href="/profile"
+            href="/settings"
             className="flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
             aria-label="Perfil"
           >
@@ -38,7 +38,7 @@ export function SettingsHeader() {
           </Link>
         </div>
         <Link
-          href="/profile"
+          href="/settings"
           className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-primary/20 flex items-center justify-center text-primary font-semibold"
         >
           {user?.image ? (

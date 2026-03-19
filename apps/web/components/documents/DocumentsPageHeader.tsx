@@ -65,7 +65,7 @@ export function DocumentsPageHeader() {
           <Bell className="w-5 h-5" />
         </button>
         <Link
-          href="/profile"
+          href="/settings"
           className="bg-primary/10 border border-primary/20 rounded-full size-9 flex items-center justify-center overflow-hidden"
         >
           {user?.image ? (
