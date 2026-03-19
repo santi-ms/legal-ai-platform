@@ -2,19 +2,19 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useState, useRef } from "react";
-import { DashboardShell } from "@/app/components/DashboardShell";
+import { useEffect, useState, useRef, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, AlertCircle, AlertTriangle, Pencil } from "lucide-react";
+import { ArrowLeft, Download, AlertCircle, AlertTriangle, CalendarClock, MapPin, Pencil, ScrollText } from "lucide-react";
 import { SkeletonDocumentDetail } from "@/components/ui/skeleton";
 import { sanitizeInput } from "@/app/lib/sanitize";
+import { DocumentStatusBadge } from "@/app/components/DocumentStatusBadge";
+import { DocumentWorkspaceShell } from "@/components/documents/DocumentWorkspaceShell";
 import type {
   Document as ProxyDocument,
   DocumentApiResponse as ProxyDocumentResponse,
 } from "@/app/lib/webApi";
 
 type DocumentResponse = ProxyDocumentResponse;
-type LastVersion = ProxyDocument["lastVersion"];
 
 export default function DocumentDetailPage() {
   const params = useParams<{ id: string }>();
@@ -85,12 +85,12 @@ export default function DocumentDetailPage() {
 
   if (loading) {
     return (
-      <DashboardShell
+      <DocumentWorkspaceShell
         title="Cargando documento"
-        description="Obteniendo información del documento..."
+        description="Obteniendo información del documento y preparando su vista detallada."
       >
         <SkeletonDocumentDetail />
-      </DashboardShell>
+      </DocumentWorkspaceShell>
     );
   }
 
@@ -115,24 +115,32 @@ export default function DocumentDetailPage() {
   // data lista
   const doc = data.document;
   const last = doc.lastVersion;
+  const currentStatus = doc.estado || last?.status || "draft";
+  const contentValue = sanitizeInput(last?.editedContent ?? last?.rawText ?? "");
 
-  // armamos los textos que van al header
-  const headerDescription = `${sanitizeInput(doc.type || "")} • ${sanitizeInput(doc.jurisdiccion || "")} • ${
-    last
-      ? `Actualizado ${new Date(last.createdAt).toLocaleString("es-AR")}`
-      : "Sin versión generada"
+  const headerDescription = `${sanitizeInput(doc.type || "Documento")} · ${sanitizeInput(doc.jurisdiccion || "Sin jurisdicción")} · ${
+    last ? `Actualizado ${new Date(last.createdAt).toLocaleString("es-AR")}` : "Sin versión generada"
   }`;
 
   return (
-    <DashboardShell
+    <DocumentWorkspaceShell
       title={`Documento #${doc.id.slice(0, 8)}`}
       description={headerDescription}
-      action={
-        <div className="flex flex-col sm:flex-row gap-2">
+      actions={
+        <>
+          <Link href="/documents">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Volver
+            </Button>
+          </Link>
           {last?.rawText && (
             <Link
               href={`/documents/${doc.id}/edit`}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 transition-all"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-100 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
               <Pencil className="h-4 w-4" />
               Editar
@@ -157,7 +165,7 @@ export default function DocumentDetailPage() {
                   e.stopPropagation();
                   handleDownload();
                 }}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-primary/20 hover:bg-primary/90 hover:shadow-md transition-all"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-primary/20 hover:bg-primary/90 transition-colors"
               >
                 <Download className="h-4 w-4" />
                 Descargar PDF
@@ -165,16 +173,28 @@ export default function DocumentDetailPage() {
             )
           )}
 
-          {/* Podrías agregar acá un botón Volver a /documents si querés */}
-          {/* <Link href="/documents">
-            <Button className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-gray-900">
-              Volver
-            </Button>
-          </Link> */}
-        </div>
+        </>
       }
     >
       <div className="flex flex-col gap-8">
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <SummaryCard
+            icon={<ScrollText className="h-5 w-5 text-primary" />}
+            label="Tipo de documento"
+            value={sanitizeInput(doc.type || "Documento")}
+          />
+          <SummaryCard
+            icon={<MapPin className="h-5 w-5 text-primary" />}
+            label="Jurisdicción"
+            value={sanitizeInput(doc.jurisdiccion || "Sin definir")}
+          />
+          <SummaryCard
+            icon={<CalendarClock className="h-5 w-5 text-primary" />}
+            label="Última actualización"
+            value={last ? new Date(last.createdAt).toLocaleString("es-AR") : "Sin versión generada"}
+          />
+        </section>
+
         {/* BANNER NEEDS REVIEW — con detalle de issues si están disponibles */}
         {last?.status === "needs_review" && (
           <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 p-4 space-y-3">
@@ -233,8 +253,16 @@ export default function DocumentDetailPage() {
         )}
 
         {/* CARD DE METADATOS */}
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm ring-1 ring-black/[0.02]">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+        <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white">Resumen del documento</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Metadata operativa y contexto de esta versión.</p>
+            </div>
+            <DocumentStatusBadge status={currentStatus} />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 text-sm">
             <MetaField
               label="Tipo de documento"
               value={sanitizeInput(doc.type || "")}
@@ -242,6 +270,12 @@ export default function DocumentDetailPage() {
             <MetaField
               label="Jurisdicción"
               value={sanitizeInput(doc.jurisdiccion || "")}
+            />
+            <MetaField
+              label="Identificador"
+              value={doc.id}
+              mono
+              small
             />
             <MetaField
               label="Estado"
@@ -270,6 +304,10 @@ export default function DocumentDetailPage() {
                 doc.costUsd !== null ? `$${doc.costUsd}` : "—"
               }
             />
+            <MetaField
+              label="Versión visible"
+              value={last ? `#${last.id.slice(0, 8)}` : "—"}
+            />
             {last?.pdfUrl && (
               <MetaField
                 label="PDF"
@@ -283,10 +321,10 @@ export default function DocumentDetailPage() {
         <section className="flex flex-col gap-3">
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div className="space-y-1">
-              <h2 className="text-sm font-semibold text-gray-900 tracking-tight">
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white tracking-tight">
                 Contenido legal
               </h2>
-              <p className="text-xs text-gray-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 {last?.editedContent
                   ? "Contenido editado manualmente · el PDF usará esta versión."
                   : "Texto generado automáticamente listo para revisión."}
@@ -295,13 +333,13 @@ export default function DocumentDetailPage() {
 
             <div className="flex items-center gap-3">
               {last?.editedContent && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-full px-2 py-0.5">
                   <Pencil className="h-3 w-3" />
                   Editado
                 </span>
               )}
               {last && (
-                <span className="text-[11px] text-gray-500">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
                   Versión #{last.id.slice(0, 6)}
                 </span>
               )}
@@ -309,8 +347,8 @@ export default function DocumentDetailPage() {
           </div>
 
           {last ? (
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm ring-1 ring-black/[0.02] text-sm leading-relaxed text-gray-800 whitespace-pre-wrap max-h-[70vh] overflow-y-auto">
-              {sanitizeInput(last.editedContent ?? last.rawText)}
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm text-sm leading-relaxed text-slate-800 dark:text-slate-100 whitespace-pre-wrap max-h-[70vh] overflow-y-auto">
+              {contentValue}
             </div>
           ) : (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 shadow-sm">
@@ -319,7 +357,19 @@ export default function DocumentDetailPage() {
           )}
         </section>
       </div>
-    </DashboardShell>
+    </DocumentWorkspaceShell>
+  );
+}
+
+function SummaryCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+      <div className="mb-3 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">{icon}</div>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</span>
+      </div>
+      <p className="text-sm font-semibold text-slate-900 dark:text-white break-words">{value}</p>
+    </div>
   );
 }
 
