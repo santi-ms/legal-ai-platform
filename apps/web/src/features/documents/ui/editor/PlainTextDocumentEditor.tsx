@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type React } from "react";
+import { useEffect, useState, type ClipboardEvent, type DragEvent, type KeyboardEvent, type RefObject } from "react";
 import { AlertTriangle, CheckCircle2, Download, Loader2, RotateCcw, Save } from "lucide-react";
 import type { DocumentEditorSaveStatus } from "./usePlainTextDocumentEditor";
 
@@ -49,15 +49,15 @@ interface PlainTextDocumentEditorProps {
   lastSavedAt: Date | null;
   isDownloadingPdf: boolean;
   pdfDownloadError: string | null;
-  editorRef: React.RefObject<HTMLDivElement | null>;
+  editorRef: RefObject<HTMLDivElement | null>;
   onSave: () => void | Promise<boolean>;
   onRestoreOriginal: () => void;
   onDownloadPdf: () => void | Promise<void>;
   onDismissPdfDownloadError: () => void;
   onEditorInput: () => void;
-  onEditorPaste: (e: React.ClipboardEvent<HTMLDivElement>) => void;
-  onEditorDrop: (e: React.DragEvent<HTMLDivElement>) => void;
-  onEditorKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
+  onEditorPaste: (e: ClipboardEvent<HTMLDivElement>) => void;
+  onEditorDrop: (e: DragEvent<HTMLDivElement>) => void;
+  onEditorKeyDown: (e: KeyboardEvent<HTMLDivElement>) => void;
 }
 
 export function PlainTextDocumentEditor({

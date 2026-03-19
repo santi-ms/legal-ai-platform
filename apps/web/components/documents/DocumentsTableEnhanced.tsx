@@ -222,7 +222,6 @@ function formatRelativeDate(date: Date | string): string {
 export function DocumentsTableEnhanced({
   documents,
   onPreview,
-  onEdit,
   onDelete,
   onDownloadError,
   hasActiveFilters,
