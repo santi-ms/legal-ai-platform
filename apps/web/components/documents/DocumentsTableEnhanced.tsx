@@ -291,7 +291,7 @@ export function DocumentsTableEnhanced({
               <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Estado
               </th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">
+              <th className="min-w-[220px] px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right whitespace-nowrap">
                 Acciones
               </th>
             </tr>
@@ -367,11 +367,11 @@ export function DocumentsTableEnhanced({
                     </td>
 
                     {/* Actions */}
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="min-w-[220px] px-6 py-4 text-right whitespace-nowrap">
+                      <div className="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
                         <Link
                           href={`/documents/${doc.id}/edit`}
-                          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                          className="inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                           title="Editar"
                           aria-label="Editar documento"
                         >
@@ -380,7 +380,7 @@ export function DocumentsTableEnhanced({
                         </Link>
                         <div
                           className={cn(
-                            "flex items-center justify-end gap-2 transition-opacity",
+                            "flex shrink-0 items-center justify-end gap-2 transition-opacity",
                             isHovered ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                           )}
                         >
