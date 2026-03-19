@@ -1,19 +1,20 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
-import { DocumentReviewHeader } from "@/components/documents/review/DocumentReviewHeader";
+import { ArrowLeft, CalendarClock, ChevronRight, Download, FileText, MapPin } from "lucide-react";
 import { AIAssistantSidebar } from "@/components/documents/review/AIAssistantSidebar";
 import { DocumentToolbar } from "@/components/documents/review/DocumentToolbar";
 import { SmartRevisionsSidebar } from "@/components/documents/review/SmartRevisionsSidebar";
+import { DocumentWorkspaceShell } from "@/components/documents/DocumentWorkspaceShell";
+import { DocumentStatusBadge } from "@/app/components/DocumentStatusBadge";
+import { Button } from "@/components/ui/button";
 import { getDocument } from "@/app/lib/webApi";
 import { sanitizeInput } from "@/app/lib/sanitize";
-import type { Document as ProxyDocument, DocumentApiResponse } from "@/app/lib/webApi";
+import type { DocumentApiResponse } from "@/app/lib/webApi";
 
 type DocumentResponse = DocumentApiResponse;
-type LastVersion = ProxyDocument["lastVersion"];
 
 export default function DocumentReviewPage() {
   const params = useParams<{ id: string }>();
@@ -49,6 +50,21 @@ export default function DocumentReviewPage() {
   const handleFinalize = async () => {
     if (!id) return;
     router.push(`/documents/${id}`);
+  };
+
+  const handleDownload = async () => {
+    if (!id) return;
+    const response = await fetch(`/api/_proxy/documents/${id}/pdf`);
+    if (!response.ok) return;
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${id}.pdf`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
   };
 
   const [aiNotice, setAiNotice] = useState<string | null>(null);
@@ -97,21 +113,70 @@ export default function DocumentReviewPage() {
   const doc = data.document;
   const documentTitle = doc.type || "Documento";
   const fileName = `${documentTitle}_V2.pdf`;
+  const last = doc.lastVersion;
+  const currentStatus = doc.estado || last?.status || "draft";
 
   return (
-    <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100">
+    <DocumentWorkspaceShell
+      title="Revisión del documento"
+      description={`${sanitizeInput(documentTitle)} · ${sanitizeInput(doc.jurisdiccion || "Sin jurisdicción")} · Ajustes finales antes de continuar.`}
+      actions={
+        <>
+          <Link href="/documents">
+            <Button variant="outline" className="flex items-center gap-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">
+              <ArrowLeft className="h-4 w-4" />
+              Volver
+            </Button>
+          </Link>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleDownload}
+            className="flex items-center gap-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+          >
+            <Download className="h-4 w-4" />
+            Descargar PDF
+          </Button>
+          <Button type="button" onClick={handleFinalize} className="flex items-center gap-2">
+            Finalizar
+          </Button>
+        </>
+      }
+    >
       {aiNotice && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-slate-800 text-white text-sm px-5 py-3 rounded-lg shadow-lg">
           {aiNotice}
         </div>
       )}
-      <DocumentReviewHeader
-        documentId={id!}
-        documentTitle={documentTitle}
-        onFinalize={handleFinalize}
-      />
 
-      <main className="flex flex-1 overflow-hidden">
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <ReviewSummaryCard
+          icon={<FileText className="h-5 w-5 text-primary" />}
+          label="Documento"
+          value={sanitizeInput(documentTitle)}
+        />
+        <ReviewSummaryCard
+          icon={<MapPin className="h-5 w-5 text-primary" />}
+          label="Jurisdicción"
+          value={sanitizeInput(doc.jurisdiccion || "Sin definir")}
+        />
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <CalendarClock className="h-5 w-5 text-primary" />
+            </div>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Estado actual</span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <DocumentStatusBadge status={currentStatus} />
+            <span className="text-xs text-slate-500 dark:text-slate-400 text-right">
+              {last ? new Date(last.createdAt).toLocaleString("es-AR") : "Sin versión"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <main className="flex flex-1 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
         {/* Left Sidebar: AI Assistant */}
         <AIAssistantSidebar
           readability={85}
@@ -120,9 +185,9 @@ export default function DocumentReviewPage() {
         />
 
         {/* Main Content Area: Editor */}
-        <section className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950 overflow-y-auto">
+        <section className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950 overflow-y-auto min-w-0">
           {/* Breadcrumbs */}
-          <div className="flex items-center gap-2 px-8 py-4 text-sm text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-2 px-8 py-4 text-sm text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70">
             <Link href="/documents" className="hover:text-primary transition-colors">
               Documentos
             </Link>
@@ -131,11 +196,11 @@ export default function DocumentReviewPage() {
           </div>
 
           {/* Toolbar */}
-          <DocumentToolbar />
+          <DocumentToolbar className="mx-6 mt-5" />
 
           {/* Document Viewer */}
-          <div className="flex-1 px-8 py-6">
-            <div className="max-w-[850px] mx-auto bg-white dark:bg-slate-900 shadow-xl border border-slate-200 dark:border-slate-800 rounded-lg p-12 min-h-[1000px] text-slate-800 dark:text-slate-200 leading-relaxed text-base font-display">
+          <div className="flex-1 px-6 py-6">
+            <div className="max-w-[850px] mx-auto rounded-2xl bg-white dark:bg-slate-900 shadow-md border border-slate-200 dark:border-slate-800 p-10 md:p-12 min-h-[1000px] text-slate-800 dark:text-slate-200 leading-relaxed text-base">
               {/* Document Title */}
               <h1 className="text-3xl font-bold mb-8 text-center border-b border-slate-100 dark:border-slate-800 pb-6">
                 {documentTitle}
@@ -224,6 +289,18 @@ export default function DocumentReviewPage() {
           onAskAI={handleAskAI}
         />
       </main>
+    </DocumentWorkspaceShell>
+  );
+}
+
+function ReviewSummaryCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+      <div className="mb-3 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">{icon}</div>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</span>
+      </div>
+      <p className="text-sm font-semibold text-slate-900 dark:text-white break-words">{value}</p>
     </div>
   );
 }
