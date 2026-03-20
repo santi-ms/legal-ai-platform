@@ -3,7 +3,12 @@
     "allow": [
       "Bash(openssl rand:*)",
       "Bash(grep -r \"chat\\\\|conversation\\\\|message\" /c/Users/santi/Desktop/legal-ai-platform/apps/api/src/routes* --include=\"*.ts\")",
-      "Bash(grep -r \"routes.chat\\\\|/documents/chat\" /c/Users/santi/Desktop/legal-ai-platform/apps --include=*.ts --include=*.tsx)"
+      "Bash(grep -r \"routes.chat\\\\|/documents/chat\" /c/Users/santi/Desktop/legal-ai-platform/apps --include=*.ts --include=*.tsx)",
+      "Bash(npx tsc:*)",
+      "Bash(for schema:*)",
+      "Bash(do echo:*)",
+      "Read(//c/Users/santi/Desktop/legal-ai-platform/apps/web/src/features/documents/schemas/**)",
+      "Bash(grep -v \"id: \"\"$schema%%-*\")"
     ]
   }
 }
