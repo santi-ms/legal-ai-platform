@@ -5,6 +5,7 @@ import rateLimit from "@fastify/rate-limit";
 import helmet from "@fastify/helmet";
 import { registerDocumentRoutes } from "./routes.documents.js";
 import { registerAuthRoutes } from "./routes.auth.js";
+import { registerChatRoutes } from "./routes.chat.js";
 import { initializeDocumentRegistry } from "./modules/documents/domain/document-registry.js";
 import { logger } from "./utils/logger.js";
 
@@ -76,6 +77,7 @@ async function buildServer() {
 
   await registerDocumentRoutes(app);
   await registerAuthRoutes(app);
+  await registerChatRoutes(app);
 
   const { registerUserRoutes } = await import("./routes.user.js");
   await registerUserRoutes(app);

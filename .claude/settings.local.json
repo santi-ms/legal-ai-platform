@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(openssl rand:*)"
+      "Bash(openssl rand:*)",
+      "Bash(grep -r \"chat\\\\|conversation\\\\|message\" /c/Users/santi/Desktop/legal-ai-platform/apps/api/src/routes* --include=\"*.ts\")"
     ]
   }
 }
