@@ -1,7 +1,9 @@
 "use client";
 
-import { Search, Bell, Menu } from "lucide-react";
+import { useState } from "react";
+import { Search, Bell, Menu, X } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface DashboardHeaderProps {
@@ -11,11 +13,28 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ onSearch, onMenuToggle }: DashboardHeaderProps) {
   const { data: session } = useSession();
+  const router = useRouter();
   const user = session?.user;
 
   const userName = user?.name || "Usuario";
   const displayName = userName.split(" ")[0] || userName;
   const role = (user as any)?.role as string | undefined;
+
+  const [searchValue, setSearchValue] = useState("");
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchValue.trim();
+    if (q) {
+      router.push(`/documents?query=${encodeURIComponent(q)}`);
+    } else {
+      router.push("/documents");
+    }
+  };
+
+  const handleClear = () => {
+    setSearchValue("");
+  };
 
   return (
     <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10 px-4 md:px-6 flex items-center justify-between gap-3">
@@ -29,22 +48,29 @@ export function DashboardHeader({ onSearch, onMenuToggle }: DashboardHeaderProps
       </button>
 
       {/* Search */}
-      <div className="flex items-center gap-4 flex-1">
-        <div
-          className="relative w-full max-w-md hidden md:block"
-          title="Próximamente"
-        >
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 w-4 h-4 pointer-events-none" />
+      <form onSubmit={handleSearch} className="flex items-center gap-4 flex-1">
+        <div className="relative w-full max-w-md hidden md:block">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4 pointer-events-none" />
           <input
-            className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg pl-10 pr-4 py-2 text-sm outline-none opacity-50 cursor-not-allowed"
-            placeholder="Buscar... (próximamente)"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg pl-10 pr-8 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+            placeholder="Buscar documentos..."
             type="text"
-            disabled
-            aria-disabled="true"
-            tabIndex={-1}
+            aria-label="Buscar documentos"
           />
+          {searchValue && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+              aria-label="Limpiar búsqueda"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
-      </div>
+      </form>
 
       {/* User Actions */}
       <div className="flex items-center gap-3">
