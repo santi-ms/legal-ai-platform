@@ -6,6 +6,7 @@
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 import { requireAuth } from "./utils/auth.js";
 import { prisma } from "./db.js";
 
@@ -397,6 +398,76 @@ export async function registerUserRoutes(app: FastifyInstance) {
         }
 
         return sendError(reply, 500, "Error al completar onboarding", "internal_error");
+      }
+    },
+  );
+
+  // POST /api/user/change-password — Cambio de contraseña
+  app.post(
+    "/api/user/change-password",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const authUser = requireAuth(request);
+
+        const ChangePasswordSchema = z.object({
+          currentPassword: z.string().min(1, "La contraseña actual es requerida"),
+          newPassword: z
+            .string()
+            .min(8, "La nueva contraseña debe tener al menos 8 caracteres")
+            .regex(/[a-z]/, "Debe contener al menos una letra minúscula")
+            .regex(/[A-Z]/, "Debe contener al menos una letra mayúscula")
+            .regex(/\d/, "Debe contener al menos un número"),
+        });
+
+        const parsed = ChangePasswordSchema.safeParse(request.body);
+        if (!parsed.success) {
+          return sendError(
+            reply,
+            400,
+            "Datos inválidos",
+            "validation_error",
+            parsed.error.flatten().fieldErrors as Record<string, string[]>,
+          );
+        }
+
+        const { currentPassword, newPassword } = parsed.data;
+
+        const dbUser = await prisma.user.findUnique({
+          where: { id: authUser.userId },
+          select: { id: true, passwordHash: true },
+        });
+
+        if (!dbUser) {
+          return sendError(reply, 404, "Usuario no encontrado", "user_not_found");
+        }
+
+        // Usuarios que sólo usan OAuth no tienen contraseña
+        if (!dbUser.passwordHash) {
+          return sendError(
+            reply,
+            400,
+            "Tu cuenta no tiene contraseña configurada (usás Google u otro proveedor).",
+            "no_password",
+          );
+        }
+
+        const isValid = await bcrypt.compare(currentPassword, dbUser.passwordHash);
+        if (!isValid) {
+          return sendError(reply, 400, "La contraseña actual es incorrecta.", "invalid_current_password");
+        }
+
+        const newHash = await bcrypt.hash(newPassword, 10);
+        await prisma.user.update({
+          where: { id: authUser.userId },
+          data: { passwordHash: newHash },
+        });
+
+        return sendSuccess(reply, "Contraseña actualizada correctamente");
+      } catch (err: any) {
+        if (err.message === "UNAUTHORIZED") {
+          return sendError(reply, 401, "No autorizado", "unauthorized");
+        }
+        return sendError(reply, 500, "Error al cambiar la contraseña", "internal_error");
       }
     },
   );

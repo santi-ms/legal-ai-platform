@@ -21,7 +21,7 @@ interface SettingsTabsProps {
 const tabs: TabConfig[] = [
   { id: "profile",      label: "Perfil",              href: "/settings" },
   { id: "billing",      label: "Plan y Facturación",  href: "/settings/billing" },
-  { id: "security",     label: "Seguridad",            disabled: true },
+  { id: "security",     label: "Seguridad",            href: "/settings/security" },
   { id: "integrations", label: "Integraciones",        disabled: true },
 ];
 
