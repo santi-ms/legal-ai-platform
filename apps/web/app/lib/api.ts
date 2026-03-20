@@ -10,6 +10,19 @@ export interface ApiResponse<T = any> {
   error?: string;
 }
 
+function buildNonJsonErrorMessage(status: number, statusText: string, bodyText: string) {
+  if (status === 404) {
+    return "Endpoint no encontrado. Verificá la ruta del proxy.";
+  }
+
+  const trimmed = bodyText.trim();
+  if (!trimmed) {
+    return `El servidor devolvió una respuesta no-JSON (${status} ${statusText}).`;
+  }
+
+  return `El servidor devolvió una respuesta no-JSON (${status} ${statusText}).`;
+}
+
 /**
  * Helper para obtener el token de NextAuth (client-side)
  */
@@ -84,13 +97,34 @@ export async function apiFetch<T = any>(
       contentType: response.headers.get("content-type")
     });
 
-    const data: ApiResponse<T> = await response.json().catch((jsonError) => {
-      logger.error("[apiFetch] Error parsing JSON", jsonError, { url });
-      return {
+    const contentType = response.headers.get("content-type") || "";
+    let data: ApiResponse<T>;
+
+    if (contentType.includes("application/json")) {
+      data = await response.json().catch((jsonError) => {
+        logger.error("[apiFetch] Error parsing JSON", jsonError, { url });
+        return {
+          ok: false,
+          message: "Error al procesar respuesta JSON del servidor",
+          error: "invalid_json_response",
+        };
+      });
+    } else {
+      const text = await response.text().catch(() => "");
+
+      logger.error("[apiFetch] Non-JSON response", undefined, {
+        url,
+        status: response.status,
+        contentType,
+        body: text.slice(0, 300),
+      });
+
+      data = {
         ok: false,
-        message: "Error al procesar respuesta del servidor",
+        message: buildNonJsonErrorMessage(response.status, response.statusText, text),
+        error: "non_json_response",
       };
-    });
+    }
 
     logger.debug("[apiFetch] Parsed data", { url, ok: data.ok, hasMessage: !!data.message });
 

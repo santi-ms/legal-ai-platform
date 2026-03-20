@@ -29,7 +29,7 @@ export default function ResetRequestPage() {
     try {
       // Siempre mostramos el mismo estado de éxito independientemente del resultado,
       // para no revelar si el email está registrado en el sistema (seguridad).
-      await apiPost("/api/_auth/reset/request", { email: data.email });
+      await apiPost("/api/auth/reset/request", { email: data.email });
     } catch {
       // Error silenciado intencionalmente — misma UX por seguridad
     } finally {

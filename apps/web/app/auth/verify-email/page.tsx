@@ -144,7 +144,7 @@ function VerifyEmailForm() {
     setInfoMessage("");
 
     try {
-      const response = await apiPost("/api/_auth/verify-email", {
+      const response = await apiPost("/api/auth/verify-email", {
         email: email.trim(),
         code: code.trim(),
       }) as any;
@@ -183,7 +183,7 @@ function VerifyEmailForm() {
     setErrorMessage("");
 
     try {
-      const response = await apiPost("/api/_auth/verify-email/resend", {
+      const response = await apiPost("/api/auth/verify-email/resend", {
         email: email.trim(),
       }) as any;
 

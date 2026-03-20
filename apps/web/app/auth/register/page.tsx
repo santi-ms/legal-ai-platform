@@ -57,7 +57,7 @@ export default function RegisterPage() {
 
       logger.debug("[register] Calling register proxy");
 
-      const apiResponse = await apiPost("/api/_auth/register", transformedBody) as any;
+      const apiResponse = await apiPost("/api/auth/register", transformedBody) as any;
 
       if (!apiResponse.ok) {
         logger.error("[register] Registration failed", undefined, { error: apiResponse.error });

@@ -51,7 +51,7 @@ export function LoginForm() {
     setApiError(null);
 
     try {
-      const preflight = await apiPost("/api/_auth/login", {
+      const preflight = await apiPost("/api/auth/login", {
         email: data.email,
         password: data.password,
       });
