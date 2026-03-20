@@ -114,6 +114,25 @@ Cuando tenés TODA la información necesaria para el tipo detectado:
   }
 }`;
 
+// ─── System prompt para Q&A de documento ─────────────────────────────────────
+
+const DOCUMENT_QA_SYSTEM_PROMPT = `Sos un asistente legal argentino experto en análisis y redacción de documentos.
+El usuario tiene un documento legal frente a él y puede hacerte preguntas sobre su contenido.
+
+Tu rol:
+- Responder preguntas sobre el documento de forma clara y concisa
+- Explicar cláusulas o términos legales en lenguaje sencillo
+- Señalar posibles problemas, ambigüedades o riesgos en el documento
+- Sugerir mejoras o aclaraciones cuando sea pertinente
+- Responder en español rioplatense (argentino)
+- Ser profesional pero accesible, no usar jerga legal innecesaria
+
+Importante:
+- Si el usuario pregunta algo que no está en el documento, indicalo claramente
+- No inventes información que no esté en el texto
+- Tus respuestas deben ser concisas (máximo 3-4 párrafos salvo que se pida más detalle)
+- No reemplazás el asesoramiento de un abogado profesional`;
+
 // ─── Schemas de validación ────────────────────────────────────────────────────
 
 const ChatMessageSchema = z.object({
@@ -123,6 +142,12 @@ const ChatMessageSchema = z.object({
 
 const ChatRequestSchema = z.object({
   messages: z.array(ChatMessageSchema).min(1).max(50),
+});
+
+const DocumentAskSchema = z.object({
+  question: z.string().min(1).max(2000),
+  documentContent: z.string().max(50000).optional(),
+  history: z.array(ChatMessageSchema).max(20).optional(),
 });
 
 // ─── Registro de rutas ────────────────────────────────────────────────────────
@@ -193,5 +218,67 @@ export async function registerChatRoutes(app: FastifyInstance) {
     }
 
     return reply.send({ ok: true, ...response });
+  });
+
+  /**
+   * POST /documents/:id/ask
+   * Pregunta al asistente IA sobre el contenido de un documento específico.
+   * Body: { question, documentContent?, history? }
+   * Response: { ok, answer }
+   */
+  app.post("/documents/:id/ask", async (request, reply) => {
+    try {
+      requireAuth(request);
+    } catch {
+      return reply.status(401).send({
+        ok: false,
+        error: "unauthorized",
+        message: "No autorizado. Iniciá sesión para continuar.",
+      });
+    }
+
+    const parsed = DocumentAskSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        ok: false,
+        error: "validation_error",
+        message: "Datos inválidos en la solicitud.",
+        details: parsed.error.flatten(),
+      });
+    }
+
+    const { question, documentContent, history = [] } = parsed.data;
+
+    // Construir el system prompt con el contenido del documento si está disponible
+    const systemPrompt = documentContent
+      ? `${DOCUMENT_QA_SYSTEM_PROMPT}\n\n━━━ DOCUMENTO ACTUAL ━━━\n${documentContent.slice(0, 40000)}`
+      : DOCUMENT_QA_SYSTEM_PROMPT;
+
+    let answer: string;
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...history,
+          { role: "user", content: question },
+        ],
+        temperature: 0.5,
+        max_tokens: 800,
+      });
+
+      answer =
+        completion.choices[0]?.message?.content?.trim() ??
+        "No pude generar una respuesta. Intentá de nuevo.";
+    } catch (aiError: any) {
+      app.log.error({ aiError }, "[document-ask] OpenAI API error");
+      return reply.status(502).send({
+        ok: false,
+        error: "ai_error",
+        message: "Error al conectar con el motor de IA. Intentá de nuevo.",
+      });
+    }
+
+    return reply.send({ ok: true, answer });
   });
 }

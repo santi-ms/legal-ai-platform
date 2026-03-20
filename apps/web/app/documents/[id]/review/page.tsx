@@ -179,9 +179,8 @@ export default function DocumentReviewPage() {
       <main className="flex flex-1 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
         {/* Left Sidebar: AI Assistant */}
         <AIAssistantSidebar
-          readability={85}
-          readabilityFeedback="Tu texto es claro y profesional. Considera simplificar el segundo párrafo."
-          onApplyAll={handleApplyAll}
+          documentId={id ?? undefined}
+          documentContent={documentContent}
         />
 
         {/* Main Content Area: Editor */}
