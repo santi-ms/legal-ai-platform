@@ -1,13 +1,24 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { MessageSquare, ClipboardList, Sparkles, ArrowRight } from "lucide-react";
+import { MessageSquare, ClipboardList, Sparkles, ArrowRight, ChevronLeft } from "lucide-react";
 
 export default function NewDocumentPage() {
   const router = useRouter();
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center px-4 py-12">
+      {/* Botón volver */}
+      <div className="max-w-2xl w-full mb-4">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Volver
+        </button>
+      </div>
+
       <div className="max-w-2xl w-full space-y-8 text-center">
         {/* Título */}
         <div className="space-y-3">
