@@ -142,6 +142,7 @@ export async function generateDocumentWithNewArchitecture(
     // Agregamos un warning explícito para que el frontend pueda informarle al usuario
     validationResult.warnings.push({
       id: "ai_enhancement_failed",
+      ruleId: "ai_enhancement_failed",
       message:
         "La mejora automática con IA no pudo completarse. El documento fue generado con la plantilla base sin mejora. Revisalo antes de descargarlo.",
       severity: "warning",
