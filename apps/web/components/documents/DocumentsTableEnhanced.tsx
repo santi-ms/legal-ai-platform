@@ -122,7 +122,7 @@ function DocumentsEmptyState({ hasActiveFilters }: { hasActiveFilters?: boolean 
       <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mb-6">
         Creá tu primer contrato, NDA o documento legal en minutos usando nuestro flujo guiado con IA.
       </p>
-      <Link href="/documents/new/guided">
+      <Link href="/documents/new">
         <Button className="bg-primary text-white hover:bg-primary/90 flex items-center gap-2">
           <Plus className="w-4 h-4" />
           Crear primer documento

@@ -226,7 +226,7 @@ function DocumentsContent() {
               <Download className="w-4 h-4" />
               Exportar
             </Button>
-            <Link href="/documents/new/guided">
+            <Link href="/documents/new">
               <Button
                 size="lg"
                 className="flex items-center gap-2 bg-primary px-4 py-2 rounded-lg text-sm font-semibold text-white hover:bg-primary/90 transition-shadow shadow-lg shadow-primary/20"

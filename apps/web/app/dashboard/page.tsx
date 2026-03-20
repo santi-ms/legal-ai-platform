@@ -170,7 +170,7 @@ function DashboardContent() {
             Acá tenés el resumen de tu actividad legal para hoy, {currentDate}.
           </p>
         </div>
-        <Link href="/documents/new/guided">
+        <Link href="/documents/new">
           <Button
             size="lg"
             className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-semibold shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform"
