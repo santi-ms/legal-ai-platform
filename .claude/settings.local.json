@@ -8,7 +8,12 @@
       "Bash(for schema:*)",
       "Bash(do echo:*)",
       "Read(//c/Users/santi/Desktop/legal-ai-platform/apps/web/src/features/documents/schemas/**)",
-      "Bash(grep -v \"id: \"\"$schema%%-*\")"
+      "Bash(grep -v \"id: \"\"$schema%%-*\")",
+      "Bash(xargs ls:*)",
+      "Bash(cat apps/web/app/documents/[id]/review/page.tsx)",
+      "Bash(grep -n \"AIAssistantSidebar\\\\|handleAskAI\\\\|documentContent\" apps/web/app/documents/[id]/review/page.tsx)",
+      "Read(//mnt/c/Users/santi/**)",
+      "Read(//c/Users/santi/Desktop/**)"
     ]
   }
 }
