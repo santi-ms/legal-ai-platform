@@ -11,7 +11,7 @@ export default function NewDocumentPage() {
       {/* Botón volver */}
       <div className="max-w-2xl w-full mb-4">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/dashboard")}
           className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
