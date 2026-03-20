@@ -145,7 +145,6 @@ export async function generateDocumentWithNewArchitecture(
       message:
         "La mejora automática con IA no pudo completarse. El documento fue generado con la plantilla base sin mejora. Revisalo antes de descargarlo.",
       severity: "warning",
-      field: undefined,
     });
   }
 
