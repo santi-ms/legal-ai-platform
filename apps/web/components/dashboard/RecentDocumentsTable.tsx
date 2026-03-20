@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FileText } from "lucide-react";
+import { FileText, Plus, Sparkles } from "lucide-react";
 import { formatDate, formatDocumentType } from "@/app/lib/format";
 import { Document } from "@/app/lib/webApi";
 import { cn } from "@/app/lib/utils";
@@ -114,8 +114,27 @@ export function RecentDocumentsTable({
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {recentDocs.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
-                  No hay documentos recientes
+                <td colSpan={3}>
+                  <div className="flex flex-col items-center justify-center py-14 px-6 text-center gap-4">
+                    <div className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                      <Sparkles className="w-8 h-8 text-primary" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-bold text-slate-900 dark:text-white">
+                        Todavía no tenés documentos
+                      </p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
+                        Creá tu primer documento legal con IA en menos de 5 minutos.
+                      </p>
+                    </div>
+                    <Link
+                      href="/documents/new"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Crear primer documento
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ) : (

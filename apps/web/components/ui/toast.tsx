@@ -6,18 +6,24 @@ import { cn } from "../../lib/utils";
 
 export type ToastType = "success" | "error" | "info" | "warning";
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface Toast {
   id: string;
   message: string;
   type: ToastType;
   duration?: number;
+  action?: ToastAction;
 }
 
 interface ToastContextType {
   toasts: Toast[];
-  addToast: (message: string, type?: ToastType, duration?: number) => void;
+  addToast: (message: string, type?: ToastType, duration?: number, action?: ToastAction) => void;
   removeToast: (id: string) => void;
-  success: (message: string, duration?: number) => void;
+  success: (message: string, duration?: number, action?: ToastAction) => void;
   error: (message: string, duration?: number) => void;
   info: (message: string, duration?: number) => void;
   warning: (message: string, duration?: number) => void;
@@ -41,9 +47,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addToast = useCallback(
-    (message: string, type: ToastType = "info", duration = 5000) => {
+    (message: string, type: ToastType = "info", duration = 5000, action?: ToastAction) => {
       const id = Math.random().toString(36).substring(7);
-      const newToast: Toast = { id, message, type, duration };
+      const newToast: Toast = { id, message, type, duration, action };
 
       setToasts((prev) => [...prev, newToast]);
 
@@ -55,7 +61,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 
   const success = useCallback(
-    (message: string, duration?: number) => addToast(message, "success", duration),
+    (message: string, duration?: number, action?: ToastAction) =>
+      addToast(message, "success", duration, action),
     [addToast]
   );
 
@@ -135,6 +142,13 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
 
   const Icon = icons[toast.type];
 
+  const actionButtonStyles = {
+    success: "text-emerald-700 hover:bg-emerald-200/60 border-emerald-300",
+    error: "text-red-700 hover:bg-red-200/60 border-red-300",
+    info: "text-blue-700 hover:bg-blue-200/60 border-blue-300",
+    warning: "text-amber-700 hover:bg-amber-200/60 border-amber-300",
+  };
+
   return (
     <div
       className={cn(
@@ -146,6 +160,20 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
       <Icon className={cn("w-5 h-5 flex-shrink-0 mt-0.5", iconStyles[toast.type])} />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium leading-relaxed">{toast.message}</p>
+        {toast.action && (
+          <button
+            onClick={() => {
+              toast.action!.onClick();
+              handleRemove();
+            }}
+            className={cn(
+              "mt-2 text-xs font-bold px-2.5 py-1 rounded-md border transition-colors",
+              actionButtonStyles[toast.type]
+            )}
+          >
+            {toast.action.label}
+          </button>
+        )}
       </div>
       <button
         onClick={handleRemove}

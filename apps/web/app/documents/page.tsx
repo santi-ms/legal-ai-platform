@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Plus, Download, AlertTriangle, RefreshCcw } from "lucide-react";
@@ -19,7 +19,7 @@ function DocumentsContent() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { success, error: showError } = useToast();
+  const { success, error: showError, addToast } = useToast();
 
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +28,7 @@ function DocumentsContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const pendingDeletes = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState("");
@@ -171,20 +172,42 @@ function DocumentsContent() {
     handleFiltersChange({ page });
   };
 
-  const handleDelete = async (id: string) => {
-    // Guard: evitar doble-click o llamadas concurrentes
-    if (deletingId) return;
-    setDeletingId(id);
-    try {
-      await deleteDocument(id);
-      success("Documento eliminado correctamente");
-      await loadDocuments();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al eliminar el documento";
-      showError(message);
-    } finally {
-      setDeletingId(null);
-    }
+  const handleDelete = (id: string) => {
+    if (deletingId || pendingDeletes.current.has(id)) return;
+
+    // Optimistically remove from UI
+    setDocuments((prev) => prev.filter((d) => d.id !== id));
+    setTotal((prev) => Math.max(0, prev - 1));
+
+    // Schedule actual API delete after 5s (undo window)
+    const timer = setTimeout(async () => {
+      pendingDeletes.current.delete(id);
+      setDeletingId(id);
+      try {
+        await deleteDocument(id);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Error al eliminar el documento";
+        showError(message);
+        await loadDocuments(); // restore on error
+      } finally {
+        setDeletingId(null);
+      }
+    }, 5000);
+
+    pendingDeletes.current.set(id, timer);
+
+    addToast("Documento eliminado", "success", 5000, {
+      label: "Deshacer",
+      onClick: () => {
+        const t = pendingDeletes.current.get(id);
+        if (t) {
+          clearTimeout(t);
+          pendingDeletes.current.delete(id);
+        }
+        // Re-fetch to restore the document in the list
+        loadDocuments();
+      },
+    });
   };
 
   const handleBulkDelete = async (ids: string[]) => {
