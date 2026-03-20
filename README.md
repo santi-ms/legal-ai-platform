@@ -263,6 +263,7 @@ Opciones recomendadas:
 | Variable | Descripción | Ejemplo |
 |----------|-------------|---------|
 | `DATABASE_URL` | Connection string de PostgreSQL | `postgresql://user:pass@host:5432/db` |
+| `POSTMARK_SERVER_TOKEN` | Server token de Postmark (prioridad principal para emails OTP) | `postmark-server-token` |
 | `EMAIL_SERVER_HOST` | SMTP server host | `smtp.gmail.com` |
 | `EMAIL_SERVER_PORT` | SMTP port | `587` |
 | `EMAIL_SERVER_USER` | Usuario SMTP | `tu-email@gmail.com` |
@@ -271,6 +272,8 @@ Opciones recomendadas:
 | `FRONTEND_URL` | URL del frontend (para links en emails) | `https://tu-app.vercel.app` |
 | `PORT` | Puerto del servidor (opcional, default: 4001) | `4001` |
 | `OPENAI_API_KEY` | API key de OpenAI | `sk-...` |
+
+Prioridad de envío de emails: `POSTMARK_SERVER_TOKEN` -> SMTP (`EMAIL_SERVER_*`) -> logger fallback para desarrollo.
 
 ### Deploy en Railway (Backend API)
 

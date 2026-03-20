@@ -25,6 +25,11 @@ model User {
   email         String   @unique
   passwordHash  String   @map("password") // Mapeado a columna "password" existente en DB
   emailVerified DateTime?
+  emailVerificationCodeHash String?
+  emailVerificationExpiresAt DateTime?
+  emailVerificationAttempts Int @default(0)
+  emailVerificationLastSentAt DateTime?
+  emailVerificationResendAfter DateTime?
   company       String?
   role          String   @default("user")
   professionalRole String?

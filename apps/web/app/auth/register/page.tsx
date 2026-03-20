@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useToast } from "@/components/ui/toast";
 import { logger } from "@/app/lib/logger";
+import { apiPost } from "@/app/lib/api";
 import { RegisterSidebar } from "@/components/auth/RegisterSidebar";
 import { RegisterHeader } from "@/components/auth/RegisterHeader";
 import { RegisterFormStep1 } from "@/components/auth/RegisterFormStep1";
@@ -42,12 +43,6 @@ export default function RegisterPage() {
     setApiError(null);
 
     try {
-      // Transformar datos para el backend (compatibilidad)
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
-      const backendUrl = `${apiUrl}/api/register`;
-
-      logger.debug("[register] Calling backend", { backendUrl });
-
       const transformedBody = {
         name: `${step1Data.firstName} ${step1Data.lastName}`.trim(),
         firstName: step1Data.firstName.trim(),
@@ -60,40 +55,18 @@ export default function RegisterPage() {
         professionalRole: step1Data.role,
       };
 
-      const response = await fetch(backendUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(transformedBody),
-        cache: "no-store",
-      });
+      logger.debug("[register] Calling register proxy");
 
-      logger.debug("[register] Backend response status", { status: response.status });
-
-      let responseData: any;
-      try {
-        responseData = await response.json();
-      } catch (e) {
-        const text = await response.text();
-        logger.error("[register] Failed to parse JSON", e, { text: text.substring(0, 200) });
-        throw new Error("Error al procesar respuesta del servidor");
-      }
-
-      logger.debug("[register] Response received", {
-        ok: responseData?.ok,
-        hasUser: !!responseData?.user,
-        error: responseData?.error,
-      });
-
-      const apiResponse = {
-        ok: response.ok && responseData?.ok === true,
-        message: responseData?.message || "Error al registrar usuario",
-        fieldErrors: responseData?.fieldErrors,
-        error: responseData?.error,
-        data: responseData?.user,
-      };
+      const apiResponse = await apiPost("/api/_auth/register", transformedBody) as any;
 
       if (!apiResponse.ok) {
         logger.error("[register] Registration failed", undefined, { error: apiResponse.error });
+        if (apiResponse.error === "email_pending_verification") {
+          success("Tu cuenta ya estaba pendiente. Continuá con la verificación del correo.");
+          router.push(`/auth/verify-email?email=${encodeURIComponent(step1Data.email)}&pending=1`);
+          return;
+        }
+
         if (apiResponse.fieldErrors) {
           // Construir mensaje legible sin exponer nombres técnicos de campos
           const fieldErrors = apiResponse.fieldErrors as Record<string, string[]>;
@@ -112,7 +85,8 @@ export default function RegisterPage() {
       logger.info("[register] Registration successful, redirecting");
 
       success("¡Cuenta creada exitosamente! Revisá tu email para verificar tu cuenta.");
-      router.push("/auth/verify-email?sent=1");
+      const verificationEmail = apiResponse?.verification?.email || step1Data.email;
+      router.push(`/auth/verify-email?email=${encodeURIComponent(verificationEmail)}&sent=1`);
     } catch (err: any) {
       logger.error("[register] Exception in onSubmit", err);
       setApiError(err.message || "Error de conexión. Revisá tu internet e intentá de nuevo.");

@@ -1,17 +1,7 @@
 import nodemailer from "nodemailer";
+import { ServerClient } from "postmark";
 import { randomBytes } from "crypto";
 import { logger } from "../utils/logger.js";
-
-// Configurar transporter de nodemailer
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_SERVER_HOST,
-  port: parseInt(process.env.EMAIL_SERVER_PORT || "587"),
-  secure: process.env.EMAIL_SERVER_PORT === "465", // true para 465, false para otros
-  auth: {
-    user: process.env.EMAIL_SERVER_USER,
-    pass: process.env.EMAIL_SERVER_PASSWORD,
-  },
-});
 
 export interface SendEmailOptions {
   to: string;
@@ -20,19 +10,122 @@ export interface SendEmailOptions {
   text: string;
 }
 
-export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
-  try {
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || "Legal AI <noreply@legal-ai-platform.com>",
+export interface SendEmailResult {
+  success: true;
+  provider: "postmark" | "smtp" | "logger";
+  messageId?: string;
+}
+
+interface EmailSender {
+  send(options: SendEmailOptions): Promise<SendEmailResult>;
+}
+
+function extractOtpCodeFromText(text: string) {
+  const match = text.match(/(?:^|\n)\s*(\d{6})\s*(?:\n|$)/);
+  return match?.[1] ?? null;
+}
+
+function isSmtpConfigured() {
+  return Boolean(
+    process.env.EMAIL_SERVER_HOST &&
+      process.env.EMAIL_SERVER_PORT &&
+      process.env.EMAIL_SERVER_USER &&
+      process.env.EMAIL_SERVER_PASSWORD,
+  );
+}
+
+function isPostmarkConfigured() {
+  return Boolean(process.env.POSTMARK_SERVER_TOKEN);
+}
+
+function getEmailFrom() {
+  return process.env.EMAIL_FROM || "Legal AI <noreply@legal-ai-platform.com>";
+}
+
+class PostmarkEmailSender implements EmailSender {
+  private readonly client = new ServerClient(process.env.POSTMARK_SERVER_TOKEN || "");
+
+  async send({ to, subject, html, text }: SendEmailOptions): Promise<SendEmailResult> {
+    const response = await this.client.sendEmail({
+      From: getEmailFrom(),
+      To: to,
+      Subject: subject,
+      HtmlBody: html,
+      TextBody: text,
+    });
+
+    return {
+      success: true,
+      provider: "postmark",
+      messageId: response.MessageID,
+    };
+  }
+}
+
+class SmtpEmailSender implements EmailSender {
+  private readonly transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_SERVER_HOST,
+    port: parseInt(process.env.EMAIL_SERVER_PORT || "587", 10),
+    secure: process.env.EMAIL_SERVER_PORT === "465",
+    auth: {
+      user: process.env.EMAIL_SERVER_USER,
+      pass: process.env.EMAIL_SERVER_PASSWORD,
+    },
+  });
+
+  async send({ to, subject, html, text }: SendEmailOptions): Promise<SendEmailResult> {
+    const info = await this.transporter.sendMail({
+      from: getEmailFrom(),
       to,
       subject,
       html,
       text,
     });
 
-    return { success: true, messageId: info.messageId };
+    return {
+      success: true,
+      provider: "smtp",
+      messageId: info.messageId,
+    };
+  }
+}
+
+class LoggerEmailSender implements EmailSender {
+  async send({ to, subject, html, text }: SendEmailOptions): Promise<SendEmailResult> {
+    const otpCode = extractOtpCodeFromText(text);
+
+    logger.warn("Email sender fallback in logger mode", {
+      to,
+      subject,
+      otpCode,
+      previewText: text,
+      previewHtml: html.slice(0, 500),
+    });
+
+    return {
+      success: true,
+      provider: "logger",
+    };
+  }
+}
+
+function getEmailSender(): EmailSender {
+  if (isPostmarkConfigured()) {
+    return new PostmarkEmailSender();
+  }
+
+  if (isSmtpConfigured()) {
+    return new SmtpEmailSender();
+  }
+
+  return new LoggerEmailSender();
+}
+
+export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
+  try {
+    return await getEmailSender().send(options);
   } catch (error: any) {
-    logger.error("Error enviando email", error, { to, subject });
+    logger.error("Error enviando email", error, { to: options.to, subject: options.subject });
     throw new Error(`Error enviando email: ${error.message}`);
   }
 }
@@ -84,6 +177,51 @@ ${verificationUrl}
 Este enlace expirará en 24 horas.
 
 Si no creaste una cuenta en Legal AI Platform, puedes ignorar este email.
+  `.trim();
+}
+
+export function getVerificationCodeEmailHtml(code: string, expiresInMinutes: number): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .code { display: inline-block; padding: 14px 20px; background-color: #0f172a; color: white; border-radius: 10px; font-size: 28px; letter-spacing: 8px; font-weight: bold; margin: 18px 0; }
+    .hint { color: #64748b; font-size: 14px; }
+    .footer { margin-top: 30px; font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Verificá tu correo</h1>
+    <p>Usá el siguiente código para completar tu registro en Legal AI Platform:</p>
+    <div class="code">${code}</div>
+    <p>El código expira en ${expiresInMinutes} minutos.</p>
+    <p class="hint">Si no solicitaste esta cuenta, podés ignorar este email.</p>
+    <div class="footer">
+      <p>No compartas este código con nadie.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `.trim();
+}
+
+export function getVerificationCodeEmailText(code: string, expiresInMinutes: number): string {
+  return `
+Verificá tu correo
+
+Usá el siguiente código para completar tu registro en Legal AI Platform:
+
+${code}
+
+El código expira en ${expiresInMinutes} minutos.
+
+No compartas este código con nadie.
+Si no solicitaste esta cuenta, podés ignorar este email.
   `.trim();
 }
 

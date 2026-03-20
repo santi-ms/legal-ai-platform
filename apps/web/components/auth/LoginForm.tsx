@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
+import { apiPost } from "@/app/lib/api";
 import { loginSchema, type LoginInput } from "@/app/lib/validation/auth";
 
 export function LoginForm() {
@@ -50,6 +51,23 @@ export function LoginForm() {
     setApiError(null);
 
     try {
+      const preflight = await apiPost("/api/_auth/login", {
+        email: data.email,
+        password: data.password,
+      });
+
+      if (!preflight.ok) {
+        if (preflight.error === "email_not_verified") {
+          router.push(`/auth/verify-email?email=${encodeURIComponent(data.email)}&pending=1`);
+          setIsLoading(false);
+          return;
+        }
+
+        setApiError("Email o contraseña incorrectos. Revisá los datos e intentá de nuevo.");
+        setIsLoading(false);
+        return;
+      }
+
       const result = await signIn("credentials", {
         email: data.email,
         password: data.password,

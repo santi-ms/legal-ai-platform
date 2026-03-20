@@ -30,6 +30,7 @@
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^8.0.2",
     "openai": "^4.0.0",
+    "postmark": "^4.0.7",
     "prisma": "^5.22.0",
     "puppeteer": "^24.39.0",
     "xss": "^1.0.15",

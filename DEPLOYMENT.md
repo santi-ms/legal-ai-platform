@@ -39,6 +39,7 @@ Configurar en: **Variables tab**
 | Variable | Valor | Descripción |
 |----------|-------|-------------|
 | `DATABASE_URL` | `postgresql://...` | Connection string de PostgreSQL (Supabase) |
+| `POSTMARK_SERVER_TOKEN` | `postmark-server-token` | Provider principal de emails transaccionales |
 | `EMAIL_SERVER_HOST` | `smtp.gmail.com` | SMTP server |
 | `EMAIL_SERVER_PORT` | `587` | SMTP port |
 | `EMAIL_SERVER_USER` | `tu-email@gmail.com` | Usuario SMTP |
@@ -47,6 +48,8 @@ Configurar en: **Variables tab**
 | `FRONTEND_URL` | `https://tu-app.vercel.app` | URL del frontend |
 | `PORT` | `4001` | (Opcional) Puerto del servidor |
 | `OPENAI_API_KEY` | `sk-...` | API key de OpenAI |
+
+Prioridad de providers para email: `POSTMARK_SERVER_TOKEN` -> SMTP (`EMAIL_SERVER_HOST`, `EMAIL_SERVER_PORT`, `EMAIL_SERVER_USER`, `EMAIL_SERVER_PASSWORD`) -> logger fallback.
 
 ---
 

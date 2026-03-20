@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { createHash, randomInt } from "crypto";
 import { sanitizeInput } from "./utils/sanitize.js";
 import { prisma } from "./db.js";
 import rateLimit from "@fastify/rate-limit";
@@ -11,18 +12,26 @@ import {
   resetRequestSchema,
   resetConfirmSchema,
   verifyEmailSchema,
+  verifyEmailCodeSchema,
+  resendVerificationCodeSchema,
 } from "./schemas/auth.js";
 import {
   sendEmail,
   generateToken,
   getVerificationEmailHtml,
   getVerificationEmailText,
+  getVerificationCodeEmailHtml,
+  getVerificationCodeEmailText,
   getResetPasswordEmailHtml,
   getResetPasswordEmailText,
 } from "./services/email.js";
 
 // AUTH_DEBUG flag para logs detallados
 const AUTH_DEBUG = process.env.AUTH_DEBUG === "true";
+const EMAIL_VERIFICATION_CODE_LENGTH = 6;
+const EMAIL_VERIFICATION_EXPIRATION_MINUTES = 10;
+const EMAIL_VERIFICATION_MAX_ATTEMPTS = 5;
+const EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS = 60;
 
 // Helper para logs seguros (sin credenciales)
 function safeLog(obj: any) {
@@ -36,6 +45,91 @@ function safeLog(obj: any) {
   } catch {
     return String(obj);
   }
+}
+
+function getEmailVerificationPepper() {
+  return (
+    process.env.EMAIL_VERIFICATION_PEPPER ||
+    process.env.JWT_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    "dev-email-verification-pepper"
+  );
+}
+
+function normalizeEmail(email: string) {
+  return sanitizeInput(email.trim().toLowerCase());
+}
+
+function generateVerificationCode() {
+  return randomInt(0, 1_000_000)
+    .toString()
+    .padStart(EMAIL_VERIFICATION_CODE_LENGTH, "0");
+}
+
+function hashVerificationCode(userId: string, code: string) {
+  return createHash("sha256")
+    .update(`${userId}:${code}:${getEmailVerificationPepper()}`)
+    .digest("hex");
+}
+
+function buildVerificationPayload(
+  email: string,
+  expiresAt: Date | null,
+  resendAvailableAt: Date | null,
+  delivery?: string,
+) {
+  return {
+    email,
+    expiresAt: expiresAt?.toISOString() ?? null,
+    resendAvailableAt: resendAvailableAt?.toISOString() ?? null,
+    maxAttempts: EMAIL_VERIFICATION_MAX_ATTEMPTS,
+    expiresInMinutes: EMAIL_VERIFICATION_EXPIRATION_MINUTES,
+    resendCooldownSeconds: EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS,
+    ...(delivery ? { delivery } : {}),
+  };
+}
+
+async function issueVerificationCode(user: { id: string; email: string }) {
+  const code = generateVerificationCode();
+  const codeHash = hashVerificationCode(user.id, code);
+  const now = new Date();
+  const expiresAt = new Date(
+    now.getTime() + EMAIL_VERIFICATION_EXPIRATION_MINUTES * 60 * 1000,
+  );
+  const resendAvailableAt = new Date(
+    now.getTime() + EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS * 1000,
+  );
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      emailVerificationCodeHash: codeHash,
+      emailVerificationExpiresAt: expiresAt,
+      emailVerificationAttempts: 0,
+      emailVerificationLastSentAt: now,
+      emailVerificationResendAfter: resendAvailableAt,
+    },
+  });
+
+  const delivery = await sendEmail({
+    to: user.email,
+    subject: "Codigo de verificacion - Legal AI Platform",
+    html: getVerificationCodeEmailHtml(
+      code,
+      EMAIL_VERIFICATION_EXPIRATION_MINUTES,
+    ),
+    text: getVerificationCodeEmailText(
+      code,
+      EMAIL_VERIFICATION_EXPIRATION_MINUTES,
+    ),
+  });
+
+  return buildVerificationPayload(
+    user.email,
+    expiresAt,
+    resendAvailableAt,
+    delivery.provider,
+  );
 }
 
 // Helper para respuestas homogéneas
@@ -80,7 +174,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     },
   });
 
-  // POST /api/register - Registro con email verificado por defecto
+  // POST /api/register - Registro pendiente hasta verificar OTP por email
   const RegisterSchema = z.object({
     name: z.string().min(1),
     firstName: z.string().min(1),
@@ -104,7 +198,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       const sanitizedCompany = company ? sanitizeInput(company) : null;
       const sanitizedProfessionalRole = sanitizeInput(professionalRole || "");
       
-      const normEmail = sanitizedEmail;
+      const normEmail = normalizeEmail(sanitizedEmail);
 
       request.log.info({ event: "register:incoming", email: normEmail });
 
@@ -116,6 +210,10 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           select: {
             id: true,
             email: true,
+            name: true,
+            emailVerified: true,
+            emailVerificationExpiresAt: true,
+            emailVerificationResendAfter: true,
           },
         });
       } catch (dbError: any) {
@@ -148,10 +246,30 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       }
 
       if (exists) {
-        request.log.warn({ event: "register:email_exists", email: normEmail });
+        if (exists.emailVerified) {
+          request.log.warn({ event: "register:email_exists", email: normEmail });
+          return reply.code(409).send({
+            ok: false,
+            message: "El email ya está registrado",
+            error: "email_exists",
+          });
+        }
+
+        request.log.info({
+          event: "register:pending_verification",
+          email: normEmail,
+          userId: exists.id,
+        });
+
         return reply.code(409).send({
           ok: false,
-          message: "El email ya está registrado",
+          message: "Tu cuenta ya está pendiente de verificación",
+          error: "email_pending_verification",
+          verification: buildVerificationPayload(
+            normEmail,
+            exists.emailVerificationExpiresAt,
+            exists.emailVerificationResendAfter,
+          ),
         });
       }
 
@@ -179,16 +297,16 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         // si falla la creación del tenant, seguimos sin bloquear el alta de usuario
       }
 
-      // Armamos el payload según si existe la relación Tenant en el cliente Prisma
-      // NO incluir emailVerified por ahora, ya que la columna puede no existir
       const baseData: any = {
         name: sanitizedName,
         firstName: sanitizedFirstName,
         lastName: sanitizedLastName,
         email: normEmail,
         passwordHash,
+        company: sanitizedCompany,
         role: "user",
         professionalRole: sanitizedProfessionalRole,
+        emailVerified: null,
       };
 
       const dataBase: Prisma.UserCreateInput = tenantId
@@ -198,10 +316,8 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           }
         : (baseData as Prisma.UserCreateInput);
 
-      // Intentar crear usuario con emailVerified, si falla intentar sin él
       let created: any = null;
       try {
-        // Primero intentar sin emailVerified en el select para evitar errores si la columna no existe
         created = await prisma.user.create({
           data: dataBase,
           select: {
@@ -212,40 +328,8 @@ export async function registerAuthRoutes(app: FastifyInstance) {
             tenantId: true,
           },
         });
-        // Intentar agregar emailVerified al resultado si existe
-        try {
-          const withVerified = await prisma.user.findUnique({
-            where: { id: created.id },
-            select: { emailVerified: true },
-          });
-          created.emailVerified = withVerified?.emailVerified || null;
-        } catch {
-          created.emailVerified = null;
-        }
       } catch (e: any) {
-        // Si falla por columna faltante, intentar sin emailVerified
-        if (e?.code === "P2022" || e?.message?.includes("emailVerified")) {
-          request.log.warn({
-            event: "register:emailVerified_missing",
-            email: normEmail,
-            error: e?.message,
-          });
-          // Remover emailVerified del dataBase
-          const dataWithoutVerified = { ...dataBase };
-          delete dataWithoutVerified.emailVerified;
-          created = await prisma.user.create({
-            data: dataWithoutVerified,
-            select: {
-              id: true,
-              email: true,
-              name: true,
-              role: true,
-              tenantId: true,
-            },
-          });
-          // Asignar emailVerified como null si no existe
-          created.emailVerified = null;
-        } else if (e?.code === "P1001" || e?.message?.includes("not found") || e?.message?.includes("FATAL")) {
+        if (e?.code === "P1001" || e?.message?.includes("not found") || e?.message?.includes("FATAL")) {
           // Error de conexión a la base de datos
           request.log.error({
             event: "register:db_connection_error",
@@ -270,6 +354,28 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         }
       }
 
+      let verification: ReturnType<typeof buildVerificationPayload>;
+      try {
+        verification = await issueVerificationCode({
+          id: created.id,
+          email: created.email,
+        });
+      } catch (emailError: any) {
+        request.log.error({
+          event: "register:verification_delivery_failed",
+          userId: created.id,
+          email: normEmail,
+          error: emailError?.message,
+        });
+
+        return reply.code(500).send({
+          ok: false,
+          message: "No pudimos enviar el codigo de verificacion. Intenta nuevamente.",
+          error: "verification_delivery_failed",
+          verification: buildVerificationPayload(normEmail, null, null),
+        });
+      }
+
       request.log.info({
         event: "register:success",
         userId: created.id,
@@ -278,6 +384,8 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 
       return reply.send({ 
         ok: true, 
+        requiresVerification: true,
+        verification,
         user: {
           id: created.id,
           email: created.email,
@@ -439,6 +547,211 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     }
   });
 
+  // POST /api/auth/verify-email - Verificar email con OTP de 6 dígitos
+  type VerifyEmailCodeBody = z.infer<typeof verifyEmailCodeSchema>;
+  app.post<{ Body: VerifyEmailCodeBody }>("/api/auth/verify-email", async (request, reply) => {
+    try {
+      const { email, code } = verifyEmailCodeSchema.parse(request.body);
+      const normEmail = normalizeEmail(email);
+
+      const user = await prisma.user.findUnique({
+        where: { email: normEmail },
+        select: {
+          id: true,
+          email: true,
+          emailVerified: true,
+          emailVerificationCodeHash: true,
+          emailVerificationExpiresAt: true,
+          emailVerificationAttempts: true,
+          emailVerificationResendAfter: true,
+        },
+      });
+
+      if (!user) {
+        return sendError(reply, 400, "Codigo invalido o expirado", "invalid_code");
+      }
+
+      if (user.emailVerified) {
+        return sendSuccess(reply, "El email ya estaba verificado", {
+          verification: buildVerificationPayload(
+            user.email,
+            user.emailVerificationExpiresAt,
+            user.emailVerificationResendAfter,
+          ),
+        });
+      }
+
+      if (!user.emailVerificationCodeHash || !user.emailVerificationExpiresAt) {
+        return sendError(
+          reply,
+          400,
+          "No hay un codigo activo. Solicita uno nuevo.",
+          "verification_code_missing",
+        );
+      }
+
+      if (user.emailVerificationExpiresAt < new Date()) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            emailVerificationCodeHash: null,
+            emailVerificationExpiresAt: null,
+            emailVerificationAttempts: 0,
+          },
+        });
+
+        return sendError(reply, 400, "El codigo expiro. Solicita uno nuevo.", "code_expired");
+      }
+
+      if (user.emailVerificationAttempts >= EMAIL_VERIFICATION_MAX_ATTEMPTS) {
+        return sendError(
+          reply,
+          429,
+          "Alcanzaste el maximo de intentos. Solicita un nuevo codigo.",
+          "too_many_attempts",
+        );
+      }
+
+      const incomingHash = hashVerificationCode(user.id, code);
+      if (incomingHash !== user.emailVerificationCodeHash) {
+        const nextAttempts = user.emailVerificationAttempts + 1;
+        const lockVerification = nextAttempts >= EMAIL_VERIFICATION_MAX_ATTEMPTS;
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            emailVerificationAttempts: nextAttempts,
+            ...(lockVerification
+              ? {
+                  emailVerificationCodeHash: null,
+                  emailVerificationExpiresAt: null,
+                }
+              : {}),
+          },
+        });
+
+        if (lockVerification) {
+          return sendError(
+            reply,
+            429,
+            "Alcanzaste el maximo de intentos. Solicita un nuevo codigo.",
+            "too_many_attempts",
+          );
+        }
+
+        return reply.code(400).send({
+          ok: false,
+          message: "Codigo incorrecto",
+          error: "invalid_code",
+          remainingAttempts: EMAIL_VERIFICATION_MAX_ATTEMPTS - nextAttempts,
+        });
+      }
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerified: new Date(),
+          emailVerificationCodeHash: null,
+          emailVerificationExpiresAt: null,
+          emailVerificationAttempts: 0,
+          emailVerificationLastSentAt: null,
+          emailVerificationResendAfter: null,
+        },
+      });
+
+      return sendSuccess(reply, "Email verificado exitosamente", {
+        email: user.email,
+      });
+    } catch (error: any) {
+      request.log.error({
+        event: "verify_email_code:exception",
+        error: error?.message,
+        stack: error?.stack,
+      });
+      if (error?.name === "ZodError") {
+        return reply.code(400).send({
+          ok: false,
+          message: "Body invalido",
+          issues: error.issues,
+        });
+      }
+      return sendError(reply, 500, "Error al verificar el codigo", "internal_error");
+    }
+  });
+
+  // POST /api/auth/verify-email/resend - Reenviar OTP de verificación
+  type ResendVerificationCodeBody = z.infer<typeof resendVerificationCodeSchema>;
+  app.post<{ Body: ResendVerificationCodeBody }>("/api/auth/verify-email/resend", async (request, reply) => {
+    try {
+      const { email } = resendVerificationCodeSchema.parse(request.body);
+      const normEmail = normalizeEmail(email);
+
+      const user = await prisma.user.findUnique({
+        where: { email: normEmail },
+        select: {
+          id: true,
+          email: true,
+          emailVerified: true,
+          emailVerificationResendAfter: true,
+        },
+      });
+
+      if (!user) {
+        return sendSuccess(
+          reply,
+          "Si el email existe y esta pendiente, enviaremos un nuevo codigo.",
+        );
+      }
+
+      if (user.emailVerified) {
+        return sendSuccess(reply, "El email ya esta verificado", {
+          email: user.email,
+        });
+      }
+
+      if (user.emailVerificationResendAfter && user.emailVerificationResendAfter > new Date()) {
+        const retryAfterSeconds = Math.max(
+          1,
+          Math.ceil(
+            (user.emailVerificationResendAfter.getTime() - Date.now()) / 1000,
+          ),
+        );
+
+        return reply.code(429).send({
+          ok: false,
+          message: "Espera antes de solicitar un nuevo codigo.",
+          error: "resend_cooldown_active",
+          retryAfterSeconds,
+          verification: buildVerificationPayload(
+            user.email,
+            null,
+            user.emailVerificationResendAfter,
+          ),
+        });
+      }
+
+      const verification = await issueVerificationCode({ id: user.id, email: user.email });
+
+      return sendSuccess(reply, "Te enviamos un nuevo codigo de verificacion", {
+        verification,
+      });
+    } catch (error: any) {
+      request.log.error({
+        event: "resend_verification_code:exception",
+        error: error?.message,
+        stack: error?.stack,
+      });
+      if (error?.name === "ZodError") {
+        return reply.code(400).send({
+          ok: false,
+          message: "Body invalido",
+          issues: error.issues,
+        });
+      }
+      return sendError(reply, 500, "Error al reenviar el codigo", "internal_error");
+    }
+  });
+
   // GET /api/auth/login - Handler defensivo (405)
   app.get("/api/auth/login", async (_, reply) => {
     return reply.code(405).send({
@@ -516,19 +829,17 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         });
       }
 
-      // Solo verificar emailVerified si existe (puede ser null si la columna no existe)
-      if (user.emailVerified === undefined || user.emailVerified === null) {
-        // Si emailVerified no existe o es null, permitir login (por ahora)
-        request.log.info({
-          event: "login:emailVerified_null",
-          email: normEmail,
-          message: "Email no verificado, pero permitiendo login",
-        });
-      } else if (!user.emailVerified) {
+      if (!user.emailVerified) {
         request.log.warn({ event: "login:unverified_email", email: normEmail });
         return reply.code(403).send({
           ok: false,
           message: "Email no verificado",
+          error: "email_not_verified",
+          verification: buildVerificationPayload(
+            user.email,
+            null,
+            null,
+          ),
         });
       }
 
