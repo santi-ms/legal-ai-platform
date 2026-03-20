@@ -187,6 +187,30 @@ function DocumentsContent() {
     }
   };
 
+  const handleBulkDelete = async (ids: string[]) => {
+    let successCount = 0;
+    let errorCount = 0;
+    for (const id of ids) {
+      try {
+        await deleteDocument(id);
+        successCount++;
+      } catch {
+        errorCount++;
+      }
+    }
+    if (successCount > 0) {
+      success(
+        `${successCount} ${successCount === 1 ? "documento eliminado" : "documentos eliminados"} correctamente`
+      );
+    }
+    if (errorCount > 0) {
+      showError(
+        `No se ${errorCount === 1 ? "pudo eliminar" : "pudieron eliminar"} ${errorCount} ${errorCount === 1 ? "documento" : "documentos"}`
+      );
+    }
+    await loadDocuments();
+  };
+
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -282,6 +306,7 @@ function DocumentsContent() {
             <DocumentsTableEnhanced
               documents={documents}
               onDelete={handleDelete}
+              onBulkDelete={handleBulkDelete}
               onDownloadError={showError}
               deletingId={deletingId}
               hasActiveFilters={

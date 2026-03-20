@@ -5,10 +5,6 @@ import Link from "next/link";
 import {
   FileText,
   Download,
-  Eye,
-  Edit,
-  Mail,
-  MoreVertical,
   FileIcon,
   History,
   Briefcase,
@@ -16,6 +12,7 @@ import {
   Plus,
   FolderOpen,
   Loader2,
+  CheckSquare,
 } from "lucide-react";
 import { Document } from "@/app/lib/webApi";
 import { formatDate, formatDocumentType } from "@/app/lib/format";
@@ -27,7 +24,10 @@ interface DocumentsTableEnhancedProps {
   documents: Document[];
   onPreview?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onBulkDelete?: (ids: string[]) => Promise<void>;
   onDownloadError?: (message: string) => void;
+  hasActiveFilters?: boolean;
+  deletingId?: string | null;
 }
 
 // ─── Skeleton ────────────────────────────────────────────────────────────────
@@ -39,7 +39,7 @@ export function DocumentsTableSkeleton() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
-              {["Documento", "Tipo", "Última Modificación", "Estado", "Acciones"].map((col) => (
+              {["", "Documento", "Tipo", "Última Modificación", "Estado", "Acciones"].map((col) => (
                 <th
                   key={col}
                   className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"
@@ -52,7 +52,9 @@ export function DocumentsTableSkeleton() {
           <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
             {Array.from({ length: 5 }).map((_, i) => (
               <tr key={i} className="animate-pulse">
-                {/* Documento */}
+                <td className="px-4 py-4 w-10">
+                  <div className="size-4 rounded bg-slate-200 dark:bg-slate-700" />
+                </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="size-10 rounded bg-slate-200 dark:bg-slate-700" />
@@ -62,25 +64,14 @@ export function DocumentsTableSkeleton() {
                     </div>
                   </div>
                 </td>
-                {/* Tipo */}
-                <td className="px-6 py-4">
-                  <div className="h-3.5 w-20 rounded bg-slate-200 dark:bg-slate-700" />
-                </td>
-                {/* Fecha */}
-                <td className="px-6 py-4">
-                  <div className="h-3.5 w-28 rounded bg-slate-200 dark:bg-slate-700" />
-                </td>
-                {/* Estado */}
-                <td className="px-6 py-4">
-                  <div className="h-5 w-24 rounded-full bg-slate-200 dark:bg-slate-700" />
-                </td>
-                {/* Acciones — 4 botones fantasma (descargar, ver, eliminar, más) */}
+                <td className="px-6 py-4"><div className="h-3.5 w-20 rounded bg-slate-200 dark:bg-slate-700" /></td>
+                <td className="px-6 py-4"><div className="h-3.5 w-28 rounded bg-slate-200 dark:bg-slate-700" /></td>
+                <td className="px-6 py-4"><div className="h-5 w-24 rounded-full bg-slate-200 dark:bg-slate-700" /></td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <div className="size-7 rounded bg-slate-200 dark:bg-slate-700" />
-                    <div className="size-7 rounded bg-slate-200 dark:bg-slate-700" />
-                    <div className="size-7 rounded bg-slate-200 dark:bg-slate-700" />
-                    <div className="size-7 rounded bg-slate-200 dark:bg-slate-700" />
+                    {[...Array(4)].map((_, j) => (
+                      <div key={j} className="size-7 rounded bg-slate-200 dark:bg-slate-700" />
+                    ))}
                   </div>
                 </td>
               </tr>
@@ -132,70 +123,28 @@ function DocumentsEmptyState({ hasActiveFilters }: { hasActiveFilters?: boolean 
   );
 }
 
+// ─── Status / Icon helpers ────────────────────────────────────────────────────
+
 const statusConfig: Record<string, { label: string; className: string; dotColor: string }> = {
-  // Valores reales del backend
-  generated_text: {
-    label: "Generado",
-    className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400",
-    dotColor: "bg-emerald-500",
-  },
-  generated: {
-    label: "Generado",
-    className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400",
-    dotColor: "bg-emerald-500",
-  },
-  needs_review: {
-    label: "Requiere revisión",
-    className: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
-    dotColor: "bg-amber-500",
-  },
-  ready_pdf: {
-    label: "PDF listo",
-    className: "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400",
-    dotColor: "bg-blue-500",
-  },
-  // Valores legacy (por compatibilidad con datos antiguos)
-  GENERATED: {
-    label: "Completado",
-    className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400",
-    dotColor: "bg-emerald-500",
-  },
-  DRAFT: {
-    label: "Borrador",
-    className: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
-    dotColor: "bg-slate-400",
-  },
-  PENDIENTE: {
-    label: "Pendiente de firma",
-    className: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
-    dotColor: "bg-amber-500",
-  },
+  generated_text: { label: "Generado",           className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400", dotColor: "bg-emerald-500" },
+  generated:      { label: "Generado",           className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400", dotColor: "bg-emerald-500" },
+  needs_review:   { label: "Requiere revisión",  className: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",         dotColor: "bg-amber-500" },
+  ready_pdf:      { label: "PDF listo",          className: "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400",             dotColor: "bg-blue-500" },
+  GENERATED:      { label: "Completado",         className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400", dotColor: "bg-emerald-500" },
+  DRAFT:          { label: "Borrador",           className: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",            dotColor: "bg-slate-400" },
+  PENDIENTE:      { label: "Pendiente de firma", className: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",         dotColor: "bg-amber-500" },
 };
 
 function getStatusConfig(status: string) {
-  return (
-    statusConfig[status] || {
-      label: status,
-      className: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
-      dotColor: "bg-slate-400",
-    }
-  );
+  return statusConfig[status] || { label: status, className: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300", dotColor: "bg-slate-400" };
 }
 
 function getDocumentIcon(type: string) {
-  const typeLower = type?.toLowerCase() || "";
-  if (typeLower.includes("arrendamiento") || typeLower.includes("lease")) {
-    return { icon: FileIcon, color: "bg-red-50 dark:bg-red-500/10 text-red-500" };
-  }
-  if (typeLower.includes("nda") || typeLower.includes("confidencialidad")) {
-    return { icon: FileText, color: "bg-blue-50 dark:bg-blue-500/10 text-blue-500" };
-  }
-  if (typeLower.includes("poder") || typeLower.includes("notarial")) {
-    return { icon: History, color: "bg-amber-50 dark:bg-amber-500/10 text-amber-500" };
-  }
-  if (typeLower.includes("laboral")) {
-    return { icon: Briefcase, color: "bg-primary/10 text-primary" };
-  }
+  const t = type?.toLowerCase() || "";
+  if (t.includes("arrendamiento") || t.includes("lease"))        return { icon: FileIcon,  color: "bg-red-50 dark:bg-red-500/10 text-red-500" };
+  if (t.includes("nda") || t.includes("confidencialidad"))       return { icon: FileText,  color: "bg-blue-50 dark:bg-blue-500/10 text-blue-500" };
+  if (t.includes("poder") || t.includes("notarial"))             return { icon: History,   color: "bg-amber-50 dark:bg-amber-500/10 text-amber-500" };
+  if (t.includes("laboral"))                                      return { icon: Briefcase, color: "bg-primary/10 text-primary" };
   return { icon: FileText, color: "bg-slate-50 dark:bg-slate-800 text-slate-500" };
 }
 
@@ -205,35 +154,82 @@ function formatRelativeDate(date: Date | string): string {
   const diffMs = now.getTime() - docDate.getTime();
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffHours / 24);
-
-  if (diffHours < 1) {
-    return "Hace menos de 1h";
-  } else if (diffHours < 24) {
-    return `Hoy, ${docDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`;
-  } else if (diffDays === 1) {
-    return `Ayer, ${docDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`;
-  } else if (diffDays < 7) {
-    return formatDate(date);
-  } else {
-    return formatDate(date);
-  }
+  if (diffHours < 1)   return "Hace menos de 1h";
+  if (diffHours < 24)  return `Hoy, ${docDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`;
+  if (diffDays === 1)  return `Ayer, ${docDate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`;
+  return formatDate(date);
 }
+
+// ─── Bulk Action Toolbar ──────────────────────────────────────────────────────
+
+function BulkToolbar({
+  count,
+  onDelete,
+  onClear,
+  isDeleting,
+}: {
+  count: number;
+  onDelete: () => void;
+  onClear: () => void;
+  isDeleting: boolean;
+}) {
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 px-5 py-3 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl shadow-2xl shadow-black/30 animate-fade-in">
+      <div className="flex items-center gap-2">
+        <CheckSquare className="w-4 h-4 text-primary" />
+        <span className="text-sm font-semibold">
+          {count} {count === 1 ? "documento seleccionado" : "documentos seleccionados"}
+        </span>
+      </div>
+      <div className="w-px h-5 bg-slate-600 dark:bg-slate-300" />
+      <button
+        onClick={onDelete}
+        disabled={isDeleting}
+        className="flex items-center gap-1.5 text-sm font-semibold text-red-400 hover:text-red-300 dark:text-red-600 dark:hover:text-red-700 disabled:opacity-50 transition-colors"
+      >
+        {isDeleting ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Trash2 className="w-4 h-4" />
+        )}
+        Eliminar {count === 1 ? "documento" : "seleccionados"}
+      </button>
+      <div className="w-px h-5 bg-slate-600 dark:bg-slate-300" />
+      <button
+        onClick={onClear}
+        disabled={isDeleting}
+        className="text-sm text-slate-400 hover:text-white dark:text-slate-500 dark:hover:text-slate-900 transition-colors disabled:opacity-50"
+      >
+        Deseleccionar
+      </button>
+    </div>
+  );
+}
+
+// ─── Main Table ───────────────────────────────────────────────────────────────
 
 export function DocumentsTableEnhanced({
   documents,
-  onPreview,
   onDelete,
+  onBulkDelete,
   onDownloadError,
   hasActiveFilters,
   deletingId,
-}: DocumentsTableEnhancedProps & { hasActiveFilters?: boolean; deletingId?: string | null }) {
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+}: DocumentsTableEnhancedProps) {
+  const [hoveredRow, setHoveredRow]       = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  // Ref para detectar cuándo la eliminación terminó (éxito o error)
-  // y cerrar el dialog automáticamente en ese momento
+  const [confirmingId, setConfirmingId]   = useState<string | null>(null);
+  const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set());
+  const [bulkConfirm, setBulkConfirm]     = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const deletionInFlightRef = useRef(false);
 
+  // Limpia selección cuando cambian los documentos (ej: después de eliminar)
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [documents]);
+
+  // Cierra el single-delete dialog cuando termina la operación
   useEffect(() => {
     if (deletionInFlightRef.current && !deletingId) {
       deletionInFlightRef.current = false;
@@ -241,16 +237,33 @@ export function DocumentsTableEnhanced({
     }
   }, [deletingId]);
 
-  const handleDownload = async (id: string, _doc: Document) => {
-    // Guard: evitar doble-click mientras descarga
+  const allSelected = documents.length > 0 && selectedIds.size === documents.length;
+  const someSelected = selectedIds.size > 0 && !allSelected;
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(documents.map((d) => d.id)));
+    }
+  };
+
+  const toggleOne = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleDownload = async (id: string) => {
     if (downloadingId) return;
     setDownloadingId(id);
     try {
       const response = await fetch(`/api/_proxy/documents/${id}/pdf`);
       if (!response.ok) {
         const json = await response.json().catch(() => ({}));
-        const msg = (json as any).message || "No se pudo descargar el PDF.";
-        onDownloadError?.(msg);
+        onDownloadError?.((json as any).message || "No se pudo descargar el PDF.");
         return;
       }
       const blob = await response.blob();
@@ -262,12 +275,22 @@ export function DocumentsTableEnhanced({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : "Error al descargar el PDF";
-      console.error("[documents-table] Error downloading PDF:", error);
-      onDownloadError?.(msg);
+    } catch (err) {
+      onDownloadError?.(err instanceof Error ? err.message : "Error al descargar el PDF");
     } finally {
       setDownloadingId(null);
+    }
+  };
+
+  const handleBulkDeleteConfirm = async () => {
+    if (!onBulkDelete) return;
+    setIsBulkDeleting(true);
+    try {
+      await onBulkDelete(Array.from(selectedIds));
+      setSelectedIds(new Set());
+    } finally {
+      setIsBulkDeleting(false);
+      setBulkConfirm(false);
     }
   };
 
@@ -276,141 +299,150 @@ export function DocumentsTableEnhanced({
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Documento
-              </th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Tipo
-              </th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Última Modificación
-              </th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Estado
-              </th>
-              <th className="min-w-[220px] px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right whitespace-nowrap">
-                Acciones
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-            {documents.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="p-0">
-                  <DocumentsEmptyState hasActiveFilters={hasActiveFilters} />
-                </td>
+            <thead>
+              <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
+                {/* Select all checkbox */}
+                <th className="px-4 py-4 w-10">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                    onChange={toggleAll}
+                    disabled={documents.length === 0}
+                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    aria-label="Seleccionar todos"
+                  />
+                </th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Documento</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Jurisdicción</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Última Modificación</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Estado</th>
+                <th className="min-w-[220px] px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Acciones</th>
               </tr>
-            ) : (
-              documents.map((doc) => {
-                const status = doc.estado || "DRAFT";
-                const statusInfo = getStatusConfig(status);
-                const iconInfo = getDocumentIcon(doc.type || "");
-                const Icon = iconInfo.icon;
-                const isHovered = hoveredRow === doc.id;
+            </thead>
 
-                return (
-                  <tr
-                    key={doc.id}
-                    onMouseEnter={() => setHoveredRow(doc.id)}
-                    onMouseLeave={() => setHoveredRow(null)}
-                    className={cn(
-                      "hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors group",
-                      deletingId === doc.id && "opacity-50 pointer-events-none"
-                    )}
-                  >
-                    {/* Document */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={cn(
-                            "size-10 rounded flex items-center justify-center",
-                            iconInfo.color
-                          )}
-                        >
-                          <Icon className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="text-sm font-semibold text-slate-900 dark:text-white">
-                            {formatDocumentType(doc.type)}
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+              {documents.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-0">
+                    <DocumentsEmptyState hasActiveFilters={hasActiveFilters} />
+                  </td>
+                </tr>
+              ) : (
+                documents.map((doc) => {
+                  const status     = doc.estado || "DRAFT";
+                  const statusInfo = getStatusConfig(status);
+                  const iconInfo   = getDocumentIcon(doc.type || "");
+                  const Icon       = iconInfo.icon;
+                  const isSelected = selectedIds.has(doc.id);
+
+                  return (
+                    <tr
+                      key={doc.id}
+                      onMouseEnter={() => setHoveredRow(doc.id)}
+                      onMouseLeave={() => setHoveredRow(null)}
+                      className={cn(
+                        "hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors group",
+                        isSelected && "bg-primary/5 dark:bg-primary/10",
+                        deletingId === doc.id && "opacity-50 pointer-events-none"
+                      )}
+                    >
+                      {/* Checkbox */}
+                      <td className="px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleOne(doc.id)}
+                          className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary cursor-pointer"
+                          aria-label={`Seleccionar documento ${doc.id}`}
+                        />
+                      </td>
+
+                      {/* Document */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={cn("size-10 rounded flex items-center justify-center", iconInfo.color)}>
+                            <Icon className="w-5 h-5" />
                           </div>
-                          <div className="text-xs text-slate-500 dark:text-slate-400">
-                            ID: {doc.id.slice(0, 13)}
+                          <div>
+                            <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                              {formatDocumentType(doc.type)}
+                            </div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">
+                              ID: {doc.id.slice(0, 13)}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Type */}
-                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                      {doc.jurisdiccion || "—"}
-                    </td>
+                      {/* Jurisdicción */}
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                        {doc.jurisdiccion || "—"}
+                      </td>
 
-                    {/* Last Modification */}
-                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                      {formatRelativeDate(doc.createdAt)}
-                    </td>
+                      {/* Fecha */}
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                        {formatRelativeDate(doc.createdAt)}
+                      </td>
 
-                    {/* Status */}
-                    <td className="px-6 py-4">
-                      <span
-                        className={cn(
-                          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                          statusInfo.className
-                        )}
-                      >
-                        <span className={cn("size-1.5 rounded-full mr-1.5", statusInfo.dotColor)}></span>
-                        {statusInfo.label}
-                      </span>
-                    </td>
+                      {/* Estado */}
+                      <td className="px-6 py-4">
+                        <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium", statusInfo.className)}>
+                          <span className={cn("size-1.5 rounded-full mr-1.5", statusInfo.dotColor)} />
+                          {statusInfo.label}
+                        </span>
+                      </td>
 
-                    {/* Actions */}
-                    <td className="min-w-[320px] px-6 py-4 text-right whitespace-nowrap">
-                      <div className="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap text-sm">
-                        <Link
-                          href={`/documents/${doc.id}/edit`}
-                          className="inline-flex shrink-0 whitespace-nowrap px-2 py-1 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
-                        >
-                          Editar
-                        </Link>
-                        <span className="text-slate-300 dark:text-slate-600">|</span>
-                        <Link
-                          href={`/documents/${doc.id}`}
-                          className="inline-flex shrink-0 whitespace-nowrap px-2 py-1 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
-                        >
-                          Ver
-                        </Link>
-                        <span className="text-slate-300 dark:text-slate-600">|</span>
-                        <button
-                          type="button"
-                          onClick={() => handleDownload(doc.id, doc)}
-                          disabled={downloadingId === doc.id}
-                          className="inline-flex shrink-0 whitespace-nowrap px-2 py-1 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          {downloadingId === doc.id ? "Descargando..." : "Descargar"}
-                        </button>
-                        <span className="text-slate-300 dark:text-slate-600">|</span>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmingId(doc.id)}
-                          disabled={deletingId === doc.id}
-                          className="inline-flex shrink-0 whitespace-nowrap px-2 py-1 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          {deletingId === doc.id ? "Eliminando..." : "Eliminar"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                      {/* Acciones */}
+                      <td className="min-w-[320px] px-6 py-4 text-right whitespace-nowrap">
+                        <div className="flex flex-nowrap items-center justify-end gap-2 text-sm">
+                          <Link
+                            href={`/documents/${doc.id}/edit`}
+                            className="inline-flex shrink-0 px-2 py-1 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
+                          >
+                            Editar
+                          </Link>
+                          <span className="text-slate-300 dark:text-slate-600">|</span>
+                          <Link
+                            href={`/documents/${doc.id}`}
+                            className="inline-flex shrink-0 px-2 py-1 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
+                          >
+                            Ver
+                          </Link>
+                          <span className="text-slate-300 dark:text-slate-600">|</span>
+                          <button
+                            type="button"
+                            onClick={() => handleDownload(doc.id)}
+                            disabled={!!downloadingId}
+                            className="inline-flex shrink-0 px-2 py-1 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            {downloadingId === doc.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Download className="w-4 h-4" />
+                            )}
+                          </button>
+                          <span className="text-slate-300 dark:text-slate-600">|</span>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmingId(doc.id)}
+                            disabled={deletingId === doc.id}
+                            className="inline-flex shrink-0 px-2 py-1 rounded-md border border-slate-300 text-red-600 hover:bg-red-50 dark:border-slate-600 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* ConfirmDialog de eliminación — fixed overlay, fuera del flujo de la tabla */}
+      {/* Single delete dialog */}
       <ConfirmDialog
         open={confirmingId !== null}
         title="Eliminar documento"
@@ -423,14 +455,33 @@ export function DocumentsTableEnhanced({
           if (confirmingId && onDelete) {
             deletionInFlightRef.current = true;
             onDelete(confirmingId);
-            // El dialog cierra automáticamente cuando deletingId vuelve a null (ver useEffect)
           }
         }}
-        onCancel={() => {
-          if (!deletingId) setConfirmingId(null);
-        }}
+        onCancel={() => { if (!deletingId) setConfirmingId(null); }}
       />
+
+      {/* Bulk delete dialog */}
+      <ConfirmDialog
+        open={bulkConfirm}
+        title={`Eliminar ${selectedIds.size} ${selectedIds.size === 1 ? "documento" : "documentos"}`}
+        description={`Esta acción no se puede deshacer. Se eliminarán permanentemente ${selectedIds.size} ${selectedIds.size === 1 ? "documento" : "documentos"}.`}
+        confirmLabel="Eliminar todos"
+        cancelLabel="Cancelar"
+        variant="destructive"
+        isLoading={isBulkDeleting}
+        onConfirm={handleBulkDeleteConfirm}
+        onCancel={() => { if (!isBulkDeleting) setBulkConfirm(false); }}
+      />
+
+      {/* Bulk action floating toolbar */}
+      {selectedIds.size > 0 && (
+        <BulkToolbar
+          count={selectedIds.size}
+          onDelete={() => setBulkConfirm(true)}
+          onClear={() => setSelectedIds(new Set())}
+          isDeleting={isBulkDeleting}
+        />
+      )}
     </>
   );
 }
-
