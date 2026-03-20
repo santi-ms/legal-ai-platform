@@ -183,13 +183,110 @@ function runStructuralChecks(text: string): OutputValidationIssue[] {
  *   service_contract → verify monto/moneda are present and numeric
  *   nda → verify at least one obligation clause exists
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function runTypeSpecificChecks(
-  _text: string,
-  _documentType: string
+  text: string,
+  documentType: string
 ): OutputValidationIssue[] {
-  // Reserved: add type-specific rules here as needed
-  return [];
+  const issues: OutputValidationIssue[] = [];
+
+  // ── Contrato de Locación ────────────────────────────────────────────────────
+  if (documentType === "lease") {
+    // Debe haber un monto de alquiler
+    if (!/\$|ARS|pesos|canon|alquiler/i.test(text)) {
+      issues.push({
+        code: "LEASE_MISSING_AMOUNT",
+        message: "El contrato de locación no parece incluir el monto del canon mensual.",
+        severity: "warning",
+      });
+    }
+    // Debe haber una dirección
+    if (!/calle|av\.|avenida|pasaje|ruta|n[°º]|dirección|domicilio del inmueble/i.test(text)) {
+      issues.push({
+        code: "LEASE_MISSING_ADDRESS",
+        message: "El contrato de locación no parece incluir la dirección del inmueble.",
+        severity: "warning",
+      });
+    }
+  }
+
+  // ── Reconocimiento de Deuda ─────────────────────────────────────────────────
+  if (documentType === "debt_recognition") {
+    if (!/\$|ARS|pesos|suma|monto|importe|capital/i.test(text)) {
+      issues.push({
+        code: "DEBT_MISSING_AMOUNT",
+        message: "El reconocimiento de deuda no parece incluir el monto reconocido. Es un elemento esencial del documento.",
+        severity: "error",
+      });
+    }
+    if (!/reconoc|adeu|debe|obliga/i.test(text)) {
+      issues.push({
+        code: "DEBT_MISSING_ACKNOWLEDGMENT",
+        message: "El documento no parece contener la cláusula de reconocimiento explícito de la deuda.",
+        severity: "error",
+      });
+    }
+  }
+
+  // ── Carta Documento ─────────────────────────────────────────────────────────
+  if (documentType === "legal_notice") {
+    if (!/intim|notific|requir|exig|apercib/i.test(text)) {
+      issues.push({
+        code: "LEGAL_NOTICE_MISSING_INTIMATION",
+        message: "La carta documento no parece contener una sección de intimación o requerimiento formal.",
+        severity: "warning",
+      });
+    }
+    // Debe tener un plazo
+    if (!/plazo|días|horas|hábiles|corridos/i.test(text)) {
+      issues.push({
+        code: "LEGAL_NOTICE_MISSING_DEADLINE",
+        message: "La carta documento no especifica un plazo para cumplir con lo intimado.",
+        severity: "warning",
+      });
+    }
+  }
+
+  // ── Contrato de Servicios ───────────────────────────────────────────────────
+  if (documentType === "service_contract") {
+    if (!/\$|ARS|pesos|honorario|precio|retribución|contraprestación/i.test(text)) {
+      issues.push({
+        code: "SERVICE_CONTRACT_MISSING_AMOUNT",
+        message: "El contrato de servicios no parece incluir el monto o precio pactado.",
+        severity: "warning",
+      });
+    }
+  }
+
+  // ── Acuerdo de Confidencialidad ─────────────────────────────────────────────
+  if (documentType === "nda") {
+    if (!/confidencial|reservad|secreto/i.test(text)) {
+      issues.push({
+        code: "NDA_MISSING_DEFINITION",
+        message: "El NDA no parece contener la definición de información confidencial.",
+        severity: "error",
+      });
+    }
+    if (!/plazo|vigencia|duración|años|meses/i.test(text)) {
+      issues.push({
+        code: "NDA_MISSING_TERM",
+        message: "El NDA no parece especificar el plazo de vigencia de la obligación de confidencialidad.",
+        severity: "warning",
+      });
+    }
+  }
+
+  // ── Autorización Simple ─────────────────────────────────────────────────────
+  if (documentType === "simple_authorization") {
+    if (!/autoriz|faculta|permis/i.test(text)) {
+      issues.push({
+        code: "AUTHORIZATION_MISSING_GRANT",
+        message: "La autorización no parece contener el acto de autorización propiamente dicho.",
+        severity: "error",
+      });
+    }
+  }
+
+  return issues;
 }
 
 // ---------------------------------------------------------------------------

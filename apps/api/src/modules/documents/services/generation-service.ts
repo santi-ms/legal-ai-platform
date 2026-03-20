@@ -123,6 +123,8 @@ export async function generateDocumentWithNewArchitecture(
   let aiEnhancedDraft: string;
   let aiTokens: { prompt: number; completion: number } | undefined;
 
+  let aiUsed = false;
+
   try {
     const enhancedResult = await enhanceDraftWithAIWrapper(
       baseDraft,
@@ -133,9 +135,18 @@ export async function generateDocumentWithNewArchitecture(
     );
     aiEnhancedDraft = enhancedResult.text;
     aiTokens = enhancedResult.tokens;
+    aiUsed = true;
   } catch (error) {
     logger.warn(`[generation-service] AI enhancement failed, using base draft: ${error}`);
     aiEnhancedDraft = baseDraft;
+    // Agregamos un warning explícito para que el frontend pueda informarle al usuario
+    validationResult.warnings.push({
+      ruleId: "ai_enhancement_failed",
+      message:
+        "La mejora automática con IA no pudo completarse. El documento fue generado con la plantilla base sin mejora. Revisalo antes de descargarlo.",
+      severity: "warning",
+      field: undefined,
+    });
   }
 
   // 7. Build metadata
@@ -143,7 +154,7 @@ export async function generateDocumentWithNewArchitecture(
     documentType,
     templateVersion: template.version,
     generationTimestamp: new Date().toISOString(),
-    aiModel: "gpt-4o-mini",
+    aiModel: aiUsed ? "gpt-4o-mini" : "base-template",
     aiTokens,
   };
 

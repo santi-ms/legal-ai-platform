@@ -21,6 +21,7 @@ import {
   RotateCcw,
   MessageSquare,
 } from "lucide-react";
+// FileText usado en GeneratingStep
 import { Button } from "@/components/ui/button";
 import { PlainTextDocumentEditor } from "@/src/features/documents/ui/editor/PlainTextDocumentEditor";
 import { usePlainTextDocumentEditor } from "@/src/features/documents/ui/editor/usePlainTextDocumentEditor";
@@ -89,12 +90,14 @@ export default function ChatDocumentCreationPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Editor de documento (se activa cuando hay result)
+  // Editor de documento — se activa solo cuando hay resultado.
+  // enabled=false mientras no haya resultado para evitar side-effects prematuros.
   const documentEditor = usePlainTextDocumentEditor({
     documentId: result?.documentId ?? null,
     initialContent: result?.contrato ?? "",
-    pdfUrl: result?.pdfUrl ?? null,
-  } as any);
+    originalContent: result?.contrato ?? "",
+    enabled: step === "result" && Boolean(result?.documentId),
+  });
 
   // Auto-scroll al último mensaje
   useEffect(() => {
@@ -550,7 +553,28 @@ function ResultStep({
       {/* Editor */}
       <div className="flex-1 px-4 md:px-8 py-6">
         <div className="max-w-5xl mx-auto">
-          <PlainTextDocumentEditor {...documentEditor} />
+          <PlainTextDocumentEditor
+            content={documentEditor.content}
+            originalContent={documentEditor.originalContent}
+            isDirty={documentEditor.isDirty}
+            isManualSaving={documentEditor.isManualSaving}
+            isSaving={documentEditor.isSaving}
+            isAutosaveRetrying={documentEditor.isAutosaveRetrying}
+            saveStatus={documentEditor.saveStatus}
+            saveError={documentEditor.saveError}
+            lastSavedAt={documentEditor.lastSavedAt}
+            isDownloadingPdf={documentEditor.isDownloadingPdf}
+            pdfDownloadError={documentEditor.pdfDownloadError}
+            editorRef={documentEditor.editorRef}
+            onSave={documentEditor.save}
+            onRestoreOriginal={documentEditor.restoreOriginal}
+            onDownloadPdf={documentEditor.downloadPdf}
+            onDismissPdfDownloadError={documentEditor.dismissPdfDownloadError}
+            onEditorInput={documentEditor.handleEditorInput}
+            onEditorPaste={documentEditor.handleEditorPaste}
+            onEditorDrop={documentEditor.handleEditorDrop}
+            onEditorKeyDown={documentEditor.handleEditorKeyDown}
+          />
         </div>
       </div>
     </div>
