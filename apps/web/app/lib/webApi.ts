@@ -258,6 +258,26 @@ export interface UpdateProfileData {
   };
 }
 
+export interface OnboardingPayload {
+  name: string;
+  company: string;
+}
+
+export interface OnboardingResult {
+  alreadyCompleted: boolean;
+  user: {
+    id: string;
+    email: string;
+    name: string | null;
+    role: string;
+    tenantId: string | null;
+  };
+  tenant: {
+    id: string;
+    name: string;
+  } | null;
+}
+
 export async function getUserProfile(): Promise<UserProfile> {
   const { data } = await proxyJson<{ ok: boolean; data: UserProfile }>("/user/profile");
   if (!data.ok || !data.data) {
@@ -283,5 +303,26 @@ export async function updateUserProfile(
     const errorMessage = data.message || "Error al actualizar perfil";
     throw new Error(errorMessage);
   }
+  return data.data;
+}
+
+export async function completeOnboarding(
+  payload: OnboardingPayload
+): Promise<OnboardingResult> {
+  const { data } = await proxyJson<{ ok: boolean; data: OnboardingResult; message?: string }>(
+    "/api/user/onboarding",
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if (!data.ok || !data.data) {
+    throw new Error(data.message || "Error al completar onboarding");
+  }
+
   return data.data;
 }

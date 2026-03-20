@@ -255,6 +255,7 @@ Opciones recomendadas:
 |----------|-------------|---------|
 | `NEXTAUTH_URL` | ⚠️ **Requerida para build** - URL base de la app | `https://tu-app.vercel.app` |
 | `NEXTAUTH_SECRET` | Secret para JWT (generar con `openssl rand -base64 32`) | `tu-secret-aqui` |
+| `API_URL` | URL server-side que usan las app routes `/api/auth/*` para hablar con Railway | `https://tu-api.railway.app` |
 | `NEXT_PUBLIC_API_URL` | URL del backend API | `https://tu-api.railway.app` |
 | `NEXT_PUBLIC_INACTIVITY_MINUTES` | Minutos de inactividad para logout (opcional, default: 30) | `30` |
 

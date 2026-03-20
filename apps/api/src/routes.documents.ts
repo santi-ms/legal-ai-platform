@@ -509,7 +509,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       const original = await prisma.document.findFirst({
         where: {
           id,
-          tenantId: user.tenantId, // Verificar tenant
+          tenantId: user.tenantId!, // Verificar tenant
         },
         include: {
           versions: {
@@ -532,7 +532,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           // Crear nuevo documento
           const newDoc = await tx.document.create({
             data: {
-              tenantId: user.tenantId,
+              tenantId: user.tenantId!,
               createdById: user.userId,
               type: original.type,
               jurisdiccion: original.jurisdiccion,
@@ -602,7 +602,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       const document = await prisma.document.findFirst({
         where: {
           id,
-          tenantId: user.tenantId,
+          tenantId: user.tenantId!,
         },
       });
 
@@ -686,7 +686,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       const document = await prisma.document.findFirst({
         where: {
           id,
-          tenantId: user.tenantId,
+          tenantId: user.tenantId!,
         },
       });
 
@@ -756,7 +756,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
 
       // Verificar que el documento existe y pertenece al tenant
       const document = await prisma.document.findFirst({
-        where: { id, tenantId: user.tenantId },
+        where: { id, tenantId: user.tenantId! },
         include: {
           versions: {
             orderBy: { createdAt: "desc" },
@@ -843,7 +843,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       // belonging to a different tenant returns 404 (not 403) — this deliberately
       // avoids leaking whether a document UUID exists in another tenant.
       const document = await prisma.document.findFirst({
-        where: { id, tenantId: user.tenantId },
+        where: { id, tenantId: user.tenantId! },
         include: {
           versions: {
             orderBy: { createdAt: "desc" },
@@ -911,7 +911,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       const document = await prisma.document.findFirst({
         where: {
           id,
-          tenantId: user.tenantId,
+          tenantId: user.tenantId!,
         },
         include: {
           versions: {

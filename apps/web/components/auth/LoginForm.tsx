@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, Loader2, AlertCircle } from "lucide-react";
+import { Mail, Lock, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,14 +21,16 @@ export function LoginForm() {
   const { success, error: showError } = useToast();
   const [emailVerified, setEmailVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const authenticatedTarget = session?.user?.tenantId ? "/documents" : "/onboarding";
 
   // Redirigir si ya está autenticado
   useEffect(() => {
     if (status === "authenticated") {
-      router.replace("/dashboard");
+      router.replace(authenticatedTarget);
     }
-  }, [status, router]);
+  }, [authenticatedTarget, router, status]);
 
   // Verificar si viene de verificación de email
   useEffect(() => {
@@ -98,6 +100,18 @@ export function LoginForm() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setApiError(null);
+    setIsGoogleLoading(true);
+
+    try {
+      await signIn("google", { callbackUrl: "/documents" });
+    } catch {
+      setApiError("No pudimos iniciar sesión con Google. Intentá nuevamente.");
+      setIsGoogleLoading(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-[440px]">
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
@@ -117,8 +131,15 @@ export function LoginForm() {
 
           {/* Banner de email verificado */}
           {emailVerified && (
-            <div className="mb-6 p-4 bg-emerald-900/30 dark:bg-emerald-900/20 border border-emerald-700 dark:border-emerald-800 rounded-lg text-emerald-400 dark:text-emerald-300 text-sm">
-              ✅ Email verificado exitosamente. Ahora podés iniciar sesión.
+            <div
+              className="mb-6 flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-100"
+              role="status"
+              aria-live="polite"
+            >
+              <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600 dark:text-emerald-300" />
+              <p className="text-sm font-medium leading-snug">
+                Email verificado exitosamente. Ahora podés iniciar sesión.
+              </p>
             </div>
           )}
 
@@ -242,7 +263,7 @@ export function LoginForm() {
           </div>
 
           {/* Social Login — deshabilitado hasta implementación */}
-          <SocialLoginButtons />
+          <SocialLoginButtons onGoogleClick={handleGoogleSignIn} isGoogleLoading={isGoogleLoading} />
 
           {/* Sign Up Link */}
           <p className="mt-8 text-center text-sm text-slate-600 dark:text-slate-400">
@@ -279,21 +300,25 @@ export function LoginForm() {
   );
 }
 
-function SocialLoginButtons() {
+function SocialLoginButtons({
+  onGoogleClick,
+  isGoogleLoading,
+}: {
+  onGoogleClick: () => void;
+  isGoogleLoading: boolean;
+}) {
   return (
     <div className="grid grid-cols-2 gap-4">
       <button
         type="button"
-        disabled
-        aria-disabled="true"
-        tabIndex={-1}
-        title="Próximamente"
-        className="flex items-center justify-center gap-2 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg opacity-50 cursor-not-allowed relative"
+        onClick={onGoogleClick}
+        disabled={isGoogleLoading}
+        aria-disabled={isGoogleLoading ? "true" : "false"}
+        className="flex items-center justify-center gap-2 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg relative transition-colors hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        <GoogleIcon />
-        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Google</span>
-        <span className="absolute -top-2 -right-2 text-[9px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-full leading-none">
-          Pronto
+        {isGoogleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
+        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+          Continuar con Google
         </span>
       </button>
       <button

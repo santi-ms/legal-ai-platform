@@ -1,5 +1,8 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
+import { createPrismaAuthAdapter } from "@/lib/auth/prisma-adapter";
+import { loadCanonicalUser, reconcileGoogleAccount } from "@/lib/auth/google-auth";
 
 function getBaseUrl() {
   if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
@@ -8,6 +11,7 @@ function getBaseUrl() {
 }
 
 export const authOptions: NextAuthOptions = {
+  adapter: createPrismaAuthAdapter(),
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -78,6 +82,10 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+    }),
   ],
   pages: {
     signIn: "/auth/login",
@@ -92,21 +100,61 @@ export const authOptions: NextAuthOptions = {
     maxAge: 60 * 60 * 2, // 2 horas
   },
   callbacks: {
-    async jwt({ token, user }) {
-      // Cuando el usuario inicia sesión, guardar info en el token
-      if (user) {
-        token.user = {
-          id: user.id as string,
-          email: user.email as string,
-          name: (user as any).name || "",
-          role: (user as any).role || "viewer",
-          tenantId: (user as any).tenantId as string,
-        };
+    async signIn({ user, account, profile }) {
+      if (account?.provider !== "google") {
+        return true;
       }
+
+      try {
+        const canonicalUser = await reconcileGoogleAccount({
+          account,
+          profile,
+        });
+
+        user.id = canonicalUser.id;
+        user.email = canonicalUser.email;
+        user.name = canonicalUser.name;
+        (user as any).role = canonicalUser.role;
+        (user as any).tenantId = canonicalUser.tenantId;
+
+        return true;
+      } catch (error) {
+        console.error("[authOptions.signIn] Google reconcile failed", error);
+        return "/auth/login?error=google_signin_failed";
+      }
+    },
+    async jwt({ token, user, trigger }) {
+      const fallbackId = typeof token.sub === "string" && token.sub ? token.sub : undefined;
+      const fallbackEmail = typeof token.user?.email === "string" && token.user.email ? token.user.email : undefined;
+      const lookup = await loadCanonicalUser({
+        id: typeof (user as any)?.id === "string" && (user as any).id ? (user as any).id : fallbackId,
+        email: typeof user?.email === "string" && user.email ? user.email : fallbackEmail,
+      });
+
+      if (!lookup) {
+        if (trigger === "update") {
+          console.warn("[authOptions.jwt] Canonical user not found during update", {
+            sub: token.sub,
+            email: token.user?.email,
+          });
+        }
+        return token;
+      }
+
+      token.sub = lookup.id;
+      token.email = lookup.email;
+      token.name = lookup.name ?? undefined;
+      token.user = {
+        id: lookup.id,
+        email: lookup.email,
+        name: lookup.name,
+        role: lookup.role,
+        tenantId: lookup.tenantId,
+      };
+
       return token;
     },
     async session({ session, token }) {
-      // Pasar la info del token a la sesión
       if (token.user) {
         session.user = {
           id: token.user.id,
@@ -120,7 +168,13 @@ export const authOptions: NextAuthOptions = {
     },
     async redirect({ url, baseUrl }) {
       if (url.startsWith("/")) return `${baseUrl}${url}`;
-      if (new URL(url).origin === baseUrl) return url;
+
+      try {
+        if (new URL(url).origin === baseUrl) return url;
+      } catch {
+        return `${baseUrl}/documents`;
+      }
+
       return `${baseUrl}/documents`;
     },
   },

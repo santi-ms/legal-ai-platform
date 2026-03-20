@@ -28,7 +28,13 @@ const UpdateSettingsSchema = z.object({
   notificationPreferences: NotificationPreferencesSchema.optional(),
 });
 
+const CompleteOnboardingSchema = z.object({
+  name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+  company: z.string().min(2, "La empresa o estudio debe tener al menos 2 caracteres"),
+});
+
 type UpdateSettingsBody = z.infer<typeof UpdateSettingsSchema>;
+type CompleteOnboardingBody = z.infer<typeof CompleteOnboardingSchema>;
 
 function splitDisplayName(name: string | null | undefined) {
   const nameParts = name?.trim().split(/\s+/).filter(Boolean) || [];
@@ -288,6 +294,109 @@ export async function registerUserRoutes(app: FastifyInstance) {
         }
 
         return sendError(reply, 500, "Error al actualizar perfil", "internal_error");
+      }
+    },
+  );
+
+  app.patch<{ Body: CompleteOnboardingBody }>(
+    "/api/user/onboarding",
+    async (request: FastifyRequest<{ Body: CompleteOnboardingBody }>, reply: FastifyReply) => {
+      try {
+        const authUser = requireAuth(request);
+        const bodyParsed = CompleteOnboardingSchema.safeParse(request.body);
+
+        if (!bodyParsed.success) {
+          return sendError(
+            reply,
+            400,
+            "Datos inválidos",
+            "invalid_body",
+            bodyParsed.error.flatten().fieldErrors as any,
+          );
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+          const currentUser = await tx.user.findUnique({
+            where: { id: authUser.userId },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              role: true,
+              tenantId: true,
+              tenant: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          });
+
+          if (!currentUser) {
+            throw new Error("USER_NOT_FOUND");
+          }
+
+          if (currentUser.tenantId) {
+            return {
+              alreadyCompleted: true,
+              user: {
+                id: currentUser.id,
+                email: currentUser.email,
+                name: currentUser.name,
+                role: currentUser.role,
+                tenantId: currentUser.tenantId,
+              },
+              tenant: currentUser.tenant,
+            };
+          }
+
+          const tenant = await tx.tenant.create({
+            data: {
+              name: bodyParsed.data.company.trim(),
+            },
+          });
+
+          const parsedName = splitDisplayName(bodyParsed.data.name);
+          const updatedUser = await tx.user.update({
+            where: { id: currentUser.id },
+            data: {
+              name: bodyParsed.data.name.trim(),
+              firstName: parsedName.firstName || null,
+              lastName: parsedName.lastName || null,
+              company: bodyParsed.data.company.trim(),
+              tenantId: tenant.id,
+            },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              role: true,
+              tenantId: true,
+            },
+          });
+
+          return {
+            alreadyCompleted: false,
+            user: updatedUser,
+            tenant: {
+              id: tenant.id,
+              name: tenant.name,
+            },
+          };
+        });
+
+        return sendSuccess(reply, "Onboarding completado", result);
+      } catch (err: any) {
+        if (err.message === "UNAUTHORIZED") {
+          return sendError(reply, 401, "No autorizado", "unauthorized");
+        }
+
+        if (err.message === "USER_NOT_FOUND") {
+          return sendError(reply, 404, "Usuario no encontrado", "user_not_found");
+        }
+
+        return sendError(reply, 500, "Error al completar onboarding", "internal_error");
       }
     },
   );

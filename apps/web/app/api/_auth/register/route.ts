@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { logger } from "@/app/lib/logger";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "http://localhost:4001";
+import { buildAuthProxyTarget } from "../_utils";
 
 // Método OPTIONS para CORS preflight
 export async function OPTIONS() {
@@ -51,7 +50,23 @@ export async function POST(req: Request) {
       professionalRole: body.professionalRole || body.role,
     };
     
-    logger.debug("[_auth/register][POST] Calling backend", { url: `${API_BASE}/api/register` });
+    const target = buildAuthProxyTarget("/api/register");
+    if (!target) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "Configuracion incompleta del proxy de autenticacion",
+          error: "auth_proxy_api_url_missing",
+        },
+        { status: 500 },
+      );
+    }
+
+    logger.debug("[_auth/register][POST] Calling backend", {
+      source: target.source,
+      targetOrigin: new URL(target.url).origin,
+      path: "/api/register",
+    });
     logger.debug("[_auth/register][POST] Transformed body", { 
       name: transformedBody.name, 
       firstName: transformedBody.firstName,
@@ -62,7 +77,7 @@ export async function POST(req: Request) {
       professionalRole: transformedBody.professionalRole,
     });
     
-    const r = await fetch(`${API_BASE}/api/register`, {
+    const r = await fetch(target.url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(transformedBody),

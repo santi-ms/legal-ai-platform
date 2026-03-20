@@ -4,7 +4,7 @@ import { logger } from "./logger.js";
 
 export interface AuthUser {
   userId: string;
-  tenantId: string;
+  tenantId: string | null;
   role: string;
   email: string;
 }

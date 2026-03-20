@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
 const PUBLIC_PATHS = [
   "/",
@@ -26,7 +27,7 @@ function isPublic(pathname: string) {
   });
 }
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Permitir TODAS las rutas de API sin verificación
@@ -49,18 +50,37 @@ export function middleware(req: NextRequest) {
     pathname.startsWith(prefix)
   );
 
-  if (!needsAuth) {
+  const onboardingPath = pathname.startsWith("/onboarding");
+
+  if (!needsAuth && !onboardingPath) {
     return NextResponse.next();
   }
 
-  const hasSessionCookie =
-    req.cookies.has("next-auth.session-token") ||
-    req.cookies.has("__Secure-next-auth.session-token");
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET || "dev-secret-change-in-production",
+  });
 
-  if (!hasSessionCookie) {
+  if (!token?.sub) {
     const url = req.nextUrl.clone();
     url.pathname = "/auth/login";
     url.searchParams.set("from", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  const tenantId = typeof token.user?.tenantId === "string" && token.user.tenantId
+    ? token.user.tenantId
+    : null;
+
+  if ((pathname.startsWith("/dashboard") || pathname.startsWith("/documents")) && !tenantId) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/onboarding";
+    return NextResponse.redirect(url);
+  }
+
+  if (onboardingPath && tenantId) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/documents";
     return NextResponse.redirect(url);
   }
 

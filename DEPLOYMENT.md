@@ -29,6 +29,7 @@ Configurar en: **Project Settings → Environment Variables**
 |----------|-------|-------------|
 | `NEXTAUTH_URL` | `https://tu-app.vercel.app` | ⚠️ **Requerida para build** |
 | `NEXTAUTH_SECRET` | `[generar con: openssl rand -base64 32]` | Secret para JWT |
+| `API_URL` | `https://tu-api.railway.app` | URL server-side para proxies `/api/auth/*` |
 | `NEXT_PUBLIC_API_URL` | `https://tu-api.railway.app` | URL del backend API |
 | `NEXT_PUBLIC_INACTIVITY_MINUTES` | `30` | (Opcional) Minutos de inactividad |
 
