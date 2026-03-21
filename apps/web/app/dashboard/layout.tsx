@@ -38,6 +38,7 @@ export default function DashboardLayout({
       if (seq === "gd") router.push("/dashboard");
       if (seq === "gl") router.push("/documents");
       if (seq === "gs") router.push("/settings");
+      if (seq === "gc") router.push("/clients");
     },
     [router]
   );
@@ -67,12 +68,13 @@ export default function DashboardLayout({
         return;
       }
 
-      // G + D / L / S sequences
+      // G + D / L / S / C sequences
       if (
         (e.key === "g" || e.key === "G" ||
          e.key === "d" || e.key === "D" ||
          e.key === "l" || e.key === "L" ||
-         e.key === "s" || e.key === "S") &&
+         e.key === "s" || e.key === "S" ||
+         e.key === "c" || e.key === "C") &&
         !e.metaKey && !e.ctrlKey
       ) {
         checkSequence(e.key);

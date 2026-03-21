@@ -20,6 +20,7 @@ const SHORTCUTS: { category: string; items: Shortcut[] }[] = [
     items: [
       { keys: ["G", "D"], description: "Ir al panel de control" },
       { keys: ["G", "L"], description: "Ir a mis documentos" },
+      { keys: ["G", "C"], description: "Ir a clientes" },
       { keys: ["G", "S"], description: "Ir a ajustes" },
     ],
   },

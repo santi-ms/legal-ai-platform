@@ -5,8 +5,39 @@ import { SessionProvider } from "@/components/ui/session-provider";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
 
 export const metadata = {
-  title: "LegalTech AR - Documentos Legales con IA",
-  description: "La plataforma líder en Argentina para la generación automática de contratos y documentos con validez jurídica total.",
+  title: {
+    default: "LegalTech AR — Documentos Legales con IA",
+    template: "%s | LegalTech AR",
+  },
+  description:
+    "Generá contratos, poderes y escrituras con validez jurídica en Argentina usando Inteligencia Artificial. Rápido, seguro y preciso.",
+  keywords: [
+    "documentos legales", "contratos con IA", "abogados Argentina",
+    "estudio jurídico", "generador de contratos", "LegalTech",
+  ],
+  authors: [{ name: "LegalTech AR" }],
+  creator: "LegalTech AR",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://legaltech-ar.vercel.app"
+  ),
+  openGraph: {
+    type: "website",
+    locale: "es_AR",
+    title: "LegalTech AR — Documentos Legales con IA",
+    description:
+      "Generá contratos, poderes y escrituras con validez jurídica en Argentina usando Inteligencia Artificial.",
+    siteName: "LegalTech AR",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LegalTech AR — Documentos Legales con IA",
+    description:
+      "Generá contratos, poderes y escrituras con validez jurídica en Argentina usando Inteligencia Artificial.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 // Tipografía moderna y seria

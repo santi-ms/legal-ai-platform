@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, FileText, Upload, BarChart3 } from "lucide-react";
+import { Plus, FileText, Users, Upload, BarChart3 } from "lucide-react";
 import Link from "next/link";
 
 const activeActions = [
@@ -15,6 +15,12 @@ const activeActions = [
     label: "Mis Documentos",
     icon: FileText,
     href: "/documents",
+  },
+  {
+    id: "clients",
+    label: "Clientes",
+    icon: Users,
+    href: "/clients",
   },
 ];
 
