@@ -48,8 +48,8 @@ const navigationItems = [
     id: "clients",
     label: "Clientes",
     icon: Users,
-    href: "#",
-    disabled: true,
+    href: "/clients",
+    disabled: false,
   },
 ];
 

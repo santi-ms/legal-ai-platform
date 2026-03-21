@@ -326,3 +326,90 @@ export async function completeOnboarding(
 
   return data.data;
 }
+
+// ─── Clients ──────────────────────────────────────────────────────────────────
+
+export type ClientType = "persona_fisica" | "persona_juridica";
+export type DocumentIdType = "DNI" | "CUIT" | "CUIL" | "Pasaporte";
+
+export interface Client {
+  id: string;
+  type: ClientType;
+  name: string;
+  documentType: DocumentIdType | null;
+  documentNumber: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
+  province: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClientPayload {
+  type: ClientType;
+  name: string;
+  documentType?: DocumentIdType | null;
+  documentNumber?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  province?: string | null;
+  notes?: string | null;
+}
+
+export interface ListClientsResult {
+  clients: Client[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface ClientsParams {
+  query?: string;
+  type?: ClientType;
+  page?: number;
+  pageSize?: number;
+  sort?: "name:asc" | "name:desc" | "createdAt:asc" | "createdAt:desc";
+}
+
+export async function listClients(params?: ClientsParams): Promise<ListClientsResult> {
+  const qs = buildQuery(params);
+  const { data } = await proxyJson<any>(`/clients${qs}`);
+  return {
+    clients: Array.isArray(data?.clients) ? data.clients : [],
+    total: data?.total ?? 0,
+    page: data?.page ?? 1,
+    pageSize: data?.pageSize ?? 20,
+  };
+}
+
+export async function getClient(id: string): Promise<Client> {
+  const { data } = await proxyJson<any>(`/clients/${id}`);
+  return data.client;
+}
+
+export async function createClient(payload: ClientPayload): Promise<Client> {
+  const { data } = await proxyJson<any>("/clients", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return data.client;
+}
+
+export async function updateClient(id: string, payload: ClientPayload): Promise<Client> {
+  const { data } = await proxyJson<any>(`/clients/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return data.client;
+}
+
+export async function deleteClient(id: string): Promise<void> {
+  await proxyJson(`/clients/${id}`, { method: "DELETE" });
+}

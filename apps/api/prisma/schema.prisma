@@ -12,7 +12,8 @@ model Tenant {
   name      String
   users     User[]
   documents Document[]
-  logs      IAUsageLog[]   // 👈 inversa a IAUsageLog.tenant
+  clients   Client[]
+  logs      IAUsageLog[]
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 }
@@ -42,6 +43,7 @@ model User {
   tenant    Tenant?   @relation(fields: [tenantId], references: [id])
 
   documentsCreated Document[] @relation("CreatedByUser")
+  clientsCreated   Client[]   @relation("ClientsCreatedBy")
   accounts         Account[]
   sessions         Session[]
 
@@ -99,6 +101,39 @@ model DocumentVersion {
   createdAt       DateTime  @default(now())
 }
 
+
+model Client {
+  id             String   @id @default(uuid())
+
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+
+  createdById    String
+  createdBy      User     @relation("ClientsCreatedBy", fields: [createdById], references: [id])
+
+  // Tipo: "persona_fisica" | "persona_juridica"
+  type           String   @default("persona_fisica")
+
+  // Identificación
+  name           String
+  documentType   String?  // "DNI" | "CUIT" | "CUIL" | "Pasaporte"
+  documentNumber String?
+
+  // Contacto
+  email          String?
+  phone          String?
+
+  // Domicilio
+  address        String?
+  city           String?
+  province       String?
+
+  // Notas internas del estudio
+  notes          String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
 
 model IAUsageLog {
   id               String   @id @default(uuid())
