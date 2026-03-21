@@ -8,6 +8,18 @@
     --background-light: #f6f6f8;
     --background-dark: #101222;
   }
+
+  /* Color de texto base — evita texto negro sobre fondo oscuro en dark mode */
+  body {
+    @apply text-slate-900 dark:text-slate-100;
+  }
+
+  /* Inputs y textareas heredan color del body */
+  input,
+  textarea,
+  select {
+    @apply text-slate-900 dark:text-slate-100;
+  }
 }
 
 /* ========================================

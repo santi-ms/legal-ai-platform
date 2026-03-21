@@ -87,7 +87,7 @@ export function RecentDocumentsTable({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold">Documentos Recientes</h3>
+        <h3 className="text-xl font-bold text-slate-900 dark:text-white">Documentos Recientes</h3>
         {onViewAll ? (
           <button
             onClick={onViewAll}
@@ -148,7 +148,7 @@ export function RecentDocumentsTable({
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <FileText className="w-5 h-5 text-primary" />
-                          <span className="font-medium">{formatDocumentType(doc.type)}</span>
+                          <span className="font-medium text-slate-900 dark:text-slate-100">{formatDocumentType(doc.type)}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center">
