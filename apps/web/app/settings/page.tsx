@@ -7,6 +7,7 @@ import { SettingsHeader } from "@/components/settings/SettingsHeader";
 import { SettingsTabs } from "@/components/settings/SettingsTabs";
 import { ProfileSection } from "@/components/settings/ProfileSection";
 import { NotificationPreferences } from "@/components/settings/NotificationPreferences";
+import { AppearanceSection } from "@/components/settings/AppearanceSection";
 import { SettingsActions } from "@/components/settings/SettingsActions";
 import { SupportBanner } from "@/components/settings/SupportBanner";
 import { useToast } from "@/components/ui/toast";
@@ -314,6 +315,9 @@ export default function SettingsPage() {
               formData={profileData}
               onFieldChange={handleProfileFieldChange}
             />
+
+            {/* Appearance — dark mode */}
+            <AppearanceSection />
 
             {/* Notification Preferences */}
             <NotificationPreferences

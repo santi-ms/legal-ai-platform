@@ -2,6 +2,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
 import { SessionProvider } from "@/components/ui/session-provider";
+import { ThemeProvider } from "@/components/ui/ThemeProvider";
 
 export const metadata = {
   title: "LegalTech AR - Documentos Legales con IA",
@@ -20,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className="h-full">
+    <html lang="es" className="h-full" suppressHydrationWarning>
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&display=swap"
@@ -38,11 +39,13 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} h-full antialiased`}>
         <SessionProvider>
-          <ToastProvider>
-            <main className="min-h-screen">
-              {children}
-            </main>
-          </ToastProvider>
+          <ThemeProvider>
+            <ToastProvider>
+              <main className="min-h-screen">
+                {children}
+              </main>
+            </ToastProvider>
+          </ThemeProvider>
         </SessionProvider>
       </body>
     </html>

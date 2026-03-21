@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Bell, Menu, X, ArrowLeft } from "lucide-react";
+import { Search, Menu, X, ArrowLeft } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { NotificationsPanel } from "@/components/ui/NotificationsPanel";
 
 interface DashboardHeaderProps {
   onSearch?: (query: string) => void;
@@ -133,10 +134,7 @@ export function DashboardHeader({ onSearch, onMenuToggle }: DashboardHeaderProps
         </button>
 
         {/* Notifications */}
-        <button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg relative transition-colors">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
-        </button>
+        <NotificationsPanel />
 
         {/* Divider */}
         <div className="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>
