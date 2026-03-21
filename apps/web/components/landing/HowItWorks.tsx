@@ -5,18 +5,18 @@ import { BookOpen, Brain, Download } from "lucide-react";
 const steps = [
   {
     icon: BookOpen,
-    title: "Elegí tu plantilla",
-    description: "Seleccioná entre cientos de modelos actualizados permanentemente según la legislación argentina vigente.",
+    title: "Elegí el tipo de documento",
+    description: "Seleccioná entre contratos de locación, cartas documento, acuerdos de confidencialidad y más — todos adaptados a la legislación argentina.",
   },
   {
     icon: Brain,
     title: "Completá con IA",
-    description: "Nuestra IA te entrevista para entender el contexto y redacta cláusulas personalizadas en tiempo real.",
+    description: "Describí lo que necesitás en lenguaje natural o respondé las preguntas del asistente. La IA redacta cláusulas personalizadas en segundos.",
   },
   {
     icon: Download,
-    title: "Descargá y Firmá",
-    description: "Documentos listos en PDF o Word, compatibles con plataformas de firma digital como Adobe Sign o DocuSign.",
+    title: "Revisá y descargá",
+    description: "Revisá el documento generado con ayuda del asistente IA, hacé los ajustes necesarios y descargalo en PDF con formato profesional.",
   },
 ];
 

@@ -358,13 +358,21 @@ export function Hero() {
             </Button>
           </div>
 
-          <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
-            <div className="flex -space-x-2">
-              <div className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 bg-slate-200"></div>
-              <div className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 bg-slate-300"></div>
-              <div className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 bg-slate-400"></div>
+          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-emerald-500" />
+              <span>Datos encriptados</span>
             </div>
-            <span>Más de 5,000 abogados ya confían en nosotros</span>
+            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700" />
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-primary" />
+              <span>Normativa argentina</span>
+            </div>
+            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700" />
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>Generación en minutos</span>
+            </div>
           </div>
         </div>
 

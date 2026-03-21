@@ -1,21 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { Check, History, CloudUpload, Languages, Code } from "lucide-react";
+import { Check, History, CloudUpload, MessageSquare, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const mainFeatures = [
   {
-    title: "Validación Jurídica Local",
-    description: "Documentos revisados por expertos para asegurar cumplimiento con el CCC y leyes especiales de Argentina.",
+    title: "Normativa Argentina",
+    description: "Documentos generados con IA entrenada en el Código Civil y Comercial y leyes especiales vigentes en Argentina.",
   },
   {
-    title: "Privacidad de Nivel Bancario",
-    description: "Tus datos están encriptados. Nunca entrenamos nuestros modelos públicos con tu información privada.",
+    title: "Privacidad Garantizada",
+    description: "Tus datos están encriptados. No compartimos ni entrenamos modelos con tu información privada.",
   },
   {
-    title: "Multi-usuario y Colaborativo",
-    description: "Compartí borradores con tu equipo o clientes y recibí comentarios directamente en la plataforma.",
+    title: "Chat con IA incluido",
+    description: "Generá documentos describiendo lo que necesitás en lenguaje natural, sin formularios complicados.",
   },
 ];
 
@@ -23,25 +23,25 @@ const featureCards = [
   {
     icon: History,
     title: "Historial de Versiones",
-    description: "Control absoluto de cada cambio realizado.",
+    description: "Cada documento guarda un registro completo de cambios.",
     highlighted: false,
   },
   {
     icon: CloudUpload,
-    title: "Cloud Storage",
-    description: "Accedé a tus contratos desde cualquier dispositivo.",
+    title: "Almacenamiento en la Nube",
+    description: "Accedé a tus documentos desde cualquier dispositivo.",
     highlighted: true,
   },
   {
-    icon: Languages,
-    title: "Traducción Legal",
-    description: "Traducciones precisas Inglés-Español.",
+    icon: MessageSquare,
+    title: "Asistente IA",
+    description: "Preguntale al asistente sobre cualquier cláusula del documento.",
     highlighted: false,
   },
   {
-    icon: Code,
-    title: "API Integrations",
-    description: "Conectá con tu CRM o sistema de gestión.",
+    icon: FileDown,
+    title: "Descarga en PDF",
+    description: "Documentos con formato profesional, listos para usar.",
     highlighted: false,
   },
 ];
@@ -75,9 +75,12 @@ export function Features() {
               ))}
             </div>
 
-            <Link href="#funciones">
-              <Button className="bg-primary/10 text-primary font-bold px-6 py-3 rounded-xl hover:bg-primary hover:text-white transition-all">
-                Explorar todas las funciones
+            <Link href="/auth/register">
+              <Button
+                variant="outline"
+                className="border-2 border-primary text-primary font-bold px-6 py-3 rounded-xl hover:bg-primary hover:text-white transition-all"
+              >
+                Crear cuenta gratis
               </Button>
             </Link>
           </div>
@@ -171,4 +174,3 @@ export function Features() {
     </section>
   );
 }
-

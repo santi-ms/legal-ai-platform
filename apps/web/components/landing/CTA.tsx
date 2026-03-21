@@ -13,34 +13,34 @@ export function CTA() {
             ¿Listo para transformar tu práctica legal?
           </h2>
           <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-            Unite a los miles de profesionales que están ahorrando tiempo y reduciendo errores con LegalTech AR.
+            Generá tu primer documento legal con IA en menos de 5 minutos. Sin formularios complicados, sin letra chica.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/auth/register">
               <Button
                 size="lg"
-                className="bg-primary text-white text-lg font-bold h-14 px-10 rounded-xl hover:scale-105 transition-transform"
+                className="bg-primary text-white text-lg font-bold h-14 px-10 rounded-xl hover:scale-105 transition-transform shadow-lg shadow-primary/30"
               >
-                Empezar Prueba Gratuita
+                Crear cuenta gratis
               </Button>
             </Link>
             <Button
               variant="outline"
               size="lg"
               onClick={() => {
-                const subject = encodeURIComponent("Consulta - Hablar con un Asesor");
-                const body = encodeURIComponent("Hola, me gustaría hablar con un asesor sobre LegalTech AR.");
+                const subject = encodeURIComponent("Consulta - LegalTech AR");
+                const body = encodeURIComponent("Hola, me gustaría obtener más información sobre LegalTech AR.");
                 window.location.href = `mailto:soporte@legaltech.ar?subject=${subject}&body=${body}`;
               }}
-              className="bg-transparent border border-slate-700 text-lg font-bold h-14 px-10 rounded-xl hover:bg-slate-800 transition-colors text-white"
+              className="bg-transparent border-2 border-white/30 text-white text-lg font-bold h-14 px-10 rounded-xl hover:bg-white/10 hover:border-white/50 transition-all"
             >
-              Hablar con un Asesor
+              Contactar al equipo
             </Button>
           </div>
 
           <p className="text-xs text-slate-500">
-            No requiere tarjeta de crédito • 14 días de prueba full • Cancelá en cualquier momento
+            Sin tarjeta de crédito • Cancelá cuando quieras
           </p>
         </div>
       </div>
