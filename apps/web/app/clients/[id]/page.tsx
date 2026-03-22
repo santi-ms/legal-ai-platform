@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft, Pencil, Trash2, User, Building2, Mail, Phone,
   MapPin, FileText, Hash, Calendar, AlertTriangle, Loader2,

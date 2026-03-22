@@ -126,7 +126,7 @@ export async function registerClientRoutes(app: FastifyInstance) {
     const client = await prisma.client.create({
       data: {
         tenantId: user.tenantId,
-        createdById: user.id,
+        createdById: user.userId,
         type: data.type,
         name: data.name.trim(),
         documentType: data.documentType ?? null,
