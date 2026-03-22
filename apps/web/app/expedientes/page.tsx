@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Briefcase, Plus, Search, X, Loader2, AlertCircle,
@@ -50,7 +50,7 @@ function formatDate(str: string | null | undefined) {
   return new Date(str).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export default function ExpedientesPage() {
+function ExpedientesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { success, error: showError } = useToast();
@@ -363,5 +363,23 @@ export default function ExpedientesPage() {
         onSave={handleCreate}
       />
     </div>
+  );
+}
+
+export default function ExpedientesPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-6 md:p-8 max-w-7xl mx-auto w-full">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-1/3" />
+          <div className="h-12 bg-slate-200 dark:bg-slate-800 rounded" />
+          <div className="space-y-2">
+            {[1,2,3,4].map(i => <div key={i} className="h-16 bg-slate-200 dark:bg-slate-800 rounded" />)}
+          </div>
+        </div>
+      </div>
+    }>
+      <ExpedientesContent />
+    </Suspense>
   );
 }
