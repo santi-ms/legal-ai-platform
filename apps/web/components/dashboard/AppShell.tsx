@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { KeyboardShortcutsModal } from "@/components/ui/KeyboardShortcutsModal";
+import { GlobalSearch } from "@/components/ui/GlobalSearch";
 import { DeadlineProvider } from "@/app/lib/contexts/DeadlineContext";
 
 function useSequenceShortcut(onMatch: (seq: string) => void) {
@@ -26,7 +27,8 @@ function useSequenceShortcut(onMatch: (seq: string) => void) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showShortcuts,    setShowShortcuts]    = useState(false);
+  const [showSearch,       setShowSearch]       = useState(false);
   const router = useRouter();
 
   const handleSequence = useCallback(
@@ -50,6 +52,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         target.tagName === "TEXTAREA" ||
         target.isContentEditable;
       if (isTyping) return;
+
+      // Ctrl+K / Cmd+K — global search
+      if (e.key === "k" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        setShowSearch((v) => !v);
+        return;
+      }
 
       if (e.key === "?") {
         e.preventDefault();
@@ -91,12 +100,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onClose={() => setIsMobileMenuOpen(false)}
         />
         <main className="flex-1 flex flex-col min-w-0">
-          <DashboardHeader onMenuToggle={() => setIsMobileMenuOpen((v) => !v)} />
+          <DashboardHeader
+          onMenuToggle={() => setIsMobileMenuOpen((v) => !v)}
+          onSearchOpen={() => setShowSearch(true)}
+        />
           {children}
         </main>
         <KeyboardShortcutsModal
           open={showShortcuts}
           onClose={() => setShowShortcuts(false)}
+        />
+        <GlobalSearch
+          open={showSearch}
+          onClose={() => setShowSearch(false)}
         />
       </div>
     </DeadlineProvider>

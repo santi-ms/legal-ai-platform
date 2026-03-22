@@ -1,91 +1,24 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Menu, X, ArrowLeft } from "lucide-react";
+import { Search, Menu } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { NotificationsPanel } from "@/components/ui/NotificationsPanel";
 
 interface DashboardHeaderProps {
-  onSearch?: (query: string) => void;
   onMenuToggle?: () => void;
+  onSearchOpen?: () => void;
 }
 
-export function DashboardHeader({ onSearch, onMenuToggle }: DashboardHeaderProps) {
+export function DashboardHeader({ onMenuToggle, onSearchOpen }: DashboardHeaderProps) {
   const { data: session } = useSession();
-  const router = useRouter();
   const user = session?.user;
 
-  const userName = user?.name || "Usuario";
+  const userName    = user?.name || "Usuario";
   const displayName = userName.split(" ")[0] || userName;
-  const role = (user as any)?.role as string | undefined;
+  const role        = (user as any)?.role as string | undefined;
 
-  const [searchValue, setSearchValue] = useState("");
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = searchValue.trim();
-    setShowMobileSearch(false);
-    if (q) {
-      router.push(`/documents?query=${encodeURIComponent(q)}`);
-    } else {
-      router.push("/documents");
-    }
-  };
-
-  const handleClear = () => {
-    setSearchValue("");
-  };
-
-  // ── Mobile search overlay ─────────────────────────────────────────────────
-  if (showMobileSearch) {
-    return (
-      <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10 px-3 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setShowMobileSearch(false)}
-          className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex-shrink-0"
-          aria-label="Cerrar búsqueda"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <form onSubmit={handleSearch} className="flex-1 flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
-            <input
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg pl-10 pr-8 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
-              placeholder="Buscar documentos..."
-              type="text"
-              autoFocus
-              aria-label="Buscar documentos"
-            />
-            {searchValue && (
-              <button
-                type="button"
-                onClick={handleClear}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                aria-label="Limpiar búsqueda"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 transition-colors flex-shrink-0"
-          >
-            Buscar
-          </button>
-        </form>
-      </header>
-    );
-  }
-
-  // ── Normal header ─────────────────────────────────────────────────────────
+  // ── Header ────────────────────────────────────────────────────────────────
   return (
     <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10 px-4 md:px-6 flex items-center justify-between gap-3">
       {/* Hamburger — solo mobile */}
@@ -97,37 +30,27 @@ export function DashboardHeader({ onSearch, onMenuToggle }: DashboardHeaderProps
         <Menu className="w-5 h-5" />
       </button>
 
-      {/* Search — desktop */}
-      <form onSubmit={handleSearch} className="flex items-center gap-4 flex-1">
-        <div className="relative w-full max-w-md hidden md:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4 pointer-events-none" />
-          <input
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg pl-10 pr-8 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
-            placeholder="Buscar documentos..."
-            type="text"
-            aria-label="Buscar documentos"
-          />
-          {searchValue && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-              aria-label="Limpiar búsqueda"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-      </form>
+      {/* Search trigger — looks like an input, opens GlobalSearch */}
+      <div className="flex items-center gap-4 flex-1">
+        <button
+          onClick={onSearchOpen}
+          className="group relative w-full max-w-md hidden md:flex items-center gap-2 h-9 px-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-text"
+          aria-label="Abrir búsqueda global"
+        >
+          <Search className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1 text-left">Buscar documentos, clientes...</span>
+          <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-[11px] font-mono text-slate-400 leading-none flex-shrink-0">
+            Ctrl K
+          </kbd>
+        </button>
+      </div>
 
       {/* User Actions */}
       <div className="flex items-center gap-2 md:gap-3">
         {/* Search icon — solo mobile */}
         <button
           className="md:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          onClick={() => setShowMobileSearch(true)}
+          onClick={onSearchOpen}
           aria-label="Buscar"
         >
           <Search className="w-5 h-5" />

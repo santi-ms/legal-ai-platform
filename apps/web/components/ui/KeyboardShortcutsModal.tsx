@@ -28,8 +28,9 @@ const SHORTCUTS: { category: string; items: Shortcut[] }[] = [
   {
     category: "Interfaz",
     items: [
-      { keys: ["?"], description: "Ver atajos de teclado" },
-      { keys: ["Esc"], description: "Cerrar modal o panel" },
+      { keys: ["Ctrl", "K"], description: "Búsqueda global" },
+      { keys: ["?"],         description: "Ver atajos de teclado" },
+      { keys: ["Esc"],       description: "Cerrar modal o panel" },
     ],
   },
 ];
