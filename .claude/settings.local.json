@@ -13,7 +13,17 @@
       "Bash(cat apps/web/app/documents/[id]/review/page.tsx)",
       "Bash(grep -n \"AIAssistantSidebar\\\\|handleAskAI\\\\|documentContent\" apps/web/app/documents/[id]/review/page.tsx)",
       "Read(//mnt/c/Users/santi/**)",
-      "Read(//c/Users/santi/Desktop/**)"
+      "Read(//c/Users/santi/Desktop/**)",
+      "Bash(npx prisma:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres.xtlmuqbsliszxcpwawgd:Ltqkmmx635@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require\" npx prisma migrate dev --name add_clients_table)",
+      "Bash(DATABASE_URL=\"postgresql://postgres.xtlmuqbsliszxcpwawgd:Ltqkmmx635@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require\" npx prisma migrate deploy)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:Ltqkmmx635@db.xtlmuqbsliszxcpwawgd.supabase.co:5432/postgres\" npx prisma migrate deploy)",
+      "Bash(ls \"C:\\\\Users\\\\santi\\\\Desktop\\\\legal-ai-platform\\\\apps\\\\web\\\\public\"\" 2>/dev/null && ls \"C:UserssantiDesktoplegal-ai-platformappswebapp\"\")",
+      "Bash(node -e \"const { Client } = require\\(''pg''\\); const c = new Client\\({ connectionString: ''postgresql://postgres.xtlmuqbsliszxcpwawgd:Ltqkmmx635@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require'' }\\); c.connect\\(\\).then\\(\\(\\) => { console.log\\(''connected''\\); return c.query\\(''ALTER TABLE \"\"Document\"\" ADD COLUMN IF NOT EXISTS \"\"clientId\"\" TEXT; ALTER TABLE \"\"Document\"\" ADD CONSTRAINT IF NOT EXISTS \"\"Document_clientId_fkey\"\" FOREIGN KEY \\(\"\"clientId\"\"\\) REFERENCES \"\"Client\"\"\\(\"\"id\"\"\\) ON DELETE SET NULL ON UPDATE CASCADE;''\\); }\\).then\\(\\(\\) => { console.log\\(''done''\\); c.end\\(\\); }\\).catch\\(e => { console.error\\(e.message\\); c.end\\(\\); }\\);\")",
+      "Bash(grep -i ^pg$)",
+      "Bash(node run-migration.mjs)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:Ltqkmmx635@db.xtlmuqbsliszxcpwawgd.supabase.co:5432/postgres?sslmode=require\" node run-migration.mjs)",
+      "Bash(find C:/Users/santi/Desktop/legal-ai-platform/apps/web/app/lib -name format*)"
     ]
   }
 }
