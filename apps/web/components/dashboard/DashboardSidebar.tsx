@@ -14,6 +14,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
+import { useDeadlines } from "@/app/lib/contexts/DeadlineContext";
 
 const navigationItems = [
   {
@@ -77,6 +78,7 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({ isOpen = false, onClose }: DashboardSidebarProps) {
   const pathname = usePathname();
+  const { urgentCount } = useDeadlines();
 
   const sidebarContent = (
     <aside
@@ -138,6 +140,9 @@ export function DashboardSidebar({ isOpen = false, onClose }: DashboardSidebarPr
             );
           }
 
+          // Badge: show urgent deadline count on Expedientes nav item
+          const badge = item.id === "cases" && urgentCount > 0 ? urgentCount : null;
+
           return (
             <Link
               key={item.id}
@@ -150,8 +155,13 @@ export function DashboardSidebar({ isOpen = false, onClose }: DashboardSidebarPr
                   : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
               )}
             >
-              <Icon className="w-5 h-5" />
-              <span>{item.label}</span>
+              <Icon className="w-5 h-5 flex-shrink-0" />
+              <span className="flex-1">{item.label}</span>
+              {badge !== null && (
+                <span className="flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold px-1 leading-none">
+                  {badge > 99 ? "99+" : badge}
+                </span>
+              )}
             </Link>
           );
         })}

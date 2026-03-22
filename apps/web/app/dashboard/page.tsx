@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Plus, AlertCircle } from "lucide-react";
+import { Plus, AlertCircle, AlertTriangle, X } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useToast } from "@/components/ui/toast";
@@ -19,7 +19,7 @@ import {
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { RecentDocumentsTable } from "@/components/dashboard/RecentDocumentsTable";
 import { QuickActions } from "@/components/dashboard/QuickActions";
-import { NextHearing } from "@/components/dashboard/NextHearing";
+import { UpcomingDeadlines } from "@/components/dashboard/UpcomingDeadlines";
 import { PDFPreviewModal } from "@/components/dashboard/PDFPreviewModal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
@@ -29,6 +29,7 @@ import {
   Users,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useDeadlines } from "@/app/lib/contexts/DeadlineContext";
 
 function DashboardContent() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -45,6 +46,8 @@ function DashboardContent() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [stats, setStats] = useState<DocumentStats | null>(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const { overdueCount } = useDeadlines();
 
   // Parsear filtros desde URL
   const getFiltersFromUrl = (): DocumentsParams => {
@@ -164,6 +167,33 @@ function DashboardContent() {
 
   return (
     <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
+      {/* ── Overdue deadlines alert banner ─────────────────────────────────── */}
+      {overdueCount > 0 && !bannerDismissed && (
+        <div className="flex items-center justify-between gap-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+            <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+              {overdueCount === 1
+                ? "Tenés 1 expediente con vencimiento vencido."
+                : `Tenés ${overdueCount} expedientes con vencimientos vencidos.`}
+            </p>
+            <Link
+              href="/expedientes"
+              className="text-sm font-bold text-red-700 dark:text-red-400 underline underline-offset-2 hover:no-underline flex-shrink-0"
+            >
+              Ver expedientes →
+            </Link>
+          </div>
+          <button
+            onClick={() => setBannerDismissed(true)}
+            aria-label="Cerrar alerta"
+            className="p-1 rounded-md text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors flex-shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Welcome & Summary */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
@@ -265,7 +295,7 @@ function DashboardContent() {
         {/* Side Widgets */}
         <div className="space-y-6">
           <QuickActions />
-          <NextHearing />
+          <UpcomingDeadlines />
         </div>
       </div>
 

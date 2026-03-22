@@ -44,13 +44,22 @@ const ExpedienteBodySchema = z.object({
 });
 
 const ExpedientesQuerySchema = z.object({
-  query:    z.string().optional(),
-  matter:   z.enum(MATTERS).optional(),
-  status:   z.enum(STATUSES).optional(),
-  clientId: z.string().uuid().optional(),
-  page:     z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().positive().max(100).default(20),
-  sort:     z.enum(["createdAt:asc", "createdAt:desc", "title:asc", "title:desc", "openedAt:desc", "openedAt:asc"]).default("createdAt:desc"),
+  query:         z.string().optional(),
+  matter:        z.enum(MATTERS).optional(),
+  status:        z.enum(STATUSES).optional(),
+  clientId:      z.string().uuid().optional(),
+  page:          z.coerce.number().int().positive().default(1),
+  pageSize:      z.coerce.number().int().positive().max(100).default(20),
+  sort:          z.enum([
+    "createdAt:asc", "createdAt:desc",
+    "title:asc",     "title:desc",
+    "openedAt:desc", "openedAt:asc",
+    "deadline:asc",  "deadline:desc",
+  ]).default("createdAt:desc"),
+  // Deadline filters — used by the Vencimientos (deadline tracking) feature
+  hasDeadline:    z.enum(["true", "false"]).optional(),
+  deadlineBefore: z.string().optional(),   // ISO datetime — deadline <= this date
+  deadlineAfter:  z.string().optional(),   // ISO datetime — deadline >= this date
 });
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -87,7 +96,7 @@ export async function registerExpedienteRoutes(app: FastifyInstance) {
       return reply.status(400).send({ ok: false, error: "INVALID_QUERY", details: parsed.error.format() });
     }
 
-    const { query, matter, status, clientId, page, pageSize, sort } = parsed.data;
+    const { query, matter, status, clientId, page, pageSize, sort, hasDeadline, deadlineBefore, deadlineAfter } = parsed.data;
     const [sortField, sortDir] = sort.split(":");
 
     const tenantId = user.tenantId!;
@@ -103,6 +112,17 @@ export async function registerExpedienteRoutes(app: FastifyInstance) {
         { court:         { contains: query, mode: "insensitive" } },
         { opposingParty: { contains: query, mode: "insensitive" } },
       ];
+    }
+
+    // ── Deadline filters ────────────────────────────────────────────────────
+    if (hasDeadline === "true" || deadlineBefore || deadlineAfter) {
+      const deadlineFilter: any = {};
+      if (hasDeadline === "true") deadlineFilter.not = null;
+      if (deadlineBefore) deadlineFilter.lte = new Date(deadlineBefore);
+      if (deadlineAfter)  deadlineFilter.gte = new Date(deadlineAfter);
+      where.deadline = deadlineFilter;
+    } else if (hasDeadline === "false") {
+      where.deadline = null;
     }
 
     const [total, expedientes] = await Promise.all([

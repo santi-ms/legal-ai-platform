@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { KeyboardShortcutsModal } from "@/components/ui/KeyboardShortcutsModal";
+import { DeadlineProvider } from "@/app/lib/contexts/DeadlineContext";
 
 function useSequenceShortcut(onMatch: (seq: string) => void) {
   const lastKey = { value: "", time: 0 };
@@ -83,19 +84,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [handleKeyDown]);
 
   return (
-    <div className="flex min-h-screen bg-background-light dark:bg-background-dark font-display">
-      <DashboardSidebar
-        isOpen={isMobileMenuOpen}
-        onClose={() => setIsMobileMenuOpen(false)}
-      />
-      <main className="flex-1 flex flex-col min-w-0">
-        <DashboardHeader onMenuToggle={() => setIsMobileMenuOpen((v) => !v)} />
-        {children}
-      </main>
-      <KeyboardShortcutsModal
-        open={showShortcuts}
-        onClose={() => setShowShortcuts(false)}
-      />
-    </div>
+    <DeadlineProvider>
+      <div className="flex min-h-screen bg-background-light dark:bg-background-dark font-display">
+        <DashboardSidebar
+          isOpen={isMobileMenuOpen}
+          onClose={() => setIsMobileMenuOpen(false)}
+        />
+        <main className="flex-1 flex flex-col min-w-0">
+          <DashboardHeader onMenuToggle={() => setIsMobileMenuOpen((v) => !v)} />
+          {children}
+        </main>
+        <KeyboardShortcutsModal
+          open={showShortcuts}
+          onClose={() => setShowShortcuts(false)}
+        />
+      </div>
+    </DeadlineProvider>
   );
 }

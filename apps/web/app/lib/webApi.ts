@@ -536,7 +536,13 @@ export interface ExpedientesParams {
   clientId?: string;
   page?: number;
   pageSize?: number;
-  sort?: "createdAt:asc" | "createdAt:desc" | "title:asc" | "title:desc" | "openedAt:desc" | "openedAt:asc";
+  sort?: "createdAt:asc" | "createdAt:desc" | "title:asc" | "title:desc" | "openedAt:desc" | "openedAt:asc" | "deadline:asc" | "deadline:desc";
+  /** "true" = only with deadline set, "false" = only without */
+  hasDeadline?: "true" | "false";
+  /** ISO datetime — deadline ≤ this date */
+  deadlineBefore?: string;
+  /** ISO datetime — deadline ≥ this date */
+  deadlineAfter?: string;
 }
 
 export interface ListExpedientesResult {
