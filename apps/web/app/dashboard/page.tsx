@@ -20,12 +20,13 @@ import { StatsCard } from "@/components/dashboard/StatsCard";
 import { RecentDocumentsTable } from "@/components/dashboard/RecentDocumentsTable";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { UpcomingDeadlines } from "@/components/dashboard/UpcomingDeadlines";
+import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { PDFPreviewModal } from "@/components/dashboard/PDFPreviewModal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   FileText,
+  Briefcase,
   Gavel,
-  CheckCircle2,
   Users,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -151,10 +152,14 @@ function DashboardContent() {
   }
 
   // Estadísticas desde endpoint dedicado (totales reales, no solo la página actual)
-  const totalDocuments = stats?.total ?? 0;
-  const totalClients = stats?.totalClients ?? 0;
-  const needsReview = stats?.byStatus?.needs_review ?? 0;
-  const generated = stats?.byStatus?.generated ?? 0;
+  const totalDocuments        = stats?.total                ?? 0;
+  const totalClients          = stats?.totalClients         ?? 0;
+  const needsReview           = stats?.byStatus?.needs_review ?? 0;
+  const expedientesActivos    = stats?.expedientesActivos   ?? 0;
+  const vencimientosUrgentes  = stats?.vencimientosUrgentes ?? 0;
+
+  // Onboarding: show when user has very little data
+  const showOnboarding = stats !== null && (totalDocuments === 0 || totalClients === 0 || expedientesActivos === 0);
 
   // Nombre del usuario — sin prefijo "Dr." inventado
   const userName = session?.user?.name || "Usuario";
@@ -215,7 +220,16 @@ function DashboardContent() {
         </Link>
       </div>
 
-      {/* Stats Grid — valores reales del endpoint /documents/stats */}
+      {/* Onboarding checklist — visible only when user has incomplete setup */}
+      {showOnboarding && (
+        <OnboardingChecklist
+          hasDocs={totalDocuments > 0}
+          hasClients={totalClients > 0}
+          hasExpedientes={expedientesActivos > 0}
+        />
+      )}
+
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           icon={FileText}
@@ -232,18 +246,25 @@ function DashboardContent() {
           iconColor="text-violet-600 dark:text-violet-400"
         />
         <StatsCard
+          icon={Briefcase}
+          label="Expedientes Activos"
+          value={stats ? expedientesActivos : "—"}
+          iconBgColor="bg-emerald-100 dark:bg-emerald-900/30"
+          iconColor="text-emerald-600 dark:text-emerald-400"
+          subText={vencimientosUrgentes > 0
+            ? `${vencimientosUrgentes} con vencimiento urgente`
+            : undefined
+          }
+          subTextColor="text-red-500 dark:text-red-400"
+        />
+        <StatsCard
           icon={Gavel}
           label="Requieren Revisión"
           value={stats ? needsReview : "—"}
           iconBgColor="bg-amber-100 dark:bg-amber-900/30"
           iconColor="text-amber-600 dark:text-amber-400"
-        />
-        <StatsCard
-          icon={CheckCircle2}
-          label="Generados"
-          value={stats ? generated : "—"}
-          iconBgColor="bg-emerald-100 dark:bg-emerald-900/30"
-          iconColor="text-emerald-600 dark:text-emerald-400"
+          subText={needsReview > 0 ? "Documentos a revisar" : undefined}
+          subTextColor="text-amber-500 dark:text-amber-400"
         />
       </div>
 

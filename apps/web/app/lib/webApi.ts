@@ -189,19 +189,25 @@ export interface DocumentStats {
     final: number;
     [key: string]: number;
   };
+  /** Expedientes con status "activo" */
+  expedientesActivos: number;
+  /** Activos con deadline vencido o ≤ 3 días */
+  vencimientosUrgentes: number;
 }
 
 export async function getDocumentStats(): Promise<DocumentStats> {
   const { data } = await proxyJson<any>("/documents/stats");
   return {
-    total: data?.total ?? 0,
-    totalClients: data?.totalClients ?? 0,
+    total:                data?.total                ?? 0,
+    totalClients:         data?.totalClients         ?? 0,
+    expedientesActivos:   data?.expedientesActivos   ?? 0,
+    vencimientosUrgentes: data?.vencimientosUrgentes ?? 0,
     byStatus: {
-      generated: data?.byStatus?.generated ?? 0,
+      generated:   data?.byStatus?.generated   ?? 0,
       needs_review: data?.byStatus?.needs_review ?? 0,
-      draft: data?.byStatus?.draft ?? 0,
-      reviewed: data?.byStatus?.reviewed ?? 0,
-      final: data?.byStatus?.final ?? 0,
+      draft:        data?.byStatus?.draft        ?? 0,
+      reviewed:     data?.byStatus?.reviewed     ?? 0,
+      final:        data?.byStatus?.final        ?? 0,
     },
   };
 }
