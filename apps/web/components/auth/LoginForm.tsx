@@ -317,31 +317,17 @@ function SocialLoginButtons({
   isGoogleLoading: boolean;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div>
       <button
         type="button"
         onClick={onGoogleClick}
         disabled={isGoogleLoading}
         aria-disabled={isGoogleLoading ? "true" : "false"}
-        className="flex items-center justify-center gap-2 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg relative transition-colors hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
+        className="w-full flex items-center justify-center gap-2 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg relative transition-colors hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {isGoogleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
         <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
           Continuar con Google
-        </span>
-      </button>
-      <button
-        type="button"
-        disabled
-        aria-disabled="true"
-        tabIndex={-1}
-        title="Próximamente"
-        className="flex items-center justify-center gap-2 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg opacity-50 cursor-not-allowed relative"
-      >
-        <AppleIcon />
-        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Apple</span>
-        <span className="absolute -top-2 -right-2 text-[9px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-full leading-none">
-          Pronto
         </span>
       </button>
     </div>
