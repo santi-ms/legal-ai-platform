@@ -178,6 +178,34 @@ export async function listDocuments(
   };
 }
 
+export interface DocumentStats {
+  total: number;
+  totalClients: number;
+  byStatus: {
+    generated: number;
+    needs_review: number;
+    draft: number;
+    reviewed: number;
+    final: number;
+    [key: string]: number;
+  };
+}
+
+export async function getDocumentStats(): Promise<DocumentStats> {
+  const { data } = await proxyJson<any>("/documents/stats");
+  return {
+    total: data?.total ?? 0,
+    totalClients: data?.totalClients ?? 0,
+    byStatus: {
+      generated: data?.byStatus?.generated ?? 0,
+      needs_review: data?.byStatus?.needs_review ?? 0,
+      draft: data?.byStatus?.draft ?? 0,
+      reviewed: data?.byStatus?.reviewed ?? 0,
+      final: data?.byStatus?.final ?? 0,
+    },
+  };
+}
+
 export async function getDocument(id: string) {
   const { data } = await proxyJson<DocumentApiResponse>(`/documents/${id}`);
   return data;
@@ -432,4 +460,110 @@ export async function updateClient(id: string, payload: ClientPayload): Promise<
 
 export async function deleteClient(id: string): Promise<void> {
   await proxyJson(`/clients/${id}`, { method: "DELETE" });
+}
+
+// ─── Expedientes ───────────────────────────────────────────────────────────────
+
+export type ExpedienteMatter =
+  | "civil" | "penal" | "laboral" | "familia"
+  | "comercial" | "administrativo" | "constitucional" | "tributario" | "otro";
+
+export type ExpedienteStatus = "activo" | "cerrado" | "archivado" | "suspendido";
+
+export interface Expediente {
+  id: string;
+  number: string | null;
+  title: string;
+  matter: ExpedienteMatter;
+  status: ExpedienteStatus;
+  clientId: string | null;
+  client: { id: string; name: string; type: string; email?: string | null; phone?: string | null } | null;
+  court: string | null;
+  judge: string | null;
+  opposingParty: string | null;
+  openedAt: string;
+  closedAt: string | null;
+  deadline: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { documents: number };
+  documents?: Array<{
+    id: string;
+    type: string;
+    jurisdiccion: string;
+    estado: string;
+    createdAt: string;
+    versions: Array<{ id: string; status: string | null; pdfUrl: string | null }>;
+  }>;
+}
+
+export interface ExpedientePayload {
+  number?: string | null;
+  title: string;
+  matter: ExpedienteMatter;
+  status?: ExpedienteStatus;
+  clientId?: string | null;
+  court?: string | null;
+  judge?: string | null;
+  opposingParty?: string | null;
+  openedAt?: string | null;
+  closedAt?: string | null;
+  deadline?: string | null;
+  notes?: string | null;
+}
+
+export interface ExpedientesParams {
+  query?: string;
+  matter?: ExpedienteMatter;
+  status?: ExpedienteStatus;
+  clientId?: string;
+  page?: number;
+  pageSize?: number;
+  sort?: "createdAt:asc" | "createdAt:desc" | "title:asc" | "title:desc" | "openedAt:desc" | "openedAt:asc";
+}
+
+export interface ListExpedientesResult {
+  expedientes: Expediente[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export async function listExpedientes(params?: ExpedientesParams): Promise<ListExpedientesResult> {
+  const qs = buildQuery(params);
+  const { data } = await proxyJson<any>(`/expedientes${qs}`);
+  return {
+    expedientes: Array.isArray(data?.expedientes) ? data.expedientes : [],
+    total: data?.total ?? 0,
+    page: data?.page ?? 1,
+    pageSize: data?.pageSize ?? 20,
+  };
+}
+
+export async function getExpediente(id: string): Promise<Expediente> {
+  const { data } = await proxyJson<any>(`/expedientes/${id}`);
+  return data.expediente;
+}
+
+export async function createExpediente(payload: ExpedientePayload): Promise<Expediente> {
+  const { data } = await proxyJson<any>("/expedientes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return data.expediente;
+}
+
+export async function updateExpediente(id: string, payload: ExpedientePayload): Promise<Expediente> {
+  const { data } = await proxyJson<any>(`/expedientes/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return data.expediente;
+}
+
+export async function deleteExpediente(id: string): Promise<void> {
+  await proxyJson(`/expedientes/${id}`, { method: "DELETE" });
 }

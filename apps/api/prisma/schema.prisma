@@ -8,14 +8,15 @@ generator client {
 }
 
 model Tenant {
-  id        String      @id @default(uuid())
-  name      String
-  users     User[]
-  documents Document[]
-  clients   Client[]
-  logs      IAUsageLog[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id           String        @id @default(uuid())
+  name         String
+  users        User[]
+  documents    Document[]
+  clients      Client[]
+  expedientes  Expediente[]
+  logs         IAUsageLog[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 model User {
@@ -42,8 +43,9 @@ model User {
 
   tenant    Tenant?   @relation(fields: [tenantId], references: [id])
 
-  documentsCreated Document[] @relation("CreatedByUser")
-  clientsCreated   Client[]   @relation("ClientsCreatedBy")
+  documentsCreated   Document[]   @relation("CreatedByUser")
+  clientsCreated     Client[]     @relation("ClientsCreatedBy")
+  expedientesCreated Expediente[] @relation("ExpedientesCreatedBy")
   accounts         Account[]
   sessions         Session[]
 
@@ -73,6 +75,10 @@ model Document {
   // Cliente asociado (opcional)
   clientId       String?
   client         Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  // Expediente asociado (opcional)
+  expedienteId   String?
+  expediente     Expediente?       @relation(fields: [expedienteId], references: [id], onDelete: SetNull)
 
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
@@ -138,8 +144,55 @@ model Client {
   // Documentos asociados
   documents      Document[]
 
+  // Expedientes en los que aparece como cliente
+  expedientes    Expediente[]
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+model Expediente {
+  id             String    @id @default(uuid())
+
+  tenantId       String
+  tenant         Tenant    @relation(fields: [tenantId], references: [id])
+
+  createdById    String
+  createdBy      User      @relation("ExpedientesCreatedBy", fields: [createdById], references: [id])
+
+  // Identificación
+  number         String?   // Número de expediente (ej: "2024/001234")
+  title          String    // Título/descripción del caso
+  matter         String    // Materia: civil, penal, laboral, familia, comercial, administrativo, otro
+
+  // Estado: activo, cerrado, archivado, suspendido
+  status         String    @default("activo")
+
+  // Cliente principal (opcional)
+  clientId       String?
+  client         Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  // Datos judiciales (opcionales)
+  court          String?   // Juzgado / Tribunal
+  judge          String?   // Juez interviniente
+  opposingParty  String?   // Parte contraria
+
+  // Fechas
+  openedAt       DateTime  @default(now())
+  closedAt       DateTime?
+  deadline       DateTime?
+
+  // Notas internas
+  notes          String?
+
+  // Documentos vinculados
+  documents      Document[]
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([clientId])
 }
 
 model IAUsageLog {

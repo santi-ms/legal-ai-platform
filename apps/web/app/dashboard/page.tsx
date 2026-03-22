@@ -11,21 +11,22 @@ import {
   listDocuments,
   duplicateDocument,
   deleteDocument,
+  getDocumentStats,
   DocumentsParams,
   Document,
+  DocumentStats,
 } from "@/app/lib/webApi";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { RecentDocumentsTable } from "@/components/dashboard/RecentDocumentsTable";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { NextHearing } from "@/components/dashboard/NextHearing";
-import { TeamActivity } from "@/components/dashboard/TeamActivity";
 import { PDFPreviewModal } from "@/components/dashboard/PDFPreviewModal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   FileText,
-  PenTool,
   Gavel,
   CheckCircle2,
+  Users,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -43,6 +44,7 @@ function DashboardContent() {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [stats, setStats] = useState<DocumentStats | null>(null);
 
   // Parsear filtros desde URL
   const getFiltersFromUrl = (): DocumentsParams => {
@@ -67,7 +69,10 @@ function DashboardContent() {
 
     try {
       const currentFilters = getFiltersFromUrl();
-      const response = await listDocuments(currentFilters);
+      const [response] = await Promise.all([
+        listDocuments(currentFilters),
+        getDocumentStats().then(setStats).catch(() => {}),
+      ]);
 
       setDocuments(Array.isArray(response.documents) ? response.documents : []);
       setTotal(
@@ -142,12 +147,11 @@ function DashboardContent() {
     return null;
   }
 
-  // Estadísticas basadas en datos reales del backend
-  // estado="generated_text" es el único valor que escribe el backend actualmente
-  const activeDocuments = documents.length;
-  const pendingSignatures = 0; // Flujo de firma no implementado en backend
-  const casesInProcess = documents.filter((d) => d.lastVersion?.status === "needs_review").length;
-  const signedDocuments = documents.filter((d) => d.lastVersion?.status === "generated").length;
+  // Estadísticas desde endpoint dedicado (totales reales, no solo la página actual)
+  const totalDocuments = stats?.total ?? 0;
+  const totalClients = stats?.totalClients ?? 0;
+  const needsReview = stats?.byStatus?.needs_review ?? 0;
+  const generated = stats?.byStatus?.generated ?? 0;
 
   // Nombre del usuario — sin prefijo "Dr." inventado
   const userName = session?.user?.name || "Usuario";
@@ -181,33 +185,33 @@ function DashboardContent() {
         </Link>
       </div>
 
-      {/* Stats Grid — valores reales */}
+      {/* Stats Grid — valores reales del endpoint /documents/stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           icon={FileText}
-          label="Documentos Activos"
-          value={activeDocuments}
+          label="Total Documentos"
+          value={stats ? totalDocuments : "—"}
           iconBgColor="bg-blue-100 dark:bg-blue-900/30"
           iconColor="text-blue-600 dark:text-blue-400"
         />
         <StatsCard
-          icon={PenTool}
-          label="Pendientes de Firma"
-          value={pendingSignatures}
-          iconBgColor="bg-amber-100 dark:bg-amber-900/30"
-          iconColor="text-amber-600 dark:text-amber-400"
+          icon={Users}
+          label="Clientes"
+          value={stats ? totalClients : "—"}
+          iconBgColor="bg-violet-100 dark:bg-violet-900/30"
+          iconColor="text-violet-600 dark:text-violet-400"
         />
         <StatsCard
           icon={Gavel}
           label="Requieren Revisión"
-          value={casesInProcess}
-          iconBgColor="bg-purple-100 dark:bg-purple-900/30"
-          iconColor="text-purple-600 dark:text-purple-400"
+          value={stats ? needsReview : "—"}
+          iconBgColor="bg-amber-100 dark:bg-amber-900/30"
+          iconColor="text-amber-600 dark:text-amber-400"
         />
         <StatsCard
           icon={CheckCircle2}
           label="Generados"
-          value={signedDocuments}
+          value={stats ? generated : "—"}
           iconBgColor="bg-emerald-100 dark:bg-emerald-900/30"
           iconColor="text-emerald-600 dark:text-emerald-400"
         />
@@ -262,7 +266,6 @@ function DashboardContent() {
         <div className="space-y-6">
           <QuickActions />
           <NextHearing />
-          <TeamActivity />
         </div>
       </div>
 

@@ -50,6 +50,61 @@ const DocumentsQuerySchema = z.object({
 
 export async function registerDocumentRoutes(app: FastifyInstance) {
   // ==========================================
+  // GET /documents/stats - Totales por estado
+  // IMPORTANTE: debe estar antes de /documents/:id
+  // ==========================================
+  app.get("/documents/stats", async (request, reply) => {
+    try {
+      const user = getUserFromRequest(request);
+      if (!user) return reply.status(401).send({ ok: false, error: "UNAUTHORIZED" });
+      if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
+
+      const tenantId = user.tenantId;
+
+      const [allDocs, totalClients] = await Promise.all([
+        prisma.document.findMany({
+          where: { tenantId },
+          select: {
+            versions: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: { status: true },
+            },
+          },
+        }),
+        prisma.client.count({ where: { tenantId } }),
+      ]);
+
+      const byStatus: Record<string, number> = {
+        generated: 0,
+        needs_review: 0,
+        draft: 0,
+        reviewed: 0,
+        final: 0,
+      };
+
+      for (const doc of allDocs) {
+        const status = doc.versions[0]?.status ?? "draft";
+        if (status in byStatus) {
+          byStatus[status]++;
+        } else {
+          byStatus["draft"]++;
+        }
+      }
+
+      return reply.send({
+        ok: true,
+        total: allDocs.length,
+        totalClients,
+        byStatus,
+      });
+    } catch (err) {
+      request.log?.error({ err }, "documents/stats error");
+      return reply.status(500).send({ ok: false, message: "Internal error" });
+    }
+  });
+
+  // ==========================================
   // GET /documents - Paginado con filtros
   // ==========================================
   app.get("/documents", async (request, reply) => {

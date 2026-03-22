@@ -32,10 +32,10 @@ const navigationItems = [
   },
   {
     id: "cases",
-    label: "Casos Activos",
+    label: "Expedientes",
     icon: Briefcase,
-    href: "#",
-    disabled: true,
+    href: "/expedientes",
+    disabled: false,
   },
   {
     id: "calendar",

@@ -7,6 +7,7 @@ import { registerDocumentRoutes } from "./routes.documents.js";
 import { registerAuthRoutes } from "./routes.auth.js";
 import { registerChatRoutes } from "./routes.chat.js";
 import { registerClientRoutes } from "./routes.clients.js";
+import { registerExpedienteRoutes } from "./routes.expedientes.js";
 import { initializeDocumentRegistry } from "./modules/documents/domain/document-registry.js";
 import { logger } from "./utils/logger.js";
 
@@ -80,6 +81,7 @@ async function buildServer() {
   await registerAuthRoutes(app);
   await registerChatRoutes(app);
   await registerClientRoutes(app);
+  await registerExpedienteRoutes(app);
 
   const { registerUserRoutes } = await import("./routes.user.js");
   await registerUserRoutes(app);

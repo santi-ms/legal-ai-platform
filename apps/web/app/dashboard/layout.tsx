@@ -39,6 +39,7 @@ export default function DashboardLayout({
       if (seq === "gl") router.push("/documents");
       if (seq === "gs") router.push("/settings");
       if (seq === "gc") router.push("/clients");
+      if (seq === "ge") router.push("/expedientes");
     },
     [router]
   );
@@ -74,7 +75,8 @@ export default function DashboardLayout({
          e.key === "d" || e.key === "D" ||
          e.key === "l" || e.key === "L" ||
          e.key === "s" || e.key === "S" ||
-         e.key === "c" || e.key === "C") &&
+         e.key === "c" || e.key === "C" ||
+         e.key === "e" || e.key === "E") &&
         !e.metaKey && !e.ctrlKey
       ) {
         checkSequence(e.key);
