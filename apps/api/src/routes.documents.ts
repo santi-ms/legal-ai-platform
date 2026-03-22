@@ -41,6 +41,7 @@ const DocumentsQuerySchema = z.object({
   type: z.string().optional(),
   jurisdiccion: z.string().optional(),
   clientId: z.string().uuid().optional(), // filtrar por cliente
+  expedienteId: z.string().uuid().optional(), // filtrar por expediente
   from: z.string().datetime().optional(), // ISO date
   to: z.string().datetime().optional(),
   page: z.coerce.number().int().positive().default(1),
@@ -137,7 +138,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         });
       }
 
-      const { query, type, jurisdiccion, clientId, from, to, page, pageSize, sort } =
+      const { query, type, jurisdiccion, clientId, expedienteId, from, to, page, pageSize, sort } =
         queryParams.data;
 
       // Construir filtros
@@ -174,6 +175,11 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       // Filtro por cliente
       if (clientId) {
         where.clientId = clientId;
+      }
+
+      // Filtro por expediente
+      if (expedienteId) {
+        where.expedienteId = expedienteId;
       }
 
       // Filtro por rango de fechas

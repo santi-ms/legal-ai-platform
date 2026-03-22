@@ -42,6 +42,7 @@ export interface DocumentsParams {
   type?: string;
   jurisdiccion?: string;
   clientId?: string;
+  expedienteId?: string;
   from?: string;
   to?: string;
   page?: number;

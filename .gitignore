@@ -45,3 +45,4 @@ postgres_data/
 # Misc
 .DS_Store
 *.pem
+.mcp.json

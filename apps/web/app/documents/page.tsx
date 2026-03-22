@@ -7,7 +7,13 @@ import { Plus, Download, AlertTriangle, RefreshCcw, Loader2 } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useToast } from "@/components/ui/toast";
-import { listDocuments, deleteDocument, DocumentsParams, Document } from "@/app/lib/webApi";
+import {
+  listDocuments,
+  deleteDocument,
+  listExpedientes,
+  DocumentsParams,
+  Document,
+} from "@/app/lib/webApi";
 
 // ── CSV helpers ──────────────────────────────────────────────────────────────
 function escapeCsvField(value: string | null | undefined): string {
@@ -118,12 +124,22 @@ function DocumentsContent() {
   const [documentType, setDocumentType] = useState("all");
   const [status, setStatus] = useState("all");
 
+  // Expediente filter — loads once when authenticated
+  const [expedientes, setExpedientes] = useState<Array<{ id: string; title: string; number: string | null }>>([]);
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    listExpedientes({ pageSize: 200, sort: "title:asc" })
+      .then((r) => setExpedientes(Array.isArray(r.expedientes) ? r.expedientes : []))
+      .catch(() => {/* silently ignore — filter just won't show */});
+  }, [isAuthenticated]);
+
   // Parse filters from URL
   const getFiltersFromUrl = (): DocumentsParams => {
     return {
       query: searchParams.get("query") || undefined,
       type: searchParams.get("type") || undefined,
       jurisdiccion: searchParams.get("jurisdiccion") || undefined,
+      expedienteId: searchParams.get("expedienteId") || undefined,
       from: searchParams.get("from") || undefined,
       to: searchParams.get("to") || undefined,
       page: parseInt(searchParams.get("page") || "1"),
@@ -254,6 +270,7 @@ function DocumentsContent() {
     if (mergedFilters.query) params.set("query", mergedFilters.query);
     if (mergedFilters.type && mergedFilters.type !== "all") params.set("type", mergedFilters.type);
     if (mergedFilters.jurisdiccion) params.set("jurisdiccion", mergedFilters.jurisdiccion);
+    if (mergedFilters.expedienteId) params.set("expedienteId", mergedFilters.expedienteId);
     if (mergedFilters.from) params.set("from", mergedFilters.from);
     if (mergedFilters.to) params.set("to", mergedFilters.to);
     if (mergedFilters.page) params.set("page", mergedFilters.page.toString());
@@ -277,6 +294,10 @@ function DocumentsContent() {
     setStatus(newStatus);
     // El filtro por estado se aplica client-side sobre los documentos ya cargados
     // El backend no expone un filtro de estado en GET /documents todavía
+  };
+
+  const handleExpedienteChange = (id: string) => {
+    handleFiltersChange({ expedienteId: id !== "all" ? id : undefined, page: 1 });
   };
 
   const handleClearFilters = () => {
@@ -419,6 +440,9 @@ function DocumentsContent() {
           onTypeChange={handleTypeChange}
           status={status}
           onStatusChange={handleStatusChange}
+          expedienteId={searchParams.get("expedienteId") ?? "all"}
+          onExpedienteChange={handleExpedienteChange}
+          expedientes={expedientes}
           onClearFilters={handleClearFilters}
         />
 
@@ -459,6 +483,7 @@ function DocumentsContent() {
                 !!(
                   searchParams.get("query") ||
                   (searchParams.get("type") && searchParams.get("type") !== "all") ||
+                  searchParams.get("expedienteId") ||
                   searchParams.get("from") ||
                   searchParams.get("to")
                 )

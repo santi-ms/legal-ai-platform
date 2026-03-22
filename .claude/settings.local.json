@@ -23,7 +23,34 @@
       "Bash(grep -i ^pg$)",
       "Bash(node run-migration.mjs)",
       "Bash(DATABASE_URL=\"postgresql://postgres:Ltqkmmx635@db.xtlmuqbsliszxcpwawgd.supabase.co:5432/postgres?sslmode=require\" node run-migration.mjs)",
-      "Bash(find C:/Users/santi/Desktop/legal-ai-platform/apps/web/app/lib -name format*)"
+      "Bash(find C:/Users/santi/Desktop/legal-ai-platform/apps/web/app/lib -name format*)",
+      "Bash(del \"C:\\\\Users\\\\santi\\\\Desktop\\\\legal-ai-platform\\\\apps\\\\web\\\\components\\\\dashboard\\\\TeamActivity.tsx\")",
+      "Bash(wc -l /c/Users/santi/Desktop/legal-ai-platform/apps/web/app/expedientes/page.tsx /c/Users/santi/Desktop/legal-ai-platform/apps/web/app/expedientes/[id]/page.tsx /c/Users/santi/Desktop/legal-ai-platform/apps/web/components/expedientes/ExpedienteForm.tsx /c/Users/santi/Desktop/legal-ai-platform/apps/api/src/routes.expedientes.ts)",
+      "Bash(git add:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.railway.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:railway.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(git commit:*)",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(git push:*)",
+      "mcp__railway__list-projects",
+      "Bash(railway:*)",
+      "mcp__railway__get-logs",
+      "mcp__6a2fe381-1f9b-4fa8-9705-6e36458cd914__list_teams",
+      "mcp__6a2fe381-1f9b-4fa8-9705-6e36458cd914__list_projects",
+      "mcp__6a2fe381-1f9b-4fa8-9705-6e36458cd914__list_deployments",
+      "mcp__6a2fe381-1f9b-4fa8-9705-6e36458cd914__get_deployment_build_logs",
+      "mcp__6a2fe381-1f9b-4fa8-9705-6e36458cd914__get_project",
+      "Bash(xargs grep:*)",
+      "Bash(ls -la /c/Users/santi/Desktop/legal-ai-platform/apps/api/src/routes*.ts)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "railway"
+  ]
 }
