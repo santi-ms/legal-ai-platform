@@ -265,7 +265,7 @@ function ClientsContent() {
   const pushParams = (overrides: Record<string, string | undefined>) => {
     const current = getParams();
     const p = new URLSearchParams();
-    const merged = {
+    const merged: Record<string, string | undefined> = {
       query: current.query,
       type: current.type,
       page: String(current.page),
