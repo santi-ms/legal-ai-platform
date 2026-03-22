@@ -70,6 +70,10 @@ model Document {
   estado         String            // "generated_text" | "ready_pdf" | "error"
   costUsd        Float?
 
+  // Cliente asociado (opcional)
+  clientId       String?
+  client         Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
@@ -130,6 +134,9 @@ model Client {
 
   // Notas internas del estudio
   notes          String?
+
+  // Documentos asociados
+  documents      Document[]
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

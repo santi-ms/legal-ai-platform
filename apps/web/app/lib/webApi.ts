@@ -15,6 +15,9 @@ export interface Document {
   createdAt: string;
   updatedAt: string;
   tenantId: string;
+  /** Cliente asociado (opcional) */
+  clientId?: string | null;
+  client?: { id: string; name: string; type: string } | null;
   lastVersion: {
     id: string;
     rawText: string;
@@ -38,6 +41,7 @@ export interface DocumentsParams {
   query?: string;
   type?: string;
   jurisdiccion?: string;
+  clientId?: string;
   from?: string;
   to?: string;
   page?: number;
@@ -209,6 +213,22 @@ export async function patchDocument(
 
 export function getPdfUrl(id: string): string {
   return `${PROXY_BASE}/documents/${id}/pdf`;
+}
+
+/**
+ * Asocia o desasocia un cliente de un documento.
+ * @param clientId — UUID del cliente, o null para desasociar
+ */
+export async function patchDocumentClient(
+  id: string,
+  clientId: string | null
+): Promise<{ ok: boolean; data?: { clientId: string | null; client: { id: string; name: string; type: string } | null } }> {
+  const { data } = await proxyJson<any>(`/documents/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ clientId }),
+  });
+  return data;
 }
 
 /**

@@ -314,6 +314,7 @@ export function DocumentsTableEnhanced({
                   />
                 </th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Documento</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hidden lg:table-cell">Cliente</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Jurisdicción</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Última Modificación</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Estado</th>
@@ -324,7 +325,7 @@ export function DocumentsTableEnhanced({
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
               {documents.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-0">
+                  <td colSpan={7} className="p-0">
                     <DocumentsEmptyState hasActiveFilters={hasActiveFilters} />
                   </td>
                 </tr>
@@ -373,6 +374,21 @@ export function DocumentsTableEnhanced({
                             </div>
                           </div>
                         </div>
+                      </td>
+
+                      {/* Cliente */}
+                      <td className="px-6 py-4 hidden lg:table-cell">
+                        {doc.client ? (
+                          <Link
+                            href={`/clients/${doc.client.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium max-w-[140px] truncate"
+                          >
+                            {doc.client.name}
+                          </Link>
+                        ) : (
+                          <span className="text-sm text-slate-300 dark:text-slate-600">—</span>
+                        )}
                       </td>
 
                       {/* Jurisdicción */}

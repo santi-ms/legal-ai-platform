@@ -21,6 +21,8 @@ interface DocumentWithVersion {
   estado: string | null;
   costUsd: number | null;
   tenantId: string;
+  clientId: string | null;
+  client: { id: string; name: string; type: string } | null;
   createdAt: Date;
   updatedAt: Date;
   versions: Array<{
@@ -38,6 +40,7 @@ const DocumentsQuerySchema = z.object({
   query: z.string().optional(), // búsqueda de texto
   type: z.string().optional(),
   jurisdiccion: z.string().optional(),
+  clientId: z.string().uuid().optional(), // filtrar por cliente
   from: z.string().datetime().optional(), // ISO date
   to: z.string().datetime().optional(),
   page: z.coerce.number().int().positive().default(1),
@@ -64,7 +67,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         });
       }
 
-      const { query, type, jurisdiccion, from, to, page, pageSize, sort } =
+      const { query, type, jurisdiccion, clientId, from, to, page, pageSize, sort } =
         queryParams.data;
 
       // Construir filtros
@@ -96,6 +99,11 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       // Filtro por jurisdicción
       if (jurisdiccion) {
         where.jurisdiccion = jurisdiccion;
+      }
+
+      // Filtro por cliente
+      if (clientId) {
+        where.clientId = clientId;
       }
 
       // Filtro por rango de fechas
@@ -138,6 +146,9 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
               createdAt: true,
             },
           },
+          client: {
+            select: { id: true, name: true, type: true },
+          },
         },
         orderBy,
         skip,
@@ -154,6 +165,8 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           estado: doc.estado,
           costUsd: doc.costUsd,
           tenantId: doc.tenantId,
+          clientId: doc.clientId ?? null,
+          client: doc.client ?? null,
           createdAt: doc.createdAt.toISOString(),
           updatedAt: doc.updatedAt.toISOString(),
           lastVersion: doc.versions[0] ?? null,
@@ -662,6 +675,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         type: z.string().optional(),
         jurisdiccion: z.string().optional(),
         tono: z.string().optional(),
+        clientId: z.string().uuid().nullable().optional(),
       });
 
       const paramsParsed = ParamsSchema.safeParse(request.params);
@@ -697,10 +711,21 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         });
       }
 
+      // Si se envía clientId, verificar que el cliente pertenece al mismo tenant
+      if (updateData.clientId) {
+        const client = await prisma.client.findFirst({
+          where: { id: updateData.clientId, tenantId: user.tenantId! },
+        });
+        if (!client) {
+          return reply.status(404).send({ ok: false, error: "CLIENT_NOT_FOUND" });
+        }
+      }
+
       // Actualizar
       const updated = await prisma.document.update({
         where: { id },
         data: updateData,
+        include: { client: { select: { id: true, name: true, type: true } } },
       });
 
       return reply.status(200).send({
@@ -711,6 +736,8 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           type: updated.type,
           jurisdiccion: updated.jurisdiccion,
           tono: updated.tono,
+          clientId: (updated as any).clientId ?? null,
+          client: (updated as any).client ?? null,
         },
       });
     } catch (err: any) {
@@ -858,6 +885,9 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
               createdAt: true,
             },
           },
+          client: {
+            select: { id: true, name: true, type: true },
+          },
         },
       });
 
@@ -877,6 +907,8 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           estado: document.estado,
           costUsd: document.costUsd,
           tenantId: document.tenantId,
+          clientId: (document as any).clientId ?? null,
+          client: (document as any).client ?? null,
           createdAt: document.createdAt.toISOString(),
           updatedAt: document.updatedAt.toISOString(),
           lastVersion,

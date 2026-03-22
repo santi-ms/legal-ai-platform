@@ -4,17 +4,183 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState, useRef, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, AlertCircle, AlertTriangle, CalendarClock, MapPin, Pencil, ScrollText } from "lucide-react";
+import { ArrowLeft, Download, AlertCircle, AlertTriangle, CalendarClock, MapPin, Pencil, ScrollText, Users, X, ChevronDown, Loader2 } from "lucide-react";
 import { SkeletonDocumentDetail } from "@/components/ui/skeleton";
 import { sanitizeInput } from "@/app/lib/sanitize";
 import { DocumentStatusBadge } from "@/app/components/DocumentStatusBadge";
 import { DocumentWorkspaceShell } from "@/components/documents/DocumentWorkspaceShell";
+import { listClients, patchDocumentClient } from "@/app/lib/webApi";
 import type {
   Document as ProxyDocument,
   DocumentApiResponse as ProxyDocumentResponse,
+  Client,
 } from "@/app/lib/webApi";
 
 type DocumentResponse = ProxyDocumentResponse;
+
+// ─── Client Card ──────────────────────────────────────────────────────────────
+
+function DocumentClientCard({
+  documentId,
+  initialClient,
+}: {
+  documentId: string;
+  initialClient?: { id: string; name: string; type: string } | null;
+}) {
+  const [client, setClient] = useState<{ id: string; name: string; type: string } | null>(
+    initialClient ?? null
+  );
+  const [open, setOpen] = useState(false);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const fetchClients = async () => {
+    if (clients.length > 0) return;
+    setLoadingClients(true);
+    try {
+      const res = await listClients({ pageSize: 100, sort: "name:asc" });
+      setClients(res.clients);
+    } finally {
+      setLoadingClients(false);
+    }
+  };
+
+  const handleOpen = () => {
+    setOpen(true);
+    fetchClients();
+  };
+
+  const assign = async (c: Client | null) => {
+    setSaving(true);
+    setOpen(false);
+    try {
+      await patchDocumentClient(documentId, c?.id ?? null);
+      setClient(c ? { id: c.id, name: c.name, type: c.type } : null);
+    } catch {
+      // silently ignore — UI stays at previous value
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-slate-400" />
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Cliente asociado</h2>
+        </div>
+        {saving && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+      </div>
+
+      {client ? (
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            href={`/clients/${client.id}`}
+            className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+          >
+            <span className="size-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
+              {client.name.slice(0, 2).toUpperCase()}
+            </span>
+            {client.name}
+          </Link>
+          <div className="flex items-center gap-2">
+            <div className="relative" ref={ref}>
+              <button
+                onClick={handleOpen}
+                className="text-xs text-slate-500 dark:text-slate-400 hover:text-primary transition-colors font-medium"
+              >
+                Cambiar
+              </button>
+              {open && (
+                <div className="absolute right-0 top-6 z-50 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden">
+                  <div className="p-2 max-h-56 overflow-y-auto">
+                    {loadingClients ? (
+                      <div className="flex justify-center py-4">
+                        <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                      </div>
+                    ) : clients.length === 0 ? (
+                      <p className="text-xs text-slate-400 text-center py-3">Sin clientes</p>
+                    ) : (
+                      clients.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => assign(c)}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition-colors"
+                        >
+                          <span className="size-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
+                            {c.name.slice(0, 2).toUpperCase()}
+                          </span>
+                          <span className="text-sm text-slate-800 dark:text-slate-200 truncate">{c.name}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => assign(null)}
+              className="p-1 rounded text-slate-300 hover:text-red-500 transition-colors"
+              title="Desasociar cliente"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="relative" ref={ref}>
+          <button
+            onClick={handleOpen}
+            className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-primary transition-colors"
+          >
+            <ChevronDown className="w-4 h-4" />
+            Asignar cliente
+          </button>
+          {open && (
+            <div className="absolute left-0 top-7 z-50 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden">
+              <div className="p-2 max-h-56 overflow-y-auto">
+                {loadingClients ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                  </div>
+                ) : clients.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-3">Sin clientes registrados</p>
+                ) : (
+                  clients.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => assign(c)}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition-colors"
+                    >
+                      <span className="size-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
+                        {c.name.slice(0, 2).toUpperCase()}
+                      </span>
+                      <span className="text-sm text-slate-800 dark:text-slate-200 truncate">{c.name}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DocumentDetailPage() {
   const params = useParams<{ id: string }>();
@@ -316,6 +482,12 @@ export default function DocumentDetailPage() {
             )}
           </div>
         </section>
+
+        {/* CLIENTE ASOCIADO */}
+        <DocumentClientCard
+          documentId={doc.id}
+          initialClient={(doc as any).client ?? null}
+        />
 
         {/* CONTENIDO LEGAL */}
         <section className="flex flex-col gap-3">
