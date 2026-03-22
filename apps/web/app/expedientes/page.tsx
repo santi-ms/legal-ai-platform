@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Briefcase, Plus, Search, X, Loader2, AlertCircle,
-  CalendarClock, User, ChevronLeft, ChevronRight,
+  CalendarClock, User, ChevronLeft, ChevronRight, AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,31 @@ import {
 import { cn } from "@/app/lib/utils";
 
 const PAGE_SIZE = 20;
+
+// Deadline quick-filter presets
+type DeadlineFilter = "all" | "overdue" | "week" | "month";
+
+const DEADLINE_OPTIONS: { value: DeadlineFilter; label: string; title: string }[] = [
+  { value: "all",     label: "Todos",        title: "Sin filtro de vencimiento" },
+  { value: "overdue", label: "Vencidos",     title: "Deadline ya pasó" },
+  { value: "week",    label: "Esta semana",  title: "Vencen en los próximos 7 días" },
+  { value: "month",   label: "Este mes",     title: "Vencen en los próximos 30 días" },
+];
+
+function deadlineParams(filter: DeadlineFilter): {
+  hasDeadline?: "true";
+  deadlineBefore?: string;
+  deadlineAfter?: string;
+  sort?: "deadline:asc";
+} {
+  const now    = new Date().toISOString();
+  const week   = new Date(Date.now() + 7  * 86_400_000).toISOString();
+  const month  = new Date(Date.now() + 30 * 86_400_000).toISOString();
+  if (filter === "overdue") return { hasDeadline: "true", deadlineBefore: now,   sort: "deadline:asc" };
+  if (filter === "week")    return { hasDeadline: "true", deadlineAfter: now, deadlineBefore: week,  sort: "deadline:asc" };
+  if (filter === "month")   return { hasDeadline: "true", deadlineAfter: now, deadlineBefore: month, sort: "deadline:asc" };
+  return {};
+}
 
 const MATTER_OPTIONS: { value: ExpedienteMatter | "all"; label: string }[] = [
   { value: "all",            label: "Todas las materias" },
@@ -62,18 +87,22 @@ function ExpedientesContent() {
   const [deleteQueue, setDeleteQueue] = useState<string[]>([]);
 
   // Filters from URL
-  const query    = searchParams.get("query")   ?? "";
+  const query    = searchParams.get("query")    ?? "";
   const matter   = (searchParams.get("matter")  ?? "all") as ExpedienteMatter | "all";
   const status   = (searchParams.get("status")  ?? "all") as ExpedienteStatus  | "all";
+  const deadline = (searchParams.get("deadline") ?? "all") as DeadlineFilter;
+  const clientId = searchParams.get("clientId") ?? undefined;
   const page     = parseInt(searchParams.get("page") ?? "1");
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   function updateUrl(overrides: Record<string, string | undefined>) {
     const merged: Record<string, string | undefined> = {
-      query:  query  || undefined,
-      matter: matter !== "all" ? matter : undefined,
-      status: status !== "all" ? status : undefined,
-      page:   String(page),
+      query:    query    || undefined,
+      matter:   matter   !== "all" ? matter   : undefined,
+      status:   status   !== "all" ? status   : undefined,
+      deadline: deadline !== "all" ? deadline : undefined,
+      clientId: clientId || undefined,
+      page:     String(page),
       ...overrides,
     };
     const params = new URLSearchParams();
@@ -84,13 +113,16 @@ function ExpedientesContent() {
   const loadExpedientes = useCallback(async () => {
     setLoading(true);
     try {
+      const dp = deadlineParams(deadline);
       const res = await listExpedientes({
-        query:    query  || undefined,
-        matter:   matter !== "all" ? matter : undefined,
-        status:   status !== "all" ? status : undefined,
+        query:    query    || undefined,
+        matter:   matter   !== "all" ? matter   : undefined,
+        status:   status   !== "all" ? status   : undefined,
+        clientId: clientId || undefined,
         page,
         pageSize: PAGE_SIZE,
-        sort:     "createdAt:desc",
+        sort:     dp.sort ?? "createdAt:desc",
+        ...dp,
       });
       setExpedientes(res.expedientes);
       setTotal(res.total);
@@ -99,7 +131,7 @@ function ExpedientesContent() {
     } finally {
       setLoading(false);
     }
-  }, [query, matter, status, page]);
+  }, [query, matter, status, deadline, clientId, page]);
 
   useEffect(() => { loadExpedientes(); }, [loadExpedientes]);
 
@@ -150,38 +182,80 @@ function ExpedientesContent() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-          <Input
-            placeholder="Buscar por título, número, tribunal..."
-            value={query}
-            onChange={(e) => updateUrl({ query: e.target.value || undefined, page: "1" })}
-            className="pl-9 bg-white dark:bg-slate-900"
-          />
-          {query && (
+      <div className="space-y-3">
+        {/* Search + dropdowns */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <Input
+              placeholder="Buscar por título, número, tribunal..."
+              value={query}
+              onChange={(e) => updateUrl({ query: e.target.value || undefined, page: "1" })}
+              className="pl-9 bg-white dark:bg-slate-900"
+            />
+            {query && (
+              <button
+                onClick={() => updateUrl({ query: undefined, page: "1" })}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          <select
+            value={matter}
+            onChange={(e) => updateUrl({ matter: e.target.value === "all" ? undefined : e.target.value, page: "1" })}
+            className="h-10 rounded-md border border-input bg-white dark:bg-slate-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          >
+            {MATTER_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          <select
+            value={status}
+            onChange={(e) => updateUrl({ status: e.target.value === "all" ? undefined : e.target.value, page: "1" })}
+            className="h-10 rounded-md border border-input bg-white dark:bg-slate-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          >
+            {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+
+        {/* Deadline quick-filter pills */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 mr-1">
+            <CalendarClock className="w-3.5 h-3.5" />
+            Vencimientos:
+          </span>
+          {DEADLINE_OPTIONS.map((opt) => (
             <button
-              onClick={() => updateUrl({ query: undefined, page: "1" })}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+              key={opt.value}
+              title={opt.title}
+              onClick={() => updateUrl({ deadline: opt.value !== "all" ? opt.value : undefined, page: "1" })}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all",
+                deadline === opt.value
+                  ? opt.value === "overdue"
+                    ? "bg-red-500 border-red-500 text-white shadow-sm shadow-red-200 dark:shadow-red-900/30"
+                    : opt.value === "week"
+                    ? "bg-orange-500 border-orange-500 text-white shadow-sm shadow-orange-200 dark:shadow-orange-900/30"
+                    : opt.value === "month"
+                    ? "bg-yellow-500 border-yellow-500 text-white shadow-sm shadow-yellow-200 dark:shadow-yellow-900/30"
+                    : "bg-primary border-primary text-white shadow-sm shadow-primary/20"
+                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600"
+              )}
             >
-              <X className="w-4 h-4" />
+              {opt.value === "overdue" && <AlertTriangle className="w-3 h-3" />}
+              {opt.label}
+            </button>
+          ))}
+          {deadline !== "all" && (
+            <button
+              onClick={() => updateUrl({ deadline: undefined, page: "1" })}
+              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex items-center gap-1 ml-1"
+            >
+              <X className="w-3 h-3" />
+              Limpiar
             </button>
           )}
         </div>
-        <select
-          value={matter}
-          onChange={(e) => updateUrl({ matter: e.target.value === "all" ? undefined : e.target.value, page: "1" })}
-          className="h-10 rounded-md border border-input bg-white dark:bg-slate-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-        >
-          {MATTER_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        <select
-          value={status}
-          onChange={(e) => updateUrl({ status: e.target.value === "all" ? undefined : e.target.value, page: "1" })}
-          className="h-10 rounded-md border border-input bg-white dark:bg-slate-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-        >
-          {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
       </div>
 
       {/* Table */}
@@ -195,11 +269,11 @@ function ExpedientesContent() {
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
             <Briefcase className="w-10 h-10 text-slate-200 dark:text-slate-700" />
             <p className="text-sm font-medium">
-              {query || matter !== "all" || status !== "all"
+              {query || matter !== "all" || status !== "all" || deadline !== "all"
                 ? "No se encontraron expedientes con esos filtros"
                 : "Todavía no hay expedientes"}
             </p>
-            {!query && matter === "all" && status === "all" && (
+            {!query && matter === "all" && status === "all" && deadline === "all" && (
               <button
                 onClick={() => setFormOpen(true)}
                 className="text-xs font-semibold text-primary hover:underline"
