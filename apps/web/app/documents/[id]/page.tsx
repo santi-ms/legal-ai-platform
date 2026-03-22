@@ -9,11 +9,13 @@ import { SkeletonDocumentDetail } from "@/components/ui/skeleton";
 import { sanitizeInput } from "@/app/lib/sanitize";
 import { DocumentStatusBadge } from "@/app/components/DocumentStatusBadge";
 import { DocumentWorkspaceShell } from "@/components/documents/DocumentWorkspaceShell";
-import { listClients, patchDocumentClient } from "@/app/lib/webApi";
+import { listClients, patchDocumentClient, listExpedientes, patchDocumentExpediente } from "@/app/lib/webApi";
+import { Briefcase } from "lucide-react";
 import type {
   Document as ProxyDocument,
   DocumentApiResponse as ProxyDocumentResponse,
   Client,
+  Expediente,
 } from "@/app/lib/webApi";
 
 type DocumentResponse = ProxyDocumentResponse;
@@ -171,6 +173,138 @@ function DocumentClientCard({
                     </button>
                   ))
                 )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ─── Expediente Card ──────────────────────────────────────────────────────────
+
+function DocumentExpedienteCard({
+  documentId,
+  initialExpediente,
+}: {
+  documentId: string;
+  initialExpediente?: { id: string; title: string; number: string | null; matter: string; status: string } | null;
+}) {
+  const [expediente, setExpediente] = useState<{ id: string; title: string; number: string | null; matter: string; status: string } | null>(
+    initialExpediente ?? null
+  );
+  const [open, setOpen] = useState(false);
+  const [expedientes, setExpedientes] = useState<Expediente[]>([]);
+  const [loadingList, setLoadingList] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const fetchExpedientes = async () => {
+    if (expedientes.length > 0) return;
+    setLoadingList(true);
+    try {
+      const res = await listExpedientes({ pageSize: 100, sort: "title:asc" });
+      setExpedientes(res.expedientes);
+    } finally {
+      setLoadingList(false);
+    }
+  };
+
+  const handleOpen = () => { setOpen(true); fetchExpedientes(); };
+
+  const assign = async (e: Expediente | null) => {
+    setSaving(true);
+    setOpen(false);
+    try {
+      await patchDocumentExpediente(documentId, e?.id ?? null);
+      setExpediente(e ? { id: e.id, title: e.title, number: e.number ?? null, matter: e.matter, status: e.status } : null);
+    } catch { /* silently ignore */ } finally { setSaving(false); }
+  };
+
+  return (
+    <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2">
+          <Briefcase className="w-4 h-4 text-slate-400" />
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Expediente asociado</h2>
+        </div>
+        {saving && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+      </div>
+
+      {expediente ? (
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            href={`/expedientes/${expediente.id}`}
+            className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+          >
+            <span className="size-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
+              <Briefcase className="w-3.5 h-3.5" />
+            </span>
+            <span className="truncate">
+              {expediente.number ? `#${expediente.number} · ` : ""}{expediente.title}
+            </span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <div className="relative" ref={ref}>
+              <button onClick={handleOpen} className="text-xs text-slate-500 dark:text-slate-400 hover:text-primary transition-colors font-medium">
+                Cambiar
+              </button>
+              {open && (
+                <div className="absolute right-0 top-6 z-50 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden">
+                  <div className="p-2 max-h-56 overflow-y-auto">
+                    {loadingList ? (
+                      <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-slate-400" /></div>
+                    ) : expedientes.length === 0 ? (
+                      <p className="text-xs text-slate-400 text-center py-3">Sin expedientes</p>
+                    ) : expedientes.map((ex) => (
+                      <button key={ex.id} onClick={() => assign(ex)} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition-colors">
+                        <Briefcase className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm text-slate-800 dark:text-slate-200 truncate">{ex.title}</p>
+                          {ex.number && <p className="text-xs text-slate-400">#{ex.number}</p>}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <button onClick={() => assign(null)} className="p-1 rounded text-slate-300 hover:text-red-500 transition-colors" title="Desasociar expediente">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="relative" ref={ref}>
+          <button onClick={handleOpen} className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
+            <ChevronDown className="w-4 h-4" />
+            Asignar expediente
+          </button>
+          {open && (
+            <div className="absolute left-0 top-7 z-50 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden">
+              <div className="p-2 max-h-56 overflow-y-auto">
+                {loadingList ? (
+                  <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-slate-400" /></div>
+                ) : expedientes.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-3">Sin expedientes registrados</p>
+                ) : expedientes.map((ex) => (
+                  <button key={ex.id} onClick={() => assign(ex)} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition-colors">
+                    <Briefcase className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm text-slate-800 dark:text-slate-200 truncate">{ex.title}</p>
+                      {ex.number && <p className="text-xs text-slate-400">#{ex.number}</p>}
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
           )}
@@ -487,6 +621,12 @@ export default function DocumentDetailPage() {
         <DocumentClientCard
           documentId={doc.id}
           initialClient={(doc as any).client ?? null}
+        />
+
+        {/* EXPEDIENTE ASOCIADO */}
+        <DocumentExpedienteCard
+          documentId={doc.id}
+          initialExpediente={(doc as any).expediente ?? null}
         />
 
         {/* CONTENIDO LEGAL */}

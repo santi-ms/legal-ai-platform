@@ -260,6 +260,22 @@ export async function patchDocumentClient(
 }
 
 /**
+ * Asocia o desasocia un expediente de un documento.
+ * @param expedienteId — UUID del expediente, o null para desasociar
+ */
+export async function patchDocumentExpediente(
+  id: string,
+  expedienteId: string | null
+): Promise<{ ok: boolean; data?: { expedienteId: string | null; expediente: { id: string; title: string; number: string | null; matter: string; status: string } | null } }> {
+  const { data } = await proxyJson<any>(`/documents/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ expedienteId }),
+  });
+  return data;
+}
+
+/**
  * Guarda el contenido editado manualmente por el usuario.
  * Invalida el PDF previo en el servidor (se regenerará desde este contenido al descargar).
  */

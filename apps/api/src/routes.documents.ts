@@ -204,6 +204,9 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           client: {
             select: { id: true, name: true, type: true },
           },
+          expediente: {
+            select: { id: true, title: true, number: true, matter: true, status: true },
+          },
         },
         orderBy,
         skip,
@@ -222,6 +225,8 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           tenantId: doc.tenantId,
           clientId: doc.clientId ?? null,
           client: doc.client ?? null,
+          expedienteId: (doc as any).expedienteId ?? null,
+          expediente: (doc as any).expediente ?? null,
           createdAt: doc.createdAt.toISOString(),
           updatedAt: doc.updatedAt.toISOString(),
           lastVersion: doc.versions[0] ?? null,
@@ -731,6 +736,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         jurisdiccion: z.string().optional(),
         tono: z.string().optional(),
         clientId: z.string().uuid().nullable().optional(),
+        expedienteId: z.string().uuid().nullable().optional(),
       });
 
       const paramsParsed = ParamsSchema.safeParse(request.params);
@@ -776,11 +782,24 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         }
       }
 
+      // Si se envía expedienteId, verificar que el expediente pertenece al mismo tenant
+      if (updateData.expedienteId) {
+        const expediente = await prisma.expediente.findFirst({
+          where: { id: updateData.expedienteId, tenantId: user.tenantId! },
+        });
+        if (!expediente) {
+          return reply.status(404).send({ ok: false, error: "EXPEDIENTE_NOT_FOUND" });
+        }
+      }
+
       // Actualizar
       const updated = await prisma.document.update({
         where: { id },
         data: updateData,
-        include: { client: { select: { id: true, name: true, type: true } } },
+        include: {
+          client: { select: { id: true, name: true, type: true } },
+          expediente: { select: { id: true, title: true, number: true, matter: true, status: true } },
+        },
       });
 
       return reply.status(200).send({
@@ -793,6 +812,8 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           tono: updated.tono,
           clientId: (updated as any).clientId ?? null,
           client: (updated as any).client ?? null,
+          expedienteId: (updated as any).expedienteId ?? null,
+          expediente: (updated as any).expediente ?? null,
         },
       });
     } catch (err: any) {
@@ -943,6 +964,9 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           client: {
             select: { id: true, name: true, type: true },
           },
+          expediente: {
+            select: { id: true, title: true, number: true, matter: true, status: true },
+          },
         },
       });
 
@@ -964,6 +988,8 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           tenantId: document.tenantId,
           clientId: (document as any).clientId ?? null,
           client: (document as any).client ?? null,
+          expedienteId: (document as any).expedienteId ?? null,
+          expediente: (document as any).expediente ?? null,
           createdAt: document.createdAt.toISOString(),
           updatedAt: document.updatedAt.toISOString(),
           lastVersion,
