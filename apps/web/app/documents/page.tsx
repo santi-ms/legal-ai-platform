@@ -3,11 +3,93 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Plus, Download, AlertTriangle, RefreshCcw } from "lucide-react";
+import { Plus, Download, AlertTriangle, RefreshCcw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useToast } from "@/components/ui/toast";
 import { listDocuments, deleteDocument, DocumentsParams, Document } from "@/app/lib/webApi";
+
+// ── CSV helpers ──────────────────────────────────────────────────────────────
+function escapeCsvField(value: string | null | undefined): string {
+  if (value == null) return "";
+  const str = String(value);
+  // Wrap in quotes if contains comma, quote, or newline
+  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+function documentsToCsv(docs: Document[]): string {
+  const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+    CONTRATO_LOCACION: "Contrato de Locación",
+    CARTA_DOCUMENTO: "Carta Documento",
+    PODER_NOTARIAL: "Poder Notarial",
+    DEMANDA_CIVIL: "Demanda Civil",
+    CONTESTACION_DEMANDA: "Contestación de Demanda",
+    RECURSO_APELACION: "Recurso de Apelación",
+    ACUERDO_CONFIDENCIALIDAD: "Acuerdo de Confidencialidad",
+    CONTRATO_PRESTACION_SERVICIOS: "Contrato de Prestación de Servicios",
+    TESTAMENTO: "Testamento",
+    ACTA_DIRECTORIO: "Acta de Directorio",
+  };
+
+  const STATUS_LABELS: Record<string, string> = {
+    generated: "Generado",
+    needs_review: "Revisar",
+    draft: "Borrador",
+    reviewed: "Revisado",
+    final: "Final",
+  };
+
+  const ESTADO_LABELS: Record<string, string> = {
+    PENDIENTE: "Pendiente",
+    FIRMADO: "Firmado",
+    ARCHIVADO: "Archivado",
+  };
+
+  const headers = [
+    "ID",
+    "Tipo",
+    "Jurisdicción",
+    "Tono",
+    "Estado Documento",
+    "Estado Versión",
+    "Cliente",
+    "Expediente",
+    "Costo (USD)",
+    "Fecha Creación",
+    "Fecha Actualización",
+  ];
+
+  const rows = docs.map((doc) => [
+    escapeCsvField(doc.id),
+    escapeCsvField(DOCUMENT_TYPE_LABELS[doc.type] ?? doc.type),
+    escapeCsvField(doc.jurisdiccion),
+    escapeCsvField(doc.tono),
+    escapeCsvField(ESTADO_LABELS[doc.estado] ?? doc.estado),
+    escapeCsvField(STATUS_LABELS[doc.lastVersion?.status ?? ""] ?? doc.lastVersion?.status),
+    escapeCsvField((doc as any).client?.name ?? null),
+    escapeCsvField((doc as any).expediente?.title ?? null),
+    escapeCsvField(doc.costUsd != null ? doc.costUsd.toFixed(4) : null),
+    escapeCsvField(new Date(doc.createdAt).toLocaleString("es-AR")),
+    escapeCsvField(new Date(doc.updatedAt).toLocaleString("es-AR")),
+  ]);
+
+  return [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+}
+
+function downloadCsv(content: string, filename: string) {
+  const blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 import { DocumentsPageHeader } from "@/components/documents/DocumentsPageHeader";
 import { DocumentsStatsCards } from "@/components/documents/DocumentsStatsCards";
 import { DocumentsFiltersBar } from "@/components/documents/DocumentsFiltersBar";
@@ -28,6 +110,7 @@ function DocumentsContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   const pendingDeletes = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // Filters state
@@ -127,6 +210,41 @@ function DocumentsContent() {
       status: { label: "Sin cambios", variant: "neutral" as const },
     },
   ];
+
+  const handleExportCsv = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      // Fetch ALL documents matching current filters (up to 2000)
+      const currentFilters = getFiltersFromUrl();
+      const allDocs: Document[] = [];
+      let page = 1;
+      const batchSize = 100;
+
+      while (true) {
+        const res = await listDocuments({ ...currentFilters, page, pageSize: batchSize });
+        const batch = Array.isArray(res.documents) ? res.documents : [];
+        allDocs.push(...batch);
+        if (allDocs.length >= res.total || batch.length < batchSize || allDocs.length >= 2000) break;
+        page++;
+      }
+
+      if (allDocs.length === 0) {
+        showError("No hay documentos para exportar con los filtros actuales.");
+        return;
+      }
+
+      const csv = documentsToCsv(allDocs);
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      downloadCsv(csv, `documentos-${dateStr}.csv`);
+      success(`${allDocs.length} ${allDocs.length === 1 ? "documento exportado" : "documentos exportados"} correctamente`);
+    } catch (err) {
+      showError("Error al exportar documentos. Por favor intente nuevamente.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleFiltersChange = (newFilters: Partial<DocumentsParams>) => {
     const params = new URLSearchParams();
@@ -266,12 +384,17 @@ function DocumentsContent() {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              disabled
-              title="Próximamente"
-              className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-200 opacity-50 cursor-not-allowed"
+              onClick={handleExportCsv}
+              disabled={exporting || loading}
+              title="Exportar documentos a CSV"
+              className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Download className="w-4 h-4" />
-              Exportar
+              {exporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {exporting ? "Exportando..." : "Exportar CSV"}
             </Button>
             <Link href="/documents/new">
               <Button
