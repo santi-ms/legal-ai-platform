@@ -90,7 +90,8 @@ export async function registerExpedienteRoutes(app: FastifyInstance) {
     const { query, matter, status, clientId, page, pageSize, sort } = parsed.data;
     const [sortField, sortDir] = sort.split(":");
 
-    const where: any = { tenantId: user.tenantId };
+    const tenantId = user.tenantId!;
+    const where: any = { tenantId };
     if (matter)   where.matter   = matter;
     if (status)   where.status   = status;
     if (clientId) where.clientId = clientId;
@@ -145,14 +146,14 @@ export async function registerExpedienteRoutes(app: FastifyInstance) {
 
     // Validar que el clientId pertenece al mismo tenant
     if (data.clientId) {
-      const client = await prisma.client.findFirst({ where: { id: data.clientId, tenantId: user.tenantId } });
+      const client = await prisma.client.findFirst({ where: { id: data.clientId, tenantId: user.tenantId! } });
       if (!client) return reply.status(404).send({ ok: false, error: "CLIENT_NOT_FOUND" });
     }
 
     const expediente = await prisma.expediente.create({
       data: {
-        tenantId:      user.tenantId,
-        createdById:   user.userId,
+        tenantId:      user.tenantId!,
+        createdById:   user.userId!,
         number:        data.number?.trim() ?? null,
         title:         data.title.trim(),
         matter:        data.matter,
@@ -182,7 +183,7 @@ export async function registerExpedienteRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
 
     const expediente = await prisma.expediente.findFirst({
-      where: { id, tenantId: user.tenantId },
+      where: { id, tenantId: user.tenantId! },
       include: {
         client: { select: { id: true, name: true, type: true, email: true, phone: true } },
         documents: {
@@ -216,7 +217,7 @@ export async function registerExpedienteRoutes(app: FastifyInstance) {
 
     const { id } = request.params as { id: string };
 
-    const existing = await prisma.expediente.findFirst({ where: { id, tenantId: user.tenantId } });
+    const existing = await prisma.expediente.findFirst({ where: { id, tenantId: user.tenantId! } });
     if (!existing) return notFound(reply);
 
     const parsed = ExpedienteBodySchema.safeParse(request.body);
@@ -227,7 +228,7 @@ export async function registerExpedienteRoutes(app: FastifyInstance) {
     const data = parsed.data;
 
     if (data.clientId) {
-      const client = await prisma.client.findFirst({ where: { id: data.clientId, tenantId: user.tenantId } });
+      const client = await prisma.client.findFirst({ where: { id: data.clientId, tenantId: user.tenantId! } });
       if (!client) return reply.status(404).send({ ok: false, error: "CLIENT_NOT_FOUND" });
     }
 
@@ -262,7 +263,7 @@ export async function registerExpedienteRoutes(app: FastifyInstance) {
 
     const { id } = request.params as { id: string };
 
-    const existing = await prisma.expediente.findFirst({ where: { id, tenantId: user.tenantId } });
+    const existing = await prisma.expediente.findFirst({ where: { id, tenantId: user.tenantId! } });
     if (!existing) return notFound(reply);
 
     await prisma.expediente.delete({ where: { id } });
