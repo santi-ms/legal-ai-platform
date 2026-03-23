@@ -321,10 +321,10 @@ export default function SettingsPage() {
     try {
       const updated = await updateTenantProfile({
         name: estudioData.name.trim(),
-        cuit: estudioData.cuit.trim() || null,
-        address: estudioData.address.trim() || null,
-        phone: estudioData.phone.trim() || null,
-        website: estudioData.website.trim() || null,
+        cuit: estudioData.cuit.trim() || undefined,
+        address: estudioData.address.trim() || undefined,
+        phone: estudioData.phone.trim() || undefined,
+        website: estudioData.website.trim() || undefined,
       });
       const t: EstudioFormData = {
         name: updated.name || "",
