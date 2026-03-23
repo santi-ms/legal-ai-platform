@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Briefcase, ArrowLeft, Pencil, Trash2, Loader2,
+  Briefcase, Pencil, Trash2, Loader2,
   User, CalendarClock, Gavel, Scale, FileText,
   Building2, Calendar, AlertCircle,
 } from "lucide-react";
@@ -23,6 +23,7 @@ import {
 } from "@/components/expedientes/ExpedienteForm";
 import { formatDocumentType } from "@/app/lib/format";
 import { cn } from "@/app/lib/utils";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   if (!value) return null;
@@ -134,13 +135,12 @@ export default function ExpedienteDetailPage() {
     <div className="p-6 md:p-8 space-y-6 max-w-5xl mx-auto w-full">
       {/* Back + Actions */}
       <div className="flex items-center justify-between gap-4">
-        <Link
-          href="/expedientes"
-          className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Expedientes
-        </Link>
+        <Breadcrumb
+          items={[
+            { label: "Expedientes", href: "/expedientes" },
+            { label: expediente.title },
+          ]}
+        />
         <div className="flex items-center gap-2">
           <Button
             variant="outline"

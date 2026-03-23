@@ -16,6 +16,7 @@ import {
 } from "@/app/lib/webApi";
 import { ClientForm } from "@/components/clients/ClientForm";
 import { cn } from "@/app/lib/utils";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -251,6 +252,7 @@ function ClientsContent() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const pendingDeletes = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
@@ -350,7 +352,7 @@ function ClientsContent() {
 
   // ── Delete with undo ──────────────────────────────────────────────────────
 
-  const handleDelete = (id: string) => {
+  const executeDelete = (id: string) => {
     if (pendingDeletes.current.has(id)) return;
 
     setClients((prev) => prev.filter((c) => c.id !== id));
@@ -377,6 +379,10 @@ function ClientsContent() {
         loadClients();
       },
     });
+  };
+
+  const handleDelete = (id: string) => {
+    setConfirmDeleteId(id);
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -544,6 +550,23 @@ function ClientsContent() {
         onClose={() => setFormOpen(false)}
         onSave={handleSave}
         initialData={editingClient}
+      />
+
+      {/* Confirm delete */}
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        title="Eliminar cliente"
+        description="¿Estás seguro de que querés eliminar este cliente? Podrás deshacer la acción durante 5 segundos."
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        variant="destructive"
+        onCancel={() => setConfirmDeleteId(null)}
+        onConfirm={() => {
+          if (confirmDeleteId) {
+            executeDelete(confirmDeleteId);
+            setConfirmDeleteId(null);
+          }
+        }}
       />
     </div>
   );

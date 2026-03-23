@@ -190,6 +190,10 @@ export interface DocumentStats {
     final: number;
     [key: string]: number;
   };
+  /** Documents grouped by type */
+  byType: Record<string, number>;
+  /** Documents per month — last 6 months, ordered oldest→newest */
+  byMonth: Array<{ month: string; count: number }>;
   /** Expedientes con status "activo" */
   expedientesActivos: number;
   /** Activos con deadline vencido o ≤ 3 días */
@@ -204,12 +208,14 @@ export async function getDocumentStats(): Promise<DocumentStats> {
     expedientesActivos:   data?.expedientesActivos   ?? 0,
     vencimientosUrgentes: data?.vencimientosUrgentes ?? 0,
     byStatus: {
-      generated:   data?.byStatus?.generated   ?? 0,
-      needs_review: data?.byStatus?.needs_review ?? 0,
-      draft:        data?.byStatus?.draft        ?? 0,
-      reviewed:     data?.byStatus?.reviewed     ?? 0,
-      final:        data?.byStatus?.final        ?? 0,
+      generated:    data?.byStatus?.generated    ?? 0,
+      needs_review: data?.byStatus?.needs_review  ?? 0,
+      draft:        data?.byStatus?.draft         ?? 0,
+      reviewed:     data?.byStatus?.reviewed      ?? 0,
+      final:        data?.byStatus?.final         ?? 0,
     },
+    byType:  data?.byType  ?? {},
+    byMonth: data?.byMonth ?? [],
   };
 }
 
@@ -230,6 +236,84 @@ export async function deleteDocument(id: string) {
     method: "DELETE",
   });
   return data as { ok: boolean; message?: string };
+}
+
+/** Cambia el estado de revisión de la última versión del documento (workflow) */
+export async function updateDocumentReviewStatus(
+  id: string,
+  status: "draft" | "generated" | "needs_review" | "reviewed" | "final"
+): Promise<{ ok: boolean; status: string }> {
+  const { data } = await proxyJson<any>(`/documents/${id}/review-status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  return data;
+}
+
+export interface DocumentVersion {
+  id: string;
+  status: string | null;
+  rawText: string;
+  editedContent: string | null;
+  pdfUrl: string | null;
+  createdAt: string;
+}
+
+export async function getDocumentVersions(documentId: string): Promise<DocumentVersion[]> {
+  const { data } = await proxyJson<any>(`/documents/${documentId}/versions`);
+  return data?.versions ?? [];
+}
+
+// ─── Document Annotations ────────────────────────────────────────────────────
+
+export interface DocumentAnnotation {
+  id: string;
+  documentId: string;
+  content: string;
+  resolved: boolean;
+  createdAt: string;
+  updatedAt: string;
+  author: { id: string; name: string | null; email: string } | null;
+}
+
+export async function listDocumentAnnotations(documentId: string): Promise<DocumentAnnotation[]> {
+  const { data } = await proxyJson<any>(`/documents/${documentId}/annotations`);
+  return data?.annotations ?? [];
+}
+
+export async function createDocumentAnnotation(
+  documentId: string,
+  content: string
+): Promise<DocumentAnnotation> {
+  const { data } = await proxyJson<any>(`/documents/${documentId}/annotations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+  return data.annotation;
+}
+
+export async function updateDocumentAnnotation(
+  documentId: string,
+  annotationId: string,
+  patch: { content?: string; resolved?: boolean }
+): Promise<DocumentAnnotation> {
+  const { data } = await proxyJson<any>(`/documents/${documentId}/annotations/${annotationId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  return data.annotation;
+}
+
+export async function deleteDocumentAnnotation(
+  documentId: string,
+  annotationId: string
+): Promise<void> {
+  await proxyJson<any>(`/documents/${documentId}/annotations/${annotationId}`, {
+    method: "DELETE",
+  });
 }
 
 export async function patchDocument(

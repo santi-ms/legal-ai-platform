@@ -43,11 +43,12 @@ model User {
 
   tenant    Tenant?   @relation(fields: [tenantId], references: [id])
 
-  documentsCreated   Document[]   @relation("CreatedByUser")
-  clientsCreated     Client[]     @relation("ClientsCreatedBy")
-  expedientesCreated Expediente[] @relation("ExpedientesCreatedBy")
-  accounts         Account[]
-  sessions         Session[]
+  documentsCreated   Document[]             @relation("CreatedByUser")
+  clientsCreated     Client[]               @relation("ClientsCreatedBy")
+  expedientesCreated Expediente[]           @relation("ExpedientesCreatedBy")
+  annotations        DocumentAnnotation[]   @relation("AnnotationsWrittenBy")
+  accounts           Account[]
+  sessions           Session[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -84,7 +85,8 @@ model Document {
   updatedAt      DateTime          @updatedAt
 
   versions       DocumentVersion[]
-  logs           IAUsageLog[]      @relation("DocLogs") // 👈 inversa a IAUsageLog.document
+  logs           IAUsageLog[]      @relation("DocLogs")
+  annotations    DocumentAnnotation[]
 }
 
 model DocumentVersion {
@@ -193,6 +195,28 @@ model Expediente {
 
   @@index([tenantId])
   @@index([clientId])
+}
+
+model DocumentAnnotation {
+  id          String   @id @default(uuid())
+
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  tenantId    String
+
+  // Who wrote it (optional — may be a system note)
+  authorId    String?
+  author      User?    @relation("AnnotationsWrittenBy", fields: [authorId], references: [id], onDelete: SetNull)
+
+  content     String   // The annotation text
+  resolved    Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([documentId])
+  @@index([tenantId])
 }
 
 model IAUsageLog {

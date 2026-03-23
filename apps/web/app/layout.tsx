@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
 import { SessionProvider } from "@/components/ui/session-provider";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 export const metadata = {
   title: {
@@ -72,9 +73,11 @@ export default function RootLayout({
         <SessionProvider>
           <ThemeProvider>
             <ToastProvider>
-              <main className="min-h-screen">
-                {children}
-              </main>
+              <ErrorBoundary>
+                <main className="min-h-screen">
+                  {children}
+                </main>
+              </ErrorBoundary>
             </ToastProvider>
           </ThemeProvider>
         </SessionProvider>

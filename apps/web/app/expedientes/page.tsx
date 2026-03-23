@@ -21,6 +21,7 @@ import {
   STATUS_COLORS,
 } from "@/components/expedientes/ExpedienteForm";
 import { cn } from "@/app/lib/utils";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 const PAGE_SIZE = 20;
 
@@ -85,6 +86,7 @@ function ExpedientesContent() {
   const [loading, setLoading]         = useState(true);
   const [formOpen, setFormOpen]       = useState(false);
   const [deleteQueue, setDeleteQueue] = useState<string[]>([]);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Filters from URL
   const query    = searchParams.get("query")    ?? "";
@@ -141,7 +143,7 @@ function ExpedientesContent() {
     loadExpedientes();
   };
 
-  const handleDelete = (id: string) => {
+  const executeDeleteExpediente = (id: string) => {
     setDeleteQueue((q) => [...q, id]);
     setExpedientes((list) => list.filter((e) => e.id !== id));
     const timer = setTimeout(async () => {
@@ -157,6 +159,10 @@ function ExpedientesContent() {
       }
     }, 4000);
     return () => clearTimeout(timer);
+  };
+
+  const handleDelete = (id: string) => {
+    setConfirmDeleteId(id);
   };
 
   return (
@@ -435,6 +441,23 @@ function ExpedientesContent() {
         open={formOpen}
         onClose={() => setFormOpen(false)}
         onSave={handleCreate}
+      />
+
+      {/* Confirm delete */}
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        title="Eliminar expediente"
+        description="¿Estás seguro de que querés eliminar este expediente? Podrás deshacer la acción durante 4 segundos."
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        variant="destructive"
+        onCancel={() => setConfirmDeleteId(null)}
+        onConfirm={() => {
+          if (confirmDeleteId) {
+            executeDeleteExpediente(confirmDeleteId);
+            setConfirmDeleteId(null);
+          }
+        }}
       />
     </div>
   );

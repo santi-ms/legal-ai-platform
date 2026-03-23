@@ -15,6 +15,7 @@ import { getClient, updateClient, deleteClient, listDocuments, listExpedientes, 
 import { formatDocumentType } from "@/app/lib/format";
 import { ClientForm } from "@/components/clients/ClientForm";
 import { cn } from "@/app/lib/utils";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -202,14 +203,11 @@ export default function ClientDetailPage() {
       {/* Header */}
       <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-10 py-4">
         <div className="max-w-[960px] mx-auto flex items-center gap-4">
-          <button
-            onClick={() => router.push("/clients")}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            aria-label="Volver"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
           <div className="flex-1 min-w-0">
+            <Breadcrumb
+              items={[{ label: "Clientes", href: "/clients" }, { label: client.name }]}
+              className="mb-1"
+            />
             <h1 className="text-lg font-bold text-slate-900 dark:text-white truncate">{client.name}</h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Cliente desde {formatDate(client.createdAt)}

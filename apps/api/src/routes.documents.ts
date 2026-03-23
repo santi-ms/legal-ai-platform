@@ -65,7 +65,13 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       const now = new Date();
       const urgentCutoff = new Date(now.getTime() + 3 * 86_400_000); // now + 3 days
 
-      const [allDocs, totalClients, expedientesActivos, vencimientosUrgentes] = await Promise.all([
+      // Last 6 months window
+      const sixMonthsAgo = new Date(now);
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+      sixMonthsAgo.setDate(1);
+      sixMonthsAgo.setHours(0, 0, 0, 0);
+
+      const [allDocs, allDocsWithMeta, totalClients, expedientesActivos, vencimientosUrgentes] = await Promise.all([
         prisma.document.findMany({
           where: { tenantId },
           select: {
@@ -74,6 +80,13 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
               take: 1,
               select: { status: true },
             },
+          },
+        }),
+        prisma.document.findMany({
+          where: { tenantId },
+          select: {
+            type: true,
+            createdAt: true,
           },
         }),
         prisma.client.count({ where: { tenantId } }),
@@ -106,11 +119,34 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         }
       }
 
+      // Documents by type
+      const byType: Record<string, number> = {};
+      for (const doc of allDocsWithMeta) {
+        const t = doc.type || "other";
+        byType[t] = (byType[t] ?? 0) + 1;
+      }
+
+      // Documents per month — last 6 months
+      const monthMap: Record<string, number> = {};
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        monthMap[key] = 0;
+      }
+      for (const doc of allDocsWithMeta) {
+        const d = new Date(doc.createdAt);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        if (key in monthMap) monthMap[key]++;
+      }
+      const byMonth = Object.entries(monthMap).map(([month, count]) => ({ month, count }));
+
       return reply.send({
         ok: true,
         total: allDocs.length,
         totalClients,
         byStatus,
+        byType,
+        byMonth,
         expedientesActivos,
         vencimientosUrgentes,
       });
@@ -933,6 +969,190 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
   });
 
   // ==========================================
+  // PATCH /documents/:id/review-status — Cambiar estado de revisión del workflow
+  // Estados válidos: generated → reviewed → final (y vuelta atrás si es necesario)
+  // ==========================================
+  app.patch("/documents/:id/review-status", async (request, reply) => {
+    try {
+      const user = requireAuth(request);
+      if (!user.tenantId) {
+        return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
+      }
+
+      const ParamsSchema = z.object({ id: z.string().uuid() });
+      const BodySchema = z.object({
+        status: z.enum(["draft", "generated", "needs_review", "reviewed", "final"]),
+      });
+
+      const paramsParsed = ParamsSchema.safeParse(request.params);
+      const bodyParsed   = BodySchema.safeParse(request.body);
+
+      if (!paramsParsed.success) return reply.status(400).send({ ok: false, error: "INVALID_ID" });
+      if (!bodyParsed.success)   return reply.status(400).send({ ok: false, error: "INVALID_BODY" });
+
+      const { id }     = paramsParsed.data;
+      const { status } = bodyParsed.data;
+
+      // Verificar que el documento pertenece al tenant
+      const document = await prisma.document.findFirst({
+        where: { id, tenantId: user.tenantId! },
+        include: {
+          versions: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true } },
+        },
+      });
+
+      if (!document) return reply.status(404).send({ ok: false, error: "DOCUMENT_NOT_FOUND" });
+
+      const latestVersion = document.versions[0];
+      if (!latestVersion) return reply.status(404).send({ ok: false, error: "VERSION_NOT_FOUND" });
+
+      await prisma.documentVersion.update({
+        where: { id: latestVersion.id },
+        data:  { status },
+      });
+
+      return reply.send({ ok: true, versionId: latestVersion.id, status });
+    } catch (err: any) {
+      if (err.message === "UNAUTHORIZED") {
+        return reply.status(401).send({ ok: false, error: "UNAUTHORIZED" });
+      }
+      request.log?.error({ err }, "PATCH /documents/:id/review-status error");
+      return reply.status(500).send({ ok: false, message: "Internal error" });
+    }
+  });
+
+  // ==========================================
+  // GET /documents/:id/annotations
+  // POST /documents/:id/annotations
+  // PATCH /documents/:id/annotations/:annotationId
+  // DELETE /documents/:id/annotations/:annotationId
+  // ==========================================
+  const annotationDocIdSchema = z.object({ id: z.string().uuid() });
+
+  // GET — list all annotations for a document
+  app.get("/documents/:id/annotations", async (request, reply) => {
+    const user = getUserFromRequest(request);
+    if (!user) return reply.status(401).send({ ok: false, error: "UNAUTHORIZED" });
+    if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
+
+    const parsed = annotationDocIdSchema.safeParse(request.params);
+    if (!parsed.success) return reply.status(400).send({ ok: false, error: "INVALID_ID" });
+
+    try {
+      const doc = await prisma.document.findFirst({
+        where: { id: parsed.data.id, tenantId: user.tenantId! },
+        select: { id: true },
+      });
+      if (!doc) return reply.status(404).send({ ok: false, error: "DOCUMENT_NOT_FOUND" });
+
+      const annotations = await (prisma as any).documentAnnotation.findMany({
+        where: { documentId: parsed.data.id, tenantId: user.tenantId },
+        orderBy: { createdAt: "asc" },
+        include: { author: { select: { id: true, name: true, email: true } } },
+      });
+      return reply.send({ ok: true, annotations });
+    } catch (err) {
+      request.log?.error({ err }, "GET /documents/:id/annotations error");
+      return reply.status(500).send({ ok: false, message: "Internal error" });
+    }
+  });
+
+  // POST — create annotation
+  app.post("/documents/:id/annotations", async (request, reply) => {
+    const user = getUserFromRequest(request);
+    if (!user) return reply.status(401).send({ ok: false, error: "UNAUTHORIZED" });
+    if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
+
+    const parsed = annotationDocIdSchema.safeParse(request.params);
+    if (!parsed.success) return reply.status(400).send({ ok: false, error: "INVALID_ID" });
+
+    const bodySchema = z.object({ content: z.string().min(1).max(2000) });
+    const body = bodySchema.safeParse(request.body);
+    if (!body.success) return reply.status(400).send({ ok: false, error: "INVALID_BODY" });
+
+    try {
+      const doc = await prisma.document.findFirst({
+        where: { id: parsed.data.id, tenantId: user.tenantId! },
+        select: { id: true },
+      });
+      if (!doc) return reply.status(404).send({ ok: false, error: "DOCUMENT_NOT_FOUND" });
+
+      const annotation = await (prisma as any).documentAnnotation.create({
+        data: {
+          documentId: parsed.data.id,
+          tenantId:   user.tenantId,
+          authorId:   user.id ?? null,
+          content:    body.data.content,
+        },
+        include: { author: { select: { id: true, name: true, email: true } } },
+      });
+      return reply.status(201).send({ ok: true, annotation });
+    } catch (err) {
+      request.log?.error({ err }, "POST /documents/:id/annotations error");
+      return reply.status(500).send({ ok: false, message: "Internal error" });
+    }
+  });
+
+  // PATCH — resolve/unresolve or edit annotation
+  app.patch("/documents/:id/annotations/:annotationId", async (request, reply) => {
+    const user = getUserFromRequest(request);
+    if (!user) return reply.status(401).send({ ok: false, error: "UNAUTHORIZED" });
+    if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
+
+    const paramsSchema = z.object({ id: z.string().uuid(), annotationId: z.string().uuid() });
+    const parsed = paramsSchema.safeParse(request.params);
+    if (!parsed.success) return reply.status(400).send({ ok: false, error: "INVALID_PARAMS" });
+
+    const bodySchema = z.object({
+      content:  z.string().min(1).max(2000).optional(),
+      resolved: z.boolean().optional(),
+    });
+    const body = bodySchema.safeParse(request.body);
+    if (!body.success) return reply.status(400).send({ ok: false, error: "INVALID_BODY" });
+
+    try {
+      const existing = await (prisma as any).documentAnnotation.findFirst({
+        where: { id: parsed.data.annotationId, documentId: parsed.data.id, tenantId: user.tenantId },
+      });
+      if (!existing) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
+
+      const updated = await (prisma as any).documentAnnotation.update({
+        where: { id: parsed.data.annotationId },
+        data:  body.data,
+        include: { author: { select: { id: true, name: true, email: true } } },
+      });
+      return reply.send({ ok: true, annotation: updated });
+    } catch (err) {
+      request.log?.error({ err }, "PATCH /documents/:id/annotations/:id error");
+      return reply.status(500).send({ ok: false, message: "Internal error" });
+    }
+  });
+
+  // DELETE annotation
+  app.delete("/documents/:id/annotations/:annotationId", async (request, reply) => {
+    const user = getUserFromRequest(request);
+    if (!user) return reply.status(401).send({ ok: false, error: "UNAUTHORIZED" });
+    if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
+
+    const paramsSchema = z.object({ id: z.string().uuid(), annotationId: z.string().uuid() });
+    const parsed = paramsSchema.safeParse(request.params);
+    if (!parsed.success) return reply.status(400).send({ ok: false, error: "INVALID_PARAMS" });
+
+    try {
+      const existing = await (prisma as any).documentAnnotation.findFirst({
+        where: { id: parsed.data.annotationId, documentId: parsed.data.id, tenantId: user.tenantId },
+      });
+      if (!existing) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
+
+      await (prisma as any).documentAnnotation.delete({ where: { id: parsed.data.annotationId } });
+      return reply.send({ ok: true });
+    } catch (err) {
+      request.log?.error({ err }, "DELETE /documents/:id/annotations/:id error");
+      return reply.status(500).send({ ok: false, message: "Internal error" });
+    }
+  });
+
+  // ==========================================
   // GET /documents/:id
   // ==========================================
   app.get("/documents/:id", async (request, reply) => {
@@ -1018,6 +1238,46 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       });
     } catch (err: any) {
       request.log?.error({ err }, "GET /documents/:id error");
+      return reply.status(500).send({ ok: false, message: "Internal error" });
+    }
+  });
+
+  // ==========================================
+  // GET /documents/:id/versions — full version history
+  // ==========================================
+  app.get("/documents/:id/versions", async (request, reply) => {
+    const user = getUserFromRequest(request);
+    if (!user) return reply.status(401).send({ ok: false, error: "UNAUTHORIZED" });
+    if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
+
+    const ParamsSchema = z.object({ id: z.string().uuid() });
+    const parsed = ParamsSchema.safeParse(request.params);
+    if (!parsed.success) return reply.status(400).send({ ok: false, error: "INVALID_ID" });
+
+    try {
+      const doc = await prisma.document.findFirst({
+        where: { id: parsed.data.id, tenantId: user.tenantId! },
+        select: { id: true },
+      });
+
+      if (!doc) return reply.status(404).send({ ok: false, error: "DOCUMENT_NOT_FOUND" });
+
+      const versions = await prisma.documentVersion.findMany({
+        where: { documentId: parsed.data.id },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          status: true,
+          rawText: true,
+          editedContent: true,
+          pdfUrl: true,
+          createdAt: true,
+        },
+      });
+
+      return reply.send({ ok: true, versions });
+    } catch (err) {
+      request.log?.error({ err }, "GET /documents/:id/versions error");
       return reply.status(500).send({ ok: false, message: "Internal error" });
     }
   });

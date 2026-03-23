@@ -41,7 +41,8 @@ model User {
 
   tenant    Tenant?   @relation(fields: [tenantId], references: [id])
 
-  documentsCreated Document[] @relation("CreatedByUser")
+  documentsCreated Document[]           @relation("CreatedByUser")
+  annotations      DocumentAnnotation[] @relation("AnnotationsWrittenBy")
   accounts         Account[]
   sessions         Session[]
 
@@ -72,7 +73,8 @@ model Document {
   updatedAt      DateTime          @updatedAt
 
   versions       DocumentVersion[]
-  logs           IAUsageLog[]      @relation("DocLogs") // 👈 inversa a IAUsageLog.document
+  logs           IAUsageLog[]      @relation("DocLogs")
+  annotations    DocumentAnnotation[]
 }
 
 model DocumentVersion {
@@ -99,6 +101,27 @@ model DocumentVersion {
   createdAt       DateTime  @default(now())
 }
 
+
+model DocumentAnnotation {
+  id          String   @id @default(uuid())
+
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  tenantId    String
+
+  authorId    String?
+  author      User?    @relation("AnnotationsWrittenBy", fields: [authorId], references: [id], onDelete: SetNull)
+
+  content     String
+  resolved    Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([documentId])
+  @@index([tenantId])
+}
 
 model IAUsageLog {
   id               String   @id @default(uuid())

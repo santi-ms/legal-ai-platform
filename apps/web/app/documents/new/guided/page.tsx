@@ -40,6 +40,15 @@ import {
   trackDraftSaved,
   trackDraftDiscarded,
 } from "@/src/features/documents/utils/analytics";
+import {
+  listClients,
+  listExpedientes,
+  patchDocumentClient,
+  patchDocumentExpediente,
+  type Client,
+  type Expediente,
+} from "@/app/lib/webApi";
+import { Users, Briefcase, ChevronDown as ChevronDownIcon } from "lucide-react";
 
 // Initialize schemas — all document types
 import "@/src/features/documents/schemas/service-contract";
@@ -93,6 +102,13 @@ export default function GuidedDocumentCreationPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [confirmBackOpen, setConfirmBackOpen] = useState(false);
+
+  // Pre-selection of client and expediente
+  const [selectedClientId, setSelectedClientId]         = useState<string>("");
+  const [selectedExpedienteId, setSelectedExpedienteId] = useState<string>("");
+  const [clientList, setClientList]                     = useState<Client[]>([]);
+  const [expedienteList, setExpedienteList]             = useState<Expediente[]>([]);
+  const [loadingContext, setLoadingContext]              = useState(false);
 
   // Ref para scroll automático al bloque de error de generación
   const generationErrorRef = useRef<HTMLDivElement>(null);
@@ -173,6 +189,32 @@ export default function GuidedDocumentCreationPage() {
       }
     }
   }, [formData, selectedDocumentType]);
+
+  // Warn browser on tab/window close when there are unsaved changes
+  useEffect(() => {
+    if (!hasUnsavedChanges || currentStep === "result") return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges, currentStep]);
+
+  // Load clients + expedientes when user reaches summary step
+  useEffect(() => {
+    if (currentStep !== "summary") return;
+    if (clientList.length > 0 || loadingContext) return;
+    setLoadingContext(true);
+    Promise.all([
+      listClients({ pageSize: 200, sort: "name:asc" }),
+      listExpedientes({ pageSize: 200, sort: "title:asc" }),
+    ]).then(([cRes, eRes]) => {
+      setClientList(cRes.clients);
+      setExpedienteList(eRes.expedientes);
+    }).catch(() => { /* ignore — context association is optional */ })
+      .finally(() => setLoadingContext(false));
+  }, [currentStep, clientList.length, loadingContext]);
 
   const handleDocumentTypeSelect = (documentType: DocumentTypeId) => {
     trackDocumentTypeSelected(documentType);
@@ -309,7 +351,15 @@ export default function GuidedDocumentCreationPage() {
       setResult(generationResult);
       setCurrentStep("result");
       setHasUnsavedChanges(false);
-      
+
+      // Associate client and/or expediente in background (silent)
+      if (selectedClientId) {
+        patchDocumentClient(generationResult.documentId, selectedClientId).catch(() => {});
+      }
+      if (selectedExpedienteId) {
+        patchDocumentExpediente(generationResult.documentId, selectedExpedienteId).catch(() => {});
+      }
+
       trackGenerationSuccess(
         selectedDocumentType,
         generationResult.documentId,
@@ -366,6 +416,8 @@ export default function GuidedDocumentCreationPage() {
     setValidationErrors([]);
     setHasUnsavedChanges(false);
     setConfirmBackOpen(false);
+    setSelectedClientId("");
+    setSelectedExpedienteId("");
   };
 
   const renderSelectionStep = () => {
@@ -550,6 +602,64 @@ export default function GuidedDocumentCreationPage() {
           data={formData}
           onEdit={() => setCurrentStep("form")}
         />
+
+            {/* ─── Contexto del documento (cliente + expediente) ─────────── */}
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm space-y-4">
+              <div className="flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Contexto del documento <span className="font-normal text-slate-400">(opcional)</span>
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 -mt-1">
+                Asociá el documento a un cliente o expediente existente. Podés hacerlo también después desde el detalle.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Cliente */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5" /> Cliente
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={selectedClientId}
+                      onChange={(e) => setSelectedClientId(e.target.value)}
+                      disabled={loadingContext}
+                      className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 pr-8 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">Sin asignar</option>
+                      {clientList.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDownIcon className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                  </div>
+                </div>
+
+                {/* Expediente */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5" /> Expediente
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={selectedExpedienteId}
+                      onChange={(e) => setSelectedExpedienteId(e.target.value)}
+                      disabled={loadingContext}
+                      className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 pr-8 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">Sin asignar</option>
+                      {expedienteList.map((ex) => (
+                        <option key={ex.id} value={ex.id}>
+                          {ex.number ? `#${ex.number} · ` : ""}{ex.title}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDownIcon className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {warnings.length > 0 && (
               <div className="space-y-3">

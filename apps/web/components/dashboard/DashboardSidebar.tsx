@@ -12,6 +12,7 @@ import {
   Settings,
   HelpCircle,
   Sparkles,
+  BarChart2,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { useDeadlines } from "@/app/lib/contexts/DeadlineContext";
@@ -50,6 +51,13 @@ const navigationItems = [
     label: "Clientes",
     icon: Users,
     href: "/clients",
+    disabled: false,
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    icon: BarChart2,
+    href: "/analytics",
     disabled: false,
   },
 ];

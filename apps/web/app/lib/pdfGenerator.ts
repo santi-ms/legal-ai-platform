@@ -1,191 +1,299 @@
 /**
  * Generador de PDF en el frontend usando jsPDF
- * Solución más confiable que generar en el servidor
- * 
- * LÍMITES DE ESCALABILIDAD:
- * - Documentos pequeños/medianos (< 50KB texto): ✅ Funciona perfectamente
- * - Documentos grandes (50-200KB texto): ⚠️ Puede ser lento pero funciona
- * - Documentos muy grandes (> 200KB texto): ❌ Considerar generación en servidor
+ *
+ * Produce documentos legales con formato profesional:
+ * - Fuente Times (estándar jurídico)
+ * - Detección de estructura: títulos, cláusulas, sub-incisos, firmas
+ * - Márgenes y espaciados conforme a documentos legales argentinos
+ * - Número de página en pie de página
+ *
+ * LÍMITES:
+ * - Documentos < 50KB: ✅ Óptimo
+ * - Documentos 50-200KB: ⚠️ Funciona, puede ser lento
+ * - Documentos > 200KB: ❌ Usar generación en servidor
  */
 
 import { jsPDF } from "jspdf";
 
-// Límite práctico para generación en frontend (~20-30 páginas)
-const MAX_FRONTEND_TEXT_SIZE = 50000; // ~50KB de texto
+const MAX_FRONTEND_TEXT_SIZE = 50_000;
 
-/**
- * Base function that creates a jsPDF document from text
- * Used internally by both generatePdfFromText and generatePdfBlobFromText
- */
-function createPdfDocument(
-  title: string,
-  text: string
-): jsPDF {
+// ---------------------------------------------------------------------------
+// Markdown cleanup
+// ---------------------------------------------------------------------------
+
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/\*\*(.*?)\*\*/gs, "$1")
+    .replace(/__(.*?)__/gs, "$1")
+    .replace(/\*(.*?)\*/gs, "$1")
+    .replace(/_(.*?)_/gs, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^[-*]\s+/gm, "")
+    .trim();
+}
+
+// ---------------------------------------------------------------------------
+// Line classifier (same logic as server-side PDF generator)
+// ---------------------------------------------------------------------------
+
+const ORDINAL_WORDS = new Set([
+  "PRIMERA","SEGUNDA","TERCERA","CUARTA","QUINTA",
+  "SEXTA","SÉPTIMA","OCTAVA","NOVENA","DÉCIMA",
+  "UNDÉCIMA","DUODÉCIMA","DECIMOTERCERA","DECIMOCUARTA",
+  "DECIMOQUINTA","DECIMOSEXTA",
+  "I","II","III","IV","V","VI","VII","VIII","IX","X",
+  "XI","XII","XIII","XIV","XV","XVI",
+]);
+
+type LineType =
+  | "title" | "location_date" | "clause_header" | "section_title"
+  | "subclause" | "signature_line" | "signature_label" | "empty" | "body";
+
+function classifyLine(line: string, index: number, allLines: string[]): LineType {
+  const trimmed = line.trim();
+  if (trimmed.length === 0) return "empty";
+  if (/^_{4,}/.test(trimmed)) return "signature_line";
+
+  const prevNonEmpty = allLines.slice(0, index).reverse().find(l => l.trim().length > 0);
+  if (prevNonEmpty && /^_{4,}/.test(prevNonEmpty.trim()) && trimmed.length <= 80) {
+    return "signature_label";
+  }
+
+  const nonEmptyBefore = allLines.slice(0, index).filter(l => l.trim().length > 0).length;
+
+  if (nonEmptyBefore <= 4 && /^\w[\w\s]+,\s+\d{1,2}\s+de\s+\w+/i.test(trimmed)) {
+    return "location_date";
+  }
+  if (nonEmptyBefore === 0) return "title";
+  if (
+    nonEmptyBefore <= 3 &&
+    trimmed === trimmed.toUpperCase() &&
+    trimmed.length >= 5 && trimmed.length <= 80 &&
+    !/^\d/.test(trimmed)
+  ) return "title";
+
+  const clauseMatch = trimmed.match(/^(CLÁUSULA\s+)?([A-ZÁÉÍÓÚÑ]+)[\.\-:\s]/);
+  if (clauseMatch && ORDINAL_WORDS.has(clauseMatch[2])) return "clause_header";
+  if (/^(I{1,3}|IV|V?I{0,3}|IX|X{0,3}I{0,3})\.\s+\S/.test(trimmed)) return "clause_header";
+
+  if (/^([a-z]{1,3}|[ivxlcdm]+|\d+(\.\d+)?)\)\s+\S/i.test(trimmed)) return "subclause";
+  if (/^\d+\.\d+\s+\S/.test(trimmed)) return "subclause";
+
+  if (
+    trimmed === trimmed.toUpperCase() &&
+    trimmed.length >= 4 && trimmed.length <= 60 &&
+    /^[A-ZÁÉÍÓÚÑ\s\/\-]+:?$/.test(trimmed) &&
+    !/^\d/.test(trimmed)
+  ) return "section_title";
+
+  return "body";
+}
+
+// ---------------------------------------------------------------------------
+// PDF builder
+// ---------------------------------------------------------------------------
+
+function createPdfDocument(title: string, text: string): jsPDF {
   if (!text || text.trim().length === 0) {
     throw new Error("No hay contenido para generar el PDF");
   }
 
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4",
-  });
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 20;
-  const maxWidth = pageWidth - 2 * margin;
+  const pageW  = doc.internal.pageSize.getWidth();
+  const pageH  = doc.internal.pageSize.getHeight();
+  const mLeft  = 30;   // 3cm left (standard legal)
+  const mRight = 20;   // 2cm right
+  const mTop   = 25;   // 2.5cm top
+  const mBot   = 25;   // 2.5cm bottom
+  const textW  = pageW - mLeft - mRight;
+  const lineH  = 6.5;  // ~1.6 line height at 12pt
+  const footerH = 12;
 
-  let yPosition = margin;
+  let y = mTop;
+  let pageNum = 1;
 
-  // Título
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(0, 0, 0);
-  const titleLines = doc.splitTextToSize(title.toUpperCase(), maxWidth);
-  doc.text(titleLines, pageWidth / 2, yPosition, {
-    align: "center",
-  });
-  yPosition += titleLines.length * 8 + 10;
-
-  // Línea separadora
-  doc.setLineWidth(0.5);
-  doc.line(margin, yPosition, pageWidth - margin, yPosition);
-  yPosition += 10;
-
-  // Limpiar texto - remover markdown
-  let cleanText = text
-    .trim()
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .replace(/\*\*(.*?)\*\*/g, "$1")
-    .replace(/\*(.*?)\*/g, "$1")
-    .replace(/__(.*?)__/g, "$1")
-    .replace(/_(.*?)_/g, "$1");
-
-  // Dividir texto en líneas
-  const lines = cleanText.split("\n").filter((line) => line.trim().length > 0);
-
-  // Configurar fuente para el contenido
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(0, 0, 0);
-
-  // Escribir cada línea
-  for (const line of lines) {
-    // Si nos quedamos sin espacio, agregar nueva página
-    if (yPosition > pageHeight - margin - 20) {
-      doc.addPage();
-      yPosition = margin;
-    }
-
-    // Dividir línea si es muy larga
-    const textLines = doc.splitTextToSize(line.trim(), maxWidth);
-    
-    for (const textLine of textLines) {
-      if (yPosition > pageHeight - margin - 20) {
-        doc.addPage();
-        yPosition = margin;
-      }
-      
-      doc.setTextColor(0, 0, 0);
-      doc.text(textLine, margin, yPosition);
-      yPosition += 6; // Espaciado entre líneas
-    }
-    
-    yPosition += 2; // Espacio adicional entre párrafos
-  }
-
-  // Bloque de firma
-  if (yPosition > pageHeight - margin - 30) {
+  const addPage = () => {
+    // Footer on current page
+    drawFooter(pageNum);
     doc.addPage();
-    yPosition = margin;
+    pageNum++;
+    y = mTop;
+  };
+
+  const checkY = (needed: number) => {
+    if (y + needed > pageH - mBot - footerH) addPage();
+  };
+
+  const drawFooter = (n: number) => {
+    const totalPages = (doc.internal as any).getNumberOfPages?.() ?? n;
+    doc.setFontSize(8);
+    doc.setFont("times", "normal");
+    doc.setTextColor(120, 120, 120);
+    doc.text(`Página ${n} de ${totalPages}`, pageW / 2, pageH - 10, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+  };
+
+  const cleanText = stripMarkdown(text);
+  const lines     = cleanText.split("\n");
+
+  // ── Title ──────────────────────────────────────────────────────────────────
+  doc.setFontSize(13);
+  doc.setFont("times", "bold");
+  doc.setTextColor(0, 0, 0);
+  const titleWrapped = doc.splitTextToSize(title.toUpperCase(), textW);
+  checkY(titleWrapped.length * 7 + 8);
+  doc.text(titleWrapped, pageW / 2, y, { align: "center" });
+  y += titleWrapped.length * 7;
+
+  // Divider line under title
+  doc.setLineWidth(0.4);
+  doc.line(mLeft, y, pageW - mRight, y);
+  y += 8;
+
+  // ── Body ───────────────────────────────────────────────────────────────────
+  for (let i = 0; i < lines.length; i++) {
+    const line    = lines[i];
+    const trimmed = line.trim();
+    const type    = classifyLine(line, i, lines);
+
+    switch (type) {
+      case "empty":
+        y += 3;
+        break;
+
+      case "location_date":
+        checkY(lineH);
+        doc.setFontSize(10);
+        doc.setFont("times", "normal");
+        doc.text(trimmed, pageW - mRight, y, { align: "right" });
+        y += lineH + 2;
+        break;
+
+      case "title":
+        // Secondary titles (after main title already drawn)
+        checkY(lineH + 4);
+        doc.setFontSize(12);
+        doc.setFont("times", "bold");
+        const tLines = doc.splitTextToSize(trimmed, textW);
+        doc.text(tLines, pageW / 2, y, { align: "center" });
+        y += tLines.length * (lineH - 0.5) + 4;
+        break;
+
+      case "section_title":
+        checkY(lineH + 6);
+        y += 4;
+        doc.setFontSize(11);
+        doc.setFont("times", "bold");
+        doc.text(trimmed, pageW / 2, y, { align: "center" });
+        y += lineH + 2;
+        break;
+
+      case "clause_header":
+        checkY(lineH + 6);
+        y += 5;
+        doc.setFontSize(12);
+        doc.setFont("times", "bold");
+        const chLines = doc.splitTextToSize(trimmed, textW);
+        doc.text(chLines, mLeft, y);
+        y += chLines.length * lineH + 1;
+        break;
+
+      case "subclause":
+        checkY(lineH);
+        doc.setFontSize(11);
+        doc.setFont("times", "normal");
+        const subIndent = mLeft + 8;
+        const subW      = textW - 8;
+        const subLines  = doc.splitTextToSize(trimmed, subW);
+        doc.text(subLines, subIndent, y);
+        y += subLines.length * (lineH - 0.5) + 1.5;
+        break;
+
+      case "signature_line":
+        checkY(lineH + 6);
+        y += 6;
+        doc.setFontSize(11);
+        doc.setFont("times", "normal");
+        doc.text(trimmed, mLeft, y);
+        y += lineH;
+        break;
+
+      case "signature_label":
+        checkY(lineH);
+        doc.setFontSize(9);
+        doc.setFont("times", "normal");
+        doc.setTextColor(60, 60, 60);
+        doc.text(trimmed, mLeft, y);
+        doc.setTextColor(0, 0, 0);
+        y += lineH + 2;
+        break;
+
+      case "body":
+      default:
+        doc.setFontSize(11);
+        doc.setFont("times", "normal");
+        const bodyLines = doc.splitTextToSize(trimmed, textW);
+        checkY(bodyLines.length * lineH);
+        // First-line indent for body paragraphs
+        const firstLine = doc.splitTextToSize(bodyLines[0] ?? "", textW - 5);
+        doc.text(firstLine, mLeft + 5, y);
+        if (bodyLines.length > 1) {
+          const rest = doc.splitTextToSize(bodyLines.slice(1).join(" "), textW);
+          y += firstLine.length * lineH;
+          doc.text(rest, mLeft, y);
+          y += rest.length * lineH;
+        } else {
+          y += firstLine.length * lineH;
+        }
+        y += 1.5;
+        break;
+    }
   }
 
-  yPosition += 20;
-  doc.setLineWidth(0.5);
-  doc.line(margin, yPosition, margin + 80, yPosition);
-  yPosition += 8;
-  
-  doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
-  doc.text("Firma / Aclaración / DNI", margin, yPosition);
+  // Footer on last page
+  drawFooter(pageNum);
 
   return doc;
 }
 
-/**
- * Generate and download a PDF from text
- * 
- * @param title - Document title
- * @param text - Document content
- * @param fileName - Output filename (default: "documento.pdf")
- */
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
 export function generatePdfFromText(
   title: string,
   text: string,
-  fileName: string = "documento.pdf"
+  fileName = "documento.pdf"
 ): void {
-  console.log("[pdf-generator] Iniciando generación de PDF");
-  console.log("[pdf-generator] Title:", title);
-  console.log("[pdf-generator] Text length:", text?.length || 0);
-  console.log("[pdf-generator] Text preview:", text?.substring(0, 200) || "NO TEXT");
-  
   if (!text || text.trim().length === 0) {
-    console.error("[pdf-generator] ERROR: No hay texto para generar el PDF");
     alert("Error: No hay contenido para generar el PDF");
     return;
   }
 
-  // Advertencia para documentos grandes
   if (text.length > MAX_FRONTEND_TEXT_SIZE) {
-    const shouldContinue = confirm(
-      `Este documento es muy grande (${Math.round(text.length / 1000)}KB). ` +
-      `La generación puede tardar varios segundos y consumir mucha memoria. ¿Continuar?`
+    const ok = confirm(
+      `Este documento es muy extenso (${Math.round(text.length / 1000)} KB). ` +
+      `La generación puede tardar unos segundos. ¿Continuar?`
     );
-    if (!shouldContinue) {
-      return;
-    }
+    if (!ok) return;
   }
 
   try {
     const doc = createPdfDocument(title, text);
-    console.log("[pdf-generator] Guardando PDF:", fileName);
     doc.save(fileName);
-    console.log("[pdf-generator] PDF generado exitosamente");
-  } catch (error) {
-    console.error("[pdf-generator] ERROR al generar PDF:", error);
-    alert(`Error al generar el PDF: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (err) {
+    alert(`Error al generar el PDF: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
-/**
- * Generate a PDF blob from text (for preview/embedding)
- * 
- * @param title - Document title
- * @param text - Document content
- * @returns Blob URL for the PDF
- */
-export function generatePdfBlobFromText(
-  title: string,
-  text: string
-): string {
-  console.log("[pdf-generator] Iniciando generación de PDF blob");
-  console.log("[pdf-generator] Title:", title);
-  console.log("[pdf-generator] Text length:", text?.length || 0);
-  
+export function generatePdfBlobFromText(title: string, text: string): string {
   if (!text || text.trim().length === 0) {
     throw new Error("No hay contenido para generar el PDF");
   }
-
-  try {
-    const doc = createPdfDocument(title, text);
-    const pdfBlob = doc.output("blob");
-    const blobUrl = URL.createObjectURL(pdfBlob);
-    console.log("[pdf-generator] PDF blob generado exitosamente");
-    return blobUrl;
-  } catch (error) {
-    console.error("[pdf-generator] ERROR al generar PDF blob:", error);
-    throw error;
-  }
+  const doc    = createPdfDocument(title, text);
+  const blob   = doc.output("blob");
+  return URL.createObjectURL(blob);
 }

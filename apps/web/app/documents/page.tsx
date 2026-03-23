@@ -292,9 +292,15 @@ function DocumentsContent() {
 
   const handleStatusChange = (newStatus: string) => {
     setStatus(newStatus);
-    // El filtro por estado se aplica client-side sobre los documentos ya cargados
+    // El filtro por estado se aplica client-side sobre la página cargada
     // El backend no expone un filtro de estado en GET /documents todavía
   };
+
+  // Client-side status filter (backend doesn't support status param yet)
+  const filteredDocuments =
+    status !== "all"
+      ? documents.filter((d) => d.lastVersion?.status === status)
+      : documents;
 
   const handleExpedienteChange = (id: string) => {
     handleFiltersChange({ expedienteId: id !== "all" ? id : undefined, page: 1 });
@@ -474,7 +480,7 @@ function DocumentsContent() {
         ) : (
           <>
             <DocumentsTableEnhanced
-              documents={documents}
+              documents={filteredDocuments}
               onDelete={handleDelete}
               onBulkDelete={handleBulkDelete}
               onDownloadError={showError}

@@ -480,18 +480,88 @@ ${promptConfig.baseInstructions.map((i) => `- ${i}`).join("\n")}
       presence_penalty: 0.1,
     });
 
-    const text =
+    const rawText =
       completion.choices?.[0]?.message?.content?.trim() || baseDraft;
     const tokens = {
       prompt: completion.usage?.prompt_tokens || 0,
       completion: completion.usage?.completion_tokens || 0,
     };
 
+    // Post-processing: clean and validate AI output
+    const text = sanitizeAiOutput(rawText, baseDraft);
+
     return { text, tokens };
   } catch (error) {
     logger.error(`[generation-service] OpenAI error: ${error}`);
     throw error;
   }
+}
+
+// ---------------------------------------------------------------------------
+// AI output sanitization
+// Removes residual placeholders and markdown artifacts from AI-generated text.
+// ---------------------------------------------------------------------------
+
+/**
+ * Patterns that indicate the AI left a field unfilled.
+ * If any are found, we fall back to the baseDraft for that line.
+ */
+const PLACEHOLDER_PATTERNS = [
+  /\[COMPLETAR\]/gi,
+  /\[INDICAR\]/gi,
+  /\[INSERTAR\]/gi,
+  /\[NOMBRE\]/gi,
+  /\[FECHA\]/gi,
+  /\[MONTO\]/gi,
+  /\[DOMICILIO\]/gi,
+  /\{\{[^}]+\}\}/g,   // {{VARIABLE}}
+  /\[___+\]/g,        // [___]
+  /\[…\]/g,
+  /\[\.\.\.\]/g,
+];
+
+function sanitizeAiOutput(text: string, fallback: string): string {
+  let result = text;
+
+  // 1. Strip any markdown the AI might have added despite instructions
+  result = result
+    .replace(/\*\*(.*?)\*\*/gs, "$1")
+    .replace(/__(.*?)__/gs, "$1")
+    .replace(/\*(.*?)\*/gs, "$1")
+    .replace(/_(.*?)_/gs, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^[-*]\s+/gm, "")   // bullet lists
+    .replace(/^\d+\.\s+(?=[A-Z])/gm, ""); // numbered lists that aren't clause numbers
+
+  // 2. Detect unfilled placeholders — log warning but don't reject the whole doc
+  const foundPlaceholders: string[] = [];
+  for (const pattern of PLACEHOLDER_PATTERNS) {
+    const matches = result.match(pattern);
+    if (matches) {
+      foundPlaceholders.push(...matches);
+      // Remove the placeholder rather than leaving it in the doc
+      result = result.replace(pattern, "");
+    }
+  }
+
+  if (foundPlaceholders.length > 0) {
+    logger.warn(
+      `[generation-service] AI left ${foundPlaceholders.length} unfilled placeholder(s): ${[...new Set(foundPlaceholders)].join(", ")}`
+    );
+  }
+
+  // 3. Normalize whitespace: collapse 3+ consecutive blank lines to 2
+  result = result.replace(/\n{3,}/g, "\n\n");
+
+  // 4. Sanity check: if the result is suspiciously short, fall back to baseDraft
+  if (result.trim().length < 200) {
+    logger.warn(
+      `[generation-service] AI output too short (${result.trim().length} chars), using baseDraft`
+    );
+    return fallback;
+  }
+
+  return result.trim();
 }
 
 // ---------------------------------------------------------------------------
@@ -512,29 +582,40 @@ function getPromptConfigForType(
 } {
   const toneInstructions = {
     formal_technical:
-      "Formal y técnico legal. Terminología jurídica precisa. Cláusulas técnicas.",
+      "Formal y técnico legal. Terminología jurídica precisa del derecho argentino. Cláusulas técnicas sin ambigüedad. Voz activa e imperativa.",
     commercial_clear:
-      "Comercial y claro. Lenguaje entendible para PyMEs sin sacrificar validez legal.",
+      "Comercial y claro. Lenguaje accesible para empresas y PyMEs sin sacrificar validez legal. Evitar latinismos innecesarios.",
     balanced_professional:
-      "Balanceado: profesional pero accesible. Terminología jurídica correcta con claridad.",
+      "Equilibrado: profesional y riguroso, pero comprensible. Terminología jurídica correcta con definiciones cuando sea necesario.",
   };
 
+  // Instrucciones comunes a todos los tipos — enfocadas en calidad de redacción
   const commonInstructions = [
-    "El documento debe ser legalmente válido y ejecutable en Argentina",
-    "Usar todos los datos concretos proporcionados (nombres, montos, fechas, domicilios)",
-    "Estructura: encabezado con identificación completa de partes, luego cláusulas numeradas",
+    "El documento debe ser legalmente válido y ejecutable en la República Argentina conforme al CCCN (Ley 26.994) y normativa complementaria vigente",
+    "Usar TODOS los datos concretos proporcionados: nombres completos, CUITs/DNIs, domicilios, montos, fechas — sin omitir ninguno",
+    "Encabezado: ciudad y fecha completa, seguido de identificación de las partes con todos sus datos",
+    "Cuerpo: cláusulas numeradas en palabras en MAYÚSCULAS (PRIMERA, SEGUNDA, TERCERA, etc.)",
+    "Redactar cada cláusula con al menos dos oraciones — no usar frases telegráficas",
+    "Los montos deben expresarse en números Y en letras entre paréntesis: $10.000 (pesos diez mil)",
+    "Los plazos deben expresarse en forma clara: '30 (treinta) días corridos a partir de…'",
+    "Usar 'las partes acuerdan', 'el contratante se obliga a', 'queda expresamente establecido que' — lenguaje declarativo",
+    "Cierre: sección de FIRMAS con línea de firma (___________), nombre completo, y campos Firma / Aclaración / DNI para cada parte",
+    "Formato de salida: texto plano con saltos de línea, sin markdown, sin bullets con guión ni asteriscos",
   ];
 
   if (documentType === "service_contract") {
     return {
-      systemMessage:
-        "Eres un abogado senior argentino especializado en derecho comercial y contratos de servicios con 20 años de experiencia. Generás contratos válidos, completos y ejecutables según el Código Civil y Comercial de la Nación.",
+      systemMessage: `Sos un abogado senior argentino con 25 años de experiencia en derecho comercial y contratos de prestación de servicios. \
+Redactás contratos impecables, completos y ejecutables conforme al Código Civil y Comercial de la Nación (arts. 1251 a 1279 sobre locación de obra y servicios), \
+la Ley de Defensa del Consumidor (Ley 24.240) cuando corresponda, y los usos y prácticas comerciales argentinos. \
+Tu redacción es precisa, sin ambigüedades y prevé expresamente los escenarios de incumplimiento. \
+Nunca dejás cláusulas abiertas ni con datos faltantes.`,
       baseInstructions: [
         ...commonInstructions,
-        "Incluir obligatoriamente: identificación de partes, objeto y alcance del servicio, monto y forma de pago, vigencia, rescisión, foro de competencia",
-        "Incluir las cláusulas opcionales que figuren en los datos estructurados (confidencialidad, propiedad intelectual)",
-        "Numerar cláusulas en mayúsculas: PRIMERA, SEGUNDA, etc.",
-        "Cerrar el documento con sección de FIRMAS con espacios para firma y aclaración de cada parte",
+        "Cláusulas obligatorias: OBJETO (descripción detallada del servicio), PLAZO Y VIGENCIA, PRECIO Y FORMA DE PAGO, OBLIGACIONES DE LAS PARTES, RESCISIÓN (con preaviso y penalidades), CONFIDENCIALIDAD si corresponde, PROPIEDAD INTELECTUAL si corresponde, RESPONSABILIDAD, FUERZA MAYOR, FORO Y JURISDICCIÓN",
+        "En la cláusula de PRECIO: indicar monto, moneda, periodicidad, forma de pago, plazo para el pago y consecuencias de la mora",
+        "En RESCISIÓN: indicar si hay penalidad por rescisión anticipada y su monto; siempre incluir preaviso mínimo",
+        "FORO: 'Para todos los efectos legales emergentes del presente, las partes se someten a la jurisdicción de los Tribunales Ordinarios de [JURISDICCIÓN], renunciando a cualquier otro fuero o jurisdicción que pudiera corresponderles'",
       ],
       toneInstructions,
     };
@@ -542,14 +623,16 @@ function getPromptConfigForType(
 
   if (documentType === "nda") {
     return {
-      systemMessage:
-        "Eres un abogado senior argentino especializado en acuerdos de confidencialidad y propiedad intelectual. Generás NDAs válidos y completos según la normativa argentina vigente.",
+      systemMessage: `Sos un abogado senior argentino especializado en propiedad intelectual, acuerdos de confidencialidad y derecho tecnológico. \
+Redactás NDAs sólidos y ejecutables conforme al CCCN (arts. 1063, 1067 sobre interpretación contractual) y la Ley de Confidencialidad (Ley 24.766). \
+Tus acuerdos definen con precisión qué es información confidencial, qué no lo es, y prevén mecanismos de reparación ante incumplimiento. \
+Nunca dejás definiciones abiertas que puedan ser interpretadas en contra de la parte reveladora.`,
       baseInstructions: [
         ...commonInstructions,
-        "Incluir obligatoriamente: definición precisa de información confidencial, finalidad permitida, obligaciones del receptor, plazo de vigencia, consecuencias del incumplimiento, foro de competencia",
-        "Incluir obligación de devolución/destrucción si figura en los datos estructurados",
-        "Numerar cláusulas en mayúsculas: PRIMERA, SEGUNDA, etc.",
-        "Cerrar con sección de FIRMAS",
+        "Cláusulas obligatorias: DEFINICIÓN DE INFORMACIÓN CONFIDENCIAL (amplia y ejemplificativa), EXCLUSIONES (información pública, conocida previamente, etc.), FINALIDAD PERMITIDA, OBLIGACIONES DEL RECEPTOR, PLAZO DE VIGENCIA, DEVOLUCIÓN O DESTRUCCIÓN si corresponde, INCUMPLIMIENTO Y PENALIDADES, FORO Y JURISDICCIÓN",
+        "Definición de confidencial: incluir explícitamente datos técnicos, comerciales, financieros, clientes, procesos, software, know-how",
+        "Exclusiones clásicas: información de dominio público, información conocida antes del acuerdo, información obtenida de terceros lícitamente",
+        "Penalidad: 'El incumplimiento de las obligaciones de confidencialidad dará derecho a [REVELADOR] a reclamar los daños y perjuicios sufridos, sin perjuicio de las acciones penales que pudieran corresponder'",
       ],
       toneInstructions,
     };
@@ -557,19 +640,21 @@ function getPromptConfigForType(
 
   if (documentType === "legal_notice") {
     return {
-      systemMessage:
-        "Eres un abogado senior argentino especializado en cartas documento y notificaciones legales con efectos fehacientes. Generás cartas documento CERRADAS y DEFINITIVAS — con todos los datos completos, sin dejar espacios en blanco ni placeholders. El documento debe poder enviarse sin ninguna modificación adicional.",
+      systemMessage: `Sos un abogado senior argentino especializado en cartas documento, telegramas colacionados y notificaciones fehacientes. \
+Redactás cartas documento CERRADAS, DEFINITIVAS y LISTAS PARA ENVIAR — con absolutamente todos los datos completos, \
+sin espacios en blanco, sin placeholders, sin campos por completar. \
+Conocés el art. 1078 del CCCN sobre notificaciones, el CPCyC y la doctrina sobre efectos de la mora. \
+Tu redacción es directa, cronológica y contundente. Cada carta documento que redactás puede enviarse inmediatamente sin modificación alguna.`,
       baseInstructions: [
-        "El documento debe ser legalmente válido y ejecutable en Argentina",
-        "Usar todos los datos concretos proporcionados (nombres, CUITs, domicilios, montos, fechas)",
-        "Estructura: encabezado con ciudad y fecha, identificación de remitente y destinatario, título CARTA DOCUMENTO, luego secciones I a VI (o las que correspondan)",
-        "NO incluir cláusulas contractuales como 'foro de competencia', 'resolución de disputas' ni lenguaje de contrato",
-        "La narración debe ser directa y cronológica — primero el contexto, luego los hechos, luego el incumplimiento",
-        "La intimación debe ser concreta: qué debe hacer el destinatario, en qué plazo y con qué datos específicos",
-        "El plazo debe reflejar exactamente el valor indicado (ej: '10 días hábiles')",
-        "El apercibimiento debe enunciar las acciones legales concretas que se iniciarán",
-        "Cerrar con lugar, fecha y espacio para firma del remitente",
-        "El documento es definitivo — todos los campos completos con los datos del formulario",
+        "El documento debe ser legalmente válido y ejecutable en la República Argentina",
+        "Usar TODOS los datos concretos: nombres, CUITs, domicilios, montos exactos, fechas precisas",
+        "Estructura: ciudad y fecha / identificación de remitente / identificación de destinatario / título CARTA DOCUMENTO / cuerpo numerado / cierre y firma",
+        "Cuerpo: sección I — Antecedentes (relación previa entre las partes), II — Hechos (descripción cronológica y objetiva), III — Incumplimiento (descripción precisa del incumplimiento), IV — Intimación (qué debe hacer, plazo exacto, domicilio donde cumplir), V — Apercibimiento (consecuencias concretas: acciones judiciales, daños y perjuicios, intereses)",
+        "El plazo de intimación debe expresarse en días hábiles o corridos según corresponda, con fecha exacta de vencimiento si es posible",
+        "Apercibimiento concreto: 'en caso de no cumplimiento, iniciaremos las acciones judiciales que correspondan, reclamando daños y perjuicios, intereses y costas'",
+        "NO incluir cláusulas contractuales, foro de competencia ni elementos ajenos al formato de carta documento",
+        "Cierre: 'Sin otro particular, saludo a Ud. atentamente.' + espacio para firma + nombre del remitente",
+        "El documento es definitivo — absolutamente todos los campos completos con datos reales",
       ],
       toneInstructions,
     };
@@ -577,14 +662,19 @@ function getPromptConfigForType(
 
   if (documentType === "lease") {
     return {
-      systemMessage:
-        "Eres un abogado senior argentino especializado en contratos de locación inmobiliaria y la Ley de Alquileres vigente. Generás contratos de locación válidos y completos según la normativa argentina.",
+      systemMessage: `Sos un abogado senior argentino especializado en locaciones urbanas y la normativa de alquileres vigente. \
+Conocés en profundidad el CCCN (arts. 1187 a 1226 sobre locación), la Ley de Alquileres (Ley 27.551 y sus modificatorias), \
+el Decreto 320/2020 y la jurisprudencia relevante. \
+Redactás contratos de locación que protegen adecuadamente a ambas partes, con cláusulas claras sobre el canon, \
+ajustes, depósito, obligaciones de mantenimiento y condiciones de rescisión. \
+Nunca omitís el plazo mínimo legal ni las obligaciones de restitución del inmueble.`,
       baseInstructions: [
         ...commonInstructions,
-        "Incluir obligatoriamente: identificación de locador y locatario, descripción del inmueble, canon y forma de pago, plazo, condiciones de rescisión, depósito de garantía si corresponde, foro de competencia",
-        "Aplicar normativa de la Ley de Alquileres vigente en Argentina",
-        "Numerar cláusulas en mayúsculas: PRIMERA, SEGUNDA, etc.",
-        "Cerrar con sección de FIRMAS",
+        "Cláusulas obligatorias: OBJETO (descripción detallada del inmueble con dirección completa), DESTINO (uso exclusivo habitacional/comercial), PLAZO (con fecha de inicio y vencimiento, respetando mínimo legal de 3 años para habitacional), CANON (monto, moneda, periodicidad, día de pago, lugar de pago), AJUSTE DEL CANON (índice aplicable conforme normativa vigente), DEPÓSITO DE GARANTÍA si corresponde, OBLIGACIONES DEL LOCADOR, OBLIGACIONES DEL LOCATARIO, ESTADO DEL INMUEBLE, SERVICIOS Y EXPENSAS, MEJORAS, RESCISIÓN ANTICIPADA, FORO Y JURISDICCIÓN",
+        "Plazo: para uso habitacional mínimo 3 (tres) años conforme Ley 27.551; indicar fecha exacta de inicio y vencimiento",
+        "Ajuste: aplicar el Índice para Contratos de Locación (ICL) del BCRA conforme Ley 27.551 para contratos habitacionales",
+        "Depósito: 'equivalente a un (1) mes de alquiler al valor del último mes, el que será devuelto al locatario dentro de los 30 días de restituido el inmueble'",
+        "Restitución: 'El locatario deberá restituir el inmueble en el mismo estado en que lo recibió, salvo el deterioro proveniente del uso normal y del tiempo transcurrido'",
       ],
       toneInstructions,
     };
@@ -592,15 +682,20 @@ function getPromptConfigForType(
 
   if (documentType === "debt_recognition") {
     return {
-      systemMessage:
-        "Eres un abogado senior argentino especializado en derecho comercial y reconocimientos de deuda. Generás instrumentos de reconocimiento de deuda válidos, completos y ejecutables según el Código Civil y Comercial de la Nación.",
+      systemMessage: `Sos un abogado senior argentino especializado en derecho de las obligaciones, títulos valores y reconocimiento de deuda. \
+Conocés el CCCN (arts. 723 a 726 sobre reconocimiento de obligación, arts. 730 a 760 sobre efectos), \
+la doctrina sobre la inversión de la carga de la prueba que genera el reconocimiento, \
+y los efectos interruptivos de la prescripción (art. 2545 CCCN). \
+Redactás instrumentos de reconocimiento de deuda precisos, con monto en letras y números, \
+plan de pago detallado con fechas exactas, y cláusula de aceleración cuando corresponde.`,
       baseInstructions: [
         ...commonInstructions,
-        "Incluir obligatoriamente: identificación de acreedor y deudor, monto exacto en letras y números, causa de la deuda, fecha de reconocimiento, plan de pago detallado, consecuencias del incumplimiento, foro de competencia",
-        "El monto debe expresarse en números y en letras",
-        "Si hay cuotas, detallar fecha de cada vencimiento o periodicidad",
-        "Numerar cláusulas en mayúsculas: PRIMERA, SEGUNDA, etc.",
-        "Cerrar con sección de FIRMAS de acreedor y deudor",
+        "Cláusulas obligatorias: RECONOCIMIENTO (declaración expresa de reconocer la deuda con su causa y origen), MONTO (en números Y en letras, con moneda), FORMA DE PAGO (cuotas con fechas exactas de vencimiento O pago único con fecha), INTERESES (tasa aplicable si corresponde, desde cuándo corren), MORA (automática por el solo vencimiento del plazo, sin necesidad de interpelación), ACELERACIÓN (si se incumple una cuota se hacen exigibles todas las restantes), GASTOS Y COSTAS, FORO Y JURISDICCIÓN",
+        "Monto siempre en letras: '$15.000 (pesos quince mil)'",
+        "Mora automática: 'La mora se producirá en forma automática por el solo vencimiento del plazo, sin necesidad de interpelación judicial ni extrajudicial previa (art. 886 CCCN)'",
+        "Intereses moratorios: especificar tasa (ej: 'tasa activa del Banco de la Nación Argentina') desde la fecha de mora",
+        "Aceleración: 'El incumplimiento de dos (2) cuotas consecutivas o alternadas hará exigible la totalidad del saldo adeudado en forma inmediata'",
+        "Cerrar con FIRMA del deudor únicamente (es quien reconoce la deuda); el acreedor puede firmar como receptor",
       ],
       toneInstructions,
     };
@@ -608,15 +703,19 @@ function getPromptConfigForType(
 
   if (documentType === "simple_authorization") {
     return {
-      systemMessage:
-        "Eres un abogado senior argentino especializado en actos jurídicos de representación y autorización. Generás autorizaciones y poderes especiales válidos, concretos y limitados al acto indicado.",
+      systemMessage: `Sos un abogado senior argentino especializado en actos jurídicos de representación, mandato y autorización. \
+Conocés el CCCN (arts. 358 a 381 sobre representación, arts. 1319 a 1334 sobre mandato) \
+y la importancia de delimitar con precisión el alcance del acto autorizado para evitar interpretaciones amplias no deseadas. \
+Redactás autorizaciones específicas, concretas y acotadas al acto indicado. \
+Nunca dejás el alcance abierto ni usás términos ambiguos que puedan dar poderes no queridos por el autorizante.`,
       baseInstructions: [
         ...commonInstructions,
-        "Incluir obligatoriamente: identificación completa de autorizante y autorizado, descripción precisa del trámite o acto autorizado, alcance y limitaciones, vigencia",
-        "La autorización debe ser específica y no dejar lugar a interpretaciones amplias no deseadas",
-        "Si es por acto único, indicarlo expresamente",
-        "Si tiene fecha de vencimiento, indicarla expresamente",
-        "Cerrar con lugar, fecha y sección de FIRMA del autorizante",
+        "Cláusulas obligatorias: IDENTIFICACIÓN DEL AUTORIZANTE (datos completos), IDENTIFICACIÓN DEL AUTORIZADO (datos completos), OBJETO DE LA AUTORIZACIÓN (descripción precisa y acotada del acto o trámite), ALCANCE Y LIMITACIONES (qué puede y qué no puede hacer el autorizado), VIGENCIA (fecha de inicio y fin, o 'por acto único'), REVOCACIÓN (el autorizante puede revocar en cualquier momento)",
+        "Objeto: describir el trámite con precisión — 'queda autorizado exclusivamente para [ACTO CONCRETO], sin facultad para realizar actos distintos al indicado'",
+        "Vigencia: si es por acto único, indicar 'La presente autorización se extingue automáticamente una vez realizado el acto para el que fue otorgada'",
+        "Limitación expresa: 'El autorizado no podrá delegar ni transferir las facultades aquí otorgadas a terceros'",
+        "Revocación: 'La presente autorización podrá ser revocada por el autorizante en cualquier momento mediante notificación fehaciente al autorizado'",
+        "Cerrar solo con FIRMA del autorizante (quien otorga el poder)",
       ],
       toneInstructions,
     };
@@ -624,8 +723,9 @@ function getPromptConfigForType(
 
   // Fallback genérico
   return {
-    systemMessage:
-      "Eres un abogado senior argentino con 20 años de experiencia en derecho comercial. Generás documentos legales válidos y completos según la normativa argentina vigente.",
+    systemMessage: `Sos un abogado senior argentino con 25 años de experiencia en derecho civil y comercial. \
+Redactás documentos legales válidos, completos y ejecutables conforme al Código Civil y Comercial de la Nación \
+y la normativa argentina vigente. Tu redacción es precisa, sin ambigüedades y sin campos incompletos.`,
     baseInstructions: [
       ...commonInstructions,
       "Incluir todas las cláusulas necesarias para que el documento sea completo y ejecutable",

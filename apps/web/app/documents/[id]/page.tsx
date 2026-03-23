@@ -4,12 +4,16 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState, useRef, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, AlertCircle, AlertTriangle, CalendarClock, MapPin, Pencil, ScrollText, Users, X, ChevronDown, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, AlertCircle, AlertTriangle, CalendarClock, MapPin, Pencil, ScrollText, Users, X, ChevronDown, Loader2, CheckCircle2, Clock, Star, RotateCcw } from "lucide-react";
 import { SkeletonDocumentDetail } from "@/components/ui/skeleton";
 import { sanitizeInput } from "@/app/lib/sanitize";
+import { cn } from "@/lib/utils";
 import { DocumentStatusBadge } from "@/app/components/DocumentStatusBadge";
 import { DocumentWorkspaceShell } from "@/components/documents/DocumentWorkspaceShell";
-import { listClients, patchDocumentClient, listExpedientes, patchDocumentExpediente } from "@/app/lib/webApi";
+import { listClients, patchDocumentClient, listExpedientes, patchDocumentExpediente, updateDocumentReviewStatus } from "@/app/lib/webApi";
+import { VersionHistoryCard } from "@/components/documents/VersionHistoryCard";
+import { AnnotationsCard } from "@/components/documents/AnnotationsCard";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Briefcase } from "lucide-react";
 import type {
   Document as ProxyDocument,
@@ -38,7 +42,7 @@ function DocumentClientCard({
   const [saving, setSaving] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click or Escape key
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -46,6 +50,13 @@ function DocumentClientCard({
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open]);
 
   const fetchClients = async () => {
     if (clients.length > 0) return;
@@ -208,6 +219,13 @@ function DocumentExpedienteCard({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open]);
+
   const fetchExpedientes = async () => {
     if (expedientes.length > 0) return;
     setLoadingList(true);
@@ -309,6 +327,157 @@ function DocumentExpedienteCard({
             </div>
           )}
         </div>
+      )}
+    </section>
+  );
+}
+
+// ─── Review Workflow Card ─────────────────────────────────────────────────────
+
+type ReviewStatus = "draft" | "generated" | "needs_review" | "reviewed" | "final";
+
+const WORKFLOW_STEPS: { status: ReviewStatus; label: string; description: string }[] = [
+  { status: "generated",    label: "Generado",  description: "Recién generado por IA" },
+  { status: "reviewed",     label: "Revisado",  description: "Revisado y corregido" },
+  { status: "final",        label: "Final",     description: "Aprobado y listo para usar" },
+];
+
+const STATUS_ICON: Record<string, React.ReactNode> = {
+  generated:    <Clock className="w-4 h-4" />,
+  needs_review: <AlertTriangle className="w-4 h-4" />,
+  reviewed:     <CheckCircle2 className="w-4 h-4" />,
+  final:        <Star className="w-4 h-4" />,
+  draft:        <RotateCcw className="w-4 h-4" />,
+};
+
+const STATUS_STYLE: Record<string, string> = {
+  draft:        "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
+  generated:    "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  needs_review: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  reviewed:     "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
+  final:        "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+};
+
+function ReviewWorkflowCard({
+  documentId,
+  initialStatus,
+  onStatusChange,
+}: {
+  documentId: string;
+  initialStatus: ReviewStatus;
+  onStatusChange?: (status: ReviewStatus) => void;
+}) {
+  const [status, setStatus]   = useState<ReviewStatus>(initialStatus);
+  const [saving, setSaving]   = useState(false);
+
+  // skip needs_review and draft in the visual progress — they're special states
+  const visibleSteps = WORKFLOW_STEPS;
+  const currentIdx   = visibleSteps.findIndex((s) => s.status === status);
+
+  const transition = async (next: ReviewStatus) => {
+    if (saving || next === status) return;
+    setSaving(true);
+    try {
+      await updateDocumentReviewStatus(documentId, next);
+      setStatus(next);
+      onStatusChange?.(next);
+    } catch {
+      // silently ignore — status stays
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const nextStep = visibleSteps[currentIdx + 1];
+  const prevStep = visibleSteps[currentIdx - 1];
+
+  return (
+    <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Estado de revisión</h2>
+        {saving && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+      </div>
+
+      {/* Progress steps */}
+      <div className="flex items-center gap-1 mb-5">
+        {visibleSteps.map((step, i) => {
+          const isActive   = step.status === status;
+          const isComplete = currentIdx > i;
+          return (
+            <div key={step.status} className="flex items-center flex-1">
+              <button
+                onClick={() => transition(step.status)}
+                disabled={saving}
+                title={step.description}
+                className={cn(
+                  "flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[11px] font-semibold transition-all",
+                  isActive
+                    ? STATUS_STYLE[status] + " ring-2 ring-offset-1 ring-current"
+                    : isComplete
+                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 cursor-pointer hover:bg-emerald-100"
+                    : "text-slate-400 dark:text-slate-500 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                )}
+              >
+                {isComplete
+                  ? <CheckCircle2 className="w-4 h-4" />
+                  : STATUS_ICON[step.status]
+                }
+                {step.label}
+              </button>
+              {i < visibleSteps.length - 1 && (
+                <div className={cn(
+                  "h-0.5 w-3 flex-shrink-0 rounded-full mx-0.5",
+                  isComplete ? "bg-emerald-400" : "bg-slate-200 dark:bg-slate-700"
+                )} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {nextStep && (
+          <Button
+            size="sm"
+            onClick={() => transition(nextStep.status)}
+            disabled={saving}
+            className="bg-primary text-white hover:bg-primary/90 font-semibold text-xs"
+          >
+            Marcar como {nextStep.label}
+          </Button>
+        )}
+        {prevStep && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => transition(prevStep.status)}
+            disabled={saving}
+            className="text-xs text-slate-600 dark:text-slate-300"
+          >
+            <RotateCcw className="w-3 h-3 mr-1" />
+            Volver a {prevStep.label}
+          </Button>
+        )}
+        {status === "needs_review" && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => transition("reviewed")}
+            disabled={saving}
+            className="text-xs text-sky-600 dark:text-sky-400 border-sky-200 dark:border-sky-800"
+          >
+            <CheckCircle2 className="w-3 h-3 mr-1" />
+            Marcar como Revisado
+          </Button>
+        )}
+      </div>
+
+      {status === "final" && (
+        <p className="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5">
+          <Star className="w-3.5 h-3.5" />
+          Documento aprobado y listo para usar
+        </p>
       )}
     </section>
   );
@@ -426,6 +595,14 @@ export default function DocumentDetailPage() {
     <DocumentWorkspaceShell
       title={`Documento #${doc.id.slice(0, 8)}`}
       description={headerDescription}
+      breadcrumb={
+        <Breadcrumb
+          items={[
+            { label: "Documentos", href: "/documents" },
+            { label: `#${doc.id.slice(0, 8)}` },
+          ]}
+        />
+      }
       actions={
         <>
           <Link href="/documents">
@@ -628,6 +805,18 @@ export default function DocumentDetailPage() {
           documentId={doc.id}
           initialExpediente={(doc as any).expediente ?? null}
         />
+
+        {/* WORKFLOW DE REVISIÓN */}
+        <ReviewWorkflowCard
+          documentId={doc.id}
+          initialStatus={(last?.status as ReviewStatus) ?? "generated"}
+        />
+
+        {/* HISTORIAL DE VERSIONES */}
+        <VersionHistoryCard documentId={doc.id} />
+
+        {/* NOTAS INTERNAS */}
+        <AnnotationsCard documentId={doc.id} />
 
         {/* CONTENIDO LEGAL */}
         <section className="flex flex-col gap-3">
