@@ -393,6 +393,11 @@ export interface UserProfile {
   email: string;
   company: string | null;
   bio: string;
+  phone: string;
+  matricula: string;
+  especialidad: string;
+  professionalRole: string;
+  tenantId: string | null;
   notificationPreferences: {
     emailNotifications: boolean;
     securityAlerts: boolean;
@@ -400,11 +405,24 @@ export interface UserProfile {
   };
 }
 
+export interface TenantProfile {
+  id: string;
+  name: string;
+  cuit: string;
+  address: string;
+  phone: string;
+  website: string;
+}
+
 export interface UpdateProfileData {
   profile?: {
     name?: string;
     email?: string;
     bio?: string | null;
+    phone?: string | null;
+    matricula?: string | null;
+    especialidad?: string | null;
+    professionalRole?: string | null;
   };
   notificationPreferences?: {
     emailNotifications?: boolean;
@@ -457,6 +475,31 @@ export async function updateUserProfile(
   if (!data.ok || !data.data) {
     const errorMessage = data.message || "Error al actualizar perfil";
     throw new Error(errorMessage);
+  }
+  return data.data;
+}
+
+export async function getTenantProfile(): Promise<TenantProfile> {
+  const { data } = await proxyJson<{ ok: boolean; data: TenantProfile }>("/user/tenant");
+  if (!data.ok || !data.data) {
+    throw new Error("Error al obtener datos del estudio");
+  }
+  return data.data;
+}
+
+export async function updateTenantProfile(
+  payload: Partial<Omit<TenantProfile, "id">>
+): Promise<TenantProfile> {
+  const { data } = await proxyJson<{ ok: boolean; data: TenantProfile; message?: string }>(
+    "/user/tenant",
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  );
+  if (!data.ok || !data.data) {
+    throw new Error(data.message || "Error al actualizar datos del estudio");
   }
   return data.data;
 }

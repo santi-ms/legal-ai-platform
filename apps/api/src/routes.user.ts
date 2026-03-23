@@ -15,6 +15,10 @@ const UpdateProfileSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres").optional(),
   email: z.string().email("Email inválido").optional(),
   bio: z.string().max(1000, "La biografía no puede exceder 1000 caracteres").optional().nullable(),
+  phone: z.string().max(30).optional().nullable(),
+  matricula: z.string().max(100).optional().nullable(),
+  especialidad: z.string().max(100).optional().nullable(),
+  professionalRole: z.string().max(100).optional().nullable(),
 });
 
 // Schema for notification preferences
@@ -84,7 +88,12 @@ export async function registerUserRoutes(app: FastifyInstance) {
           email: true,
           company: true,
           bio: true,
+          phone: true,
+          matricula: true,
+          especialidad: true,
+          professionalRole: true,
           notificationPreferences: true,
+          tenantId: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -128,6 +137,11 @@ export async function registerUserRoutes(app: FastifyInstance) {
         email: dbUser.email,
         company: dbUser.company,
         bio: dbUser.bio || "",
+        phone: dbUser.phone || "",
+        matricula: dbUser.matricula || "",
+        especialidad: dbUser.especialidad || "",
+        professionalRole: dbUser.professionalRole || "",
+        tenantId: dbUser.tenantId || null,
         notificationPreferences,
       });
     } catch (err: any) {
@@ -195,6 +209,18 @@ export async function registerUserRoutes(app: FastifyInstance) {
           if (profile.bio !== undefined) {
             updateData.bio = profile.bio;
           }
+          if (profile.phone !== undefined) {
+            updateData.phone = profile.phone;
+          }
+          if (profile.matricula !== undefined) {
+            updateData.matricula = profile.matricula;
+          }
+          if (profile.especialidad !== undefined) {
+            updateData.especialidad = profile.especialidad;
+          }
+          if (profile.professionalRole !== undefined) {
+            updateData.professionalRole = profile.professionalRole;
+          }
         }
 
         if (notificationPreferences) {
@@ -242,6 +268,10 @@ export async function registerUserRoutes(app: FastifyInstance) {
             email: true,
             company: true,
             bio: true,
+            phone: true,
+            matricula: true,
+            especialidad: true,
+            professionalRole: true,
             notificationPreferences: true,
           },
         });
@@ -276,6 +306,10 @@ export async function registerUserRoutes(app: FastifyInstance) {
           email: updatedUser.email,
           company: updatedUser.company,
           bio: updatedUser.bio || "",
+          phone: updatedUser.phone || "",
+          matricula: updatedUser.matricula || "",
+          especialidad: updatedUser.especialidad || "",
+          professionalRole: updatedUser.professionalRole || "",
           notificationPreferences: notificationPrefs,
         });
       } catch (err: any) {
@@ -298,6 +332,103 @@ export async function registerUserRoutes(app: FastifyInstance) {
       }
     },
   );
+
+  // ── Tenant Profile ──────────────────────────────────────────────────────────
+
+  // GET /api/user/tenant — Obtener datos del estudio
+  app.get("/api/user/tenant", async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const user = requireAuth(request);
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { tenantId: true },
+      });
+
+      if (!dbUser?.tenantId) {
+        return sendError(reply, 404, "No tenés un estudio configurado", "no_tenant");
+      }
+
+      const tenant = await (prisma as any).tenant.findUnique({
+        where: { id: dbUser.tenantId },
+        select: { id: true, name: true, cuit: true, address: true, phone: true, website: true },
+      });
+
+      if (!tenant) {
+        return sendError(reply, 404, "Estudio no encontrado", "tenant_not_found");
+      }
+
+      return sendSuccess(reply, "Estudio obtenido exitosamente", {
+        id: tenant.id,
+        name: tenant.name || "",
+        cuit: tenant.cuit || "",
+        address: tenant.address || "",
+        phone: tenant.phone || "",
+        website: tenant.website || "",
+      });
+    } catch (err: any) {
+      if (err.message === "UNAUTHORIZED") {
+        return sendError(reply, 401, "No autorizado", "unauthorized");
+      }
+      return sendError(reply, 500, "Error al obtener datos del estudio", "internal_error");
+    }
+  });
+
+  // PATCH /api/user/tenant — Actualizar datos del estudio
+  const UpdateTenantSchema = z.object({
+    name: z.string().min(2, "El nombre debe tener al menos 2 caracteres").optional(),
+    cuit: z.string().max(20).optional().nullable(),
+    address: z.string().max(300).optional().nullable(),
+    phone: z.string().max(30).optional().nullable(),
+    website: z.string().url("URL inválida").optional().nullable().or(z.literal("")),
+  });
+
+  app.patch("/api/user/tenant", async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const user = requireAuth(request);
+      const parsed = UpdateTenantSchema.safeParse(request.body);
+
+      if (!parsed.success) {
+        return sendError(reply, 400, "Datos inválidos", "invalid_body",
+          parsed.error.flatten().fieldErrors as any);
+      }
+
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { tenantId: true },
+      });
+
+      if (!dbUser?.tenantId) {
+        return sendError(reply, 404, "No tenés un estudio configurado", "no_tenant");
+      }
+
+      const updateData: any = {};
+      if (parsed.data.name !== undefined) updateData.name = parsed.data.name.trim();
+      if (parsed.data.cuit !== undefined) updateData.cuit = parsed.data.cuit;
+      if (parsed.data.address !== undefined) updateData.address = parsed.data.address;
+      if (parsed.data.phone !== undefined) updateData.phone = parsed.data.phone;
+      if (parsed.data.website !== undefined) updateData.website = parsed.data.website || null;
+
+      const updated = await (prisma as any).tenant.update({
+        where: { id: dbUser.tenantId },
+        data: updateData,
+        select: { id: true, name: true, cuit: true, address: true, phone: true, website: true },
+      });
+
+      return sendSuccess(reply, "Datos del estudio actualizados", {
+        id: updated.id,
+        name: updated.name || "",
+        cuit: updated.cuit || "",
+        address: updated.address || "",
+        phone: updated.phone || "",
+        website: updated.website || "",
+      });
+    } catch (err: any) {
+      if (err.message === "UNAUTHORIZED") {
+        return sendError(reply, 401, "No autorizado", "unauthorized");
+      }
+      return sendError(reply, 500, "Error al actualizar el estudio", "internal_error");
+    }
+  });
 
   app.patch<{ Body: CompleteOnboardingBody }>(
     "/api/user/onboarding",

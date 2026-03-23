@@ -10,6 +10,10 @@ generator client {
 model Tenant {
   id           String        @id @default(uuid())
   name         String
+  cuit         String?       // CUIT del estudio
+  address      String?       // Dirección del estudio
+  phone        String?       // Teléfono del estudio
+  website      String?       // Sitio web del estudio
   users        User[]
   documents    Document[]
   clients      Client[]
@@ -39,6 +43,9 @@ model User {
   
   // Profile fields
   bio                   String?  // Biografía profesional
+  phone                 String?  // Teléfono de contacto
+  matricula             String?  // Matrícula profesional (CPACF u otras)
+  especialidad          String?  // Especialidad jurídica (civil, penal, laboral, etc.)
   notificationPreferences Json?   // Preferencias de notificación (JSON)
 
   tenant    Tenant?   @relation(fields: [tenantId], references: [id])

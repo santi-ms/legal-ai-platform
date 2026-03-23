@@ -6,21 +6,43 @@ import { signOut, useSession } from "next-auth/react";
 import { SettingsHeader } from "@/components/settings/SettingsHeader";
 import { SettingsTabs } from "@/components/settings/SettingsTabs";
 import { ProfileSection } from "@/components/settings/ProfileSection";
+import { EstudioSection } from "@/components/settings/EstudioSection";
 import { NotificationPreferences } from "@/components/settings/NotificationPreferences";
 import { AppearanceSection } from "@/components/settings/AppearanceSection";
 import { SettingsActions } from "@/components/settings/SettingsActions";
 import { SupportBanner } from "@/components/settings/SupportBanner";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/app/lib/hooks/useAuth";
-import { getUserProfile, updateUserProfile, type UserProfile } from "@/app/lib/webApi";
+import {
+  getUserProfile,
+  updateUserProfile,
+  getTenantProfile,
+  updateTenantProfile,
+  type UserProfile,
+  type TenantProfile,
+} from "@/app/lib/webApi";
 import { AlertTriangle, ArrowLeft, Loader2, AlertCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface ProfileFormData {
   firstName: string;
   lastName: string;
   email: string;
   bio: string;
+  phone: string;
+  matricula: string;
+  especialidad: string;
+  professionalRole: string;
+}
+
+interface EstudioFormData {
+  name: string;
+  cuit: string;
+  address: string;
+  phone: string;
+  website: string;
 }
 
 interface NotificationPreferencesData {
@@ -29,17 +51,24 @@ interface NotificationPreferencesData {
   productUpdates: boolean;
 }
 
+// ─── Page ────────────────────────────────────────────────────────────────────
+
 export default function SettingsPage() {
   const { data: session } = useSession();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { success, error: showError } = useToast();
 
+  // ── Profile state ──────────────────────────────────────────────────────────
   const [profileData, setProfileData] = useState<ProfileFormData>({
     firstName: "",
     lastName: "",
     email: "",
     bio: "",
+    phone: "",
+    matricula: "",
+    especialidad: "",
+    professionalRole: "",
   });
 
   const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferencesData>({
@@ -55,11 +84,21 @@ export default function SettingsPage() {
     notifications: NotificationPreferencesData;
   } | null>(null);
 
-  // loadError: falla al cargar el perfil desde la API
   const [loadError, setLoadError] = useState<string | null>(null);
-
-  // formError: error de validación o falla al guardar
   const [formError, setFormError] = useState<string | null>(null);
+
+  // ── Estudio state ──────────────────────────────────────────────────────────
+  const [estudioData, setEstudioData] = useState<EstudioFormData>({
+    name: "",
+    cuit: "",
+    address: "",
+    phone: "",
+    website: "",
+  });
+  const [initialEstudio, setInitialEstudio] = useState<EstudioFormData | null>(null);
+  const [estudioHasChanges, setEstudioHasChanges] = useState(false);
+  const [estudioSaving, setEstudioSaving] = useState(false);
+  const [hasNoTenant, setHasNoTenant] = useState(false);
 
   // ── Carga del perfil ──────────────────────────────────────────────────────
   const loadProfile = async () => {
@@ -73,6 +112,10 @@ export default function SettingsPage() {
         lastName: profile.lastName || "",
         email: profile.email || "",
         bio: profile.bio || "",
+        phone: profile.phone || "",
+        matricula: profile.matricula || "",
+        especialidad: profile.especialidad || "",
+        professionalRole: profile.professionalRole || "",
       };
 
       const initialNotifications: NotificationPreferencesData = {
@@ -83,14 +126,31 @@ export default function SettingsPage() {
 
       setProfileData(initialProfile);
       setNotificationPreferences(initialNotifications);
-      setInitialData({
-        profile: initialProfile,
-        notifications: initialNotifications,
-      });
+      setInitialData({ profile: initialProfile, notifications: initialNotifications });
+
+      // Cargar datos del estudio si tiene tenant
+      if (profile.tenantId) {
+        try {
+          const tenant = await getTenantProfile();
+          const t: EstudioFormData = {
+            name: tenant.name || "",
+            cuit: tenant.cuit || "",
+            address: tenant.address || "",
+            phone: tenant.phone || "",
+            website: tenant.website || "",
+          };
+          setEstudioData(t);
+          setInitialEstudio(t);
+          setHasNoTenant(false);
+        } catch {
+          // Tenant no encontrado pero sigue adelante
+          setHasNoTenant(false);
+        }
+      } else {
+        setHasNoTenant(true);
+      }
     } catch (err: any) {
       console.error("Error loading profile:", err);
-
-      // Fallback a datos de sesión si están disponibles
       if (session?.user) {
         const nameParts = session.user.name?.split(" ") || [];
         const fallbackProfile: ProfileFormData = {
@@ -98,20 +158,18 @@ export default function SettingsPage() {
           lastName: nameParts.slice(1).join(" ") || "",
           email: session.user.email || "",
           bio: "",
+          phone: "",
+          matricula: "",
+          especialidad: "",
+          professionalRole: "",
         };
         setProfileData(fallbackProfile);
         setInitialData({
           profile: fallbackProfile,
-          notifications: {
-            emailNotifications: true,
-            securityAlerts: true,
-            productUpdates: false,
-          },
+          notifications: { emailNotifications: true, securityAlerts: true, productUpdates: false },
         });
-        // Mostramos el error pero permitimos operar con datos de sesión
         setLoadError("No pudimos cargar tu perfil completo. Algunos datos pueden estar desactualizados.");
       } else {
-        // Sin datos de sesión: bloquear con error claro y opción de reintentar
         setLoadError("No pudimos cargar tu perfil. Revisá tu conexión e intentá de nuevo.");
       }
     } finally {
@@ -126,14 +184,18 @@ export default function SettingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, authLoading]);
 
-  // ── Detectar cambios ──────────────────────────────────────────────────────
+  // ── Detectar cambios perfil ───────────────────────────────────────────────
   useEffect(() => {
     if (initialData) {
       const profileChanged =
         profileData.firstName !== initialData.profile.firstName ||
         profileData.lastName !== initialData.profile.lastName ||
         profileData.email !== initialData.profile.email ||
-        profileData.bio !== initialData.profile.bio;
+        profileData.bio !== initialData.profile.bio ||
+        profileData.phone !== initialData.profile.phone ||
+        profileData.matricula !== initialData.profile.matricula ||
+        profileData.especialidad !== initialData.profile.especialidad ||
+        profileData.professionalRole !== initialData.profile.professionalRole;
 
       const notificationsChanged =
         notificationPreferences.emailNotifications !== initialData.notifications.emailNotifications ||
@@ -144,6 +206,19 @@ export default function SettingsPage() {
     }
   }, [profileData, notificationPreferences, initialData]);
 
+  // ── Detectar cambios estudio ──────────────────────────────────────────────
+  useEffect(() => {
+    if (initialEstudio) {
+      const changed =
+        estudioData.name !== initialEstudio.name ||
+        estudioData.cuit !== initialEstudio.cuit ||
+        estudioData.address !== initialEstudio.address ||
+        estudioData.phone !== initialEstudio.phone ||
+        estudioData.website !== initialEstudio.website;
+      setEstudioHasChanges(changed);
+    }
+  }, [estudioData, initialEstudio]);
+
   // ── Redirección si no autenticado ─────────────────────────────────────────
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -151,7 +226,7 @@ export default function SettingsPage() {
     }
   }, [authLoading, isAuthenticated, router]);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  // ── Handlers perfil ───────────────────────────────────────────────────────
   const handleProfileFieldChange = (field: string, value: string) => {
     setFormError(null);
     setProfileData((prev) => ({ ...prev, [field]: value }));
@@ -173,26 +248,27 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     setFormError(null);
-
-    // Validación inline — no toasts
     if (!profileData.firstName.trim()) {
-      setFormError("El nombre es requerido para guardar los cambios.");
+      setFormError("El nombre es requerido.");
       return;
     }
     if (!profileData.email.trim() || !profileData.email.includes("@")) {
-      setFormError("El correo electrónico no es válido. Verificá que tenga el formato correcto.");
+      setFormError("El correo electrónico no es válido.");
       return;
     }
 
     setIsLoading(true);
     try {
       const fullName = `${profileData.firstName.trim()} ${profileData.lastName.trim()}`.trim();
-
       const updatedProfile = await updateUserProfile({
         profile: {
           name: fullName,
           email: profileData.email.trim(),
           bio: profileData.bio.trim() || null,
+          phone: profileData.phone.trim() || null,
+          matricula: profileData.matricula.trim() || null,
+          especialidad: profileData.especialidad || null,
+          professionalRole: profileData.professionalRole || null,
         },
         notificationPreferences: {
           emailNotifications: notificationPreferences.emailNotifications,
@@ -206,8 +282,11 @@ export default function SettingsPage() {
         lastName: updatedProfile.lastName,
         email: updatedProfile.email,
         bio: updatedProfile.bio,
+        phone: updatedProfile.phone || "",
+        matricula: updatedProfile.matricula || "",
+        especialidad: updatedProfile.especialidad || "",
+        professionalRole: updatedProfile.professionalRole || "",
       };
-
       const updatedNotifications: NotificationPreferencesData = {
         emailNotifications: updatedProfile.notificationPreferences.emailNotifications,
         securityAlerts: updatedProfile.notificationPreferences.securityAlerts,
@@ -216,36 +295,66 @@ export default function SettingsPage() {
 
       setProfileData(updatedProfileData);
       setNotificationPreferences(updatedNotifications);
-      setInitialData({
-        profile: updatedProfileData,
-        notifications: updatedNotifications,
-      });
+      setInitialData({ profile: updatedProfileData, notifications: updatedNotifications });
       setHasChanges(false);
-      success("Configuración guardada exitosamente");
+      success("Perfil guardado exitosamente");
 
-      // Refresca datos del servidor sin reload destructivo
-      if (session) {
-        router.refresh();
-      }
+      if (session) router.refresh();
     } catch (err: any) {
-      console.error("Error saving profile:", err);
       setFormError(err.message || "No pudimos guardar la configuración. Intentá nuevamente.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ── Handlers estudio ──────────────────────────────────────────────────────
+  const handleEstudioFieldChange = (field: keyof EstudioFormData, value: string) => {
+    setEstudioData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleEstudioSave = async () => {
+    if (!estudioData.name.trim()) {
+      showError("El nombre del estudio es requerido.");
+      return;
+    }
+    setEstudioSaving(true);
+    try {
+      const updated = await updateTenantProfile({
+        name: estudioData.name.trim(),
+        cuit: estudioData.cuit.trim() || null,
+        address: estudioData.address.trim() || null,
+        phone: estudioData.phone.trim() || null,
+        website: estudioData.website.trim() || null,
+      });
+      const t: EstudioFormData = {
+        name: updated.name || "",
+        cuit: updated.cuit || "",
+        address: updated.address || "",
+        phone: updated.phone || "",
+        website: updated.website || "",
+      };
+      setEstudioData(t);
+      setInitialEstudio(t);
+      setEstudioHasChanges(false);
+      success("Datos del estudio guardados");
+    } catch (err: any) {
+      showError(err.message || "No pudimos guardar los datos del estudio.");
+    } finally {
+      setEstudioSaving(false);
+    }
+  };
+
   const handleContactSupport = () => {
     const subject = encodeURIComponent("Soporte - Consulta sobre mi cuenta");
     const body = encodeURIComponent("Hola, necesito ayuda con mi cuenta.");
-    window.location.href = `mailto:soporte@legaltech.ar?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:soporte@doculex.ar?subject=${subject}&body=${body}`;
   };
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/auth/login" });
   };
 
-  // ── Guards de render ──────────────────────────────────────────────────────
+  // ── Guards ────────────────────────────────────────────────────────────────
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -253,11 +362,9 @@ export default function SettingsPage() {
       </div>
     );
   }
+  if (!isAuthenticated) return null;
 
-  if (!isAuthenticated) {
-    return null;
-  }
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
       <div className="layout-container flex h-full grow flex-col">
@@ -265,7 +372,7 @@ export default function SettingsPage() {
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             <SettingsHeader />
 
-            {/* Hero Section */}
+            {/* Hero */}
             <div className="flex flex-col gap-4 p-4 mt-6">
               <div>
                 <Button
@@ -284,22 +391,20 @@ export default function SettingsPage() {
                   Ajustes del sistema
                 </p>
                 <p className="text-slate-500 dark:text-slate-400 text-base font-normal leading-normal">
-                  Administrá tu cuenta, suscripciones y preferencias de seguridad.
+                  Administrá tu cuenta, estudio y preferencias.
                 </p>
               </div>
             </div>
 
-            {/* Navigation Tabs */}
+            {/* Tabs */}
             <SettingsTabs activeTab="profile" />
 
-            {/* Error de carga — con opción de reintentar */}
+            {/* Error de carga */}
             {loadError && (
               <div className="mx-4 mt-4 flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
                 <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                    {loadError}
-                  </p>
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">{loadError}</p>
                   <button
                     onClick={loadProfile}
                     className="mt-1 text-xs text-amber-700 dark:text-amber-300 font-semibold hover:underline"
@@ -310,22 +415,32 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {/* Profile Section */}
+            {/* ── Perfil personal ─────────────────────────────────────── */}
             <ProfileSection
               formData={profileData}
               onFieldChange={handleProfileFieldChange}
             />
 
-            {/* Appearance — dark mode */}
+            {/* ── Datos del estudio ────────────────────────────────────── */}
+            <EstudioSection
+              formData={estudioData}
+              onFieldChange={handleEstudioFieldChange}
+              onSave={handleEstudioSave}
+              isSaving={estudioSaving}
+              hasChanges={estudioHasChanges}
+              hasNoTenant={hasNoTenant}
+            />
+
+            {/* ── Apariencia ───────────────────────────────────────────── */}
             <AppearanceSection />
 
-            {/* Notification Preferences */}
+            {/* ── Notificaciones ───────────────────────────────────────── */}
             <NotificationPreferences
               preferences={notificationPreferences}
               onPreferenceChange={handlePreferenceChange}
             />
 
-            {/* Error de formulario — validación o falla al guardar */}
+            {/* Error de formulario */}
             {formError && (
               <div className="mx-4 flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                 <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
@@ -333,7 +448,7 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {/* Action Buttons */}
+            {/* Botones guardar perfil */}
             <SettingsActions
               onDiscard={handleDiscard}
               onSave={handleSave}
@@ -341,6 +456,7 @@ export default function SettingsPage() {
               isLoading={isLoading}
             />
 
+            {/* Sesión */}
             <section className="mx-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
@@ -361,7 +477,6 @@ export default function SettingsPage() {
               </div>
             </section>
 
-            {/* Support Banner */}
             <SupportBanner onContactSupport={handleContactSupport} />
           </div>
         </div>
