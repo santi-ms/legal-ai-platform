@@ -1081,7 +1081,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         data: {
           documentId: parsed.data.id,
           tenantId:   user.tenantId,
-          authorId:   user.id ?? null,
+          authorId:   user.userId ?? null,
           content:    body.data.content,
         },
         include: { author: { select: { id: true, name: true, email: true } } },
