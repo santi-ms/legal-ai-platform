@@ -96,12 +96,10 @@ function downloadCsv(content: string, filename: string) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-import { DocumentsPageHeader } from "@/components/documents/DocumentsPageHeader";
 import { DocumentsStatsCards } from "@/components/documents/DocumentsStatsCards";
 import { DocumentsFiltersBar } from "@/components/documents/DocumentsFiltersBar";
 import { DocumentsTableEnhanced, DocumentsTableSkeleton } from "@/components/documents/DocumentsTableEnhanced";
 import { DocumentsPagination } from "@/components/documents/DocumentsPagination";
-import { DocumentsPageFooter } from "@/components/documents/DocumentsPageFooter";
 
 function DocumentsContent() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -394,10 +392,8 @@ function DocumentsContent() {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div className="layout-container flex h-full grow flex-col bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
-      <DocumentsPageHeader />
-
-      <main className="max-w-[1280px] mx-auto w-full px-4 md:px-10 py-8 flex-1">
+    <div className="flex flex-col flex-1 text-slate-900 dark:text-slate-100">
+      <main className="max-w-[1280px] mx-auto w-full px-4 md:px-6 py-8 flex-1">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
           <div className="flex flex-col gap-1">
@@ -508,7 +504,6 @@ function DocumentsContent() {
         )}
       </main>
 
-      <DocumentsPageFooter />
     </div>
   );
 }
