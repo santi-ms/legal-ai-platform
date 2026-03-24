@@ -13,13 +13,14 @@ interface BrandLogoProps {
  */
 export function BrandLogo({ size = 40, className = "" }: BrandLogoProps) {
   return (
-    <Image
-      src="/logo.png"
-      alt="DocuLex"
-      width={size}
-      height={size}
-      className={className}
-      priority
-    />
+    <div className={`bg-white inline-flex items-center justify-center overflow-hidden ${className}`}>
+      <Image
+        src="/logo.png"
+        alt="DocuLex"
+        width={size}
+        height={size}
+        priority
+      />
+    </div>
   );
 }
