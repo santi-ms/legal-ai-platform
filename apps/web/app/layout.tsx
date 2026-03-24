@@ -18,6 +18,7 @@ export const metadata = {
   ],
   authors: [{ name: "DocuLex" }],
   creator: "DocuLex",
+  applicationName: "DocuLex",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ?? "https://legaltech-ar.vercel.app"
   ),
