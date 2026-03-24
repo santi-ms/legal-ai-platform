@@ -320,7 +320,7 @@ export default function ReferencesPage() {
   })).filter((g) => g.docs.length > 0);
 
   // Also show docs with unknown types
-  const knownTypes = new Set(REFERENCE_DOCUMENT_TYPES.map((t) => t.value));
+  const knownTypes = new Set<string>(REFERENCE_DOCUMENT_TYPES.map((t) => t.value));
   const unknownDocs = references.filter((r) => !knownTypes.has(r.documentType));
 
   return (
