@@ -723,3 +723,68 @@ export async function updateExpediente(id: string, payload: ExpedientePayload): 
 export async function deleteExpediente(id: string): Promise<void> {
   await proxyJson(`/expedientes/${id}`, { method: "DELETE" });
 }
+
+// ─── Reference Documents ───────────────────────────────────────────────────────
+
+export const REFERENCE_DOCUMENT_TYPES = [
+  { value: "legal_notice", label: "Carta Documento" },
+  { value: "service_contract", label: "Contrato de Servicios" },
+  { value: "nda", label: "Acuerdo de Confidencialidad (NDA)" },
+  { value: "lease", label: "Contrato de Locación" },
+  { value: "debt_recognition", label: "Reconocimiento de Deuda" },
+  { value: "simple_authorization", label: "Autorización Simple" },
+] as const;
+
+export type ReferenceDocumentType = (typeof REFERENCE_DOCUMENT_TYPES)[number]["value"];
+
+export interface ReferenceDocument {
+  id: string;
+  originalName: string;
+  documentType: string;
+  fileSize: number;
+  storageUrl: string;
+  createdAt: string;
+  uploadedBy?: { firstName: string; lastName: string; email: string } | null;
+}
+
+/**
+ * Sube un PDF de referencia al servidor.
+ * Hace el fetch directamente (no a través de proxyJson) ya que es multipart.
+ */
+export async function uploadReferenceDocument(
+  file: File,
+  documentType: string
+): Promise<ReferenceDocument> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("documentType", documentType);
+
+  const url = isServer()
+    ? buildFrontendUrl(`${PROXY_BASE}/documents/references/upload`)
+    : `${PROXY_BASE}/documents/references/upload`;
+
+  const resp = await fetch(url, {
+    method: "POST",
+    body: formData,
+    // No poner Content-Type — el browser lo setea con el boundary correcto
+    cache: "no-store",
+  });
+
+  const data = await readJson(resp);
+  if (!resp.ok || (data && typeof data === "object" && "ok" in data && (data as any).ok === false)) {
+    throw new Error((data as any)?.message || (data as any)?.error || `Error ${resp.status}`);
+  }
+  return (data as any).referenceDocument;
+}
+
+export async function listReferenceDocuments(
+  documentType?: string
+): Promise<ReferenceDocument[]> {
+  const qs = documentType ? `?documentType=${encodeURIComponent(documentType)}` : "";
+  const { data } = await proxyJson<any>(`/documents/references${qs}`);
+  return Array.isArray(data?.references) ? data.references : [];
+}
+
+export async function deleteReferenceDocument(id: string): Promise<void> {
+  await proxyJson(`/documents/references/${id}`, { method: "DELETE" });
+}

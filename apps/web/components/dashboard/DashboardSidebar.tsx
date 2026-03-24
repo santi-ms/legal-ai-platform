@@ -14,6 +14,7 @@ import {
   HelpCircle,
   Sparkles,
   BarChart2,
+  BookMarked,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { useDeadlines } from "@/app/lib/contexts/DeadlineContext";
@@ -59,6 +60,13 @@ const navigationItems = [
     label: "Analytics",
     icon: BarChart2,
     href: "/analytics",
+    disabled: false,
+  },
+  {
+    id: "references",
+    label: "Referencias IA",
+    icon: BookMarked,
+    href: "/documents/references",
     disabled: false,
   },
 ];
@@ -123,9 +131,14 @@ export function DashboardSidebar({ isOpen = false, onClose }: DashboardSidebarPr
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
         {navigationItems.map((item) => {
           const Icon = item.icon;
+          // Special case: /documents should not be active when on /documents/references
           const isActive =
             !item.disabled &&
-            (pathname === item.href || pathname?.startsWith(item.href + "/"));
+            (item.href === "/documents"
+              ? pathname === "/documents" ||
+                (pathname?.startsWith("/documents/") &&
+                  !pathname?.startsWith("/documents/references"))
+              : pathname === item.href || pathname?.startsWith(item.href + "/"));
 
           if (item.disabled) {
             return (

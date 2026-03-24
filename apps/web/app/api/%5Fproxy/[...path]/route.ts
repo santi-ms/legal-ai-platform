@@ -222,9 +222,16 @@ async function handler(
     // 7. Hacer fetch al backend
     let backendResponse: Response;
     try {
-      const body = ["GET", "HEAD"].includes(req.method) 
-        ? undefined 
-        : await req.text();
+      let body: BodyInit | undefined;
+      if (!["GET", "HEAD"].includes(req.method)) {
+        const reqContentType = req.headers.get("content-type") || "";
+        if (reqContentType.includes("multipart/form-data")) {
+          // Multipart: usar arrayBuffer para preservar datos binarios (PDFs, etc.)
+          body = await req.arrayBuffer();
+        } else {
+          body = await req.text();
+        }
+      }
 
       backendResponse = await fetch(targetUrl, {
         method: req.method,
