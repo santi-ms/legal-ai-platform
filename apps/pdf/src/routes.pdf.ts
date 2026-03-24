@@ -5,7 +5,6 @@ import { generatePdfFromContract } from "./pdfGeneratorPuppeteer.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-
 // ESM safe __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,7 +18,73 @@ const BodySchema = z.object({
   fileName: z.string().optional(), // opcional: si viene, validar formato
 });
 
+// Directorio para referencias subidas (separado de los PDFs generados)
+const REFERENCES_DIR = process.env.PDF_REFERENCES_DIR || path.resolve(__dirname, "../references");
+
 export async function registerPdfRoutes(app: FastifyInstance) {
+  // Asegurar que el directorio de referencias exista
+  await fs.promises.mkdir(REFERENCES_DIR, { recursive: true });
+
+  // POST /pdf/upload-reference - Guardar un PDF de referencia subido por el usuario
+  app.post("/pdf/upload-reference", async (request, reply) => {
+    try {
+      const data = await request.file();
+      if (!data) {
+        return reply.status(400).send({ ok: false, error: "no_file", message: "No se recibió ningún archivo" });
+      }
+      if (!data.mimetype.includes("pdf")) {
+        return reply.status(400).send({ ok: false, error: "invalid_type", message: "Solo se aceptan archivos PDF" });
+      }
+
+      const fileName = (data.fields as any)?.fileName?.value as string | undefined;
+      if (!fileName || !/^[a-zA-Z0-9._-]+\.pdf$/.test(fileName)) {
+        return reply.status(400).send({ ok: false, error: "invalid_file_name", message: "fileName inválido" });
+      }
+
+      const filePath = path.join(REFERENCES_DIR, fileName);
+      const buffer = await data.toBuffer();
+      await fs.promises.writeFile(filePath, buffer);
+
+      app.log.info(`[pdf] Reference uploaded: ${fileName}`);
+      return reply.send({ ok: true, fileName });
+    } catch (err) {
+      app.log.error(err, "[pdf] Error uploading reference");
+      return reply.status(500).send({ ok: false, error: "upload_failed" });
+    }
+  });
+
+  // GET /pdf/reference/:fileName - Descargar un PDF de referencia
+  app.get("/pdf/reference/:fileName", async (request, reply) => {
+    const { fileName } = request.params as { fileName: string };
+    if (fileName.includes("..") || fileName.includes("/")) {
+      return reply.status(400).send({ ok: false, error: "invalid_file_name" });
+    }
+    const filePath = path.join(REFERENCES_DIR, fileName);
+    try {
+      await fs.promises.access(filePath);
+      reply.header("Content-Type", "application/pdf");
+      reply.header("Content-Disposition", `attachment; filename="${fileName}"`);
+      return reply.send(fs.createReadStream(filePath));
+    } catch {
+      return reply.status(404).send({ ok: false, error: "REFERENCE_NOT_FOUND" });
+    }
+  });
+
+  // DELETE /pdf/reference/:fileName - Eliminar un PDF de referencia
+  app.delete("/pdf/reference/:fileName", async (request, reply) => {
+    const { fileName } = request.params as { fileName: string };
+    if (fileName.includes("..") || fileName.includes("/")) {
+      return reply.status(400).send({ ok: false, error: "invalid_file_name" });
+    }
+    const filePath = path.join(REFERENCES_DIR, fileName);
+    try {
+      await fs.promises.unlink(filePath);
+      return reply.send({ ok: true });
+    } catch {
+      return reply.status(404).send({ ok: false, error: "REFERENCE_NOT_FOUND" });
+    }
+  });
+
   // GET /pdf/:fileName - Descargar PDF por nombre
   app.get("/pdf/:fileName", async (request, reply) => {
     const { fileName } = request.params as { fileName: string };

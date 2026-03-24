@@ -19,6 +19,7 @@ model Tenant {
   clients      Client[]
   expedientes  Expediente[]
   logs         IAUsageLog[]
+  referenceDocuments ReferenceDocument[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -50,12 +51,13 @@ model User {
 
   tenant    Tenant?   @relation(fields: [tenantId], references: [id])
 
-  documentsCreated   Document[]             @relation("CreatedByUser")
-  clientsCreated     Client[]               @relation("ClientsCreatedBy")
-  expedientesCreated Expediente[]           @relation("ExpedientesCreatedBy")
-  annotations        DocumentAnnotation[]   @relation("AnnotationsWrittenBy")
-  accounts           Account[]
-  sessions           Session[]
+  documentsCreated        Document[]             @relation("CreatedByUser")
+  clientsCreated          Client[]               @relation("ClientsCreatedBy")
+  expedientesCreated      Expediente[]           @relation("ExpedientesCreatedBy")
+  annotations             DocumentAnnotation[]   @relation("AnnotationsWrittenBy")
+  referenceDocuments      ReferenceDocument[]    @relation("ReferenceDocsUploadedBy")
+  accounts                Account[]
+  sessions                Session[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -87,6 +89,10 @@ model Document {
   // Expediente asociado (opcional)
   expedienteId   String?
   expediente     Expediente?       @relation(fields: [expedienteId], references: [id], onDelete: SetNull)
+
+  // Documento de referencia usado en la generación (opcional)
+  referenceDocumentId String?
+  referenceDocument   ReferenceDocument? @relation(fields: [referenceDocumentId], references: [id], onDelete: SetNull)
 
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
@@ -243,6 +249,44 @@ model IAUsageLog {
   completionTokens Int
   costUsd          Float
   timestamp        DateTime @default(now())
+}
+
+model ReferenceDocument {
+  id           String    @id @default(uuid())
+
+  // Multi-tenant
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Quién subió el archivo
+  uploadedById String
+  uploadedBy   User      @relation("ReferenceDocsUploadedBy", fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  // Metadata del archivo
+  originalName String    // Nombre original del archivo
+  fileName     String    // Nombre en el servidor
+  fileSize     Int       // Tamaño en bytes
+  fileType     String    @default("pdf")
+
+  // Tipo de documento legal al que pertenece
+  documentType String    // "legal_notice" | "service_contract" | "nda" | etc.
+
+  // Texto extraído del PDF (para que la IA lo use como referencia)
+  pdfText      String?   @db.Text
+
+  // URL para acceder/descargar el archivo
+  storageUrl   String
+
+  // Documentos generados usando esta referencia
+  documents    Document[]
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime? // Borrado suave
+
+  @@index([tenantId])
+  @@index([documentType])
+  @@index([deletedAt])
 }
 
 // NextAuth models

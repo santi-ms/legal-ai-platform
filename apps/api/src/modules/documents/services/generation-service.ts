@@ -6,7 +6,7 @@
  * 2. AI enhancement using baseDraft + structured form data
  */
 
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import type {
   DocumentTypeId,
   StructuredDocumentData,
@@ -33,8 +33,8 @@ import {
 } from "../clauses/index.js";
 import { logger } from "../../../utils/logger.js";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 // ---------------------------------------------------------------------------
@@ -48,7 +48,8 @@ const openai = new OpenAI({
 export async function generateDocumentWithNewArchitecture(
   documentType: DocumentTypeId,
   data: StructuredDocumentData,
-  tone: string
+  tone: string,
+  referenceText?: string | null
 ): Promise<DocumentGenerationResult> {
   logger.info(`[generation-service] Generating ${documentType} document`);
 
@@ -131,7 +132,8 @@ export async function generateDocumentWithNewArchitecture(
       documentType,
       tone,
       promptConfig,
-      data
+      data,
+      referenceText
     );
     aiEnhancedDraft = enhancedResult.text;
     aiTokens = enhancedResult.tokens;
@@ -154,7 +156,7 @@ export async function generateDocumentWithNewArchitecture(
     documentType,
     templateVersion: template.version,
     generationTimestamp: new Date().toISOString(),
-    aiModel: aiUsed ? "gpt-4o-mini" : "base-template",
+    aiModel: aiUsed ? "claude-3-5-sonnet-20241022" : "base-template",
     aiTokens,
   };
 
@@ -423,7 +425,8 @@ async function enhanceDraftWithAIWrapper(
     baseInstructions: string[];
     toneInstructions: Record<string, string>;
   },
-  data: StructuredDocumentData
+  data: StructuredDocumentData,
+  referenceText?: string | null
 ): Promise<{ text: string; tokens: { prompt: number; completion: number } }> {
   // Allow tests to skip the AI call and receive the assembled baseDraft directly.
   // Set SKIP_AI_ENHANCEMENT=true when starting the server in test/CI mode.
@@ -441,11 +444,20 @@ async function enhanceDraftWithAIWrapper(
   const hasAdditionalClauses =
     data.additionalClauses && String(data.additionalClauses).trim().length > 0;
 
+  // Sección de documento de referencia (si existe)
+  const referenceSection = referenceText
+    ? `\nDOCUMENTO DE REFERENCIA (el usuario subió este documento como modelo de formato y estilo — usarlo como guía de estructura y redacción, pero completar con los DATOS REALES del formulario):
+<reference_document>
+${referenceText.substring(0, 3000)}
+</reference_document>
+`
+    : "";
+
   const userPrompt = `Generá el documento legal final completo del siguiente tipo: ${documentType}
 
 TONO: ${toneInstruction}
 JURISDICCIÓN: ${jurisdiccionTexto}
-
+${referenceSection}
 BORRADOR BASE (estructura y cláusulas ya ensambladas — usarlo como esqueleto):
 ---
 ${baseDraft}
@@ -460,31 +472,27 @@ INSTRUCCIONES DE SALIDA:
 ${promptConfig.baseInstructions.map((i) => `- ${i}`).join("\n")}
 - Usá el borrador base como estructura principal del documento
 - Completá y mejorá el texto con los datos estructurados cuando aporten información adicional o más precisa que el borrador
-- Si un dato del formulario ya está en el borrador, no lo repitas — solo mejorá la redacción${hasAdditionalClauses ? "\n- El borrador incluye una sección CLÁUSULAS ADICIONALES con contenido solicitado por el usuario — es OBLIGATORIA, incorporarla y numerarla correctamente como cláusula dentro del documento" : ""}
+- Si un dato del formulario ya está en el borrador, no lo repitas — solo mejorá la redacción${hasAdditionalClauses ? "\n- El borrador incluye una sección CLÁUSULAS ADICIONALES con contenido solicitado por el usuario — es OBLIGATORIA, incorporarla y numerarla correctamente como cláusula dentro del documento" : ""}${referenceText ? "\n- Seguí el formato, estructura y estilo de redacción del documento de referencia, adaptándolo a los datos del formulario" : ""}
 - NO dejés placeholders como [indicar], [COMPLETAR], [___], {{VARIABLE}} — si falta un dato usá lo que ya está en el borrador
 - NO inventés información que no esté en los datos estructurados ni en el borrador
 - NO incluyas explicaciones, comentarios ni meta-texto
 - Responde ÚNICAMENTE con el texto final del documento, listo para usar`;
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+    const message = await anthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 4000,
+      system: promptConfig.systemMessage,
       messages: [
-        { role: "system", content: promptConfig.systemMessage },
         { role: "user", content: userPrompt },
       ],
-      temperature: 0.3,
-      max_tokens: 4000,
-      top_p: 0.9,
-      frequency_penalty: 0.1,
-      presence_penalty: 0.1,
     });
 
     const rawText =
-      completion.choices?.[0]?.message?.content?.trim() || baseDraft;
+      (message.content[0] as any)?.text?.trim() || baseDraft;
     const tokens = {
-      prompt: completion.usage?.prompt_tokens || 0,
-      completion: completion.usage?.completion_tokens || 0,
+      prompt: message.usage?.input_tokens || 0,
+      completion: message.usage?.output_tokens || 0,
     };
 
     // Post-processing: clean and validate AI output
@@ -492,7 +500,7 @@ ${promptConfig.baseInstructions.map((i) => `- ${i}`).join("\n")}
 
     return { text, tokens };
   } catch (error) {
-    logger.error(`[generation-service] OpenAI error: ${error}`);
+    logger.error(`[generation-service] Claude API error: ${error}`);
     throw error;
   }
 }

@@ -3,11 +3,13 @@ import Fastify from "fastify";
 import fastifyCors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import helmet from "@fastify/helmet";
+import multipart from "@fastify/multipart";
 import { registerDocumentRoutes } from "./routes.documents.js";
 import { registerAuthRoutes } from "./routes.auth.js";
 import { registerChatRoutes } from "./routes.chat.js";
 import { registerClientRoutes } from "./routes.clients.js";
 import { registerExpedienteRoutes } from "./routes.expedientes.js";
+import { registerReferenceRoutes } from "./routes.references.js";
 import { initializeDocumentRegistry } from "./modules/documents/domain/document-registry.js";
 import { logger } from "./utils/logger.js";
 
@@ -32,6 +34,9 @@ async function buildServer() {
     if (origin.includes(".vercel.app")) return true;
     return false;
   };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await app.register(multipart as any, { limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB
 
   await app.register(fastifyCors, {
     credentials: true,
@@ -82,6 +87,7 @@ async function buildServer() {
   await registerChatRoutes(app);
   await registerClientRoutes(app);
   await registerExpedienteRoutes(app);
+  await registerReferenceRoutes(app);
 
   const { registerUserRoutes } = await import("./routes.user.js");
   await registerUserRoutes(app);

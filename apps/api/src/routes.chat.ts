@@ -1,9 +1,9 @@
 import { FastifyInstance } from "fastify";
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { requireAuth } from "./utils/auth.js";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ─── System prompt ────────────────────────────────────────────────────────────
 
@@ -184,22 +184,18 @@ export async function registerChatRoutes(app: FastifyInstance) {
 
     let rawContent: string;
     try {
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: CHAT_SYSTEM_PROMPT },
-          ...messages,
-        ],
-        temperature: 0.7,
+      const completion = await anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
         max_tokens: 1200,
-        response_format: { type: "json_object" },
+        system: CHAT_SYSTEM_PROMPT + "\n\nIMPORTANTE: Respondé SIEMPRE con un objeto JSON válido, sin texto adicional.",
+        messages: messages.map((m: any) => ({ role: m.role, content: m.content })),
       });
 
       rawContent =
-        completion.choices[0]?.message?.content ??
+        (completion.content[0] as any)?.text ??
         '{"ready":false,"reply":"Ocurrió un error. ¿Podés repetir tu consulta?"}';
     } catch (aiError: any) {
-      app.log.error({ aiError }, "[chat] OpenAI API error");
+      app.log.error({ aiError }, "[chat] Claude API error");
       return reply.status(502).send({
         ok: false,
         error: "ai_error",
@@ -256,22 +252,22 @@ export async function registerChatRoutes(app: FastifyInstance) {
 
     let answer: string;
     try {
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
+      const historyMessages = history.map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content }));
+      const completion = await anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 800,
+        system: systemPrompt,
         messages: [
-          { role: "system", content: systemPrompt },
-          ...history,
+          ...historyMessages,
           { role: "user", content: question },
         ],
-        temperature: 0.5,
-        max_tokens: 800,
       });
 
       answer =
-        completion.choices[0]?.message?.content?.trim() ??
+        (completion.content[0] as any)?.text?.trim() ??
         "No pude generar una respuesta. Intentá de nuevo.";
     } catch (aiError: any) {
-      app.log.error({ aiError }, "[document-ask] OpenAI API error");
+      app.log.error({ aiError }, "[document-ask] Claude API error");
       return reply.status(502).send({
         ok: false,
         error: "ai_error",

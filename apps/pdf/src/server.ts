@@ -1,10 +1,13 @@
 import Fastify from "fastify";
+import multipart from "@fastify/multipart";
 import { registerPdfRoutes } from "./routes.pdf.js";
 
 async function main() {
   const fastify = Fastify({
     logger: true
   });
+
+  await fastify.register(multipart, { limits: { fileSize: 10 * 1024 * 1024 } });
 
   // registrar endpoints PDF
   await registerPdfRoutes(fastify);

@@ -1,4 +1,7 @@
 {
+  "env": {
+    "STITCH_API_KEY": "AQ.Ab8RN6JpwNUsidjmD4RtWidbmOj0jqG1VfM1k-j79WxA-Tue_A"
+  },
   "permissions": {
     "allow": [
       "Bash(openssl rand:*)",
@@ -46,11 +49,21 @@
       "mcp__6a2fe381-1f9b-4fa8-9705-6e36458cd914__get_deployment_build_logs",
       "mcp__6a2fe381-1f9b-4fa8-9705-6e36458cd914__get_project",
       "Bash(xargs grep:*)",
-      "Bash(ls -la /c/Users/santi/Desktop/legal-ai-platform/apps/api/src/routes*.ts)"
+      "Bash(ls -la /c/Users/santi/Desktop/legal-ai-platform/apps/api/src/routes*.ts)",
+      "Bash(wc -l /c/Users/santi/Desktop/legal-ai-platform/apps/pdf/src/*.ts)",
+      "Bash(grep -r 'coming soon' /c/Users/santi/Desktop/legal-ai-platform/apps/web --include=*.tsx --include=*.ts)",
+      "Bash(grep -rn \"annotation\\\\|comment\" C:UserssantiDesktoplegal-ai-platform --include=*.prisma -l)",
+      "mcp__mcp-registry__search_mcp_registry",
+      "WebFetch(domain:stitch.withgoogle.com)",
+      "Bash(ls -la \"C:\\\\Users\\\\santi\\\\Desktop\\\\legal-ai-platform\\\\.claude\"\" 2>/dev/null || echo \"Directory doesn 't exist or is empty \")",
+      "Bash(node -e \":*)",
+      "mcp__0613ad9e-3c84-4dc8-84d0-0df034e8c7b1__execute_sql",
+      "Bash(npm install:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "railway"
+    "railway",
+    "stitch"
   ]
 }
