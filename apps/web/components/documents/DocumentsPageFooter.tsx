@@ -11,7 +11,7 @@ export function DocumentsPageFooter() {
           <div className="size-6 bg-slate-400 rounded-sm flex items-center justify-center text-white">
             <Gavel className="w-4 h-4" />
           </div>
-          <span className="font-bold text-slate-500 dark:text-slate-400">LegalTech AR Legal Platform</span>
+          <span className="font-bold text-slate-500 dark:text-slate-400">DocuLex Legal Platform</span>
         </div>
         <div className="flex gap-8 text-sm text-slate-500 dark:text-slate-400">
           <Link href="#terminos" className="hover:text-primary transition-colors">
@@ -25,7 +25,7 @@ export function DocumentsPageFooter() {
           </Link>
         </div>
         <p className="text-xs text-slate-400">
-          © {new Date().getFullYear()} LegalTech AR. Todos los derechos reservados.
+          © {new Date().getFullYear()} DocuLex. Todos los derechos reservados.
         </p>
       </div>
     </footer>

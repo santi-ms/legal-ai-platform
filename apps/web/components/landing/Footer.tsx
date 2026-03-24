@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Gavel, Mail, Globe, MapPin } from "lucide-react";
+import { Mail, Globe, MapPin } from "lucide-react";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 // Helper para crear mailto links con encoding correcto
 const createMailtoLink = (subject: string) => {
@@ -36,11 +37,9 @@ export function Footer() {
         {/* Brand Column */}
         <div className="col-span-2">
           <div className="flex items-center gap-2 mb-6">
-            <div className="bg-primary p-2 rounded-lg">
-              <Gavel className="w-5 h-5 text-white" />
-            </div>
+            <BrandLogo size={36} className="rounded-lg" />
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-              LegalTech AR
+              DocuLex
             </h2>
           </div>
           <p className="text-slate-500 dark:text-slate-400 max-w-xs mb-8">
@@ -136,7 +135,7 @@ export function Footer() {
 
       {/* Bottom Bar */}
       <div className="max-w-7xl mx-auto mt-20 pt-8 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-400">
-        <p>© 2024 LegalTech AR. Todos los derechos reservados.</p>
+        <p>© 2024 DocuLex. Todos los derechos reservados.</p>
         <div className="flex items-center gap-2">
           <MapPin className="w-4 h-4" />
           <span>Buenos Aires, Argentina</span>

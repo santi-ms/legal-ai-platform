@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Gavel, X } from "lucide-react";
+import { X } from "lucide-react";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 import {
   LayoutDashboard,
   FileText,
@@ -102,11 +103,9 @@ export function DashboardSidebar({ isOpen = false, onClose }: DashboardSidebarPr
       {/* Logo + botón cerrar en mobile */}
       <div className="p-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="bg-primary size-10 rounded-lg flex items-center justify-center text-white">
-            <Gavel className="w-6 h-6" />
-          </div>
+          <BrandLogo size={40} className="rounded-lg" />
           <div>
-            <h1 className="text-lg font-bold leading-none">LegalTech</h1>
+            <h1 className="text-lg font-bold leading-none">DocuLex</h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">Pro Edition</p>
           </div>
         </div>

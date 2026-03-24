@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "LegalTech AR — Documentos Legales con IA";
+export const alt = "DocuLex — Documentos Legales con IA";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -61,7 +61,7 @@ export default function OgImage() {
             LT
           </div>
           <span style={{ color: "#a5b4fc", fontSize: 22, fontWeight: 600 }}>
-            LegalTech AR
+            DocuLex
           </span>
         </div>
 

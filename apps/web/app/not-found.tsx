@@ -1,17 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Gavel, ArrowLeft, FileSearch } from "lucide-react";
+import { ArrowLeft, FileSearch } from "lucide-react";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center px-4 text-center">
       {/* Logo */}
       <div className="flex items-center gap-3 mb-12">
-        <div className="bg-primary size-10 rounded-lg flex items-center justify-center text-white">
-          <Gavel className="w-6 h-6" />
-        </div>
-        <span className="text-lg font-bold text-slate-900 dark:text-white">LegalTech AR</span>
+        <BrandLogo size={40} className="rounded-lg" />
+        <span className="text-lg font-bold text-slate-900 dark:text-white">DocuLex</span>
       </div>
 
       {/* 404 */}

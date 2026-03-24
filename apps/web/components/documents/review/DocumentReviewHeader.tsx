@@ -52,7 +52,7 @@ export function DocumentReviewHeader({
           <FileEdit className="w-6 h-6" />
         </div>
         <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">
-          LegalTech AR
+          DocuLex
         </h2>
       </div>
 

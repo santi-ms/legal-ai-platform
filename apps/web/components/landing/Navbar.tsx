@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Gavel, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 const navigation = [
   { name: "Inicio", href: "#inicio" },
@@ -31,11 +32,9 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group cursor-pointer">
-          <div className="bg-primary p-2 rounded-lg group-hover:bg-primary/90 transition-colors">
-            <Gavel className="w-5 h-5 text-white" />
-          </div>
+          <BrandLogo size={36} className="rounded-lg" />
           <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            LegalTech AR
+            DocuLex
           </h2>
         </Link>
 

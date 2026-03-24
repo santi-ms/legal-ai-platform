@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Gavel } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 export function DocumentCreationPageHeader() {
   return (
@@ -18,11 +19,9 @@ export function DocumentCreationPageHeader() {
 
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-3 group min-w-0">
-            <div className="bg-primary p-2 rounded-lg group-hover:bg-primary/90 transition-colors shrink-0">
-              <Gavel className="w-5 h-5 text-white" />
-            </div>
+            <BrandLogo size={36} className="rounded-lg shrink-0" />
             <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white truncate">
-              Legal AI Platform
+              DocuLex
             </h2>
           </Link>
         </div>

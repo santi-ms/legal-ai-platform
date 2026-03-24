@@ -1,6 +1,7 @@
 "use client";
 
-import { Gavel, Zap, Shield, Users } from "lucide-react";
+import { Zap, Shield, Users } from "lucide-react";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 const features = [
   {
@@ -32,8 +33,8 @@ export function RegisterSidebar() {
       <div className="relative z-10">
         {/* Logo */}
         <div className="flex items-center gap-3 mb-12">
-          <Gavel className="w-10 h-10" />
-          <h1 className="text-2xl font-bold tracking-tight">LegalTech AR</h1>
+          <BrandLogo size={40} className="rounded-lg" />
+          <h1 className="text-2xl font-bold tracking-tight">DocuLex</h1>
         </div>
 
         {/* Main content */}
@@ -65,7 +66,7 @@ export function RegisterSidebar() {
       {/* Testimonial */}
       <div className="relative z-10 mt-auto pt-10 border-t border-white/20">
         <p className="text-sm italic opacity-80">
-          "LegalTech AR ha transformado la forma en que manejamos nuestros litigios, permitiéndonos enfocarnos en lo que importa: nuestros clientes."
+          "DocuLex ha transformado la forma en que manejamos nuestros litigios, permitiéndonos enfocarnos en lo que importa: nuestros clientes."
         </p>
         <div className="mt-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">

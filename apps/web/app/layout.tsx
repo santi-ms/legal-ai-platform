@@ -7,31 +7,31 @@ import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 export const metadata = {
   title: {
-    default: "LegalTech AR — Documentos Legales con IA",
-    template: "%s | LegalTech AR",
+    default: "DocuLex — Documentos Legales con IA",
+    template: "%s | DocuLex",
   },
   description:
     "Generá contratos, poderes y escrituras con validez jurídica en Argentina usando Inteligencia Artificial. Rápido, seguro y preciso.",
   keywords: [
     "documentos legales", "contratos con IA", "abogados Argentina",
-    "estudio jurídico", "generador de contratos", "LegalTech",
+    "estudio jurídico", "generador de contratos", "DocuLex",
   ],
-  authors: [{ name: "LegalTech AR" }],
-  creator: "LegalTech AR",
+  authors: [{ name: "DocuLex" }],
+  creator: "DocuLex",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ?? "https://legaltech-ar.vercel.app"
   ),
   openGraph: {
     type: "website",
     locale: "es_AR",
-    title: "LegalTech AR — Documentos Legales con IA",
+    title: "DocuLex — Documentos Legales con IA",
     description:
       "Generá contratos, poderes y escrituras con validez jurídica en Argentina usando Inteligencia Artificial.",
-    siteName: "LegalTech AR",
+    siteName: "DocuLex",
   },
   twitter: {
     card: "summary_large_image",
-    title: "LegalTech AR — Documentos Legales con IA",
+    title: "DocuLex — Documentos Legales con IA",
     description:
       "Generá contratos, poderes y escrituras con validez jurídica en Argentina usando Inteligencia Artificial.",
   },

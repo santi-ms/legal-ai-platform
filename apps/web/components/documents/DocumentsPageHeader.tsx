@@ -26,7 +26,7 @@ export function DocumentsPageHeader() {
             <Gavel className="w-5 h-5" />
           </div>
           <h2 className="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-tight">
-            LegalTech AR
+            DocuLex
           </h2>
         </Link>
         <nav className="hidden md:flex items-center gap-6">

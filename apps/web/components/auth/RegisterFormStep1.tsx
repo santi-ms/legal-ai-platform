@@ -268,7 +268,7 @@ export function RegisterFormStep1({ onSubmit, isLoading = false }: RegisterFormS
       {/* Footer */}
       <div className="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] text-slate-400 uppercase tracking-widest font-bold">
-          <span>© {new Date().getFullYear()} LegalTech AR. Todos los derechos reservados.</span>
+          <span>© {new Date().getFullYear()} DocuLex. Todos los derechos reservados.</span>
           <div className="flex gap-4">
             <a 
               href={`mailto:soporte@legaltech.ar?subject=${encodeURIComponent("Consulta sobre Términos y Condiciones")}`}

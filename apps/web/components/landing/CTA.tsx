@@ -29,8 +29,8 @@ export function CTA() {
               variant="outline"
               size="lg"
               onClick={() => {
-                const subject = encodeURIComponent("Consulta - LegalTech AR");
-                const body = encodeURIComponent("Hola, me gustaría obtener más información sobre LegalTech AR.");
+                const subject = encodeURIComponent("Consulta - DocuLex");
+                const body = encodeURIComponent("Hola, me gustaría obtener más información sobre DocuLex.");
                 window.location.href = `mailto:soporte@legaltech.ar?subject=${subject}&body=${body}`;
               }}
               className="bg-transparent border-2 border-white/30 text-white text-lg font-bold h-14 px-10 rounded-xl hover:bg-white/10 hover:border-white/50 transition-all"
