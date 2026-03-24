@@ -1,4 +1,6 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+// pdf-parse es CommonJS, usamos createRequire para importarlo en ESM
 const pdfParse = require("pdf-parse") as (buffer: Buffer) => Promise<{ text: string }>;
 
 /**
