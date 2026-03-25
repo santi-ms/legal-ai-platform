@@ -491,7 +491,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           request.log?.info({ documentData }, "Intentando crear documento con datos:");
           
           const doc = await tx.document.create({
-            data: documentData,
+            data: documentData as any,
           });
 
           // Creamos la versión inicial con nueva estructura
