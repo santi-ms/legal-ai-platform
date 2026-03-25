@@ -205,11 +205,17 @@ export async function registerChatRoutes(app: FastifyInstance) {
 
     let response: Record<string, unknown>;
     try {
-      response = JSON.parse(rawContent);
+      // Extraer JSON aunque venga envuelto en ```json ... ``` o texto adicional
+      const jsonMatch = rawContent.match(/```(?:json)?\s*([\s\S]*?)```/) ||
+                        rawContent.match(/(\{[\s\S]*\})/);
+      const jsonStr = jsonMatch ? jsonMatch[1].trim() : rawContent.trim();
+      response = JSON.parse(jsonStr);
     } catch {
+      // Si sigue fallando, intentar usar el texto como reply directo
+      const plainText = rawContent.replace(/```(?:json)?|```/g, "").trim();
       response = {
         ready: false,
-        reply: "No pude procesar la respuesta correctamente. ¿Podés intentarlo de nuevo?",
+        reply: plainText || "No pude procesar la respuesta. ¿Podés intentarlo de nuevo?",
       };
     }
 
