@@ -20,11 +20,13 @@ import {
   LayoutDashboard,
   RotateCcw,
   MessageSquare,
+  BookMarked,
 } from "lucide-react";
 // FileText usado en GeneratingStep
 import { Button } from "@/components/ui/button";
 import { PlainTextDocumentEditor } from "@/src/features/documents/ui/editor/PlainTextDocumentEditor";
 import { usePlainTextDocumentEditor } from "@/src/features/documents/ui/editor/usePlainTextDocumentEditor";
+import { listReferenceDocuments, type ReferenceDocument } from "@/app/lib/webApi";
 
 // Registrar todos los schemas de documentos
 import "@/src/features/documents/schemas/service-contract";
@@ -36,7 +38,7 @@ import "@/src/features/documents/schemas/simple-authorization";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-type Step = "chat" | "generating" | "result";
+type Step = "chat" | "reference" | "generating" | "result";
 
 interface Message {
   role: "user" | "assistant";
@@ -86,6 +88,13 @@ export default function ChatDocumentCreationPage() {
   const [chatLoading, setChatLoading] = useState(false);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [generatingLabel, setGeneratingLabel] = useState("Generando documento...");
+
+  // Reference step state
+  const [pendingExtractedData, setPendingExtractedData] = useState<Record<string, unknown> | null>(null);
+  const [detectedDocType, setDetectedDocType] = useState<string>("");
+  const [referenceDocuments, setReferenceDocuments] = useState<ReferenceDocument[]>([]);
+  const [selectedReferenceId, setSelectedReferenceId] = useState<string>("");
+  const [loadingReferences, setLoadingReferences] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -144,16 +153,24 @@ export default function ChatDocumentCreationPage() {
 
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Si la IA tiene todos los datos, iniciamos la generación
+      // Si la IA tiene todos los datos, mostramos selector de referencia antes de generar
       if (data.ready && data.extractedData) {
-        const docLabel =
-          DOC_TYPE_LABELS[data.documentType as string] || "documento";
+        const docType = data.documentType as string;
+        const docLabel = DOC_TYPE_LABELS[docType] || "documento";
         setGeneratingLabel(`Generando tu ${docLabel}...`);
+        setPendingExtractedData(data.extractedData);
+        setDetectedDocType(docType);
+
+        // Cargamos referencias filtradas por tipo
+        setLoadingReferences(true);
+        listReferenceDocuments(docType)
+          .then((docs) => setReferenceDocuments(docs))
+          .catch(() => setReferenceDocuments([]))
+          .finally(() => setLoadingReferences(false));
 
         // Pequeña pausa para que el usuario lea el último mensaje del asistente
         setTimeout(() => {
-          setStep("generating");
-          generateDocument(data.extractedData);
+          setStep("reference");
         }, 1200);
       }
     } catch {
@@ -172,12 +189,13 @@ export default function ChatDocumentCreationPage() {
 
   // ─── Llamada al endpoint de generación ──────────────────────────────────────
 
-  const generateDocument = async (extractedData: Record<string, unknown>) => {
+  const generateDocument = async (extractedData: Record<string, unknown>, refId?: string) => {
     try {
+      const payload = refId ? { ...extractedData, referenceDocumentId: refId } : extractedData;
       const res = await fetch("/api/_proxy/documents/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(extractedData),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -218,9 +236,32 @@ export default function ChatDocumentCreationPage() {
     setInput("");
     setResult(null);
     setChatLoading(false);
+    setPendingExtractedData(null);
+    setDetectedDocType("");
+    setReferenceDocuments([]);
+    setSelectedReferenceId("");
   };
 
   // ─── Renders condicionales ────────────────────────────────────────────────────
+
+  if (step === "reference") {
+    const handleConfirmGenerate = () => {
+      if (!pendingExtractedData) return;
+      setStep("generating");
+      generateDocument(pendingExtractedData, selectedReferenceId || undefined);
+    };
+    return (
+      <ReferenceStep
+        docTypeLabel={DOC_TYPE_LABELS[detectedDocType] || "documento"}
+        references={referenceDocuments}
+        selectedId={selectedReferenceId}
+        loading={loadingReferences}
+        onSelect={setSelectedReferenceId}
+        onConfirm={handleConfirmGenerate}
+        onSkip={handleConfirmGenerate}
+      />
+    );
+  }
 
   if (step === "generating") {
     return <GeneratingStep label={generatingLabel} />;
@@ -301,7 +342,7 @@ function ChatStep({
               Asistente Legal
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Generación por chat · GPT-4o
+              Generación por chat · Claude
             </p>
           </div>
         </div>
@@ -472,6 +513,124 @@ function GeneratingStep({ label }: { label: string }) {
               </div>
             );
           })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Paso: Selección de Referencia ────────────────────────────────────────────
+
+interface ReferenceStepProps {
+  docTypeLabel: string;
+  references: ReferenceDocument[];
+  selectedId: string;
+  loading: boolean;
+  onSelect: (id: string) => void;
+  onConfirm: () => void;
+  onSkip: () => void;
+}
+
+function ReferenceStep({
+  docTypeLabel,
+  references,
+  selectedId,
+  loading,
+  onSelect,
+  onConfirm,
+  onSkip,
+}: ReferenceStepProps) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
+      <div className="max-w-lg w-full space-y-6">
+        {/* Icono + título */}
+        <div className="text-center space-y-3">
+          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/20 mx-auto">
+            <BookMarked className="h-7 w-7 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+              ¿Usar un documento de referencia?
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Se identificó: <span className="font-semibold text-slate-700 dark:text-slate-300">{docTypeLabel}</span>.
+              La IA puede usar un modelo tuyo como referencia de formato y estilo.
+            </p>
+          </div>
+        </div>
+
+        {/* Lista de referencias */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-4">
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-400">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Cargando referencias...
+            </div>
+          ) : references.length === 0 ? (
+            <div className="text-center py-6 space-y-2">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                No tenés documentos de referencia para este tipo.
+              </p>
+              <a
+                href="/documents/references"
+                className="text-xs text-primary underline underline-offset-2"
+              >
+                Subir referencias →
+              </a>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {references.map((doc) => (
+                <button
+                  key={doc.id}
+                  onClick={() => onSelect(selectedId === doc.id ? "" : doc.id)}
+                  className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all text-sm flex items-center gap-3 ${
+                    selectedId === doc.id
+                      ? "border-primary bg-primary/5 text-primary font-medium"
+                      : "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-primary/40"
+                  }`}
+                >
+                  <FileText className="w-4 h-4 shrink-0" />
+                  <span className="flex-1 truncate">{doc.originalName}</span>
+                  {selectedId === doc.id && (
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-primary" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {selectedId && (
+            <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 pt-1">
+              <Sparkles className="w-3.5 h-3.5" />
+              La IA adaptará el documento al formato del modelo seleccionado.
+            </p>
+          )}
+        </div>
+
+        {/* Botones */}
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={onSkip}
+            className="flex-1 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+          >
+            Omitir y generar
+          </Button>
+          <Button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 bg-primary hover:bg-primary/90 text-white"
+          >
+            {selectedId ? (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generar con referencia
+              </>
+            ) : (
+              "Generar sin referencia"
+            )}
+          </Button>
         </div>
       </div>
     </div>

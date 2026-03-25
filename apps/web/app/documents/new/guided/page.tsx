@@ -43,12 +43,15 @@ import {
 import {
   listClients,
   listExpedientes,
+  listReferenceDocuments,
   patchDocumentClient,
   patchDocumentExpediente,
   type Client,
   type Expediente,
+  type ReferenceDocument,
+  REFERENCE_DOCUMENT_TYPES,
 } from "@/app/lib/webApi";
-import { Users, Briefcase, ChevronDown as ChevronDownIcon } from "lucide-react";
+import { Users, Briefcase, ChevronDown as ChevronDownIcon, BookMarked } from "lucide-react";
 
 // Initialize schemas — all document types
 import "@/src/features/documents/schemas/service-contract";
@@ -109,6 +112,11 @@ export default function GuidedDocumentCreationPage() {
   const [clientList, setClientList]                     = useState<Client[]>([]);
   const [expedienteList, setExpedienteList]             = useState<Expediente[]>([]);
   const [loadingContext, setLoadingContext]              = useState(false);
+
+  // Reference document selector
+  const [selectedReferenceId, setSelectedReferenceId]   = useState<string>("");
+  const [referenceDocuments, setReferenceDocuments]     = useState<ReferenceDocument[]>([]);
+  const [loadingReferences, setLoadingReferences]       = useState(false);
 
   // Ref para scroll automático al bloque de error de generación
   const generationErrorRef = useRef<HTMLDivElement>(null);
@@ -201,7 +209,7 @@ export default function GuidedDocumentCreationPage() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges, currentStep]);
 
-  // Load clients + expedientes when user reaches summary step
+  // Load clients + expedientes + reference docs when user reaches summary step
   useEffect(() => {
     if (currentStep !== "summary") return;
     if (clientList.length > 0 || loadingContext) return;
@@ -215,6 +223,17 @@ export default function GuidedDocumentCreationPage() {
     }).catch(() => { /* ignore — context association is optional */ })
       .finally(() => setLoadingContext(false));
   }, [currentStep, clientList.length, loadingContext]);
+
+  // Load reference documents filtered by selected document type when reaching summary
+  useEffect(() => {
+    if (currentStep !== "summary" || !selectedDocumentType) return;
+    if (referenceDocuments.length > 0 || loadingReferences) return;
+    setLoadingReferences(true);
+    listReferenceDocuments(selectedDocumentType)
+      .then((docs) => setReferenceDocuments(docs))
+      .catch(() => { /* ignore — reference is optional */ })
+      .finally(() => setLoadingReferences(false));
+  }, [currentStep, selectedDocumentType, referenceDocuments.length, loadingReferences]);
 
   const handleDocumentTypeSelect = (documentType: DocumentTypeId) => {
     trackDocumentTypeSelected(documentType);
@@ -297,6 +316,7 @@ export default function GuidedDocumentCreationPage() {
         jurisdiction: formData.jurisdiccion,
         tone: formData.tono,
         ...formData,
+        ...(selectedReferenceId ? { referenceDocumentId: selectedReferenceId } : {}),
       };
 
       setLoadingProgress(25);
@@ -418,6 +438,8 @@ export default function GuidedDocumentCreationPage() {
     setConfirmBackOpen(false);
     setSelectedClientId("");
     setSelectedExpedienteId("");
+    setSelectedReferenceId("");
+    setReferenceDocuments([]);
   };
 
   const renderSelectionStep = () => {
@@ -659,6 +681,57 @@ export default function GuidedDocumentCreationPage() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* ─── Documento de referencia para IA ─────────────────────── */}
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm space-y-4">
+              <div className="flex items-center gap-2">
+                <BookMarked className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Documento de referencia para IA <span className="font-normal text-slate-400">(opcional)</span>
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 -mt-1">
+                La IA usará el formato y estilo del documento seleccionado como base para la generación.
+                Podés subir tus propios modelos en{" "}
+                <a href="/documents/references" className="text-primary underline underline-offset-2">
+                  Referencias IA
+                </a>.
+              </p>
+              {loadingReferences ? (
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cargando referencias...
+                </div>
+              ) : referenceDocuments.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">
+                  No hay documentos de referencia para este tipo. Subí uno desde{" "}
+                  <a href="/documents/references" className="text-primary underline underline-offset-2">
+                    Referencias IA
+                  </a>.
+                </p>
+              ) : (
+                <div className="relative">
+                  <select
+                    value={selectedReferenceId}
+                    onChange={(e) => setSelectedReferenceId(e.target.value)}
+                    className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 pr-8 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    <option value="">Sin referencia</option>
+                    {referenceDocuments.map((doc) => (
+                      <option key={doc.id} value={doc.id}>
+                        {doc.originalName}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDownIcon className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                </div>
+              )}
+              {selectedReferenceId && (
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  La IA adaptará el documento al formato del modelo seleccionado.
+                </p>
+              )}
             </div>
 
             {warnings.length > 0 && (

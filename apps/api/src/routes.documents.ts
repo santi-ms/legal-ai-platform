@@ -320,6 +320,13 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       // 1.5️⃣ Sanitizar inputs para prevenir XSS
       const sanitizedData = sanitizeObject(structuredData, false) as typeof structuredData;
 
+      // 1.6️⃣ Extraer referenceDocumentId (opcional) del body original
+      const rawBody = request.body as Record<string, unknown>;
+      const referenceDocumentId: string | null =
+        typeof rawBody?.referenceDocumentId === "string" && rawBody.referenceDocumentId.trim()
+          ? rawBody.referenceDocumentId.trim()
+          : null;
+
       // 2️⃣ Autenticación — requerida en producción, fallback demo solo en dev/test
       const user = getUserFromRequest(request);
 
@@ -344,15 +351,41 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       const tenantId = user?.tenantId || "demo-tenant";
       const userId   = user?.userId   || "demo-user";
 
+      // 2.5️⃣ Cargar texto del documento de referencia (si se proporcionó)
+      let referenceText: string | null = null;
+      let resolvedReferenceDocumentId: string | null = null;
+
+      if (referenceDocumentId && user?.tenantId) {
+        const refDoc = await prisma.referenceDocument.findFirst({
+          where: {
+            id: referenceDocumentId,
+            tenantId: user.tenantId,
+            deletedAt: null,
+          },
+          select: { id: true, pdfText: true, originalName: true, documentType: true },
+        });
+
+        if (refDoc && refDoc.pdfText) {
+          referenceText = refDoc.pdfText;
+          resolvedReferenceDocumentId = refDoc.id;
+          app.log.info(
+            `[api] Using reference document "${refDoc.originalName}" (${refDoc.documentType}) for generation`
+          );
+        } else if (referenceDocumentId) {
+          app.log.warn(`[api] Reference document ${referenceDocumentId} not found or has no text — proceeding without reference`);
+        }
+      }
+
       // 3️⃣ Generar documento con nueva arquitectura
       const { generateDocumentWithNewArchitecture } = await import("./modules/documents/services/generation-service.js");
-      
+
       app.log.info(`[api] Generating ${documentType} document with new architecture`);
-      
+
       const generationResult = await generateDocumentWithNewArchitecture(
         documentType,
         sanitizedData,
-        tone
+        tone,
+        referenceText
       );
 
       const contrato = generationResult.aiEnhancedDraft;
@@ -442,16 +475,17 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           const oldTone = toneMap[tone] || tone;
 
           // Creamos el documento
-          const documentData = {
+          const documentData: Record<string, unknown> = {
             tenantId: tenant.id,
             createdById: finalUser.id,
             type: oldType, // Mantener formato antiguo en DB por compatibilidad
             jurisdiccion: jurisdiction,
             tono: oldTone, // Mantener formato antiguo en DB por compatibilidad
             estado: "generated_text",
-            costUsd: generationResult.metadata.aiTokens 
-              ? (generationResult.metadata.aiTokens.prompt + generationResult.metadata.aiTokens.completion) * 0.000001 
+            costUsd: generationResult.metadata.aiTokens
+              ? (generationResult.metadata.aiTokens.prompt + generationResult.metadata.aiTokens.completion) * 0.000001
               : 0,
+            ...(resolvedReferenceDocumentId ? { referenceDocumentId: resolvedReferenceDocumentId } : {}),
           };
           
           request.log?.info({ documentData }, "Intentando crear documento con datos:");
