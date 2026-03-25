@@ -185,7 +185,7 @@ export async function registerChatRoutes(app: FastifyInstance) {
     let rawContent: string;
     try {
       const completion = await anthropic.messages.create({
-        model: "claude-3-5-haiku-20241022",
+        model: "claude-haiku-4-5",
         max_tokens: 1200,
         system: CHAT_SYSTEM_PROMPT + "\n\nIMPORTANTE: Respondé SIEMPRE con un objeto JSON válido, sin texto adicional.",
         messages: messages.map((m: any) => ({ role: m.role, content: m.content })),
@@ -254,7 +254,7 @@ export async function registerChatRoutes(app: FastifyInstance) {
     try {
       const historyMessages = history.map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content }));
       const completion = await anthropic.messages.create({
-        model: "claude-3-5-haiku-20241022",
+        model: "claude-haiku-4-5",
         max_tokens: 800,
         system: systemPrompt,
         messages: [

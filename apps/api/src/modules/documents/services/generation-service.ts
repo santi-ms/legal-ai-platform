@@ -156,7 +156,7 @@ export async function generateDocumentWithNewArchitecture(
     documentType,
     templateVersion: template.version,
     generationTimestamp: new Date().toISOString(),
-    aiModel: aiUsed ? "claude-3-5-haiku-20241022" : "base-template",
+    aiModel: aiUsed ? "claude-sonnet-4-5" : "base-template",
     aiTokens,
   };
 
@@ -480,7 +480,7 @@ ${promptConfig.baseInstructions.map((i) => `- ${i}`).join("\n")}
 
   try {
     const message = await anthropic.messages.create({
-      model: "claude-3-5-haiku-20241022",
+      model: "claude-sonnet-4-5",
       max_tokens: 4000,
       system: promptConfig.systemMessage,
       messages: [
