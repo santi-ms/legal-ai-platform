@@ -72,6 +72,7 @@ IMPORTANTE: si el usuario ya mencionó un dato en la conversación, usalo direct
   incumplimiento        : descripción del incumplimiento específico
   intimacion            : texto de lo que se intima, exige o solicita
   plazo_cumplimiento    : plazo para cumplir como string (ej: "5 días hábiles", "10 días corridos")
+  cbu_remitente         : CBU o alias del remitente para recibir el pago (SOLO si el reclamo es dinerario; preguntarlo; si no tiene, omitir el campo)
   apercibimiento        : qué ocurre si no cumple (ej: "se iniciarán acciones legales")
 
 ── lease ──

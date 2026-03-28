@@ -322,6 +322,7 @@ export function buildStructuredContextForAI(
       ? data.plazo_custom
       : data.plazo_cumplimiento;
     add("Plazo para cumplir", plazo);
+    add("CBU / Alias para pago (si aplica)", data.cbu_remitente);
     add("Apercibimiento", data.apercibimiento);
 
   } else if (documentType === "lease") {
@@ -657,9 +658,10 @@ Tu redacción es directa, cronológica y contundente. Cada carta documento que r
         "El documento debe ser legalmente válido y ejecutable en la República Argentina",
         "Usar TODOS los datos concretos: nombres, CUITs, domicilios, montos exactos, fechas precisas",
         "Estructura: ciudad y fecha / identificación de remitente / identificación de destinatario / título CARTA DOCUMENTO / cuerpo numerado / cierre y firma",
-        "Cuerpo: sección I — Antecedentes (relación previa entre las partes), II — Hechos (descripción cronológica y objetiva), III — Incumplimiento (descripción precisa del incumplimiento), IV — Intimación (qué debe hacer, plazo exacto, domicilio donde cumplir), V — Apercibimiento (consecuencias concretas: acciones judiciales, daños y perjuicios, intereses)",
-        "El plazo de intimación debe expresarse en días hábiles o corridos según corresponda, con fecha exacta de vencimiento si es posible",
-        "Apercibimiento concreto: 'en caso de no cumplimiento, iniciaremos las acciones judiciales que correspondan, reclamando daños y perjuicios, intereses y costas'",
+        "Cuerpo: EXACTAMENTE 5 secciones — I. ANTECEDENTES (relación previa entre las partes), II. HECHOS (descripción cronológica y objetiva), III. INCUMPLIMIENTO (descripción precisa del incumplimiento con cita del art. 886 CCyCN si hay mora), IV. INTIMACIÓN (qué debe hacer + plazo exacto en días hábiles o corridos + medio de pago si el reclamo es dinerario), V. APERCIBIMIENTO Y RESERVA DE ACCIONES (consecuencias concretas: acciones judiciales, intereses, costas y honorarios). NO crear una sección VI ni sección separada de 'plazo' — el plazo va DENTRO de la sección IV.",
+        "En la sección IV de INTIMACIÓN: si el reclamo involucra pago de dinero, especificar el medio de pago. Si se provee CBU/alias, incluirlo. Si no se provee, escribir: 'mediante transferencia bancaria a la cuenta que se le indicará fehacientemente, o en el domicilio del suscripto'",
+        "El plazo de intimación debe expresarse en días hábiles o corridos según corresponda",
+        "Apercibimiento en sección V: 'Vencido el plazo sin cumplimiento, el suscripto iniciará de inmediato las acciones judiciales que correspondan, reclamando el capital, intereses moratorios a tasa activa BNA desde la fecha de vencimiento, daños y perjuicios, y costas y honorarios a exclusivo cargo del intimado.'",
         "NO incluir cláusulas contractuales, foro de competencia ni elementos ajenos al formato de carta documento",
         "Cierre: 'Sin otro particular, saludo a Ud. atentamente.' + espacio para firma + nombre del remitente",
         "El documento es definitivo — absolutamente todos los campos completos con datos reales",

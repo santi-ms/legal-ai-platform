@@ -135,6 +135,7 @@ export const LegalNoticeDTOSchema = BaseDocumentDTOSchema.extend({
   intimacion: z.string().min(1),
   plazo_cumplimiento: z.string().min(1),
   plazo_custom: z.string().optional(),
+  cbu_remitente: z.string().optional(),
   apercibimiento: z.string().optional(),
 });
 
