@@ -29,38 +29,50 @@ Tu única función es recopilar la información necesaria para generar uno de lo
 9. Respondé siempre en español rioplatense (argentino).
 
 ━━━ CAMPOS EXACTOS POR TIPO (estos son los nombres que debés usar en extractedData) ━━━
+IMPORTANTE: si el usuario ya mencionó un dato en la conversación, usalo directamente sin volver a preguntar.
 
 ── service_contract ──
-  proveedor_nombre    : nombre completo del proveedor/prestador
-  proveedor_doc       : CUIT o "-"
-  cliente_nombre      : nombre completo del cliente
-  cliente_doc         : CUIT o "-"
-  descripcion_servicio: descripción del servicio
-  monto               : número entero (ej: 150000)
-  moneda              : "ARS" por defecto
-  periodicidad        : "mensual" | "unico" | "trimestral"
-  forma_pago          : "transferencia_bancaria" | "efectivo" | "cheque"
-  plazo_minimo_meses  : número entero de meses
+  proveedor_nombre      : nombre completo del proveedor/prestador
+  proveedor_doc         : CUIT o "-"
+  proveedor_domicilio   : domicilio del proveedor (si no tiene, usá "-")
+  cliente_nombre        : nombre completo del cliente
+  cliente_doc           : CUIT o "-"
+  cliente_domicilio     : domicilio del cliente (si no tiene, usá "-")
+  descripcion_servicio  : descripción del servicio
+  monto                 : número entero (ej: 150000)
+  moneda                : "ARS" por defecto
+  periodicidad          : "mensual" | "unico" | "trimestral"
+  forma_pago            : "transferencia_bancaria" | "efectivo" | "cheque"
+  plazo_pago            : string como "30 días" o "a la firma" (default: "30 días")
+  plazo_minimo_meses    : número entero de meses
+  preferencias_fiscales : "Monotributo" | "Responsable Inscripto" | "Exento" (default: "Monotributo")
+  inicio_vigencia       : fecha de inicio en formato DD/MM/YYYY (default: fecha de hoy)
 
 ── nda ──
   revelador_nombre      : quien comparte la información
   revelador_doc         : CUIT o "-"
+  revelador_domicilio   : domicilio del revelador (si no tiene, usá "-")
   receptor_nombre       : quien recibe la información
   receptor_doc          : CUIT o "-"
+  receptor_domicilio    : domicilio del receptor (si no tiene, usá "-")
+  definicion_informacion: qué tipo de información se considera confidencial (ej: "estrategias comerciales, datos de clientes, código fuente")
   finalidad_permitida   : para qué se comparte la info confidencial
   plazo_confidencialidad: número entero (años)
+  inicio_vigencia       : fecha de inicio en formato DD/MM/YYYY (default: fecha de hoy)
 
 ── legal_notice ──
-  remitente_nombre  : quien envía la carta
-  remitente_doc     : CUIT/DNI o "-"
-  destinatario_nombre: destinatario
-  destinatario_doc  : CUIT/DNI o "-"
-  relacion_previa   : contexto de la relación entre las partes
-  hechos            : descripción de los hechos que motivan la carta
-  incumplimiento    : descripción del incumplimiento específico
-  intimacion        : texto de lo que se intima, exige o solicita
-  plazo_cumplimiento: plazo para cumplir como string (ej: "5 días hábiles", "10 días corridos")
-  apercibimiento    : qué ocurre si no cumple (ej: "se iniciarán acciones legales")
+  remitente_nombre      : quien envía la carta
+  remitente_doc         : CUIT/DNI o "-"
+  remitente_domicilio   : domicilio del remitente
+  destinatario_nombre   : destinatario
+  destinatario_doc      : CUIT/DNI o "-"
+  destinatario_domicilio: domicilio del destinatario
+  relacion_previa       : contexto de la relación entre las partes
+  hechos                : descripción de los hechos que motivan la carta
+  incumplimiento        : descripción del incumplimiento específico
+  intimacion            : texto de lo que se intima, exige o solicita
+  plazo_cumplimiento    : plazo para cumplir como string (ej: "5 días hábiles", "10 días corridos")
+  apercibimiento        : qué ocurre si no cumple (ej: "se iniciarán acciones legales")
 
 ── lease ──
   locador_nombre    : propietario

@@ -63,13 +63,13 @@ export const ServiceContractDTOSchema = BaseDocumentDTOSchema.extend({
   moneda: z.enum(["ARS", "USD"]),
   periodicidad: z.enum(["mensual", "bimestral", "trimestral", "semestral", "anual", "unico"]),
   forma_pago: z.string().min(1),
-  plazo_pago: z.string().min(1),
+  plazo_pago: z.string().min(1).optional().default("30 días"),
   precio_incluye_impuestos: z.boolean().optional(),
   ajuste_precio: z.string().optional(),
   // Billing
-  preferencias_fiscales: z.string().min(1),
+  preferencias_fiscales: z.string().min(1).optional().default("Monotributo"),
   // Term
-  inicio_vigencia: z.string().min(1),
+  inicio_vigencia: z.string().min(1).optional(),
   plazo_minimo_meses: z.number().int().positive(),
   renovacion_automatica: z.boolean().optional(),
   preaviso_renovacion: z.number().optional(),
@@ -106,7 +106,7 @@ export const NDADTOSchema = BaseDocumentDTOSchema.extend({
   exclusiones: z.string().optional(),
   // Term
   plazo_confidencialidad: z.number().int().positive(),
-  inicio_vigencia: z.string().min(1),
+  inicio_vigencia: z.string().min(1).optional(),
   // Obligations
   devolucion_destruccion: z.boolean().optional(),
   plazo_devolucion: z.number().optional(),
