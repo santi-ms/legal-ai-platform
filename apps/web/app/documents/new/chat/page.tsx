@@ -654,6 +654,7 @@ function ResultStep({
   documentEditor,
   onNewDocument,
   onDashboard,
+  onViewDocument,
 }: ResultStepProps) {
   const docTypeLabel =
     DOC_TYPE_LABELS[result.metadata?.documentType ?? ""] || "Documento";
@@ -695,6 +696,14 @@ function ResultStep({
             >
               <LayoutDashboard className="h-4 w-4 mr-1.5" />
               Dashboard
+            </Button>
+            <Button
+              size="sm"
+              onClick={onViewDocument}
+              className="bg-primary hover:bg-primary/90 text-white"
+            >
+              <FileText className="h-4 w-4 mr-1.5" />
+              Ver documento
             </Button>
           </div>
         </div>
