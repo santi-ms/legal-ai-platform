@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FileText, Plus, Sparkles } from "lucide-react";
 import { formatDate, formatDocumentType } from "@/app/lib/format";
 import { Document } from "@/app/lib/webApi";
@@ -50,6 +51,8 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 function getStatusConfig(status: string) {
   return (
+    statusConfig[status] ||
+    statusConfig[status.toLowerCase()] ||
     statusConfig[status.toUpperCase()] || {
       label: status,
       className: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400",
@@ -81,6 +84,7 @@ export function RecentDocumentsTable({
   documents,
   onViewAll,
 }: RecentDocumentsTableProps) {
+  const router = useRouter();
   // Limitar a los 4 más recientes
   const recentDocs = documents.slice(0, 4);
 
@@ -143,29 +147,31 @@ export function RecentDocumentsTable({
                 const statusInfo = getStatusConfig(status);
 
                 return (
-                  <Link key={doc.id} href={`/documents/${doc.id}`}>
-                    <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-5 h-5 text-primary" />
-                          <span className="font-medium text-slate-900 dark:text-slate-100">{formatDocumentType(doc.type)}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span
-                          className={cn(
-                            "px-2.5 py-1 rounded-full text-[11px] font-bold uppercase",
-                            statusInfo.className
-                          )}
-                        >
-                          {statusInfo.label}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-center text-sm text-slate-500 dark:text-slate-400">
-                        {formatRelativeDate(doc.createdAt)}
-                      </td>
-                    </tr>
-                  </Link>
+                  <tr
+                    key={doc.id}
+                    onClick={() => router.push(`/documents/${doc.id}`)}
+                    className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-primary" />
+                        <span className="font-medium text-slate-900 dark:text-slate-100">{formatDocumentType(doc.type)}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-[11px] font-bold uppercase",
+                          statusInfo.className
+                        )}
+                      >
+                        {statusInfo.label}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center text-sm text-slate-500 dark:text-slate-400">
+                      {formatRelativeDate(doc.createdAt)}
+                    </td>
+                  </tr>
                 );
               })
             )}
