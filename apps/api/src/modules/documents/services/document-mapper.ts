@@ -129,9 +129,16 @@ export async function normalizeDocumentRequest(body: unknown): Promise<{
       };
     }
     
+    // Return detailed Zod errors for debugging
+    const dtoErrors = !dtoResult.success
+      ? dtoResult.error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")
+      : "";
+    const oldErrors = !oldParsed.success
+      ? oldParsed.error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")
+      : "";
     return {
       success: false,
-      error: "Invalid request format",
+      error: `Invalid request format. DTO errors: [${dtoErrors}] | Legacy errors: [${oldErrors}]`,
     };
   } catch (error: any) {
     return {
