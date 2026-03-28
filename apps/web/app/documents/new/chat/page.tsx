@@ -610,15 +610,17 @@ function ReferenceStep({
 
         {/* Botones */}
         <div className="flex gap-3">
+          {selectedId && (
+            <Button
+              variant="outline"
+              onClick={onSkip}
+              className="flex-1 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+            >
+              Omitir y generar
+            </Button>
+          )}
           <Button
-            variant="outline"
-            onClick={onSkip}
-            className="flex-1 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400"
-          >
-            Omitir y generar
-          </Button>
-          <Button
-            onClick={onConfirm}
+            onClick={selectedId ? onConfirm : onSkip}
             disabled={loading}
             className="flex-1 bg-primary hover:bg-primary/90 text-white"
           >
