@@ -320,11 +320,15 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       // 1.5️⃣ Sanitizar inputs para prevenir XSS
       const sanitizedData = sanitizeObject(structuredData, false) as typeof structuredData;
 
-      // 1.6️⃣ Extraer referenceDocumentId (opcional) del body original
+      // 1.6️⃣ Extraer referenceDocumentId y expedienteId (opcionales) del body original
       const rawBody = request.body as Record<string, unknown>;
       const referenceDocumentId: string | null =
         typeof rawBody?.referenceDocumentId === "string" && rawBody.referenceDocumentId.trim()
           ? rawBody.referenceDocumentId.trim()
+          : null;
+      const incomingExpedienteId: string | null =
+        typeof rawBody?.expedienteId === "string" && rawBody.expedienteId.trim()
+          ? rawBody.expedienteId.trim()
           : null;
 
       // 2️⃣ Autenticación — requerida en producción, fallback demo solo en dev/test
@@ -354,6 +358,16 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       // 2.5️⃣ Cargar texto del documento de referencia (si se proporcionó)
       let referenceText: string | null = null;
       let resolvedReferenceDocumentId: string | null = null;
+
+      // 2.6️⃣ Validar expedienteId (si se proporcionó)
+      let resolvedExpedienteId: string | null = null;
+      if (incomingExpedienteId && user?.tenantId) {
+        const expDoc = await prisma.expediente.findFirst({
+          where: { id: incomingExpedienteId, tenantId: user.tenantId },
+          select: { id: true },
+        });
+        if (expDoc) resolvedExpedienteId = expDoc.id;
+      }
 
       if (referenceDocumentId && user?.tenantId) {
         const refDoc = await prisma.referenceDocument.findFirst({
@@ -486,6 +500,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
               ? (generationResult.metadata.aiTokens.prompt + generationResult.metadata.aiTokens.completion) * 0.000001
               : 0,
             ...(resolvedReferenceDocumentId ? { referenceDocumentId: resolvedReferenceDocumentId } : {}),
+            ...(resolvedExpedienteId ? { expedienteId: resolvedExpedienteId } : {}),
           };
           
           request.log?.info({ documentData }, "Intentando crear documento con datos:");

@@ -58,7 +58,14 @@
       "Bash(ls -la \"C:\\\\Users\\\\santi\\\\Desktop\\\\legal-ai-platform\\\\.claude\"\" 2>/dev/null || echo \"Directory doesn 't exist or is empty \")",
       "Bash(node -e \":*)",
       "mcp__0613ad9e-3c84-4dc8-84d0-0df034e8c7b1__execute_sql",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(find /c/Users/santi/Desktop/legal-ai-platform -type f -name *.prisma)",
+      "Bash(find /c/Users/santi/Desktop/legal-ai-platform/apps/api/src -type f -name *route* -o -name *expediente*)",
+      "Bash(find /c/Users/santi/Desktop/legal-ai-platform/apps/web/app -type f -path *expedientes*)",
+      "Bash(grep -r \"cron\\\\|schedule\\\\|bull\\\\|queue\\\\|notification\" /c/Users/santi/Desktop/legal-ai-platform/apps/api --include=*.ts --include=*.json)",
+      "Bash(find /c/Users/santi/Desktop/legal-ai-platform/apps/api -type f -name package.json -exec cat {})",
+      "Bash(2)",
+      "Bash(grep -r \"sendEmail\\\\|notification\\\\|deadline\" /c/Users/santi/Desktop/legal-ai-platform/apps/api/src --include=*.ts)"
     ]
   },
   "enableAllProjectMcpServers": true,

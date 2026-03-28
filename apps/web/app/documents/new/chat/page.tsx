@@ -26,7 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { PlainTextDocumentEditor } from "@/src/features/documents/ui/editor/PlainTextDocumentEditor";
 import { usePlainTextDocumentEditor } from "@/src/features/documents/ui/editor/usePlainTextDocumentEditor";
-import { listReferenceDocuments, type ReferenceDocument } from "@/app/lib/webApi";
+import { listReferenceDocuments, listExpedientes, type ReferenceDocument, type Expediente } from "@/app/lib/webApi";
 
 // Registrar todos los schemas de documentos
 import "@/src/features/documents/schemas/service-contract";
@@ -95,6 +95,10 @@ export default function ChatDocumentCreationPage() {
   const [referenceDocuments, setReferenceDocuments] = useState<ReferenceDocument[]>([]);
   const [selectedReferenceId, setSelectedReferenceId] = useState<string>("");
   const [loadingReferences, setLoadingReferences] = useState(false);
+  // Expediente step state
+  const [expedienteList, setExpedienteList] = useState<Expediente[]>([]);
+  const [selectedExpedienteId, setSelectedExpedienteId] = useState<string>("");
+  const [loadingExpedientes, setLoadingExpedientes] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -161,12 +165,17 @@ export default function ChatDocumentCreationPage() {
         setPendingExtractedData(data.extractedData);
         setDetectedDocType(docType);
 
-        // Cargamos referencias filtradas por tipo
+        // Cargamos referencias filtradas por tipo y expedientes activos en paralelo
         setLoadingReferences(true);
+        setLoadingExpedientes(true);
         listReferenceDocuments(docType)
           .then((docs) => setReferenceDocuments(docs))
           .catch(() => setReferenceDocuments([]))
           .finally(() => setLoadingReferences(false));
+        listExpedientes({ status: "activo", pageSize: 100 })
+          .then((res) => setExpedienteList(res.expedientes))
+          .catch(() => setExpedienteList([]))
+          .finally(() => setLoadingExpedientes(false));
 
         // Pequeña pausa para que el usuario lea el último mensaje del asistente
         setTimeout(() => {
@@ -189,9 +198,13 @@ export default function ChatDocumentCreationPage() {
 
   // ─── Llamada al endpoint de generación ──────────────────────────────────────
 
-  const generateDocument = async (extractedData: Record<string, unknown>, refId?: string) => {
+  const generateDocument = async (extractedData: Record<string, unknown>, refId?: string, expId?: string) => {
     try {
-      const payload = refId ? { ...extractedData, referenceDocumentId: refId } : extractedData;
+      const payload = {
+        ...extractedData,
+        ...(refId ? { referenceDocumentId: refId } : {}),
+        ...(expId ? { expedienteId: expId } : {}),
+      };
       const res = await fetch("/api/_proxy/documents/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -240,6 +253,8 @@ export default function ChatDocumentCreationPage() {
     setDetectedDocType("");
     setReferenceDocuments([]);
     setSelectedReferenceId("");
+    setExpedienteList([]);
+    setSelectedExpedienteId("");
   };
 
   // ─── Renders condicionales ────────────────────────────────────────────────────
@@ -248,7 +263,11 @@ export default function ChatDocumentCreationPage() {
     const handleConfirmGenerate = () => {
       if (!pendingExtractedData) return;
       setStep("generating");
-      generateDocument(pendingExtractedData, selectedReferenceId || undefined);
+      generateDocument(
+        pendingExtractedData,
+        selectedReferenceId || undefined,
+        selectedExpedienteId || undefined
+      );
     };
     return (
       <ReferenceStep
@@ -259,6 +278,10 @@ export default function ChatDocumentCreationPage() {
         onSelect={setSelectedReferenceId}
         onConfirm={handleConfirmGenerate}
         onSkip={handleConfirmGenerate}
+        expedientes={expedienteList}
+        selectedExpedienteId={selectedExpedienteId}
+        loadingExpedientes={loadingExpedientes}
+        onSelectExpediente={setSelectedExpedienteId}
       />
     );
   }
@@ -529,6 +552,10 @@ interface ReferenceStepProps {
   onSelect: (id: string) => void;
   onConfirm: () => void;
   onSkip: () => void;
+  expedientes: Expediente[];
+  selectedExpedienteId: string;
+  loadingExpedientes: boolean;
+  onSelectExpediente: (id: string) => void;
 }
 
 function ReferenceStep({
@@ -539,6 +566,10 @@ function ReferenceStep({
   onSelect,
   onConfirm,
   onSkip,
+  expedientes,
+  selectedExpedienteId,
+  loadingExpedientes,
+  onSelectExpediente,
 }: ReferenceStepProps) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
@@ -605,6 +636,39 @@ function ReferenceStep({
               <Sparkles className="w-3.5 h-3.5" />
               La IA adaptará el documento al formato del modelo seleccionado.
             </p>
+          )}
+        </div>
+
+        {/* Selector de expediente */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30">
+              <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              Asignar a expediente <span className="font-normal text-slate-400">(opcional)</span>
+            </h3>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            El documento quedará vinculado al expediente seleccionado.
+          </p>
+          {loadingExpedientes ? (
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cargando expedientes...
+            </div>
+          ) : (
+            <select
+              value={selectedExpedienteId}
+              onChange={(e) => onSelectExpediente(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              <option value="">— Sin expediente —</option>
+              {expedientes.map((exp) => (
+                <option key={exp.id} value={exp.id}>
+                  {exp.number ? `${exp.number} · ` : ""}{exp.title}
+                </option>
+              ))}
+            </select>
           )}
         </div>
 

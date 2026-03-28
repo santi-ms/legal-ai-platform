@@ -4,6 +4,7 @@ import fastifyCors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import helmet from "@fastify/helmet";
 import multipart from "@fastify/multipart";
+import cron from "node-cron";
 import { registerDocumentRoutes } from "./routes.documents.js";
 import { registerAuthRoutes } from "./routes.auth.js";
 import { registerChatRoutes } from "./routes.chat.js";
@@ -11,6 +12,7 @@ import { registerClientRoutes } from "./routes.clients.js";
 import { registerExpedienteRoutes } from "./routes.expedientes.js";
 import { registerReferenceRoutes } from "./routes.references.js";
 import { initializeDocumentRegistry } from "./modules/documents/domain/document-registry.js";
+import { runDeadlineNotifier } from "./services/deadline-notifier.js";
 import { logger } from "./utils/logger.js";
 
 async function buildServer() {
@@ -109,3 +111,16 @@ try {
   app.log.error(err);
   process.exit(1);
 }
+
+// ─── Cron jobs ────────────────────────────────────────────────────────────────
+// Notificaciones de vencimientos de expedientes — todos los días a las 8:00 AM (hora AR)
+// Timezone: America/Argentina/Buenos_Aires (UTC-3)
+cron.schedule(
+  "0 8 * * *",
+  async () => {
+    logger.info("[cron] Ejecutando notificador de vencimientos...");
+    await runDeadlineNotifier();
+  },
+  { timezone: "America/Argentina/Buenos_Aires" }
+);
+logger.info("[cron] Notificador de vencimientos programado: todos los días a las 8:00 AM (AR)");

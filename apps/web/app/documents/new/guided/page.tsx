@@ -317,6 +317,7 @@ export default function GuidedDocumentCreationPage() {
         tone: formData.tono,
         ...formData,
         ...(selectedReferenceId ? { referenceDocumentId: selectedReferenceId } : {}),
+        ...(selectedExpedienteId ? { expedienteId: selectedExpedienteId } : {}),
       };
 
       setLoadingProgress(25);

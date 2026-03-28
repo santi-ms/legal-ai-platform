@@ -200,6 +200,9 @@ model Expediente {
   // Notas internas
   notes          String?
 
+  // Notificaciones de deadline
+  deadlineNotifiedAt DateTime?  // Última vez que se envió notif de vencimiento
+
   // Documentos vinculados
   documents      Document[]
 
@@ -208,6 +211,7 @@ model Expediente {
 
   @@index([tenantId])
   @@index([clientId])
+  @@index([deadline])
 }
 
 model DocumentAnnotation {
