@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx src/server.ts",
     "build": "npm run prisma:generate && tsc",
-    "prestart": "npm run prisma:generate && (npx prisma migrate resolve --applied 20251115000000_add_user_profile_fields --schema prisma/schema.prisma || true) && npm run migrate:deploy",
+    "prestart": "npm run prisma:generate && npm run migrate:deploy && npm run db:seed-plans",
     "start": "node dist/server.js",
     "postinstall": "npm run prisma:generate || echo 'Prisma generate failed, will retry on start'",
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",
@@ -13,6 +13,7 @@
     "migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "prisma:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "db:seed": "tsx scripts/seed.ts",
+    "db:seed-plans": "tsx scripts/seed-plans.ts",
     "test:generation": "tsx scripts/test-generation.ts",
     "test:generation:sqlite": "DATABASE_URL=file:./test.db tsx scripts/test-generation.ts",
     "test:all-types": "tsx scripts/test-all-types.ts",

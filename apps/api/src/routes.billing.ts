@@ -1,12 +1,12 @@
 /**
  * Billing Routes — Suscripciones y pagos con Mercado Pago
  *
- * GET  /api/billing/plans                  — Listar planes disponibles
- * GET  /api/billing/subscription           — Obtener suscripción actual del tenant
- * POST /api/billing/checkout               — Crear preferencia de pago en MP
- * DELETE /api/billing/subscription         — Cancelar suscripción
- * GET  /api/billing/invoices               — Historial de facturas
- * POST /api/webhooks/mercado-pago          — Webhook de MP (sin auth)
+ * GET  /billing/plans                  — Listar planes disponibles
+ * GET  /billing/subscription           — Obtener suscripción actual del tenant
+ * POST /billing/checkout               — Crear preferencia de pago en MP
+ * DELETE /billing/subscription         — Cancelar suscripción
+ * GET  /billing/invoices               — Historial de facturas
+ * POST /api/webhooks/mercado-pago      — Webhook de MP (sin auth, llamado por MP directamente)
  */
 
 import { FastifyInstance } from "fastify";
@@ -76,16 +76,16 @@ export async function getPlanForTenant(tenantId: string) {
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
 export async function registerBillingRoutes(app: FastifyInstance) {
-  // ── GET /api/billing/plans ──────────────────────────────────────────────────
-  app.get("/api/billing/plans", async (_req, reply) => {
+  // ── GET /billing/plans ──────────────────────────────────────────────────────
+  app.get("/billing/plans", async (_req, reply) => {
     const plans = await prisma.plan.findMany({
       orderBy: { priceArs: "asc" },
     });
     return reply.send({ ok: true, plans });
   });
 
-  // ── GET /api/billing/subscription ──────────────────────────────────────────
-  app.get("/api/billing/subscription", async (request, reply) => {
+  // ── GET /billing/subscription ──────────────────────────────────────────────
+  app.get("/billing/subscription", async (request, reply) => {
     const user = getUserFromRequest(request);
     if (!user) return unauthorized(reply);
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
@@ -128,8 +128,8 @@ export async function registerBillingRoutes(app: FastifyInstance) {
     });
   });
 
-  // ── POST /api/billing/checkout ─────────────────────────────────────────────
-  app.post("/api/billing/checkout", async (request, reply) => {
+  // ── POST /billing/checkout ─────────────────────────────────────────────────
+  app.post("/billing/checkout", async (request, reply) => {
     const user = getUserFromRequest(request);
     if (!user) return unauthorized(reply);
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
@@ -237,8 +237,8 @@ export async function registerBillingRoutes(app: FastifyInstance) {
     }
   });
 
-  // ── DELETE /api/billing/subscription ───────────────────────────────────────
-  app.delete("/api/billing/subscription", async (request, reply) => {
+  // ── DELETE /billing/subscription ───────────────────────────────────────────
+  app.delete("/billing/subscription", async (request, reply) => {
     const user = getUserFromRequest(request);
     if (!user) return unauthorized(reply);
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
@@ -278,8 +278,8 @@ export async function registerBillingRoutes(app: FastifyInstance) {
     return reply.send({ ok: true, message: "Suscripción cancelada. Tu plan vuelve a Free." });
   });
 
-  // ── GET /api/billing/invoices ───────────────────────────────────────────────
-  app.get("/api/billing/invoices", async (request, reply) => {
+  // ── GET /billing/invoices ───────────────────────────────────────────────────
+  app.get("/billing/invoices", async (request, reply) => {
     const user = getUserFromRequest(request);
     if (!user) return unauthorized(reply);
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
