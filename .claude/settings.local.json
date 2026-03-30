@@ -82,7 +82,14 @@
       "Bash(sed -i 's/<BrandLogo size={52} \\\\/>/<BrandLogo size={84} \\\\/>/g' components/landing/Footer.tsx)",
       "Bash(sed -i 's/<BrandLogo size={52} \\\\/>/<BrandLogo size={84} \\\\/>/g' components/auth/RegisterSidebar.tsx)",
       "Bash(sed -i 's/<BrandLogo size={56} \\\\/>/<BrandLogo size={88} \\\\/>/g' components/dashboard/DashboardSidebar.tsx app/not-found.tsx)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(ls -lah apps/web/public/images/logo*)",
+      "Bash(identify apps/web/public/logo-negro.png apps/web/public/logo-blanco.png)",
+      "Bash(sed -i 's/<BrandLogo size={72} \\\\/>/<BrandLogo size={140} \\\\/>/g' apps/web/components/landing/Navbar.tsx)",
+      "Bash(sed -i 's/<BrandLogo size={80} \\\\/>/<BrandLogo size={150} \\\\/>/g' apps/web/components/landing/Footer.tsx)",
+      "Bash(sed -i 's/<BrandLogo size={88} \\\\/>/<BrandLogo size={140} \\\\/>/g' apps/web/components/dashboard/DashboardSidebar.tsx)",
+      "Bash(sed -i 's/<BrandLogo size={84} \\\\/>/<BrandLogo size={140} \\\\/>/g' apps/web/components/auth/RegisterSidebar.tsx)",
+      "Bash(sed -i 's/<BrandLogo size={80} \\\\/>/<BrandLogo size={130} \\\\/>/g' apps/web/components/documents/GenerationHeader.tsx)"
     ]
   },
   "enableAllProjectMcpServers": true,

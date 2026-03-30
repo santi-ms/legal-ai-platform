@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 interface BrandLogoProps {
   /**
    * Altura en px. Controla el tamaño del logo (el ancho se ajusta automáticamente
@@ -15,33 +13,26 @@ interface BrandLogoProps {
  * - Modo oscuro → LogoBlanco.png (logo blanco sobre fondo oscuro)
  *
  * El ancho se ajusta automáticamente al aspect ratio del logo.
+ * Usa <img> en lugar de next/image para permitir tamaños reales sin compresión.
  */
 export function BrandLogo({ size = 40, className = "" }: BrandLogoProps) {
-  const sharedProps = {
-    // next/image necesita width y height como hints de optimización.
-    // El ancho real se controla por CSS (width: auto + height fija).
-    width: 320,
-    height: size,
-    style: { height: size, width: "auto" },
-    priority: true,
-    className: `object-contain ${className}`,
-  };
-
   return (
     <>
       {/* Modo claro — logo negro sobre fondo blanco */}
-      <Image
+      <img
         src="/logo-negro.png"
         alt="DocuLex"
-        {...sharedProps}
-        className={`block dark:hidden object-contain ${className}`}
+        height={size}
+        style={{ height: size, width: "auto" }}
+        className={`block dark:hidden ${className}`}
       />
       {/* Modo oscuro — logo blanco sobre fondo oscuro */}
-      <Image
+      <img
         src="/logo-blanco.png"
         alt="DocuLex"
-        {...sharedProps}
-        className={`hidden dark:block object-contain ${className}`}
+        height={size}
+        style={{ height: size, width: "auto" }}
+        className={`hidden dark:block ${className}`}
       />
     </>
   );

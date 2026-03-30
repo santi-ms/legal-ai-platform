@@ -7,7 +7,7 @@ export function RegisterHeader() {
   return (
     <header className="lg:hidden flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
       <Link href="/" className="flex items-center">
-        <BrandLogo size={72} />
+        <BrandLogo size={120} />
       </Link>
       <Link href="/auth/login" className="text-primary font-semibold text-sm hover:underline">
         Iniciar sesión
