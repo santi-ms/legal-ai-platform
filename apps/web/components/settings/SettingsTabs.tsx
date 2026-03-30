@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/app/lib/utils";
 
-type SettingsTab = "profile" | "billing" | "security" | "integrations";
+type SettingsTab = "profile" | "billing" | "security" | "team" | "integrations";
 
 interface TabConfig {
   id: SettingsTab;
@@ -22,6 +22,7 @@ const tabs: TabConfig[] = [
   { id: "profile",      label: "Perfil",              href: "/settings" },
   { id: "billing",      label: "Plan y Facturación",  href: "/settings/billing" },
   { id: "security",     label: "Seguridad",            href: "/settings/security" },
+  { id: "team",         label: "Equipo",               href: "/settings/team" },
   { id: "integrations", label: "Integraciones",        disabled: true },
 ];
 

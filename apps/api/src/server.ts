@@ -12,6 +12,7 @@ import { registerClientRoutes } from "./routes.clients.js";
 import { registerExpedienteRoutes } from "./routes.expedientes.js";
 import { registerReferenceRoutes } from "./routes.references.js";
 import { registerBillingRoutes } from "./routes.billing.js";
+import { registerTeamRoutes } from "./routes.team.js";
 import { initializeDocumentRegistry } from "./modules/documents/domain/document-registry.js";
 import { runDeadlineNotifier } from "./services/deadline-notifier.js";
 import { logger } from "./utils/logger.js";
@@ -92,6 +93,7 @@ async function buildServer() {
   await registerExpedienteRoutes(app);
   await registerReferenceRoutes(app);
   await registerBillingRoutes(app);
+  await registerTeamRoutes(app);
 
   const { registerUserRoutes } = await import("./routes.user.js");
   await registerUserRoutes(app);

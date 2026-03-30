@@ -899,3 +899,80 @@ export async function getInvoices(): Promise<Invoice[]> {
   const { data } = await proxyJson<any>("/billing/invoices");
   return data?.invoices ?? [];
 }
+
+// ─── Team ─────────────────────────────────────────────────────────────────────
+
+export interface TeamMember {
+  id: string;
+  name: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  role: string;
+  professionalRole: string | null;
+  createdAt: string;
+}
+
+export interface TeamInvitation {
+  id: string;
+  email: string;
+  status: string;
+  expiresAt: string;
+  acceptedAt: string | null;
+  createdAt: string;
+  invitedBy: { name: string | null; firstName: string | null; lastName: string | null };
+}
+
+export interface InvitationInfo {
+  email: string;
+  tenantName: string;
+  inviterName: string;
+  expiresAt: string;
+}
+
+export async function getTeamMembers(): Promise<{
+  members: TeamMember[];
+  maxUsers: number;
+  usedSlots: number;
+  availableSlots: number | null;
+}> {
+  const { data } = await proxyJson<any>("/team/members");
+  return data;
+}
+
+export async function getTeamInvitations(): Promise<TeamInvitation[]> {
+  const { data } = await proxyJson<any>("/team/invitations");
+  return data?.invitations ?? [];
+}
+
+export async function inviteMember(email: string): Promise<void> {
+  await proxyJson("/team/invite", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function removeMember(userId: string): Promise<void> {
+  await proxyJson(`/team/members/${userId}`, { method: "DELETE" });
+}
+
+export async function cancelInvitation(invitationId: string): Promise<void> {
+  await proxyJson(`/team/invitations/${invitationId}`, { method: "DELETE" });
+}
+
+/** Obtener info de invitación (público — sin auth) */
+export async function getInvitationInfo(token: string): Promise<InvitationInfo> {
+  // Este endpoint es público — no pasa por el proxy con auth
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  const resp = await fetch(`${apiUrl}/team/invite/${token}`, { cache: "no-store" });
+  const data = await resp.json();
+  if (!data.ok) throw new Error(data.message ?? "Invitación inválida");
+  return data.invitation;
+}
+
+/** Aceptar invitación (requiere auth) */
+export async function acceptInvitation(token: string): Promise<{ tenantId: string; tenantName: string }> {
+  const { data } = await proxyJson<any>(`/team/invite/${token}/accept`, { method: "POST" });
+  return data;
+}

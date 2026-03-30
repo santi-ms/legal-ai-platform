@@ -258,6 +258,72 @@ export function getResetPasswordEmailHtml(resetUrl: string): string {
   `.trim();
 }
 
+// ─── Plantilla de invitación de equipo ────────────────────────────────────────
+
+export function getTeamInvitationEmailHtml(
+  inviterName: string,
+  tenantName: string,
+  inviteUrl: string,
+  expiresInHours: number
+): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #0f172a; padding: 20px; border-radius: 10px 10px 0 0; text-align: center; }
+    .header h1 { color: white; margin: 0; font-size: 22px; }
+    .body { background: #f8fafc; padding: 28px; border-radius: 0 0 10px 10px; }
+    .button { display: inline-block; padding: 14px 28px; background-color: #3b82f6; color: white !important; text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: bold; font-size: 15px; }
+    .note { background: #e0f2fe; border-left: 4px solid #3b82f6; padding: 10px 14px; border-radius: 4px; font-size: 13px; color: #0369a1; margin-top: 16px; }
+    .footer { margin-top: 24px; font-size: 12px; color: #94a3b8; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>DocuLex</h1>
+    </div>
+    <div class="body">
+      <h2 style="margin-top:0">Te invitaron a unirte a ${tenantName}</h2>
+      <p><strong>${inviterName}</strong> te invitó a colaborar en <strong>${tenantName}</strong> en DocuLex — la plataforma de documentos legales con IA.</p>
+      <a href="${inviteUrl}" class="button">Aceptar invitación</a>
+      <p>O copiá y pegá este enlace en tu navegador:</p>
+      <p style="word-break: break-all; color: #3b82f6; font-size: 13px;">${inviteUrl}</p>
+      <div class="note">
+        Esta invitación expira en ${expiresInHours} horas. Si no esperabas esta invitación, podés ignorar este email.
+      </div>
+    </div>
+    <div class="footer">DocuLex — Documentos legales con IA</div>
+  </div>
+</body>
+</html>
+  `.trim();
+}
+
+export function getTeamInvitationEmailText(
+  inviterName: string,
+  tenantName: string,
+  inviteUrl: string,
+  expiresInHours: number
+): string {
+  return `
+Te invitaron a unirte a ${tenantName} en DocuLex
+
+${inviterName} te invitó a colaborar en ${tenantName} en DocuLex.
+
+Aceptá la invitación entrando a:
+${inviteUrl}
+
+Esta invitación expira en ${expiresInHours} horas.
+
+Si no esperabas esta invitación, podés ignorar este email.
+  `.trim();
+}
+
 export function getResetPasswordEmailText(resetUrl: string): string {
   return `
 Restablecer contraseña

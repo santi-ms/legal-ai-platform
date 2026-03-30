@@ -30,6 +30,9 @@ import {
   Clock,
   Receipt,
   Crown,
+  X,
+  Minus,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 
@@ -279,6 +282,9 @@ function BillingPageContent() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  // Selector de usuarios para plan Estudio
+  const [estudioUsers, setEstudioUsers] = useState(3);
+  const [showEstudioModal, setShowEstudioModal] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -312,9 +318,27 @@ function BillingPageContent() {
   }, [isAuthenticated]);
 
   const handleCheckout = async (planCode: string) => {
+    // Para Estudio, mostrar modal de selección de usuarios primero
+    if (planCode === "estudio") {
+      setShowEstudioModal(true);
+      return;
+    }
     setCheckoutLoading(true);
     try {
       const { checkoutUrl } = await startCheckout(planCode);
+      window.location.href = checkoutUrl;
+    } catch (err: any) {
+      setStatusMsg({ type: "error", text: "Error al iniciar el pago. Intentá de nuevo." });
+      setCheckoutLoading(false);
+    }
+  };
+
+  const handleEstudioCheckout = async () => {
+    setShowEstudioModal(false);
+    setCheckoutLoading(true);
+    try {
+      const additionalUsers = estudioUsers - 3;
+      const { checkoutUrl } = await startCheckout("estudio", additionalUsers);
       window.location.href = checkoutUrl;
     } catch (err: any) {
       setStatusMsg({ type: "error", text: "Error al iniciar el pago. Intentá de nuevo." });
@@ -350,9 +374,79 @@ function BillingPageContent() {
 
   const currentPlanCode = billing?.plan?.code ?? "free";
   const docsLimit = billing?.plan?.limits?.docsPerMonth ?? 5;
+  const estudioPlan = plans.find((p) => p.code === "estudio");
+  const estudioTotal = (estudioPlan?.priceArs ?? 45000) * estudioUsers;
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
+
+      {/* Modal selector de usuarios Estudio */}
+      {showEstudioModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-slate-600" /> Plan Estudio
+              </h2>
+              <button onClick={() => setShowEstudioModal(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">
+              El plan Estudio se factura por usuario. El mínimo es 3 usuarios.
+            </p>
+
+            {/* Selector de cantidad */}
+            <div className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-600 p-4 mb-4">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Cantidad de usuarios</span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setEstudioUsers((n) => Math.max(3, n - 1))}
+                  className="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-600 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors disabled:opacity-40"
+                  disabled={estudioUsers <= 3}
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-xl font-bold text-slate-900 dark:text-white w-8 text-center">{estudioUsers}</span>
+                <button
+                  onClick={() => setEstudioUsers((n) => Math.min(50, n + 1))}
+                  className="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-600 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Resumen */}
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-700/50 p-4 mb-5 space-y-1">
+              <div className="flex justify-between text-sm text-slate-600 dark:text-slate-300">
+                <span>${(estudioPlan?.priceArs ?? 45000).toLocaleString("es-AR")} × {estudioUsers} usuarios</span>
+                <span className="font-bold text-slate-900 dark:text-white">${estudioTotal.toLocaleString("es-AR")}/mes</span>
+              </div>
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                Podés agregar o quitar usuarios en cualquier momento desde Ajustes → Equipo.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowEstudioModal(false)}
+                className="flex-1 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleEstudioCheckout}
+                disabled={checkoutLoading}
+                className="flex-1 py-2.5 text-sm font-bold bg-slate-900 text-white dark:bg-slate-700 rounded-xl hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+              >
+                {checkoutLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continuar al pago"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="px-4 md:px-20 lg:px-40 flex flex-1 justify-center py-5">
         <div className="flex flex-col max-w-[960px] flex-1 gap-6">
           <SettingsHeader />
