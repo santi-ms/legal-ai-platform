@@ -97,7 +97,16 @@
       "Bash(sed -i 's/<BrandLogo size={140} \\\\/>/<BrandLogo size={55} \\\\/>/g' apps/web/components/auth/RegisterSidebar.tsx)",
       "Bash(sed -i 's/<BrandLogo size={130} \\\\/>/<BrandLogo size={50} \\\\/>/g' apps/web/components/documents/GenerationHeader.tsx)",
       "Bash(ls -lah apps/web/public/favicon* apps/web/app/favicon*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(find C:/Users/santi/Desktop/legal-ai-platform/apps -type f \\\\\\(-name *billing* -o -name *pricing* -o -name *subscription* -o -name *plan* \\\\\\))",
+      "Bash(xargs basename:*)",
+      "Bash(grep -r \"stripe\\\\|paypal\\\\|square\\\\|mercado\\\\|checkout\" C:/Users/santi/Desktop/legal-ai-platform/apps --include=*.ts --include=*.tsx --include=*.json 2)",
+      "Bash(/dev/null ! -path */node_modules/*)",
+      "Bash(grep -r \"GOOGLE\\\\|google\\\\|AUTH\" apps/web/.env* apps/api/.env*)",
+      "Bash(grep -r redirect apps/web/lib apps/api/src --include=*.ts --include=*.tsx)",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(powershell -Command \"Set-Location ''''C:\\\\Users\\\\santi\\\\Desktop\\\\legal-ai-platform\\\\apps\\\\api''''; npx prisma generate\")",
+      "mcp__0613ad9e-3c84-4dc8-84d0-0df034e8c7b1__list_projects"
     ]
   },
   "enableAllProjectMcpServers": true,
