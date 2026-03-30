@@ -115,6 +115,11 @@ async function proxyJson<T = any>(
   if (!headers.has("Accept")) {
     headers.set("Accept", "application/json");
   }
+  // Siempre forzar Content-Type: application/json cuando hay body de texto/JSON
+  // para que el proxy lo reenvíe correctamente y Fastify lo parsee
+  if (init.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
 
   // Construir URL: absoluta en servidor, relativa en cliente
   const url = isServer()
