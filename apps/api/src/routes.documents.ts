@@ -380,11 +380,51 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       const tenantId = user?.tenantId || "demo-tenant";
       const userId   = user?.userId   || "demo-user";
 
-      // 2.5️⃣ Cargar texto del documento de referencia (si se proporcionó)
+      // 2.5️⃣ Enforcement de límites del plan
+      if (tenantId !== "demo-tenant") {
+        const { getPlanForTenant } = await import("./routes.billing.js");
+        const { plan } = await getPlanForTenant(tenantId);
+        const limits = (plan as any)?.limits ?? { docsPerMonth: 5 };
+
+        // Verificar límite de documentos por mes
+        const docsPerMonth: number = limits.docsPerMonth ?? 5;
+        if (docsPerMonth !== -1) {
+          const now = new Date();
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+          const docsThisMonth = await prisma.document.count({
+            where: { tenantId, createdAt: { gte: startOfMonth, lte: endOfMonth } },
+          });
+          if (docsThisMonth >= docsPerMonth) {
+            return reply.status(429).send({
+              ok: false,
+              error: "PLAN_LIMIT_EXCEEDED",
+              message: `Alcanzaste el límite de ${docsPerMonth} documentos este mes. Actualizá tu plan para continuar.`,
+              limit: docsPerMonth,
+              used: docsThisMonth,
+            });
+          }
+        }
+
+        // Verificar tipo de documento disponible en el plan
+        // Free solo tiene acceso a: service_contract, nda, legal_notice
+        const planCode: string = (plan as any)?.code ?? "free";
+        const FREE_TYPES = ["service_contract", "nda", "legal_notice"];
+        const docTypeId: string = typeof documentType === "string" ? documentType : (documentType as any)?.id ?? "";
+        if (planCode === "free" && docTypeId && !FREE_TYPES.includes(docTypeId)) {
+          return reply.status(403).send({
+            ok: false,
+            error: "TYPE_NOT_IN_PLAN",
+            message: `El tipo de documento no está disponible en el plan Free. Actualizá tu plan para acceder a todos los tipos.`,
+          });
+        }
+      }
+
+      // 2.7️⃣ Cargar texto del documento de referencia (si se proporcionó)
       let referenceText: string | null = null;
       let resolvedReferenceDocumentId: string | null = null;
 
-      // 2.6️⃣ Validar expedienteId (si se proporcionó)
+      // 2.8️⃣ Validar expedienteId (si se proporcionó)
       let resolvedExpedienteId: string | null = null;
       if (incomingExpedienteId && user?.tenantId) {
         const expDoc = await prisma.expediente.findFirst({
