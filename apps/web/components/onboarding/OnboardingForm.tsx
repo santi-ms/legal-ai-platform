@@ -48,7 +48,7 @@ export function OnboardingForm({ initialName, initialEmail }: OnboardingFormProp
       success("Onboarding completado exitosamente");
 
       startTransition(() => {
-        router.replace("/documents");
+        router.replace("/onboarding/plan");
         router.refresh();
       });
     } catch (submitError: any) {

@@ -820,3 +820,82 @@ export async function listReferenceDocuments(
 export async function deleteReferenceDocument(id: string): Promise<void> {
   await proxyJson(`/documents/references/${id}`, { method: "DELETE" });
 }
+// ─── Billing ─────────────────────────────────────────────────────────────────
+
+export interface BillingPlan {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  priceArs: number | null;
+  trialDays: number;
+  limits: {
+    docsPerMonth: number;
+    maxUsers: number;
+    maxClients: number;
+    maxExpedientes: number;
+    maxReferenceFiles: number;
+  };
+  features: {
+    chatIA: boolean;
+    edicion: boolean;
+    analytics: boolean;
+    anotaciones: boolean;
+    logoEstudio: boolean;
+    referenciaDocs: boolean;
+    exportarReportes: boolean;
+  };
+}
+
+export interface BillingSubscription {
+  id: string;
+  status: string;
+  trialEndsAt: string | null;
+  startsAt: string;
+  renewsAt: string | null;
+  maxUsers: number;
+}
+
+export interface BillingData {
+  subscription: BillingSubscription | null;
+  plan: BillingPlan | null;
+  usage: { docsThisMonth: number };
+}
+
+export interface Invoice {
+  id: string;
+  mpPaymentId: string | null;
+  status: string;
+  amountArs: number;
+  period: string;
+  dueAt: string;
+  paidAt: string | null;
+  createdAt: string;
+}
+
+export async function getBillingSubscription(): Promise<BillingData> {
+  const { data } = await proxyJson<any>("/billing/subscription");
+  return data;
+}
+
+export async function getBillingPlans(): Promise<BillingPlan[]> {
+  const { data } = await proxyJson<any>("/billing/plans");
+  return data?.plans ?? [];
+}
+
+export async function startCheckout(planCode: string, additionalUsers = 0): Promise<{ checkoutUrl: string; sandboxUrl: string }> {
+  const { data } = await proxyJson<any>("/billing/checkout", {
+    method: "POST",
+    body: JSON.stringify({ planCode, additionalUsers }),
+  });
+  return data;
+}
+
+export async function cancelSubscription(): Promise<void> {
+  await proxyJson("/billing/subscription", { method: "DELETE" });
+}
+
+export async function getInvoices(): Promise<Invoice[]> {
+  const { data } = await proxyJson<any>("/billing/invoices");
+  return data?.invoices ?? [];
+}
