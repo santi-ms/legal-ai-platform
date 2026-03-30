@@ -95,7 +95,9 @@
       "Bash(sed -i 's/<BrandLogo size={150} \\\\/>/<BrandLogo size={60} \\\\/>/g' apps/web/components/landing/Footer.tsx)",
       "Bash(sed -i 's/<BrandLogo size={140} \\\\/>/<BrandLogo size={55} \\\\/>/g' apps/web/components/dashboard/DashboardSidebar.tsx)",
       "Bash(sed -i 's/<BrandLogo size={140} \\\\/>/<BrandLogo size={55} \\\\/>/g' apps/web/components/auth/RegisterSidebar.tsx)",
-      "Bash(sed -i 's/<BrandLogo size={130} \\\\/>/<BrandLogo size={50} \\\\/>/g' apps/web/components/documents/GenerationHeader.tsx)"
+      "Bash(sed -i 's/<BrandLogo size={130} \\\\/>/<BrandLogo size={50} \\\\/>/g' apps/web/components/documents/GenerationHeader.tsx)",
+      "Bash(ls -lah apps/web/public/favicon* apps/web/app/favicon*)",
+      "Bash(python3:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

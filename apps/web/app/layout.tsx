@@ -77,6 +77,10 @@ export const metadata: Metadata = {
   authors: [{ name: "DocuLex" }],
   creator: "DocuLex",
   applicationName: "DocuLex",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ?? "https://doculex.com.ar"
   ),
