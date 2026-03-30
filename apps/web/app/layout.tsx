@@ -78,7 +78,7 @@ export const metadata: Metadata = {
   creator: "DocuLex",
   applicationName: "DocuLex",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/favicon.svg",
     apple: "/apple-touch-icon.png",
   },
   metadataBase: new URL(
