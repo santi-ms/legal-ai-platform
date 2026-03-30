@@ -32,9 +32,8 @@ export function RegisterSidebar() {
       {/* Content */}
       <div className="relative z-10">
         {/* Logo */}
-        <div className="flex items-center gap-3 mb-12">
-          <BrandLogo size={56} />
-          <h1 className="text-2xl font-bold tracking-tight">DocuLex</h1>
+        <div className="mb-12">
+          <BrandLogo size={52} />
         </div>
 
         {/* Main content */}

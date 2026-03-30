@@ -31,11 +31,8 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b border-primary/10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-6 md:px-20 py-4">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group cursor-pointer">
-          <BrandLogo size={52} />
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            DocuLex
-          </h2>
+        <Link href="/" className="flex items-center cursor-pointer">
+          <BrandLogo size={44} />
         </Link>
 
         {/* Desktop Navigation */}

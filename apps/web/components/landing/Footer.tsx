@@ -36,11 +36,8 @@ export function Footer() {
       <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12">
         {/* Brand Column */}
         <div className="col-span-2">
-          <div className="flex items-center gap-2 mb-6">
-            <BrandLogo size={52} />
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-              DocuLex
-            </h2>
+          <div className="mb-6">
+            <BrandLogo size={48} />
           </div>
           <p className="text-slate-500 dark:text-slate-400 max-w-xs mb-8">
             La nueva era de la abogacía en Argentina. Eficiencia, seguridad y validez jurídica en un solo lugar.
