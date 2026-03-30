@@ -296,11 +296,14 @@ function BillingPageContent() {
   useEffect(() => {
     const status = searchParams.get("status");
     if (status === "success") {
-      setStatusMsg({ type: "success", text: "¡Pago exitoso! Tu plan fue actualizado." });
+      setStatusMsg({
+        type: "success",
+        text: "¡Suscripción autorizada! Tu plan se activará en unos minutos. Si no cambia, recargá la página.",
+      });
     } else if (status === "failure") {
-      setStatusMsg({ type: "error", text: "El pago no fue procesado. Podés intentarlo nuevamente." });
+      setStatusMsg({ type: "error", text: "No se pudo procesar la suscripción. Podés intentarlo nuevamente." });
     } else if (status === "pending") {
-      setStatusMsg({ type: "success", text: "Pago pendiente de acreditación. Te notificaremos cuando se confirme." });
+      setStatusMsg({ type: "success", text: "Suscripción pendiente de confirmación. Te avisamos cuando se active." });
     }
   }, [searchParams]);
 

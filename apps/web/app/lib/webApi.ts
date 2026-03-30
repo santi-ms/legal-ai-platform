@@ -888,7 +888,7 @@ export async function getBillingPlans(): Promise<BillingPlan[]> {
   return data?.plans ?? [];
 }
 
-export async function startCheckout(planCode: string, additionalUsers = 0): Promise<{ checkoutUrl: string; sandboxUrl: string }> {
+export async function startCheckout(planCode: string, additionalUsers = 0): Promise<{ checkoutUrl: string; subscriptionId?: string }> {
   const { data } = await proxyJson<any>("/billing/checkout", {
     method: "POST",
     body: JSON.stringify({ planCode, additionalUsers }),
