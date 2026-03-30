@@ -37,7 +37,7 @@ export function Footer() {
         {/* Brand Column */}
         <div className="col-span-2">
           <div className="mb-6">
-            <BrandLogo size={150} />
+            <BrandLogo size={60} />
           </div>
           <p className="text-slate-500 dark:text-slate-400 max-w-xs mb-8">
             La nueva era de la abogacía en Argentina. Eficiencia, seguridad y validez jurídica en un solo lugar.

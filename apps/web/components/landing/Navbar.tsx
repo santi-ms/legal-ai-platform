@@ -32,7 +32,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center cursor-pointer">
-          <BrandLogo size={140} />
+          <BrandLogo size={50} />
         </Link>
 
         {/* Desktop Navigation */}
