@@ -89,7 +89,8 @@
       "Bash(sed -i 's/<BrandLogo size={80} \\\\/>/<BrandLogo size={150} \\\\/>/g' apps/web/components/landing/Footer.tsx)",
       "Bash(sed -i 's/<BrandLogo size={88} \\\\/>/<BrandLogo size={140} \\\\/>/g' apps/web/components/dashboard/DashboardSidebar.tsx)",
       "Bash(sed -i 's/<BrandLogo size={84} \\\\/>/<BrandLogo size={140} \\\\/>/g' apps/web/components/auth/RegisterSidebar.tsx)",
-      "Bash(sed -i 's/<BrandLogo size={80} \\\\/>/<BrandLogo size={130} \\\\/>/g' apps/web/components/documents/GenerationHeader.tsx)"
+      "Bash(sed -i 's/<BrandLogo size={80} \\\\/>/<BrandLogo size={130} \\\\/>/g' apps/web/components/documents/GenerationHeader.tsx)",
+      "Bash(ls \"/c/Users/santi/Desktop/\"*branding*)"
     ]
   },
   "enableAllProjectMcpServers": true,
