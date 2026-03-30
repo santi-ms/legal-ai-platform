@@ -153,8 +153,17 @@ model Client {
   city           String?
   province       String?
 
+  // Persona de contacto (solo para persona_juridica)
+  contactPersonName  String?  // Nombre del contacto en la empresa
+  contactPersonRole  String?  // Cargo (ej: "Gerente", "Apoderado")
+  contactPersonPhone String?
+  contactPersonEmail String?
+
   // Notas internas del estudio
   notes          String?
+
+  // Soft delete — archivar en lugar de borrar
+  archivedAt     DateTime?
 
   // Documentos asociados
   documents      Document[]
@@ -164,6 +173,9 @@ model Client {
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([archivedAt])
 }
 
 model Expediente {

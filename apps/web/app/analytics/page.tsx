@@ -16,23 +16,45 @@ import {
   RotateCcw,
   TrendingUp,
   Loader2,
+  UserPlus,
+  Gavel,
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const TYPE_LABELS: Record<string, string> = {
-  service_contract:  "Contrato de servicios",
-  nda:               "Acuerdo de confidencialidad",
-  legal_notice:      "Carta documento",
-  lease:             "Contrato de alquiler",
-  debt_recognition:  "Reconocimiento de deuda",
+  service_contract:     "Contrato de servicios",
+  nda:                  "Acuerdo de confidencialidad",
+  legal_notice:         "Carta documento",
+  lease:                "Contrato de alquiler",
+  debt_recognition:     "Reconocimiento de deuda",
   simple_authorization: "Autorización simple",
+};
+
+const MATERIA_LABELS: Record<string, string> = {
+  civil:           "Civil",
+  penal:           "Penal",
+  laboral:         "Laboral",
+  familia:         "Familia",
+  comercial:       "Comercial",
+  administrativo:  "Administrativo",
+  otro:            "Otro",
 };
 
 const MONTH_ABBR: Record<string, string> = {
   "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
   "05": "May", "06": "Jun", "07": "Jul", "08": "Ago",
   "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic",
+};
+
+const MATERIA_COLORS: Record<string, string> = {
+  civil:          "bg-sky-500",
+  penal:          "bg-red-500",
+  laboral:        "bg-amber-500",
+  familia:        "bg-pink-500",
+  comercial:      "bg-violet-500",
+  administrativo: "bg-teal-500",
+  otro:           "bg-slate-400",
 };
 
 function formatMonth(yyyyMm: string) {
@@ -47,21 +69,28 @@ function StatTile({
   label,
   value,
   color,
+  badge,
 }: {
   icon: React.ElementType;
   label: string;
   value: number | string;
   color: string;
+  badge?: { text: string; color: string } | null;
 }) {
   return (
     <div className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
       <div className={`flex-shrink-0 rounded-xl p-3 ${color}`}>
         <Icon className="w-5 h-5" />
       </div>
-      <div>
+      <div className="flex-1 min-w-0">
         <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{label}</p>
         <p className="text-2xl font-bold text-slate-900 dark:text-white leading-tight">{value}</p>
       </div>
+      {badge && (
+        <span className={`text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0 ${badge.color}`}>
+          {badge.text}
+        </span>
+      )}
     </div>
   );
 }
@@ -160,11 +189,11 @@ export default function AnalyticsPage() {
 
   // Status data
   const statusRows = [
-    { key: "final",        label: "Final",           value: stats.byStatus.final,        icon: Star,          color: "bg-emerald-500" },
-    { key: "reviewed",     label: "Revisado",        value: stats.byStatus.reviewed,     icon: CheckCircle2,  color: "bg-sky-500" },
-    { key: "generated",    label: "Generado",        value: stats.byStatus.generated,    icon: Clock,         color: "bg-blue-500" },
+    { key: "final",        label: "Final",             value: stats.byStatus.final,        icon: Star,          color: "bg-emerald-500" },
+    { key: "reviewed",     label: "Revisado",          value: stats.byStatus.reviewed,     icon: CheckCircle2,  color: "bg-sky-500" },
+    { key: "generated",    label: "Generado",          value: stats.byStatus.generated,    icon: Clock,         color: "bg-blue-500" },
     { key: "needs_review", label: "Requiere revisión", value: stats.byStatus.needs_review, icon: AlertTriangle, color: "bg-amber-500" },
-    { key: "draft",        label: "Borrador",        value: stats.byStatus.draft,        icon: RotateCcw,     color: "bg-slate-400" },
+    { key: "draft",        label: "Borrador",          value: stats.byStatus.draft,        icon: RotateCcw,     color: "bg-slate-400" },
   ];
 
   // Type data
@@ -175,8 +204,26 @@ export default function AnalyticsPage() {
       value: count,
     }));
 
+  // Materia data
+  const totalExpedientes = Object.values(stats.byMateria).reduce((s, v) => s + v, 0);
+  const materiaRows = Object.entries(stats.byMateria)
+    .sort(([, a], [, b]) => b - a)
+    .map(([materia, count]) => ({
+      label: MATERIA_LABELS[materia] ?? materia,
+      value: count,
+      color: MATERIA_COLORS[materia] ?? "bg-slate-400",
+    }));
+
   // Month activity
   const totalActivity = stats.byMonth.reduce((s, m) => s + m.count, 0);
+
+  // Badges for "este mes"
+  const docsMonthBadge = stats.docsThisMonth > 0
+    ? { text: `+${stats.docsThisMonth} este mes`, color: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" }
+    : null;
+  const clientsMonthBadge = stats.newClientsThisMonth > 0
+    ? { text: `+${stats.newClientsThisMonth} este mes`, color: "bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400" }
+    : null;
 
   return (
     <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
@@ -199,28 +246,32 @@ export default function AnalyticsPage() {
           label="Total documentos"
           value={total}
           color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+          badge={docsMonthBadge}
         />
         <StatTile
           icon={Users}
-          label="Clientes"
+          label="Clientes activos"
           value={stats.totalClients}
           color="bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
+          badge={clientsMonthBadge}
         />
         <StatTile
           icon={Briefcase}
           label="Expedientes activos"
           value={stats.expedientesActivos}
           color="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+          badge={null}
         />
         <StatTile
           icon={TrendingUp}
           label="Actividad (6 meses)"
           value={totalActivity}
           color="bg-primary/10 text-primary"
+          badge={null}
         />
       </div>
 
-      {/* Charts row */}
+      {/* Charts row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Documents by status */}
@@ -268,37 +319,83 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Activity over time */}
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold text-slate-900 dark:text-white">
-            Actividad — últimos 6 meses
-          </h2>
-          <span className="text-xs text-slate-400">{totalActivity} documentos generados</span>
+      {/* Charts row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Activity over time */}
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+              Actividad — últimos 6 meses
+            </h2>
+            <span className="text-xs text-slate-400">{totalActivity} docs generados</span>
+          </div>
+          {stats.byMonth.length === 0 ? (
+            <p className="text-sm text-slate-400 text-center py-8">Sin datos de actividad</p>
+          ) : (
+            <MonthBars byMonth={stats.byMonth} />
+          )}
         </div>
-        {stats.byMonth.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-8">Sin datos de actividad</p>
-        ) : (
-          <MonthBars byMonth={stats.byMonth} />
-        )}
+
+        {/* Expedientes by materia */}
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-5">
+            <Gavel className="w-4 h-4 text-slate-400" />
+            <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+              Expedientes por materia
+            </h2>
+          </div>
+          {materiaRows.length === 0 ? (
+            <p className="text-sm text-slate-400 text-center py-8">Sin expedientes aún</p>
+          ) : (
+            <div className="space-y-3">
+              {materiaRows.map((row) => (
+                <HorizontalBar
+                  key={row.label}
+                  label={row.label}
+                  value={row.value}
+                  total={totalExpedientes}
+                  color={row.color}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Insights */}
-      {stats.vencimientosUrgentes > 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 p-4">
-          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-              {stats.vencimientosUrgentes === 1
-                ? "1 expediente con vencimiento urgente"
-                : `${stats.vencimientosUrgentes} expedientes con vencimientos urgentes`}
-            </p>
-            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-              Revisá la sección de Expedientes para ver los detalles.
-            </p>
+      <div className="space-y-3">
+        {stats.vencimientosUrgentes > 0 && (
+          <div className="flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 p-4">
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                {stats.vencimientosUrgentes === 1
+                  ? "1 expediente con vencimiento urgente"
+                  : `${stats.vencimientosUrgentes} expedientes con vencimientos urgentes`}
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                Revisá la sección de Expedientes para ver los detalles.
+              </p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+        {stats.newClientsThisMonth > 0 && (
+          <div className="flex items-start gap-3 rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/30 p-4">
+            <UserPlus className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+                {stats.newClientsThisMonth === 1
+                  ? "1 cliente nuevo este mes"
+                  : `${stats.newClientsThisMonth} clientes nuevos este mes`}
+              </p>
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
+                Tu cartera de clientes está creciendo.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -328,13 +328,13 @@ export function Hero() {
           </div>
 
           <h1 className="text-5xl md:text-7xl font-black leading-[1.1] tracking-tighter text-slate-900 dark:text-slate-100">
-            Crea documentos <span className="text-primary">legales</span> con IA en minutos
+            Generá contratos y documentos <span className="text-primary">legales</span> con IA en minutos
           </h1>
 
           <p className="text-lg text-slate-600 dark:text-slate-400 max-w-lg leading-relaxed">
-            La plataforma líder en Argentina para la generación automática de contratos y
-            documentos con validez jurídica total. Potenciada por inteligencia artificial
-            adaptada a la normativa local.
+            La plataforma de legal tech líder en Argentina para abogados, estudios jurídicos
+            y pymes. Generá contratos, NDAs, cartas documento y más con validez jurídica,
+            usando IA adaptada a la normativa argentina.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4">
@@ -371,7 +371,7 @@ export function Hero() {
             <div className="w-px h-4 bg-slate-200 dark:bg-slate-700" />
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Generación en minutos</span>
+              <span>Para abogados y pymes</span>
             </div>
           </div>
         </div>

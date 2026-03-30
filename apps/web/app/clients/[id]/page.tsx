@@ -4,14 +4,14 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Pencil, Trash2, User, Building2, Mail, Phone,
+  ArrowLeft, Pencil, User, Building2, Mail, Phone,
   MapPin, FileText, Hash, Calendar, AlertTriangle, Loader2,
-  Briefcase, CalendarClock,
+  Briefcase, CalendarClock, Archive, ArchiveRestore, UserCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useToast } from "@/components/ui/toast";
-import { getClient, updateClient, deleteClient, listDocuments, listExpedientes, Client, ClientPayload, ClientType, Document, Expediente } from "@/app/lib/webApi";
+import { getClient, updateClient, deleteClient, unarchiveClient, listDocuments, listExpedientes, Client, ClientPayload, ClientType, Document, Expediente } from "@/app/lib/webApi";
 import { formatDocumentType } from "@/app/lib/format";
 import { ClientForm } from "@/components/clients/ClientForm";
 import { cn } from "@/app/lib/utils";
@@ -153,13 +153,24 @@ export default function ClientDetailPage() {
     setDeleting(true);
     try {
       await deleteClient(client.id);
-      success("Cliente eliminado");
+      success("Cliente archivado correctamente");
       router.push("/clients");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error al eliminar el cliente";
+      const msg = err instanceof Error ? err.message : "Error al archivar el cliente";
       showError(msg);
       setDeleting(false);
       setConfirmDelete(false);
+    }
+  };
+
+  const handleUnarchive = async () => {
+    if (!client) return;
+    try {
+      await unarchiveClient(client.id);
+      success("Cliente restaurado correctamente");
+      await load();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Error al restaurar el cliente");
     }
   };
 
@@ -214,25 +225,51 @@ export default function ClientDetailPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setFormOpen(true)}
-              className="text-sm"
-            >
-              <Pencil className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Editar</span>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setConfirmDelete(true)}
-              className="text-sm text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20"
-            >
-              <Trash2 className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Eliminar</span>
-            </Button>
+            {client.archivedAt ? (
+              <Button
+                variant="outline"
+                onClick={handleUnarchive}
+                className="text-sm text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+              >
+                <ArchiveRestore className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Restaurar</span>
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setFormOpen(true)}
+                  className="text-sm"
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  <span className="hidden sm:inline">Editar</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setConfirmDelete(true)}
+                  className="text-sm text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                >
+                  <Archive className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Archivar</span>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Archived banner */}
+      {client.archivedAt && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 px-4 md:px-10 py-3">
+          <div className="max-w-[960px] mx-auto flex items-center gap-3">
+            <Archive className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+            <p className="text-sm text-amber-700 dark:text-amber-300">
+              Este cliente está archivado desde el{" "}
+              <strong>{formatDate(client.archivedAt)}</strong>. No aparece en el listado activo.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Body */}
       <div className="max-w-[960px] mx-auto px-4 md:px-10 py-8 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -328,6 +365,22 @@ export default function ClientDetailPage() {
               value={[client.city, client.province].filter(Boolean).join(", ") || null}
             />
           </div>
+
+          {/* Contact person — persona jurídica */}
+          {isJuridica && (client.contactPersonName || client.contactPersonRole || client.contactPersonPhone || client.contactPersonEmail) && (
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5">
+              <div className="flex items-center gap-2 mb-1">
+                <UserCircle className="w-4 h-4 text-slate-400" />
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Persona de contacto
+                </h3>
+              </div>
+              <InfoRow icon={UserCircle} label="Nombre y apellido" value={client.contactPersonName} />
+              <InfoRow icon={UserCircle} label="Cargo / Rol" value={client.contactPersonRole} />
+              <InfoRow icon={Phone} label="Teléfono directo" value={client.contactPersonPhone} />
+              <InfoRow icon={Mail} label="Email directo" value={client.contactPersonEmail} />
+            </div>
+          )}
 
           {/* Notes */}
           {client.notes && (
@@ -557,13 +610,13 @@ export default function ClientDetailPage() {
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-sm w-full p-6 flex flex-col gap-4">
-              <div className="size-12 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center mx-auto">
-                <Trash2 className="w-6 h-6 text-red-500" />
+              <div className="size-12 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center mx-auto">
+                <Archive className="w-6 h-6 text-amber-500" />
               </div>
               <div className="text-center">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">¿Eliminar cliente?</h3>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">¿Archivar cliente?</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  Se eliminará <strong>{client.name}</strong> de forma permanente. Esta acción no se puede deshacer.
+                  <strong>{client.name}</strong> será archivado y dejará de aparecer en el listado activo. Podés restaurarlo en cualquier momento.
                 </p>
               </div>
               <div className="flex gap-3">
@@ -576,11 +629,11 @@ export default function ClientDetailPage() {
                   Cancelar
                 </Button>
                 <Button
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
                   onClick={handleDelete}
                   disabled={deleting}
                 >
-                  {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Eliminar"}
+                  {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Archivar"}
                 </Button>
               </div>
             </div>

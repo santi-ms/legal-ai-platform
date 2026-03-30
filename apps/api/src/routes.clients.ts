@@ -24,12 +24,18 @@ const ClientBodySchema = z.object({
   address: z.string().max(300).optional().nullable(),
   city: z.string().max(100).optional().nullable(),
   province: z.string().max(100).optional().nullable(),
+  // Persona de contacto (solo para persona_juridica)
+  contactPersonName:  z.string().max(200).optional().nullable(),
+  contactPersonRole:  z.string().max(100).optional().nullable(),
+  contactPersonPhone: z.string().max(50).optional().nullable(),
+  contactPersonEmail: z.string().email("Email de contacto inválido").optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
 });
 
 const ClientsQuerySchema = z.object({
   query: z.string().optional(),
   type: z.enum(["persona_fisica", "persona_juridica"]).optional(),
+  archived: z.coerce.boolean().optional().default(false), // true = mostrar archivados
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().positive().max(100).default(20),
   sort: z.enum(["createdAt:asc", "createdAt:desc", "name:asc", "name:desc"]).default("name:asc"),
@@ -69,10 +75,12 @@ export async function registerClientRoutes(app: FastifyInstance) {
       return reply.status(400).send({ ok: false, error: "INVALID_QUERY", details: parsed.error.format() });
     }
 
-    const { query, type, page, pageSize, sort } = parsed.data;
+    const { query, type, archived, page, pageSize, sort } = parsed.data;
     const [sortField, sortDir] = sort.split(":");
 
     const where: any = { tenantId };
+    // Por defecto solo activos; con ?archived=true solo archivados
+    where.archivedAt = archived ? { not: null } : null;
     if (type) where.type = type;
     if (query) {
       where.OR = [
@@ -101,6 +109,9 @@ export async function registerClientRoutes(app: FastifyInstance) {
           phone: true,
           city: true,
           province: true,
+          contactPersonName: true,
+          contactPersonRole: true,
+          archivedAt: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -136,6 +147,10 @@ export async function registerClientRoutes(app: FastifyInstance) {
         address: data.address?.trim() ?? null,
         city: data.city?.trim() ?? null,
         province: data.province ?? null,
+        contactPersonName:  data.contactPersonName?.trim() ?? null,
+        contactPersonRole:  data.contactPersonRole?.trim() ?? null,
+        contactPersonPhone: data.contactPersonPhone?.trim() ?? null,
+        contactPersonEmail: data.contactPersonEmail?.toLowerCase().trim() ?? null,
         notes: data.notes?.trim() ?? null,
       },
     });
@@ -188,6 +203,10 @@ export async function registerClientRoutes(app: FastifyInstance) {
         address: data.address?.trim() ?? null,
         city: data.city?.trim() ?? null,
         province: data.province ?? null,
+        contactPersonName:  data.contactPersonName?.trim() ?? null,
+        contactPersonRole:  data.contactPersonRole?.trim() ?? null,
+        contactPersonPhone: data.contactPersonPhone?.trim() ?? null,
+        contactPersonEmail: data.contactPersonEmail?.toLowerCase().trim() ?? null,
         notes: data.notes?.trim() ?? null,
       },
     });
@@ -195,7 +214,7 @@ export async function registerClientRoutes(app: FastifyInstance) {
     return reply.send({ ok: true, client });
   });
 
-  // ── DELETE /clients/:id ────────────────────────────────────────────────────
+  // ── DELETE /clients/:id — soft delete (archivar) ──────────────────────────
   app.delete("/clients/:id", async (request, reply) => {
     const tenantId = await getTenantId(request, reply);
     if (!tenantId) return;
@@ -205,8 +224,44 @@ export async function registerClientRoutes(app: FastifyInstance) {
     const existing = await prisma.client.findFirst({ where: { id, tenantId } });
     if (!existing) return notFound(reply);
 
+    await prisma.client.update({
+      where: { id },
+      data: { archivedAt: new Date() },
+    });
+
+    return reply.send({ ok: true, message: "Cliente archivado correctamente" });
+  });
+
+  // ── PATCH /clients/:id/unarchive — restaurar cliente archivado ─────────────
+  app.patch("/clients/:id/unarchive", async (request, reply) => {
+    const tenantId = await getTenantId(request, reply);
+    if (!tenantId) return;
+
+    const { id } = request.params as { id: string };
+
+    const existing = await prisma.client.findFirst({ where: { id, tenantId } });
+    if (!existing) return notFound(reply);
+
+    await prisma.client.update({
+      where: { id },
+      data: { archivedAt: null },
+    });
+
+    return reply.send({ ok: true, message: "Cliente restaurado correctamente" });
+  });
+
+  // ── DELETE /clients/:id/permanent — eliminar definitivamente ──────────────
+  app.delete("/clients/:id/permanent", async (request, reply) => {
+    const tenantId = await getTenantId(request, reply);
+    if (!tenantId) return;
+
+    const { id } = request.params as { id: string };
+
+    const existing = await prisma.client.findFirst({ where: { id, tenantId, archivedAt: { not: null } } });
+    if (!existing) return reply.status(404).send({ ok: false, error: "NOT_FOUND", message: "Cliente archivado no encontrado" });
+
     await prisma.client.delete({ where: { id } });
 
-    return reply.send({ ok: true, message: "Cliente eliminado correctamente" });
+    return reply.send({ ok: true, message: "Cliente eliminado definitivamente" });
   });
 }

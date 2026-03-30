@@ -181,7 +181,12 @@ export async function listDocuments(
 
 export interface DocumentStats {
   total: number;
+  /** Docs created this calendar month */
+  docsThisMonth: number;
+  /** Active (non-archived) clients */
   totalClients: number;
+  /** New active clients created this calendar month */
+  newClientsThisMonth: number;
   byStatus: {
     generated: number;
     needs_review: number;
@@ -194,6 +199,8 @@ export interface DocumentStats {
   byType: Record<string, number>;
   /** Documents per month — last 6 months, ordered oldest→newest */
   byMonth: Array<{ month: string; count: number }>;
+  /** Expedientes grouped by matter type */
+  byMateria: Record<string, number>;
   /** Expedientes con status "activo" */
   expedientesActivos: number;
   /** Activos con deadline vencido o ≤ 3 días */
@@ -204,7 +211,9 @@ export async function getDocumentStats(): Promise<DocumentStats> {
   const { data } = await proxyJson<any>("/documents/stats");
   return {
     total:                data?.total                ?? 0,
+    docsThisMonth:        data?.docsThisMonth        ?? 0,
     totalClients:         data?.totalClients         ?? 0,
+    newClientsThisMonth:  data?.newClientsThisMonth  ?? 0,
     expedientesActivos:   data?.expedientesActivos   ?? 0,
     vencimientosUrgentes: data?.vencimientosUrgentes ?? 0,
     byStatus: {
@@ -214,8 +223,9 @@ export async function getDocumentStats(): Promise<DocumentStats> {
       reviewed:     data?.byStatus?.reviewed      ?? 0,
       final:        data?.byStatus?.final         ?? 0,
     },
-    byType:  data?.byType  ?? {},
-    byMonth: data?.byMonth ?? [],
+    byType:    data?.byType    ?? {},
+    byMonth:   data?.byMonth   ?? [],
+    byMateria: data?.byMateria ?? {},
   };
 }
 
@@ -452,7 +462,7 @@ export interface OnboardingResult {
 }
 
 export async function getUserProfile(): Promise<UserProfile> {
-  const { data } = await proxyJson<{ ok: boolean; data: UserProfile }>("/user/profile");
+  const { data } = await proxyJson<{ ok: boolean; data: UserProfile }>("/api/user/profile");
   if (!data.ok || !data.data) {
     throw new Error("Error al obtener perfil");
   }
@@ -463,7 +473,7 @@ export async function updateUserProfile(
   payload: UpdateProfileData
 ): Promise<UserProfile> {
   const { data } = await proxyJson<{ ok: boolean; data: UserProfile; message?: string }>(
-    "/user/profile",
+    "/api/user/profile",
     {
       method: "PATCH",
       headers: {
@@ -480,7 +490,7 @@ export async function updateUserProfile(
 }
 
 export async function getTenantProfile(): Promise<TenantProfile> {
-  const { data } = await proxyJson<{ ok: boolean; data: TenantProfile }>("/user/tenant");
+  const { data } = await proxyJson<{ ok: boolean; data: TenantProfile }>("/api/user/tenant");
   if (!data.ok || !data.data) {
     throw new Error("Error al obtener datos del estudio");
   }
@@ -491,7 +501,7 @@ export async function updateTenantProfile(
   payload: Partial<Omit<TenantProfile, "id">>
 ): Promise<TenantProfile> {
   const { data } = await proxyJson<{ ok: boolean; data: TenantProfile; message?: string }>(
-    "/user/tenant",
+    "/api/user/tenant",
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -541,7 +551,13 @@ export interface Client {
   address: string | null;
   city: string | null;
   province: string | null;
+  // Persona de contacto (persona_juridica)
+  contactPersonName: string | null;
+  contactPersonRole: string | null;
+  contactPersonPhone: string | null;
+  contactPersonEmail: string | null;
   notes: string | null;
+  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -556,6 +572,10 @@ export interface ClientPayload {
   address?: string | null;
   city?: string | null;
   province?: string | null;
+  contactPersonName?: string | null;
+  contactPersonRole?: string | null;
+  contactPersonPhone?: string | null;
+  contactPersonEmail?: string | null;
   notes?: string | null;
 }
 
@@ -569,6 +589,7 @@ export interface ListClientsResult {
 export interface ClientsParams {
   query?: string;
   type?: ClientType;
+  archived?: boolean;
   page?: number;
   pageSize?: number;
   sort?: "name:asc" | "name:desc" | "createdAt:asc" | "createdAt:desc";
@@ -608,8 +629,19 @@ export async function updateClient(id: string, payload: ClientPayload): Promise<
   return data.client;
 }
 
+/** Archivar cliente (soft delete) */
 export async function deleteClient(id: string): Promise<void> {
   await proxyJson(`/clients/${id}`, { method: "DELETE" });
+}
+
+/** Restaurar cliente archivado */
+export async function unarchiveClient(id: string): Promise<void> {
+  await proxyJson(`/clients/${id}/unarchive`, { method: "PATCH" });
+}
+
+/** Eliminar cliente definitivamente (solo si ya está archivado) */
+export async function permanentDeleteClient(id: string): Promise<void> {
+  await proxyJson(`/clients/${id}/permanent`, { method: "DELETE" });
 }
 
 // ─── Expedientes ───────────────────────────────────────────────────────────────

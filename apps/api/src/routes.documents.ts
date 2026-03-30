@@ -64,6 +64,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
 
       const now = new Date();
       const urgentCutoff = new Date(now.getTime() + 3 * 86_400_000); // now + 3 days
+      const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
       // Last 6 months window
       const sixMonthsAgo = new Date(now);
@@ -71,7 +72,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       sixMonthsAgo.setDate(1);
       sixMonthsAgo.setHours(0, 0, 0, 0);
 
-      const [allDocs, allDocsWithMeta, totalClients, expedientesActivos, vencimientosUrgentes] = await Promise.all([
+      const [allDocs, allDocsWithMeta, totalClients, newClientsThisMonth, expedientesActivos, vencimientosUrgentes, expedientesByMateria] = await Promise.all([
         prisma.document.findMany({
           where: { tenantId },
           select: {
@@ -89,7 +90,10 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
             createdAt: true,
           },
         }),
-        prisma.client.count({ where: { tenantId } }),
+        // Only active (non-archived) clients
+        prisma.client.count({ where: { tenantId, archivedAt: null } }),
+        // New active clients created this calendar month
+        prisma.client.count({ where: { tenantId, archivedAt: null, createdAt: { gte: startOfThisMonth } } }),
         // Active expedientes
         prisma.expediente.count({ where: { tenantId, status: "activo" } }),
         // Overdue + critical (deadline ≤ now+3d) active expedientes
@@ -99,6 +103,13 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
             status: "activo",
             deadline: { not: null, lte: urgentCutoff },
           },
+        }),
+        // Expedientes grouped by matter type
+        prisma.expediente.groupBy({
+          by: ["matter"],
+          where: { tenantId },
+          _count: { matter: true },
+          orderBy: { _count: { matter: "desc" } },
         }),
       ]);
 
@@ -140,13 +151,27 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       }
       const byMonth = Object.entries(monthMap).map(([month, count]) => ({ month, count }));
 
+      // Documents created this calendar month
+      const docsThisMonth = allDocsWithMeta.filter(
+        (d) => new Date(d.createdAt) >= startOfThisMonth
+      ).length;
+
+      // Expedientes by matter as a plain record
+      const byMateria: Record<string, number> = {};
+      for (const row of expedientesByMateria) {
+        byMateria[row.matter] = row._count.matter;
+      }
+
       return reply.send({
         ok: true,
         total: allDocs.length,
+        docsThisMonth,
         totalClients,
+        newClientsThisMonth,
         byStatus,
         byType,
         byMonth,
+        byMateria,
         expedientesActivos,
         vencimientosUrgentes,
       });

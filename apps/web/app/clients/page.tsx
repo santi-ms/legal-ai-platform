@@ -4,14 +4,14 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus, Search, Users, Building2, User, Mail, Phone,
-  MapPin, Trash2, Pencil, RefreshCcw, AlertTriangle,
+  MapPin, Archive, ArchiveRestore, Pencil, RefreshCcw, AlertTriangle,
   ChevronLeft, ChevronRight, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useToast } from "@/components/ui/toast";
 import {
-  listClients, createClient, updateClient, deleteClient,
+  listClients, createClient, updateClient, deleteClient, unarchiveClient,
   Client, ClientPayload, ClientsParams, ClientType,
 } from "@/app/lib/webApi";
 import { ClientForm } from "@/components/clients/ClientForm";
@@ -113,12 +113,16 @@ function EmptyState({ hasFilters, onClear, onNew }: { hasFilters: boolean; onCle
 
 function ClientRow({
   client,
+  archivedMode,
   onEdit,
   onDelete,
+  onRestore,
 }: {
   client: Client;
+  archivedMode: boolean;
   onEdit: (c: Client) => void;
   onDelete: (id: string) => void;
+  onRestore: (id: string) => void;
 }) {
   const router = useRouter();
   const initials = getInitials(client.name);
@@ -133,7 +137,9 @@ function ClientRow({
       <div
         className={cn(
           "size-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0",
-          isJuridica
+          archivedMode
+            ? "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500"
+            : isJuridica
             ? "bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300"
             : "bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300"
         )}
@@ -143,9 +149,16 @@ function ClientRow({
 
       {/* Name + type */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-          {client.name}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+            {client.name}
+          </p>
+          {archivedMode && (
+            <span className="text-xs px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-medium flex-shrink-0">
+              Archivado
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2 mt-0.5">
           <span
             className={cn(
@@ -211,20 +224,32 @@ function ClientRow({
         className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={() => onEdit(client)}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
-          title="Editar cliente"
-        >
-          <Pencil className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => onDelete(client.id)}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-          title="Eliminar cliente"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        {archivedMode ? (
+          <button
+            onClick={() => onRestore(client.id)}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+            title="Restaurar cliente"
+          >
+            <ArchiveRestore className="w-4 h-4" />
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={() => onEdit(client)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
+              title="Editar cliente"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => onDelete(client.id)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+              title="Archivar cliente"
+            >
+              <Archive className="w-4 h-4" />
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -249,6 +274,7 @@ function ClientsContent() {
   const [typeFilter, setTypeFilter] = useState<ClientType | "all">(
     (searchParams.get("type") as ClientType) || "all"
   );
+  const [archivedMode, setArchivedMode] = useState(false);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -259,6 +285,7 @@ function ClientsContent() {
   const getParams = (): ClientsParams => ({
     query: searchParams.get("query") || undefined,
     type: (searchParams.get("type") as ClientType) || undefined,
+    archived: archivedMode || undefined,
     page: parseInt(searchParams.get("page") || "1"),
     pageSize,
     sort: (searchParams.get("sort") as ClientsParams["sort"]) || "name:asc",
@@ -301,7 +328,7 @@ function ClientsContent() {
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) loadClients();
-  }, [searchParams, isAuthenticated, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchParams, isAuthenticated, authLoading, archivedMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -350,9 +377,9 @@ function ClientsContent() {
     await loadClients();
   };
 
-  // ── Delete with undo ──────────────────────────────────────────────────────
+  // ── Archive with undo ─────────────────────────────────────────────────────
 
-  const executeDelete = (id: string) => {
+  const executeArchive = (id: string) => {
     if (pendingDeletes.current.has(id)) return;
 
     setClients((prev) => prev.filter((c) => c.id !== id));
@@ -363,7 +390,7 @@ function ClientsContent() {
       try {
         await deleteClient(id);
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Error al eliminar el cliente";
+        const msg = err instanceof Error ? err.message : "Error al archivar el cliente";
         showError(msg);
         await loadClients();
       }
@@ -371,7 +398,7 @@ function ClientsContent() {
 
     pendingDeletes.current.set(id, timer);
 
-    addToast("Cliente eliminado", "success", 5000, {
+    addToast("Cliente archivado", "success", 5000, {
       label: "Deshacer",
       onClick: () => {
         const t = pendingDeletes.current.get(id);
@@ -383,6 +410,16 @@ function ClientsContent() {
 
   const handleDelete = (id: string) => {
     setConfirmDeleteId(id);
+  };
+
+  const handleRestore = async (id: string) => {
+    try {
+      await unarchiveClient(id);
+      success("Cliente restaurado correctamente");
+      await loadClients();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Error al restaurar el cliente");
+    }
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -409,16 +446,36 @@ function ClientsContent() {
               Clientes
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              {total > 0 ? `${total} ${total === 1 ? "cliente registrado" : "clientes registrados"}` : "Gestioná los clientes de tu estudio"}
+              {archivedMode
+                ? "Mostrando clientes archivados"
+                : total > 0
+                ? `${total} ${total === 1 ? "cliente registrado" : "clientes registrados"}`
+                : "Gestioná los clientes de tu estudio"}
             </p>
           </div>
-          <Button
-            onClick={handleOpenNew}
-            className="bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 px-5 text-sm font-semibold"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo cliente
-          </Button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { setArchivedMode((v) => !v); setCurrentPage(1); }}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors",
+                archivedMode
+                  ? "border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"
+                  : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+              )}
+            >
+              <Archive className="w-4 h-4" />
+              {archivedMode ? "Ver activos" : "Ver archivados"}
+            </button>
+            {!archivedMode && (
+              <Button
+                onClick={handleOpenNew}
+                className="bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 px-5 text-sm font-semibold"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nuevo cliente
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -483,6 +540,20 @@ function ClientsContent() {
               Reintentar
             </Button>
           </div>
+        ) : clients.length === 0 && archivedMode ? (
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-14 flex flex-col items-center text-center gap-4">
+            <div className="size-14 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+              <Archive className="w-7 h-7 text-amber-400" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+                No hay clientes archivados
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+                Los clientes que archivés aparecerán aquí y podrás restaurarlos cuando quieras.
+              </p>
+            </div>
+          </div>
         ) : clients.length === 0 ? (
           <EmptyState hasFilters={hasFilters} onClear={handleClearFilters} onNew={handleOpenNew} />
         ) : (
@@ -503,8 +574,10 @@ function ClientsContent() {
                 <ClientRow
                   key={client.id}
                   client={client}
+                  archivedMode={archivedMode}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  onRestore={handleRestore}
                 />
               ))}
             </div>
@@ -552,18 +625,18 @@ function ClientsContent() {
         initialData={editingClient}
       />
 
-      {/* Confirm delete */}
+      {/* Confirm archive */}
       <ConfirmDialog
         open={confirmDeleteId !== null}
-        title="Eliminar cliente"
-        description="¿Estás seguro de que querés eliminar este cliente? Podrás deshacer la acción durante 5 segundos."
-        confirmLabel="Eliminar"
+        title="Archivar cliente"
+        description="El cliente será archivado y no aparecerá en el listado activo. Podés restaurarlo cuando quieras. Tenés 5 segundos para deshacer la acción."
+        confirmLabel="Archivar"
         cancelLabel="Cancelar"
         variant="destructive"
         onCancel={() => setConfirmDeleteId(null)}
         onConfirm={() => {
           if (confirmDeleteId) {
-            executeDelete(confirmDeleteId);
+            executeArchive(confirmDeleteId);
             setConfirmDeleteId(null);
           }
         }}

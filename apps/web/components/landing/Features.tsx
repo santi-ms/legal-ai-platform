@@ -54,7 +54,7 @@ export function Features() {
           {/* Left Side - Main Features */}
           <div className="space-y-8">
             <h2 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-              Tecnología de vanguardia para profesionales del derecho
+              Software legal pensado para abogados y estudios jurídicos
             </h2>
 
             <div className="space-y-6">

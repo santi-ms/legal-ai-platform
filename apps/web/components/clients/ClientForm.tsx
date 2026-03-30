@@ -31,6 +31,10 @@ const EMPTY: ClientPayload = {
   address: null,
   city: null,
   province: null,
+  contactPersonName: null,
+  contactPersonRole: null,
+  contactPersonPhone: null,
+  contactPersonEmail: null,
   notes: null,
 };
 
@@ -70,6 +74,10 @@ export function ClientForm({ open, onClose, onSave, initialData }: ClientFormPro
               address: initialData.address,
               city: initialData.city,
               province: initialData.province,
+              contactPersonName: initialData.contactPersonName ?? null,
+              contactPersonRole: initialData.contactPersonRole ?? null,
+              contactPersonPhone: initialData.contactPersonPhone ?? null,
+              contactPersonEmail: initialData.contactPersonEmail ?? null,
               notes: initialData.notes,
             }
           : EMPTY
@@ -251,6 +259,55 @@ export function ClientForm({ open, onClose, onSave, initialData }: ClientFormPro
               </select>
             </Field>
           </div>
+
+          {/* Persona de contacto — solo para persona jurídica */}
+          {form.type === "persona_juridica" && (
+            <div className="space-y-3 rounded-xl border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800/40">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Persona de contacto
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Nombre y apellido">
+                  <input
+                    className={inputClass}
+                    value={form.contactPersonName ?? ""}
+                    onChange={(e) => set("contactPersonName", e.target.value)}
+                    placeholder="Ej: Juan Martínez"
+                    maxLength={200}
+                  />
+                </Field>
+                <Field label="Cargo / Rol">
+                  <input
+                    className={inputClass}
+                    value={form.contactPersonRole ?? ""}
+                    onChange={(e) => set("contactPersonRole", e.target.value)}
+                    placeholder="Ej: Gerente, Apoderado"
+                    maxLength={100}
+                  />
+                </Field>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Teléfono directo">
+                  <input
+                    className={inputClass}
+                    value={form.contactPersonPhone ?? ""}
+                    onChange={(e) => set("contactPersonPhone", e.target.value)}
+                    placeholder="+54 9 11 1234-5678"
+                    maxLength={50}
+                  />
+                </Field>
+                <Field label="Email directo">
+                  <input
+                    type="email"
+                    className={inputClass}
+                    value={form.contactPersonEmail ?? ""}
+                    onChange={(e) => set("contactPersonEmail", e.target.value)}
+                    placeholder="contacto@empresa.com"
+                  />
+                </Field>
+              </div>
+            </div>
+          )}
 
           {/* Notas internas */}
           <Field label="Notas internas">

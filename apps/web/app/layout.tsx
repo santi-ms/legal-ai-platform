@@ -1,11 +1,60 @@
 import "./globals.css";
+import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
 import { SessionProvider } from "@/components/ui/session-provider";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
-export const metadata = {
+// ─── JSON-LD Structured Data ──────────────────────────────────────────────────
+
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "DocuLex",
+  url: "https://doculex.com.ar",
+  logo: "https://doculex.com.ar/favicon.ico",
+  description:
+    "Plataforma SaaS para la generación automática de documentos legales con IA, orientada a abogados, estudios jurídicos y pymes en Argentina.",
+  address: {
+    "@type": "PostalAddress",
+    addressCountry: "AR",
+  },
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "customer support",
+    email: "soporte@doculex.ar",
+  },
+  sameAs: [],
+};
+
+const softwareSchema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "DocuLex",
+  applicationCategory: "LegalApplication",
+  operatingSystem: "Web",
+  description:
+    "Generá contratos, NDAs, cartas documento y documentos legales con IA en minutos. Para abogados y estudios jurídicos en Argentina.",
+  url: "https://doculex.com.ar",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+    description: "Plan gratuito disponible. Planes Pro y Estudio desde USD 29/mes.",
+  },
+  featureList: [
+    "Generación de contratos con IA",
+    "Cartas documento",
+    "Acuerdos de confidencialidad (NDA)",
+    "Contratos de locación",
+    "Gestión de expedientes",
+    "Chat con IA legal",
+  ],
+  inLanguage: "es-AR",
+};
+
+export const metadata: Metadata = {
   title: {
     default: "DocuLex — Documentos Legales con IA",
     template: "%s | DocuLex",
@@ -13,14 +62,23 @@ export const metadata = {
   description:
     "Generá contratos, poderes y escrituras con validez jurídica en Argentina usando Inteligencia Artificial. Rápido, seguro y preciso.",
   keywords: [
-    "documentos legales", "contratos con IA", "abogados Argentina",
-    "estudio jurídico", "generador de contratos", "DocuLex",
+    "documentos legales Argentina",
+    "generador de contratos online",
+    "contratos con inteligencia artificial",
+    "software legal para abogados",
+    "estudio jurídico digital",
+    "carta documento online",
+    "contrato de confidencialidad NDA",
+    "legal tech Argentina",
+    "automatización legal",
+    "plantillas legales",
+    "DocuLex",
   ],
   authors: [{ name: "DocuLex" }],
   creator: "DocuLex",
   applicationName: "DocuLex",
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://legaltech-ar.vercel.app"
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://doculex.com.ar"
   ),
   openGraph: {
     type: "website",
@@ -29,6 +87,7 @@ export const metadata = {
     description:
       "Generá contratos, poderes y escrituras con validez jurídica en Argentina usando Inteligencia Artificial.",
     siteName: "DocuLex",
+    url: "https://doculex.com.ar",
   },
   twitter: {
     card: "summary_large_image",
@@ -39,6 +98,9 @@ export const metadata = {
   robots: {
     index: true,
     follow: true,
+  },
+  alternates: {
+    canonical: "https://doculex.com.ar",
   },
 };
 
@@ -69,6 +131,15 @@ export default function RootLayout({
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
           }
         `}</style>
+        {/* JSON-LD Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
+        />
       </head>
       <body className={`${inter.className} h-full antialiased`}>
         <SessionProvider>
