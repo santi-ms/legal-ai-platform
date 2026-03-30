@@ -76,7 +76,13 @@
       "Bash(sed -i 's/<BrandLogo size={40} className=\"\"rounded-lg\"\" \\\\/>/<BrandLogo size={56} \\\\/>/g' components/dashboard/DashboardSidebar.tsx components/auth/RegisterSidebar.tsx app/not-found.tsx)",
       "Bash(sed -i 's/<BrandLogo size={32} className=\"\"rounded-lg\"\" \\\\/>/<BrandLogo size={48} \\\\/>/g' components/auth/LoginHeader.tsx components/auth/RegisterHeader.tsx)",
       "Bash(sed -i 's/<BrandLogo size={32} className=\"\"rounded-lg\"\" \\\\/>/<BrandLogo size={48} \\\\/>/g' components/documents/GenerationHeader.tsx)",
-      "Bash(sed -i 's/<BrandLogo size={36} className=\"\"rounded-lg shrink-0\"\" \\\\/>/<BrandLogo size={52} className=\"\"shrink-0\"\" \\\\/>/g' components/documents/DocumentCreationPageHeader.tsx)"
+      "Bash(sed -i 's/<BrandLogo size={36} className=\"\"rounded-lg shrink-0\"\" \\\\/>/<BrandLogo size={52} className=\"\"shrink-0\"\" \\\\/>/g' components/documents/DocumentCreationPageHeader.tsx)",
+      "Bash(sed -i 's/<BrandLogo size={44} \\\\/>/<BrandLogo size={72} \\\\/>/g' components/landing/Navbar.tsx components/auth/LoginHeader.tsx components/auth/RegisterHeader.tsx)",
+      "Bash(sed -i 's/<BrandLogo size={48} \\\\/>/<BrandLogo size={80} \\\\/>/g' components/landing/Footer.tsx components/documents/GenerationHeader.tsx components/documents/DocumentCreationPageHeader.tsx)",
+      "Bash(sed -i 's/<BrandLogo size={52} \\\\/>/<BrandLogo size={84} \\\\/>/g' components/landing/Footer.tsx)",
+      "Bash(sed -i 's/<BrandLogo size={52} \\\\/>/<BrandLogo size={84} \\\\/>/g' components/auth/RegisterSidebar.tsx)",
+      "Bash(sed -i 's/<BrandLogo size={56} \\\\/>/<BrandLogo size={88} \\\\/>/g' components/dashboard/DashboardSidebar.tsx app/not-found.tsx)",
+      "Bash(npm run:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

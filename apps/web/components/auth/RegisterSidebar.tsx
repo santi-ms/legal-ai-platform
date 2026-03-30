@@ -33,7 +33,7 @@ export function RegisterSidebar() {
       <div className="relative z-10">
         {/* Logo */}
         <div className="mb-12">
-          <BrandLogo size={52} />
+          <BrandLogo size={84} />
         </div>
 
         {/* Main content */}

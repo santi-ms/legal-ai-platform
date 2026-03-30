@@ -111,7 +111,7 @@ export function DashboardSidebar({ isOpen = false, onClose }: DashboardSidebarPr
       {/* Logo + botón cerrar en mobile */}
       <div className="p-6 flex items-center justify-between">
         <div className="flex flex-col gap-1">
-          <BrandLogo size={48} />
+          <BrandLogo size={88} />
           <p className="text-xs text-slate-500 dark:text-slate-400 pl-0.5">Pro Edition</p>
         </div>
         {/* Botón cerrar solo en mobile */}
