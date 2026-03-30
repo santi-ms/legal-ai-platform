@@ -328,7 +328,7 @@ function BillingPageContent() {
       const { checkoutUrl } = await startCheckout(planCode);
       window.location.href = checkoutUrl;
     } catch (err: any) {
-      setStatusMsg({ type: "error", text: "Error al iniciar el pago. Intentá de nuevo." });
+      setStatusMsg({ type: "error", text: `Error al iniciar el pago: ${err?.message ?? "Intentá de nuevo."}` });
       setCheckoutLoading(false);
     }
   };
@@ -341,7 +341,7 @@ function BillingPageContent() {
       const { checkoutUrl } = await startCheckout("estudio", additionalUsers);
       window.location.href = checkoutUrl;
     } catch (err: any) {
-      setStatusMsg({ type: "error", text: "Error al iniciar el pago. Intentá de nuevo." });
+      setStatusMsg({ type: "error", text: `Error al iniciar el pago: ${err?.message ?? "Intentá de nuevo."}` });
       setCheckoutLoading(false);
     }
   };

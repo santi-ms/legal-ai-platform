@@ -228,11 +228,14 @@ export async function registerBillingRoutes(app: FastifyInstance) {
         preferenceId: prefResult.id,
       });
     } catch (err: any) {
-      console.error("[billing/checkout] Error:", err);
+      const detail = err?.cause?.message ?? err?.message ?? String(err);
+      const mpDetail = err?.cause ?? err?.response?.data ?? null;
+      console.error("[billing/checkout] Error:", detail, mpDetail);
       return reply.status(500).send({
         ok: false,
         error: "MP_ERROR",
-        message: "Error al crear preferencia de pago",
+        message: detail,
+        detail: mpDetail,
       });
     }
   });
