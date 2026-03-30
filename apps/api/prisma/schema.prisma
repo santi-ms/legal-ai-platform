@@ -10,16 +10,22 @@ generator client {
 model Tenant {
   id           String        @id @default(uuid())
   name         String
-  cuit         String?       // CUIT del estudio
-  address      String?       // Dirección del estudio
-  phone        String?       // Teléfono del estudio
-  website      String?       // Sitio web del estudio
+  cuit         String?
+  address      String?
+  phone        String?
+  website      String?
+
+  // Plan actual (desnormalizado para acceso rápido sin JOIN)
+  currentPlanCode String @default("free") // "free" | "pro" | "proplus" | "estudio"
+
   users        User[]
   documents    Document[]
   clients      Client[]
   expedientes  Expediente[]
   logs         IAUsageLog[]
   referenceDocuments ReferenceDocument[]
+  subscription Subscription?
+
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -58,11 +64,12 @@ model User {
   referenceDocuments      ReferenceDocument[]    @relation("ReferenceDocsUploadedBy")
   accounts                Account[]
   sessions                Session[]
+  subscriptionUsers       SubscriptionUser[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("User") // Si la tabla real es "User" (creada por migraciones), quitá esta línea si es "users"
+  @@map("User")
 }
 
 model Document {
@@ -303,6 +310,96 @@ model ReferenceDocument {
   @@index([tenantId])
   @@index([documentType])
   @@index([deletedAt])
+}
+
+// ─── Suscripciones y Billing ─────────────────────────────────────────────────
+
+model Plan {
+  id          String  @id @default(uuid())
+  code        String  @unique // "free" | "pro" | "proplus" | "estudio"
+  name        String           // "Free" | "Pro" | "Pro+" | "Estudio"
+  description String
+  priceArs    Int?             // null para Free
+  trialDays   Int     @default(0) // 7 para Pro, 0 para los demás
+  limits      Json             // { docsPerMonth, maxUsers, maxClients, maxExpedientes, maxReferenceFiles }
+  features    Json             // { chatIA, edicion, analytics, anotaciones, logoEstudio, ... }
+
+  subscriptions Subscription[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Subscription {
+  id       String @id @default(uuid())
+
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  planId   String
+  plan     Plan   @relation(fields: [planId], references: [id])
+
+  // Estado: "trialing" | "active" | "canceled" | "past_due" | "paused"
+  status   String @default("active")
+
+  trialEndsAt DateTime? // Solo para plan Pro (7 días)
+  startsAt    DateTime  @default(now())
+  renewsAt    DateTime? // Próxima renovación (null si free o cancelado)
+
+  // Mercado Pago
+  mpPreferenceId   String? // ID de la preference de MP
+  mpSubscriptionId String? // ID de suscripción recurrente en MP
+  mpPayerId        String? // ID del pagador en MP
+
+  // Para plan Estudio
+  maxUsers Int @default(1) // 1 para pro/proplus, 3+ para estudio
+
+  users    SubscriptionUser[]
+  invoices Invoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([planId])
+  @@index([status])
+}
+
+model SubscriptionUser {
+  id             String       @id @default(uuid())
+
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  addedAt        DateTime     @default(now())
+
+  @@unique([subscriptionId, userId])
+  @@index([subscriptionId])
+}
+
+model Invoice {
+  id             String       @id @default(uuid())
+
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  mpPaymentId    String? // ID del pago en Mercado Pago
+  status         String  @default("pending") // "pending" | "approved" | "rejected" | "refunded"
+
+  amountArs      Int     // Monto en pesos
+  period         String  // Formato "YYYY-MM" (ej: "2025-05")
+
+  dueAt          DateTime
+  paidAt         DateTime?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([subscriptionId])
+  @@index([status])
 }
 
 // NextAuth models
