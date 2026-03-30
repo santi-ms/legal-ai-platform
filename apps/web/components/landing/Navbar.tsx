@@ -32,7 +32,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group cursor-pointer">
-          <BrandLogo size={36} className="rounded-lg" />
+          <BrandLogo size={52} />
           <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
             DocuLex
           </h2>

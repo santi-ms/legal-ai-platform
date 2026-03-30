@@ -19,7 +19,7 @@ export function DocumentCreationPageHeader() {
 
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-3 group min-w-0">
-            <BrandLogo size={36} className="rounded-lg shrink-0" />
+            <BrandLogo size={52} className="shrink-0" />
             <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white truncate">
               DocuLex
             </h2>

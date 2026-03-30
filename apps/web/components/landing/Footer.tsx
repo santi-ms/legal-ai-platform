@@ -37,7 +37,7 @@ export function Footer() {
         {/* Brand Column */}
         <div className="col-span-2">
           <div className="flex items-center gap-2 mb-6">
-            <BrandLogo size={36} className="rounded-lg" />
+            <BrandLogo size={52} />
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
               DocuLex
             </h2>

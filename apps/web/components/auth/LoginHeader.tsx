@@ -7,7 +7,7 @@ export function LoginHeader() {
   return (
     <header className="flex items-center justify-between px-6 py-4 lg:px-12 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
       <Link href="/" className="flex items-center gap-2">
-        <BrandLogo size={32} className="rounded-lg" />
+        <BrandLogo size={48} />
         <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
           DocuLex
         </h1>

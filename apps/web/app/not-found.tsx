@@ -9,7 +9,7 @@ export default function NotFound() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center px-4 text-center">
       {/* Logo */}
       <div className="flex items-center gap-3 mb-12">
-        <BrandLogo size={40} className="rounded-lg" />
+        <BrandLogo size={56} />
         <span className="text-lg font-bold text-slate-900 dark:text-white">DocuLex</span>
       </div>
 

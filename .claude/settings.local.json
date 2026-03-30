@@ -65,7 +65,18 @@
       "Bash(grep -r \"cron\\\\|schedule\\\\|bull\\\\|queue\\\\|notification\" /c/Users/santi/Desktop/legal-ai-platform/apps/api --include=*.ts --include=*.json)",
       "Bash(find /c/Users/santi/Desktop/legal-ai-platform/apps/api -type f -name package.json -exec cat {})",
       "Bash(2)",
-      "Bash(grep -r \"sendEmail\\\\|notification\\\\|deadline\" /c/Users/santi/Desktop/legal-ai-platform/apps/api/src --include=*.ts)"
+      "Bash(grep -r \"sendEmail\\\\|notification\\\\|deadline\" /c/Users/santi/Desktop/legal-ai-platform/apps/api/src --include=*.ts)",
+      "Bash(find /c/Users/santi/Desktop/legal-ai-platform -type f -name *analytics* -o -name *dashboard* -o -name *stats*)",
+      "Bash(ls -la /c/Users/santi/Desktop/legal-ai-platform/apps/api/src/routes*)",
+      "Bash(find C:UserssantiDesktoplegal-ai-platformappswebcomponents -name *andidato* -o -name *andidato*)",
+      "Bash(find C:UserssantiDesktoplegal-ai-platformappsweb -name sitemap* -o -name robots* -o -name manifest*)",
+      "Bash(ls \"C:\\\\Users\\\\santi\\\\Desktop\\\\branding para doculex\"\" 2>/dev/null || dir \"C:UserssantiDesktopbranding para doculex \")",
+      "Bash(dir \"C:\\\\Users\\\\santi\\\\Desktop\\\\branding para doculex\")",
+      "Bash(sed -i 's/<BrandLogo size={36} className=\"\"rounded-lg\"\" \\\\/>/<BrandLogo size={52} \\\\/>/g' components/landing/Navbar.tsx components/landing/Footer.tsx)",
+      "Bash(sed -i 's/<BrandLogo size={40} className=\"\"rounded-lg\"\" \\\\/>/<BrandLogo size={56} \\\\/>/g' components/dashboard/DashboardSidebar.tsx components/auth/RegisterSidebar.tsx app/not-found.tsx)",
+      "Bash(sed -i 's/<BrandLogo size={32} className=\"\"rounded-lg\"\" \\\\/>/<BrandLogo size={48} \\\\/>/g' components/auth/LoginHeader.tsx components/auth/RegisterHeader.tsx)",
+      "Bash(sed -i 's/<BrandLogo size={32} className=\"\"rounded-lg\"\" \\\\/>/<BrandLogo size={48} \\\\/>/g' components/documents/GenerationHeader.tsx)",
+      "Bash(sed -i 's/<BrandLogo size={36} className=\"\"rounded-lg shrink-0\"\" \\\\/>/<BrandLogo size={52} className=\"\"shrink-0\"\" \\\\/>/g' components/documents/DocumentCreationPageHeader.tsx)"
     ]
   },
   "enableAllProjectMcpServers": true,
