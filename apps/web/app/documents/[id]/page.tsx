@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState, useRef, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, AlertCircle, AlertTriangle, CalendarClock, MapPin, Pencil, ScrollText, Users, X, ChevronDown, Loader2, CheckCircle2, Clock, Star, RotateCcw } from "lucide-react";
+import { ArrowLeft, Download, AlertCircle, AlertTriangle, CalendarClock, MapPin, Pencil, ScrollText, Users, X, ChevronDown, Loader2, CheckCircle2, Clock, Star, RotateCcw, Share2 } from "lucide-react";
 import { SkeletonDocumentDetail } from "@/components/ui/skeleton";
 import { sanitizeInput } from "@/app/lib/sanitize";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ import { DocumentWorkspaceShell } from "@/components/documents/DocumentWorkspace
 import { listClients, patchDocumentClient, listExpedientes, patchDocumentExpediente, updateDocumentReviewStatus } from "@/app/lib/webApi";
 import { VersionHistoryCard } from "@/components/documents/VersionHistoryCard";
 import { AnnotationsCard } from "@/components/documents/AnnotationsCard";
+import { ShareModal } from "@/components/documents/ShareModal";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Briefcase } from "lucide-react";
 import type {
@@ -494,6 +495,7 @@ export default function DocumentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const downloadErrorRef = useRef<HTMLDivElement>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // carga el documento
   useEffect(() => {
@@ -622,6 +624,16 @@ export default function DocumentDetailPage() {
               <Pencil className="h-4 w-4" />
               Editar
             </Link>
+          )}
+          {last?.rawText && (
+            <button
+              type="button"
+              onClick={() => setShowShareModal(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-100 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              <Share2 className="h-4 w-4" />
+              Compartir
+            </button>
           )}
           {last?.rawText && (
             last?.status === "needs_review" ? (
@@ -859,6 +871,9 @@ export default function DocumentDetailPage() {
         </section>
       </div>
     </DocumentWorkspaceShell>
+    {showShareModal && id && (
+      <ShareModal documentId={id} onClose={() => setShowShareModal(false)} />
+    )}
   );
 }
 

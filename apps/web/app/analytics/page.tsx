@@ -18,6 +18,9 @@ import {
   Loader2,
   UserPlus,
   Gavel,
+  Share2,
+  ScanText,
+  Download,
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -187,6 +190,40 @@ export default function AnalyticsPage() {
 
   const total = stats.total;
 
+  function exportCsv() {
+    const rows = [
+      ["Métrica", "Valor"],
+      ["Total documentos", stats.total],
+      ["Documentos este mes", stats.docsThisMonth],
+      ["Clientes activos", stats.totalClients],
+      ["Clientes nuevos este mes", stats.newClientsThisMonth],
+      ["Expedientes activos", stats.expedientesActivos],
+      ["Vencimientos urgentes", stats.vencimientosUrgentes],
+      ["Links de compartición activos", stats.activeShares],
+      ["Análisis IA realizados", stats.totalAnalyses],
+      [],
+      ["Estado documentos", ""],
+      ["Generados", stats.byStatus.generated],
+      ["Requieren revisión", stats.byStatus.needs_review],
+      ["Revisados", stats.byStatus.reviewed],
+      ["Finales", stats.byStatus.final],
+      ["Borradores", stats.byStatus.draft],
+      [],
+      ["Mes", "Documentos creados"],
+      ...stats.byMonth.map(({ month, count }) => [month, count]),
+    ];
+    const csv = rows.map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `docuLex-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   // Status data
   const statusRows = [
     { key: "final",        label: "Final",             value: stats.byStatus.final,        icon: Star,          color: "bg-emerald-500" },
@@ -229,18 +266,27 @@ export default function AnalyticsPage() {
     <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
 
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
-          <BarChart2 className="w-5 h-5 text-primary" />
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
+            <BarChart2 className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Analytics</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Resumen de actividad de tu plataforma legal</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Analytics</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Resumen de actividad de tu plataforma legal</p>
-        </div>
+        <button
+          onClick={exportCsv}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
+        >
+          <Download className="w-4 h-4" />
+          Exportar CSV
+        </button>
       </div>
 
       {/* Overview tiles */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatTile
           icon={FileText}
           label="Total documentos"
@@ -267,6 +313,20 @@ export default function AnalyticsPage() {
           label="Actividad (6 meses)"
           value={totalActivity}
           color="bg-primary/10 text-primary"
+          badge={null}
+        />
+        <StatTile
+          icon={Share2}
+          label="Links activos"
+          value={stats.activeShares}
+          color="bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400"
+          badge={null}
+        />
+        <StatTile
+          icon={ScanText}
+          label="Análisis IA"
+          value={stats.totalAnalyses}
+          color="bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400"
           badge={null}
         />
       </div>

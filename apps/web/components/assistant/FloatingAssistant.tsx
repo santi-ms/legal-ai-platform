@@ -13,7 +13,7 @@ import { sendAssistantMessage, type AssistantMessage } from "@/app/lib/webApi";
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "docuLex_assistant_messages";
+const STORAGE_KEY = "doku_messages";
 const MAX_STORED  = 30; // mensajes máximos en localStorage
 
 function loadMessages(userId: string): AssistantMessage[] {
@@ -190,7 +190,7 @@ export function FloatingAssistant() {
             ? "bg-slate-700 dark:bg-slate-600 hover:bg-slate-600 dark:hover:bg-slate-500"
             : "bg-primary hover:bg-primary/90"
         )}
-        aria-label={open ? "Cerrar asistente" : "Abrir asistente IA"}
+        aria-label={open ? "Cerrar Doku" : "Abrir Doku"}
       >
         {open ? (
           <ChevronDown className="w-6 h-6 text-white" />
@@ -224,9 +224,9 @@ export function FloatingAssistant() {
                 <Bot className="w-4 h-4 text-white" />
               </div>
               <div>
-                <p className="text-sm font-bold leading-tight">Asistente DocuLex</p>
+                <p className="text-sm font-bold leading-tight">Doku</p>
                 <p className="text-[10px] text-white/70 leading-tight flex items-center gap-1">
-                  <Sparkles className="w-2.5 h-2.5" /> Impulsado por Claude IA
+                  <Sparkles className="w-2.5 h-2.5" /> Tu asistente legal IA
                 </p>
               </div>
             </div>
@@ -260,7 +260,7 @@ export function FloatingAssistant() {
                     <Bot className="w-3.5 h-3.5 text-primary" />
                   </div>
                   <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-sm text-slate-700 dark:text-slate-300 max-w-[82%]">
-                    ¡Hola! Soy tu asistente IA. Tengo acceso a tus expedientes, clientes y documentos. ¿En qué te puedo ayudar?
+                    ¡Hola! Soy <strong>Doku</strong>, tu asistente legal IA. Tengo acceso a tus expedientes, clientes y documentos en tiempo real. ¿En qué te puedo ayudar?
                   </div>
                 </div>
                 {/* Suggestions */}

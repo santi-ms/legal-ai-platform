@@ -101,6 +101,7 @@ async function buildServer() {
   await registerCalendarRoutes(app);
   await registerAnalysisRoutes(app);
   await registerAssistantRoutes(app);
+  await registerSharingRoutes(app);
 
   const { registerUserRoutes } = await import("./routes.user.js");
   await registerUserRoutes(app);

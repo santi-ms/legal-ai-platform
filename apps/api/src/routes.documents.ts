@@ -72,7 +72,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       sixMonthsAgo.setDate(1);
       sixMonthsAgo.setHours(0, 0, 0, 0);
 
-      const [allDocs, allDocsWithMeta, totalClients, newClientsThisMonth, expedientesActivos, vencimientosUrgentes, expedientesByMateria] = await Promise.all([
+      const [allDocs, allDocsWithMeta, totalClients, newClientsThisMonth, expedientesActivos, vencimientosUrgentes, expedientesByMateria, activeShares, totalAnalyses] = await Promise.all([
         prisma.document.findMany({
           where: { tenantId },
           select: {
@@ -111,6 +111,16 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           _count: { matter: true },
           orderBy: { _count: { matter: "desc" } },
         }),
+        // Active (non-expired, non-revoked) document shares
+        prisma.documentShare.count({
+          where: {
+            tenantId,
+            status: "active",
+            expiresAt: { gt: now },
+          },
+        }),
+        // Total contract analyses
+        prisma.contractAnalysis.count({ where: { tenantId } }),
       ]);
 
       const byStatus: Record<string, number> = {
@@ -174,6 +184,8 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         byMateria,
         expedientesActivos,
         vencimientosUrgentes,
+        activeShares,
+        totalAnalyses,
       });
     } catch (err) {
       request.log?.error({ err }, "documents/stats error");

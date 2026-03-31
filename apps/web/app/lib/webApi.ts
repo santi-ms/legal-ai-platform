@@ -210,6 +210,10 @@ export interface DocumentStats {
   expedientesActivos: number;
   /** Activos con deadline vencido o ≤ 3 días */
   vencimientosUrgentes: number;
+  /** Links de compartición activos y no expirados */
+  activeShares: number;
+  /** Total de análisis de contratos realizados */
+  totalAnalyses: number;
 }
 
 export async function getDocumentStats(): Promise<DocumentStats> {
@@ -228,9 +232,11 @@ export async function getDocumentStats(): Promise<DocumentStats> {
       reviewed:     data?.byStatus?.reviewed      ?? 0,
       final:        data?.byStatus?.final         ?? 0,
     },
-    byType:    data?.byType    ?? {},
-    byMonth:   data?.byMonth   ?? [],
-    byMateria: data?.byMateria ?? {},
+    byType:        data?.byType    ?? {},
+    byMonth:       data?.byMonth   ?? [],
+    byMateria:     data?.byMateria ?? {},
+    activeShares:  data?.activeShares  ?? 0,
+    totalAnalyses: data?.totalAnalyses ?? 0,
   };
 }
 
@@ -1133,4 +1139,68 @@ export async function getInvitationInfo(token: string): Promise<InvitationInfo> 
 export async function acceptInvitation(token: string): Promise<{ tenantId: string; tenantName: string }> {
   const { data } = await proxyJson<any>(`/team/invite/${token}/accept`, { method: "POST" });
   return data;
+}
+
+// ─── Document Sharing ─────────────────────────────────────────────────────────
+
+export interface DocumentShareLink {
+  id: string;
+  token: string;
+  shareUrl: string;
+  expiresAt: string;
+  viewCount: number;
+  lastViewedAt: string | null;
+  status: "active" | "revoked";
+  isExpired: boolean;
+  createdAt: string;
+}
+
+export interface SharedDocumentInfo {
+  share: { id: string; expiresAt: string; viewCount: number };
+  document: {
+    id: string;
+    type: string | null;
+    typeLabel: string | null;
+    jurisdiccion: string | null;
+    createdAt: string;
+    client: { name: string; type: string } | null;
+    hasPdf: boolean;
+    pdfUrl: string | null;
+  };
+}
+
+/** Crear link de compartición para un documento */
+export async function createDocumentShare(
+  documentId: string,
+  expiresInDays = 7
+): Promise<DocumentShareLink> {
+  const { data } = await proxyJson<any>(`/documents/${documentId}/share`, {
+    method: "POST",
+    body: JSON.stringify({ expiresInDays }),
+  });
+  return data.share;
+}
+
+/** Listar links de compartición activos de un documento */
+export async function listDocumentShares(documentId: string): Promise<DocumentShareLink[]> {
+  const { data } = await proxyJson<any>(`/documents/${documentId}/shares`);
+  return data.shares ?? [];
+}
+
+/** Revocar un link de compartición */
+export async function revokeDocumentShare(shareId: string): Promise<void> {
+  await proxyJson<any>(`/documents/shares/${shareId}`, { method: "DELETE" });
+}
+
+/** Obtener info de documento compartido (público — sin auth) */
+export async function getSharedDocument(token: string): Promise<SharedDocumentInfo> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  const resp = await fetch(`${apiUrl}/shared/${token}`, { cache: "no-store" });
+  const data = await resp.json();
+  if (!data.ok) {
+    const err: any = new Error(data.message ?? "Link no disponible");
+    err.code = data.error;
+    throw err;
+  }
+  return { share: data.share, document: data.document };
 }
