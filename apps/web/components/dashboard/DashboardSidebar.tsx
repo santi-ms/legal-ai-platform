@@ -15,6 +15,7 @@ import {
   Sparkles,
   BarChart2,
   BookMarked,
+  ScanSearch,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { useDeadlines } from "@/app/lib/contexts/DeadlineContext";
@@ -45,8 +46,8 @@ const navigationItems = [
     id: "calendar",
     label: "Calendario",
     icon: Calendar,
-    href: "#",
-    disabled: true,
+    href: "/calendario",
+    disabled: false,
   },
   {
     id: "clients",
@@ -67,6 +68,13 @@ const navigationItems = [
     label: "Referencias IA",
     icon: BookMarked,
     href: "/documents/references",
+    disabled: false,
+  },
+  {
+    id: "analysis",
+    label: "Análisis IA",
+    icon: ScanSearch,
+    href: "/analysis",
     disabled: false,
   },
 ];

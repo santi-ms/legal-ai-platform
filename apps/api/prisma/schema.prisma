@@ -24,6 +24,7 @@ model Tenant {
   expedientes  Expediente[]
   logs         IAUsageLog[]
   referenceDocuments ReferenceDocument[]
+  contractAnalyses   ContractAnalysis[]
   subscription       Subscription?
   teamInvitations    TeamInvitation[]
 
@@ -63,6 +64,7 @@ model User {
   expedientesCreated      Expediente[]           @relation("ExpedientesCreatedBy")
   annotations             DocumentAnnotation[]   @relation("AnnotationsWrittenBy")
   referenceDocuments      ReferenceDocument[]    @relation("ReferenceDocsUploadedBy")
+  contractAnalyses        ContractAnalysis[]     @relation("ContractAnalysesUploadedBy")
   accounts                Account[]
   sessions                Session[]
   subscriptionUsers       SubscriptionUser[]
@@ -109,6 +111,7 @@ model Document {
   versions       DocumentVersion[]
   logs           IAUsageLog[]      @relation("DocLogs")
   annotations    DocumentAnnotation[]
+  shares         DocumentShare[]
 }
 
 model DocumentVersion {
@@ -428,6 +431,64 @@ model TeamInvitation {
 
   @@index([tenantId])
   @@index([email])
+  @@index([status])
+}
+
+// ─── Links de compartición de documentos ─────────────────────────────────────
+
+model DocumentShare {
+  id          String    @id @default(uuid())
+
+  documentId  String
+  document    Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  tenantId    String
+  createdById String
+
+  token       String    @unique // Token público random (32 bytes hex)
+  expiresAt   DateTime
+  viewCount   Int       @default(0)
+  lastViewedAt DateTime?
+  status      String    @default("active") // "active" | "revoked"
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([documentId])
+  @@index([tenantId])
+  @@index([token])
+  @@index([status])
+}
+
+// ─── Análisis de contratos ────────────────────────────────────────────────────
+
+model ContractAnalysis {
+  id           String    @id @default(uuid())
+
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  uploadedById String
+  uploadedBy   User      @relation("ContractAnalysesUploadedBy", fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  // Archivo subido
+  originalName String
+  fileName     String
+  fileSize     Int
+  storageUrl   String
+  pdfText      String?   @db.Text
+
+  // Estado del análisis
+  status       String    @default("pending") // "pending" | "processing" | "done" | "error"
+  errorMessage String?
+
+  // Resultado del análisis (JSON estructurado de Claude)
+  result       Json?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([tenantId])
   @@index([status])
 }
 

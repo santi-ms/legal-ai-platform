@@ -761,6 +761,159 @@ export async function deleteExpediente(id: string): Promise<void> {
   await proxyJson(`/expedientes/${id}`, { method: "DELETE" });
 }
 
+// ─── Floating Assistant ───────────────────────────────────────────────────────
+
+export interface AssistantMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export async function sendAssistantMessage(
+  messages: AssistantMessage[]
+): Promise<string> {
+  const { data } = await proxyJson<any>("/assistant/chat", {
+    method: "POST",
+    body: JSON.stringify({ messages }),
+  });
+  return data?.reply ?? "";
+}
+
+// ─── Contract Analysis ────────────────────────────────────────────────────────
+
+export interface AnalysisRiskyClause {
+  title: string;
+  text: string;
+  risk: "Alta" | "Media" | "Baja";
+  explanation: string;
+  recommendation: string;
+}
+
+export interface AnalysisMissingClause {
+  title: string;
+  importance: "Alta" | "Media" | "Baja";
+  explanation: string;
+}
+
+export interface AnalysisResult {
+  summary: string;
+  contractType: string;
+  parties: string[];
+  keyDates: Array<{ label: string; date: string }>;
+  mainObligations: string[];
+  riskyClausesMain: AnalysisRiskyClause[];
+  missingClauses: AnalysisMissingClause[];
+  generalRecommendations: string[];
+  overallRisk: "low" | "medium" | "high";
+}
+
+export interface ContractAnalysis {
+  id: string;
+  originalName: string;
+  fileSize: number;
+  storageUrl?: string;
+  status: "pending" | "processing" | "done" | "error";
+  errorMessage?: string | null;
+  result: AnalysisResult | null;
+  createdAt: string;
+  uploadedBy?: { firstName: string | null; lastName: string | null; email: string } | null;
+}
+
+/**
+ * Sube un PDF para análisis con IA.
+ * Hace el fetch directamente (multipart) y espera hasta que Claude termine.
+ */
+export async function uploadContractForAnalysis(file: File): Promise<ContractAnalysis> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const url = isServer()
+    ? buildFrontendUrl(`${PROXY_BASE}/analysis/upload`)
+    : `${PROXY_BASE}/analysis/upload`;
+
+  const resp = await fetch(url, {
+    method: "POST",
+    body: formData,
+    cache: "no-store",
+  });
+
+  const data = await readJson(resp);
+  if (!resp.ok || (data && typeof data === "object" && "ok" in data && (data as any).ok === false)) {
+    throw new Error((data as any)?.message || (data as any)?.error || `Error ${resp.status}`);
+  }
+  return (data as any).analysis as ContractAnalysis;
+}
+
+export async function listContractAnalyses(page = 1, pageSize = 20): Promise<{
+  analyses: ContractAnalysis[];
+  total: number;
+  page: number;
+  pageSize: number;
+}> {
+  const { data } = await proxyJson<any>(`/analysis?page=${page}&pageSize=${pageSize}`);
+  return {
+    analyses: Array.isArray(data?.analyses) ? data.analyses : [],
+    total: data?.total ?? 0,
+    page: data?.page ?? 1,
+    pageSize: data?.pageSize ?? 20,
+  };
+}
+
+export async function getContractAnalysis(id: string): Promise<ContractAnalysis> {
+  const { data } = await proxyJson<any>(`/analysis/${id}`);
+  return data.analysis;
+}
+
+export async function deleteContractAnalysis(id: string): Promise<void> {
+  await proxyJson(`/analysis/${id}`, { method: "DELETE" });
+}
+
+// ─── Calendar ─────────────────────────────────────────────────────────────────
+
+export type DeadlineUrgency = "overdue" | "urgent" | "warning" | "normal";
+
+export interface CalendarDeadlineItem {
+  id: string;
+  number: string | null;
+  title: string;
+  matter: string;
+  status: string;
+  court: string | null;
+  client: { id: string; name: string } | null;
+  deadline: string; // ISO string
+  dateKey: string;  // "YYYY-MM-DD"
+  urgency: DeadlineUrgency;
+}
+
+export interface CalendarDay {
+  date: string; // "YYYY-MM-DD"
+  items: CalendarDeadlineItem[];
+}
+
+export interface CalendarSummary {
+  total: number;
+  overdue: number;
+  urgent: number;
+  warning: number;
+  normal: number;
+}
+
+export interface CalendarData {
+  year: number;
+  month: number;
+  days: CalendarDay[];
+  summary: CalendarSummary;
+}
+
+export async function getCalendarDeadlines(year: number, month: number): Promise<CalendarData> {
+  const { data } = await proxyJson<any>(`/expedientes/calendar?year=${year}&month=${month}`);
+  return {
+    year:    data?.year    ?? year,
+    month:   data?.month   ?? month,
+    days:    data?.days    ?? [],
+    summary: data?.summary ?? { total: 0, overdue: 0, urgent: 0, warning: 0, normal: 0 },
+  };
+}
+
 // ─── Reference Documents ───────────────────────────────────────────────────────
 
 export const REFERENCE_DOCUMENT_TYPES = [
