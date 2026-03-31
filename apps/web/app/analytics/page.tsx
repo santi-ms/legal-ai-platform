@@ -191,6 +191,7 @@ export default function AnalyticsPage() {
   const total = stats.total;
 
   function exportCsv() {
+    if (!stats) return;
     const rows = [
       ["Métrica", "Valor"],
       ["Total documentos", stats.total],

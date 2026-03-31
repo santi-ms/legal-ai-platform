@@ -32,7 +32,7 @@ const CLAUSE_RISK_CONFIG = {
 export default function AnalysisDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { toast } = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const [analysis, setAnalysis] = useState<ContractAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,10 +52,10 @@ export default function AnalysisDetailPage() {
     setDeleting(true);
     try {
       await deleteContractAnalysis(id);
-      toast({ title: "Análisis eliminado" });
+      toastSuccess("Análisis eliminado");
       router.push("/analysis");
     } catch (err: any) {
-      toast({ title: "Error al eliminar", description: err.message, variant: "destructive" });
+      toastError(`Error al eliminar: ${err.message}`);
       setDeleting(false);
       setShowDelete(false);
     }
@@ -320,7 +320,7 @@ export default function AnalysisDetailPage() {
         description={`¿Eliminás el análisis de "${analysis.originalName}"? Esta acción no se puede deshacer.`}
         confirmLabel="Eliminar"
         variant="destructive"
-        loading={deleting}
+        isLoading={deleting}
         onConfirm={handleDelete}
         onCancel={() => setShowDelete(false)}
       />

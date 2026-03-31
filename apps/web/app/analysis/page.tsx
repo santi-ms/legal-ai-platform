@@ -28,7 +28,7 @@ const RISK_CONFIG = {
 
 export default function AnalysisPage() {
   const router = useRouter();
-  const { toast } = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [analyses, setAnalyses] = useState<ContractAnalysis[]>([]);
@@ -47,21 +47,21 @@ export default function AnalysisPage() {
       setAnalyses(res.analyses);
       setTotal(res.total);
     } catch (err: any) {
-      toast({ title: "Error al cargar análisis", description: err.message, variant: "destructive" });
+      toastError(`Error al cargar análisis: ${err.message}`);
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toastError]);
 
   useEffect(() => { load(); }, [load]);
 
   const handleFile = useCallback(async (file: File) => {
     if (!file.name.toLowerCase().endsWith(".pdf")) {
-      toast({ title: "Solo se aceptan archivos PDF", variant: "destructive" });
+      toastError("Solo se aceptan archivos PDF");
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      toast({ title: "El archivo no puede superar 10 MB", variant: "destructive" });
+      toastError("El archivo no puede superar 10 MB");
       return;
     }
 
@@ -71,14 +71,14 @@ export default function AnalysisPage() {
     try {
       setUploadProgress("Analizando con IA (esto puede tardar 20-30 segundos)...");
       const result = await uploadContractForAnalysis(file);
-      toast({ title: "Análisis completado", description: `"${file.name}" analizado con éxito.` });
+      toastSuccess(`"${file.name}" analizado con éxito.`);
       router.push(`/analysis/${result.id}`);
     } catch (err: any) {
-      toast({ title: "Error en el análisis", description: err.message, variant: "destructive" });
+      toastError(`Error en el análisis: ${err.message}`);
       setUploading(false);
       setUploadProgress(null);
     }
-  }, [router, toast]);
+  }, [router, toastSuccess, toastError]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -98,11 +98,11 @@ export default function AnalysisPage() {
     setDeleting(true);
     try {
       await deleteContractAnalysis(deleteTarget.id);
-      toast({ title: "Análisis eliminado" });
+      toastSuccess("Análisis eliminado");
       setAnalyses(prev => prev.filter(a => a.id !== deleteTarget.id));
       setTotal(t => t - 1);
     } catch (err: any) {
-      toast({ title: "Error al eliminar", description: err.message, variant: "destructive" });
+      toastError(`Error al eliminar: ${err.message}`);
     } finally {
       setDeleting(false);
       setDeleteTarget(null);
@@ -219,7 +219,7 @@ export default function AnalysisPage() {
         description={`¿Eliminás el análisis de "${deleteTarget?.originalName}"? Esta acción no se puede deshacer.`}
         confirmLabel="Eliminar"
         variant="destructive"
-        loading={deleting}
+        isLoading={deleting}
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
       />
