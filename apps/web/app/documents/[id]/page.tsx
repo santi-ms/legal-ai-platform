@@ -594,6 +594,7 @@ export default function DocumentDetailPage() {
   }`;
 
   return (
+    <>
     <DocumentWorkspaceShell
       title={`Documento #${doc.id.slice(0, 8)}`}
       description={headerDescription}
@@ -874,6 +875,7 @@ export default function DocumentDetailPage() {
     {showShareModal && id && (
       <ShareModal documentId={id} onClose={() => setShowShareModal(false)} />
     )}
+    </>
   );
 }
 
