@@ -187,7 +187,7 @@ export async function registerAnalysisRoutes(app: FastifyInstance) {
 
       try {
         const response = await anthropic.messages.create({
-          model: "claude-3-5-sonnet-20241022",
+          model: "claude-haiku-4-5",
           max_tokens: 4000,
           temperature: 0.1,
           system: ANALYSIS_SYSTEM_PROMPT,
