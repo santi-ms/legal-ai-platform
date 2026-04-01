@@ -1,5 +1,14 @@
 ﻿import "dotenv/config";
+import * as Sentry from "@sentry/node";
 import Fastify from "fastify";
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || "development",
+    tracesSampleRate: 0.2,
+  });
+}
 import fastifyCors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import helmet from "@fastify/helmet";

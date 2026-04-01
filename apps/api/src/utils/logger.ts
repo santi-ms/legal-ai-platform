@@ -1,11 +1,14 @@
 /**
  * Utilidad de logging centralizada
  * Reemplaza console.log/warn/error con logging condicional
- * En producción, los logs pueden enviarse a un servicio externo (Sentry, LogRocket, etc.)
+ * En producción, los errores se envían a Sentry si SENTRY_DSN está configurado.
  */
+
+import * as Sentry from "@sentry/node";
 
 const isDev = process.env.NODE_ENV === "development";
 const isProd = process.env.NODE_ENV === "production";
+const hasSentry = Boolean(process.env.SENTRY_DSN);
 
 interface LogContext {
   [key: string]: any;
@@ -16,64 +19,58 @@ interface LogContext {
  */
 export const logger = {
   /**
-   * Log de información (solo en desarrollo)
+   * Log de información (desarrollo y producción)
    */
   info: (message: string, context?: LogContext) => {
-    if (isDev) {
-      if (context) {
-        console.log(`[INFO] ${message}`, context);
-      } else {
-        console.log(`[INFO] ${message}`);
-      }
+    if (context) {
+      console.log(`[INFO] ${message}`, isDev ? context : sanitizeContext(context));
+    } else {
+      console.log(`[INFO] ${message}`);
     }
-    // En producción, podrías enviar a servicio de logging
-    // if (isProd && process.env.LOG_SERVICE_URL) {
-    //   sendToLogService('info', message, context);
-    // }
   },
 
   /**
-   * Log de advertencias (siempre se loguean, pero sin información sensible en prod)
+   * Log de advertencias
    */
   warn: (message: string, context?: LogContext) => {
-    if (isDev) {
-      if (context) {
-        console.warn(`[WARN] ${message}`, context);
-      } else {
-        console.warn(`[WARN] ${message}`);
-      }
-    } else {
-      // En producción, loguear sin información sensible
-      const safeContext = sanitizeContext(context);
+    const safeContext = isDev ? context : sanitizeContext(context);
+    if (safeContext) {
       console.warn(`[WARN] ${message}`, safeContext);
+    } else {
+      console.warn(`[WARN] ${message}`);
     }
-    // En producción, podrías enviar a servicio de logging
+    if (isProd && hasSentry) {
+      Sentry.withScope((scope) => {
+        if (safeContext) scope.setExtras(safeContext as Record<string, unknown>);
+        Sentry.captureMessage(message, "warning");
+      });
+    }
   },
 
   /**
-   * Log de errores (siempre se loguean, pero sin información sensible en prod)
+   * Log de errores — siempre loguea, en producción envía a Sentry si está configurado
    */
   error: (message: string, error?: Error | unknown, context?: LogContext) => {
+    const safeContext = isDev ? context : sanitizeContext(context);
     if (isDev) {
-      if (error instanceof Error) {
-        console.error(`[ERROR] ${message}`, error, context);
-      } else if (error) {
-        console.error(`[ERROR] ${message}`, error, context);
-      } else {
-        console.error(`[ERROR] ${message}`, context);
-      }
+      console.error(`[ERROR] ${message}`, error, safeContext);
     } else {
-      // En producción, loguear sin información sensible
-      const safeContext = sanitizeContext(context);
-      const safeError = error instanceof Error 
+      const safeError = error instanceof Error
         ? { message: error.message, name: error.name, stack: error.stack?.substring(0, 500) }
         : error;
       console.error(`[ERROR] ${message}`, safeError, safeContext);
     }
-    // En producción, podrías enviar a servicio de logging (Sentry, etc.)
-    // if (isProd && process.env.SENTRY_DSN) {
-    //   Sentry.captureException(error, { extra: safeContext });
-    // }
+    if (isProd && hasSentry) {
+      Sentry.withScope((scope) => {
+        scope.setTag("logger.message", message);
+        if (safeContext) scope.setExtras(safeContext as Record<string, unknown>);
+        if (error instanceof Error) {
+          Sentry.captureException(error);
+        } else {
+          Sentry.captureMessage(`${message}${error ? `: ${String(error)}` : ""}`, "error");
+        }
+      });
+    }
   },
 
   /**

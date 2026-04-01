@@ -162,6 +162,23 @@ export async function registerExpedienteRoutes(app: FastifyInstance) {
       return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.format() });
     }
 
+    // Verificar límite de expedientes del plan
+    const { getPlanForTenant } = await import("./routes.billing.js");
+    const { plan } = await getPlanForTenant(user.tenantId!);
+    const maxExpedientes: number = (plan as any)?.limits?.maxExpedientes ?? -1;
+    if (maxExpedientes !== -1) {
+      const count = await prisma.expediente.count({ where: { tenantId: user.tenantId! } });
+      if (count >= maxExpedientes) {
+        return reply.status(429).send({
+          ok: false,
+          error: "PLAN_LIMIT_EXCEEDED",
+          message: `Alcanzaste el límite de ${maxExpedientes} expedientes de tu plan. Actualizá tu plan para agregar más.`,
+          limit: maxExpedientes,
+          used: count,
+        });
+      }
+    }
+
     const data = parsed.data;
 
     // Validar que el clientId pertenece al mismo tenant

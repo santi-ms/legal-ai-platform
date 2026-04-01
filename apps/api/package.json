@@ -18,7 +18,10 @@
     "test:generation:sqlite": "DATABASE_URL=file:./test.db tsx scripts/test-generation.ts",
     "test:all-types": "tsx scripts/test-all-types.ts",
     "dev:test": "SKIP_AI_ENHANCEMENT=true tsx src/server.ts",
-    "fix:user-profile": "tsx scripts/apply-user-profile-migration.ts"
+    "fix:user-profile": "tsx scripts/apply-user-profile-migration.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
@@ -27,6 +30,7 @@
     "@fastify/multipart": "^8.3.1",
     "@fastify/rate-limit": "^9.1.0",
     "@prisma/client": "^5.22.0",
+    "@sentry/node": "^10.47.0",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.6.1",
     "fastify": "4.28.0",
@@ -49,7 +53,9 @@
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^6.4.14",
     "@types/pdf-parse": "^1.1.5",
+    "@vitest/coverage-v8": "^4.1.2",
     "tsx": "^4.16.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.2"
   }
 }

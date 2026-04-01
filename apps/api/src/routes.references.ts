@@ -43,6 +43,25 @@ export async function registerReferenceRoutes(app: FastifyInstance) {
         });
       }
 
+      // Verificar límite de documentos de referencia del plan
+      const { getPlanForTenant } = await import("./routes.billing.js");
+      const { plan } = await getPlanForTenant(user.tenantId);
+      const maxReferenceFiles: number = (plan as any)?.limits?.maxReferenceFiles ?? -1;
+      if (maxReferenceFiles !== -1) {
+        const count = await prisma.referenceDocument.count({
+          where: { tenantId: user.tenantId, deletedAt: null },
+        });
+        if (count >= maxReferenceFiles) {
+          return reply.status(429).send({
+            ok: false,
+            error: "PLAN_LIMIT_EXCEEDED",
+            message: `Alcanzaste el límite de ${maxReferenceFiles} documentos de referencia de tu plan. Actualizá tu plan para subir más.`,
+            limit: maxReferenceFiles,
+            used: count,
+          });
+        }
+      }
+
       // Leer el buffer del archivo
       const buffer = await data.toBuffer();
       const fileSize = buffer.length;

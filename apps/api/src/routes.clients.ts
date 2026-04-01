@@ -132,6 +132,23 @@ export async function registerClientRoutes(app: FastifyInstance) {
       return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.format() });
     }
 
+    // Verificar límite de clientes del plan
+    const { getPlanForTenant } = await import("./routes.billing.js");
+    const { plan } = await getPlanForTenant(user.tenantId);
+    const maxClients: number = (plan as any)?.limits?.maxClients ?? -1;
+    if (maxClients !== -1) {
+      const count = await prisma.client.count({ where: { tenantId: user.tenantId, archivedAt: null } });
+      if (count >= maxClients) {
+        return reply.status(429).send({
+          ok: false,
+          error: "PLAN_LIMIT_EXCEEDED",
+          message: `Alcanzaste el límite de ${maxClients} clientes de tu plan. Actualizá tu plan para agregar más.`,
+          limit: maxClients,
+          used: count,
+        });
+      }
+    }
+
     const data = parsed.data;
 
     const client = await prisma.client.create({
