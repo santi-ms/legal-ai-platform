@@ -343,12 +343,17 @@ export function buildStructuredContextForAI(
     addBool("Renovación automática", data.renovacion_automatica);
 
     section("Condiciones adicionales");
-    if (data.deposito) {
-      addBool("Depósito de garantía", data.deposito);
-      add("Meses de depósito", data.deposito_meses);
-    }
+    add("Meses de depósito de garantía", data.deposito_meses ?? 1);
     add("Servicios a cargo del locatario", data.servicios_cargo_locatario);
     add("Preaviso para rescisión (días)", data.preaviso_rescision);
+    add("Usuarios adicionales del inmueble", data.usuarios_inmueble);
+
+    if (data.fiador_nombre) {
+      section("Fiador / Garante");
+      add("Nombre del fiador", data.fiador_nombre);
+      add("DNI/CUIT del fiador", data.fiador_doc);
+      add("Domicilio del fiador", data.fiador_domicilio);
+    }
 
   } else if (documentType === "debt_recognition") {
     section("Partes");
@@ -672,19 +677,28 @@ Tu redacción es directa, cronológica y contundente. Cada carta documento que r
 
   if (documentType === "lease") {
     return {
-      systemMessage: `Sos un abogado senior argentino especializado en locaciones urbanas y la normativa de alquileres vigente. \
-Conocés en profundidad el CCCN (arts. 1187 a 1226 sobre locación), la Ley de Alquileres (Ley 27.551 y sus modificatorias), \
-el Decreto 320/2020 y la jurisprudencia relevante. \
-Redactás contratos de locación que protegen adecuadamente a ambas partes, con cláusulas claras sobre el canon, \
-ajustes, depósito, obligaciones de mantenimiento y condiciones de rescisión. \
-Nunca omitís el plazo mínimo legal ni las obligaciones de restitución del inmueble.`,
+      systemMessage: `Sos un abogado senior argentino especializado en locaciones urbanas con dominio absoluto de la normativa vigente. \
+Conocés en profundidad el CCCN (arts. 1187 a 1226 sobre locación), la Ley de Alquileres N° 27.551 y sus modificatorias, \
+y el Decreto de Necesidad y Urgencia N° 70/2023 que modificó los arts. 1196, 1199, 1209 y 1219 del CCCN — \
+estableciendo el plazo mínimo en DOS (2) años para locaciones con destino habitacional, \
+permitiendo ajustes semestrales por índice ICL u otros pactados, \
+y habilitando la resolución del contrato ante UN (1) mes de impago. \
+Redactás contratos de locación exhaustivos, equilibrados y ejecutables, con cláusulas claras sobre el canon, \
+ajustes, mora, depósito, obligaciones de las partes, restricciones de uso, fiador, \
+penalidades por no restitución y condiciones de rescisión anticipada. \
+Nunca omitís datos provistos, nunca dejás campos vacíos, nunca contradecís el DNU 70/2023.`,
       baseInstructions: [
         ...commonInstructions,
-        "Cláusulas obligatorias: OBJETO (descripción detallada del inmueble con dirección completa), DESTINO (uso exclusivo habitacional/comercial), PLAZO (con fecha de inicio y vencimiento, respetando mínimo legal de 3 años para habitacional), CANON (monto, moneda, periodicidad, día de pago, lugar de pago), AJUSTE DEL CANON (índice aplicable conforme normativa vigente), DEPÓSITO DE GARANTÍA si corresponde, OBLIGACIONES DEL LOCADOR, OBLIGACIONES DEL LOCATARIO, ESTADO DEL INMUEBLE, SERVICIOS Y EXPENSAS, MEJORAS, RESCISIÓN ANTICIPADA, FORO Y JURISDICCIÓN",
-        "Plazo: para uso habitacional mínimo 3 (tres) años conforme Ley 27.551; indicar fecha exacta de inicio y vencimiento",
-        "Ajuste: aplicar el Índice para Contratos de Locación (ICL) del BCRA conforme Ley 27.551 para contratos habitacionales",
-        "Depósito: 'equivalente a un (1) mes de alquiler al valor del último mes, el que será devuelto al locatario dentro de los 30 días de restituido el inmueble'",
-        "Restitución: 'El locatario deberá restituir el inmueble en el mismo estado en que lo recibió, salvo el deterioro proveniente del uso normal y del tiempo transcurrido'",
+        "Cláusulas obligatorias: OBJETO (descripción del inmueble con dirección exacta y destino de uso), PLAZO (fecha de inicio y vencimiento, mínimo 2 años para habitacional per DNU 70/2023), CANON (monto en números y letras, día de pago, forma de pago), AJUSTE DEL CANON (ICL semestral conforme DNU 70/2023 o índice pactado), MORA (interés punitorio del 2% diario por el solo vencimiento — sin interpelación), DEPÓSITO DE GARANTÍA (monto exacto, condiciones de devolución en 30 días hábiles), OBLIGACIONES DEL LOCATARIO (mantenimiento, uso, prohibición de mascotas, inspecciones con 48hs de anticipación, sin lavarropas en habitaciones ni aires de pared sin permiso escrito), RESCISIÓN ANTICIPADA (10% del saldo restante o sin indemnización con 3+ meses de preaviso en el último año, art. 1221 CCCN), CAUSALES DE RESOLUCIÓN (1 mes de impago per DNU 70/2023, previa intimación de 15 días), PENALIDAD POR NO RESTITUCIÓN (10% del canon diario hasta entrega efectiva), FIADOR si corresponde (principal pagador con renuncia a excusión y división), JURISDICCIÓN Y FORO",
+        "Plazo: mínimo DOS (2) años para uso habitacional conforme DNU 70/2023 (no 3 años — ese plazo quedó derogado); indicar fecha exacta de inicio y vencimiento",
+        "Canon: expresar siempre en números Y en letras entre paréntesis: '$590.000 (pesos quinientos noventa mil)'",
+        "Ajuste del canon: 'El canon locativo se ajustará cada SEIS (6) meses de acuerdo con la variación del Índice para Contratos de Locación (ICL) elaborado por el Banco Central de la República Argentina (BCRA), conforme lo establecido por el DNU N° 70/2023'",
+        "Mora: 'La mora en el pago del canon se producirá automáticamente por el solo vencimiento del plazo pactado, sin necesidad de interpelación judicial ni extrajudicial alguna (art. 886 CCCN), devengando un interés punitorio del DOS POR CIENTO (2%) diario sobre el monto adeudado'",
+        "Depósito: especificar monto exacto en pesos y condiciones: 'será devuelto dentro de los 30 días hábiles de restituido el inmueble en las condiciones pactadas, pudiendo el LOCADOR retener el importe correspondiente a los daños constatados'",
+        "Fiador: si se proveen datos de fiador, incluir cláusula completa de fianza — 'fiador, liso, llano y principal pagador, con renuncia expresa a los beneficios de excusión y división' — con datos completos del fiador y línea de firma al pie",
+        "No restituir al vencimiento: 'el LOCATARIO abonará en concepto de daños preestablecidos el DIEZ POR CIENTO (10%) del canon mensual vigente por cada día de demora en la restitución, sin perjuicio de las demás acciones legales que asisten al LOCADOR'",
+        "Restitución: 'El LOCATARIO deberá restituir el inmueble en el mismo estado en que lo recibió, salvo el deterioro proveniente del uso normal y del tiempo transcurrido, con todos los servicios al día'",
+        "Cierre: líneas de firma para LOCADOR y LOCATARIO; si hay FIADOR, agregar su línea de firma separada con aclaración 'Fiador — Firma y aclaración'",
       ],
       toneInstructions,
     };
