@@ -309,15 +309,20 @@ function BillingPageContent() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    Promise.all([
+    Promise.allSettled([
       getBillingSubscription(),
       getBillingPlans(),
       getInvoices(),
-    ]).then(([billingData, plansData, invoicesData]) => {
-      setBilling(billingData);
-      setPlans(plansData);
-      setInvoices(invoicesData);
-    }).catch(console.error).finally(() => setLoading(false));
+    ]).then(([billingResult, plansResult, invoicesResult]) => {
+      if (billingResult.status === "fulfilled") setBilling(billingResult.value);
+      else console.error("[billing] getBillingSubscription failed:", billingResult.reason);
+
+      if (plansResult.status === "fulfilled") setPlans(plansResult.value);
+      else console.error("[billing] getBillingPlans failed:", plansResult.reason);
+
+      if (invoicesResult.status === "fulfilled") setInvoices(invoicesResult.value);
+      else console.error("[billing] getInvoices failed:", invoicesResult.reason);
+    }).finally(() => setLoading(false));
   }, [isAuthenticated]);
 
   const handleCheckout = async (planCode: string) => {
