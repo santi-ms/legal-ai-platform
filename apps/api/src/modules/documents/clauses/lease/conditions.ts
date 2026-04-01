@@ -14,5 +14,7 @@ export const leaseConditionsClause: ClauseDefinition = {
 
 {{SERVICIOS_LOCATARIO}}
 
-{{PREAVISO_RESCISION}}`,
+{{PREAVISO_RESCISION}}
+
+CONSTITUCIÓN DE DOMICILIOS: Las partes constituyen domicilios en los indicados al inicio del presente contrato, donde serán válidas todas las notificaciones, intimaciones y comunicaciones judiciales o extrajudiciales.`,
 };

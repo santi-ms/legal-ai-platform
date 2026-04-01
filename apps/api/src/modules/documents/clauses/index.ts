@@ -40,6 +40,9 @@ import { leasePropertyClause } from "./lease/property.js";
 import { leaseAmountClause } from "./lease/amount.js";
 import { leaseTermClause } from "./lease/term.js";
 import { leaseConditionsClause } from "./lease/conditions.js";
+import { leaseObligationsClause } from "./lease/obligations.js";
+import { leaseGuarantorClause } from "./lease/guarantor.js";
+import { leaseEarlyTerminationClause } from "./lease/early-termination.js";
 
 // Debt recognition
 import { debtRecognitionDebtClause } from "./debt-recognition/debt.js";
@@ -94,6 +97,9 @@ export function getClausesForType(documentType: string): Map<string, ClauseDefin
     clauses.set(leaseAmountClause.id, leaseAmountClause);
     clauses.set(leaseTermClause.id, leaseTermClause);
     clauses.set(leaseConditionsClause.id, leaseConditionsClause);
+    clauses.set(leaseObligationsClause.id, leaseObligationsClause);
+    clauses.set(leaseGuarantorClause.id, leaseGuarantorClause);
+    clauses.set(leaseEarlyTerminationClause.id, leaseEarlyTerminationClause);
   }
 
   if (documentType === "debt_recognition") {
@@ -133,6 +139,8 @@ export function getRequiredClauseIds(documentType: string): string[] {
       "canon_locativo",
       "plazo_locacion",
       "condiciones_locacion",
+      "obligaciones_especiales_locacion",
+      "rescision_anticipada_locacion",
       "foro_competencia",
       "resolucion_disputas",
     ];
@@ -213,6 +221,12 @@ export function getOptionalClauseIds(documentType: string): Array<{
   if (documentType === "simple_authorization") {
     return [
       { id: "observaciones_autorizacion", condition: (d) => Boolean(d.condiciones_especiales || d.documentacion_asociada) },
+    ];
+  }
+
+  if (documentType === "lease") {
+    return [
+      { id: "fiador_garante_locacion", condition: (d) => Boolean(d.fiador_nombre) },
     ];
   }
 

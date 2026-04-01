@@ -179,6 +179,9 @@ export function assembleBaseDraft(
         clauseId === "canon_locativo" ? "{{CLAUSE_AMOUNT}}" : null,
         clauseId === "plazo_locacion" ? "{{CLAUSE_TERM}}" : null,
         clauseId === "condiciones_locacion" ? "{{CLAUSE_CONDITIONS}}" : null,
+        clauseId === "obligaciones_especiales_locacion" ? "{{CLAUSE_OBLIGATIONS}}" : null,
+        clauseId === "fiador_garante_locacion" ? "{{CLAUSE_GUARANTOR}}" : null,
+        clauseId === "rescision_anticipada_locacion" ? "{{CLAUSE_LEASE_TERMINATION}}" : null,
         // Map clause IDs to template slot names - Debt Recognition
         clauseId === "reconocimiento_deuda" ? "{{CLAUSE_DEBT}}" : null,
         clauseId === "forma_pago_deuda" ? "{{CLAUSE_PAYMENT}}" : null,
@@ -314,7 +317,7 @@ function getPlaceholderValue(placeholder: string, data: StructuredDocumentData):
     PROPERTY_ADDRESS: String(data.domicilio_inmueble || ""),
     PROPERTY_USE: formatDestinoUso(data),
     RENT_AMOUNT: formatRentAmount(data),
-    DIA_PAGO: String(data.dia_pago ? `día ${data.dia_pago}` : ""),
+    DIA_PAGO: String(data.dia_pago ? `día ${data.dia_pago}` : "día 1"),
     LEASE_TERM: formatLeaseTerm(data),
     LEASE_RENEWAL: formatLeaseRenewal(data),
     AJUSTE_CANON: formatAjusteCanon(data),
@@ -322,6 +325,9 @@ function getPlaceholderValue(placeholder: string, data: StructuredDocumentData):
     SERVICIOS_LOCATARIO: data.servicios_cargo_locatario
       ? `Servicios a cargo del locatario: ${String(data.servicios_cargo_locatario)}.`
       : "",
+    USUARIOS_INMUEBLE: formatUsuariosInmueble(data),
+    FIADOR_INFO: formatFiadorInfo(data),
+    FIADOR_FIRMA: formatFiadorFirma(data),
 
     // ---- Debt Recognition ----
     ACREEDOR_NOMBRE: String(data.acreedor_nombre || ""),
@@ -550,16 +556,36 @@ function formatAjusteCanon(data: StructuredDocumentData): string {
 
 /** Lease: depósito de garantía */
 function formatDeposito(data: StructuredDocumentData): string {
-  if (data.deposito && data.deposito_meses) {
-    const monto = data.monto_alquiler
-      ? ` (equivalente a ${data.deposito_meses} mes/es de canon)`
+  const meses = Number(data.deposito_meses ?? 1);
+  if (data.deposito_meses || data.deposito) {
+    const montoStr = data.monto_alquiler && data.moneda
+      ? ` (equivalente a ${data.moneda} ${Number(data.monto_alquiler) * meses})`
       : "";
-    return `Depósito de garantía: ${data.deposito_meses} mes/es de alquiler${monto}, a devolver al finalizar la locación en las condiciones pactadas.`;
-  }
-  if (data.deposito) {
-    return "Se establece un depósito de garantía cuyo monto se acordará entre las partes.";
+    return `DEPÓSITO DE GARANTÍA: Al momento de la firma del presente contrato, el LOCATARIO entregará al LOCADOR la suma equivalente a ${meses} (${meses === 1 ? "UN" : meses}) mes/es de canon locativo${montoStr}, en concepto de depósito de garantía. Dicho depósito será devuelto al LOCATARIO dentro de los treinta (30) días hábiles de restituido el inmueble en las condiciones pactadas, previa deducción de los daños que correspondan.`;
   }
   return "";
+}
+
+/** Lease: usuarios del inmueble */
+function formatUsuariosInmueble(data: StructuredDocumentData): string {
+  if (data.usuarios_inmueble) {
+    return `El inmueble será ocupado exclusivamente por el LOCATARIO y las siguientes personas: ${String(data.usuarios_inmueble)}. Queda prohibida la cesión o sublocación total o parcial del inmueble sin previa autorización escrita del LOCADOR.`;
+  }
+  return "El inmueble será ocupado exclusivamente por el LOCATARIO. Queda prohibida la cesión o sublocación total o parcial del inmueble sin previa autorización escrita del LOCADOR.";
+}
+
+/** Lease: fiador information line */
+function formatFiadorInfo(data: StructuredDocumentData): string {
+  if (!data.fiador_nombre) return "";
+  const doc = data.fiador_doc && data.fiador_doc !== "-" ? `, DNI/CUIT ${String(data.fiador_doc)}` : "";
+  const domicilio = data.fiador_domicilio ? `, con domicilio en ${String(data.fiador_domicilio)}` : "";
+  return `FIADOR: ${String(data.fiador_nombre)}${doc}${domicilio}.`;
+}
+
+/** Lease: fiador signature line (shown at the end of the document) */
+function formatFiadorFirma(data: StructuredDocumentData): string {
+  if (!data.fiador_nombre) return "";
+  return `\n___________________________\n${String(data.fiador_nombre)}\nFiador - Firma y aclaración`;
 }
 
 /** Debt recognition: payment plan */

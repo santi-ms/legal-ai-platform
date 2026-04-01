@@ -99,6 +99,8 @@ IMPORTANTE: si el usuario ya mencionó un dato en la conversación, usalo direct
   penalizacion_rescision: true si hay penalización por rescisión anticipada, false si no
   penalizacion_monto    : descripción de la penalización (ej: "2 meses de alquiler") — solo si penalizacion_rescision es true
   deposito_meses        : número entero de meses de depósito de garantía (default: 1)
+  fiador_nombre         : nombre completo del fiador/garante (si tiene; si no tiene, omitir el campo)
+  fiador_doc            : DNI/CUIT del fiador (si no tiene, usá "-")
 
 ── debt_recognition ──
   acreedor_nombre       : acreedor
