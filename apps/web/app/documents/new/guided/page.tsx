@@ -320,17 +320,15 @@ export default function GuidedDocumentCreationPage() {
         ...(selectedExpedienteId ? { expedienteId: selectedExpedienteId } : {}),
       };
 
-      setLoadingProgress(25);
-      setLoadingStep("Generando contenido con IA...");
+      setLoadingProgress(15);
+      setLoadingStep("Iniciando generación con IA...");
 
+      // 1. Iniciar generación — responde inmediatamente con un jobId
       const res = await fetch(`/api/_proxy/documents/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestPayload),
       });
-
-      setLoadingProgress(70);
-      setLoadingStep("Procesando respuesta...");
 
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
@@ -339,25 +337,50 @@ export default function GuidedDocumentCreationPage() {
         throw new Error("El servidor devolvió una respuesta inválida");
       }
 
-      const json = await res.json();
+      const startData = await res.json();
 
-      setLoadingProgress(90);
-      setLoadingStep("Finalizando...");
-
-      if (!res.ok || !json.ok) {
-        // Handle validation errors (400)
+      if (!res.ok || !startData.ok) {
         if (res.status === 400) {
-          const errorMessage = json.message || json.error || "Error de validación";
-          const details = json.details || [];
+          const errorMessage = startData.message || startData.error || "Error de validación";
+          const details = startData.details || [];
           throw new Error(`${errorMessage}${details.length > 0 ? `: ${details.join(", ")}` : ""}`);
         }
-        throw new Error(json.message || json.error || "Error al generar el documento");
+        throw new Error(startData.message || startData.error || "Error al generar el documento");
       }
 
-      setLoadingProgress(100);
-      setLoadingStep("¡Completado!");
+      const { jobId } = startData;
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // 2. Polling hasta que el job esté listo (máx. 4 minutos)
+      setLoadingProgress(30);
+      setLoadingStep("Generando documento con IA...");
+
+      let json: any = null;
+      const MAX_ATTEMPTS = 120;
+      for (let i = 0; i < MAX_ATTEMPTS; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        const pollRes = await fetch(`/api/_proxy/documents/jobs/${jobId}`);
+        const pollData = await pollRes.json();
+
+        if (pollData.status === "done") {
+          json = pollData;
+          break;
+        }
+        if (pollData.status === "error") {
+          throw new Error(pollData.message || "Error al generar el documento");
+        }
+
+        // Actualizar progreso mientras espera
+        const progress = Math.min(30 + Math.floor((i / MAX_ATTEMPTS) * 55), 85);
+        setLoadingProgress(progress);
+      }
+
+      if (!json) throw new Error("El documento tardó demasiado en generarse. Intentá de nuevo.");
+
+      setLoadingProgress(95);
+      setLoadingStep("Finalizando...");
+
+      await new Promise(resolve => setTimeout(resolve, 400));
 
       const generationResult: GenerationResult = {
         documentId: json.documentId,

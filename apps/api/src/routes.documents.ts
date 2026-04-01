@@ -49,6 +49,26 @@ const DocumentsQuerySchema = z.object({
   sort: z.enum(["createdAt:asc", "createdAt:desc"]).default("createdAt:desc"),
 });
 
+// ─── In-memory job store for async document generation ────────────────────────
+// Prevents Railway/Vercel 60-second timeouts on Claude generation (~60-90s for
+// large documents). The generate endpoint returns a jobId immediately; the
+// client polls GET /documents/jobs/:jobId until status === "done".
+interface GenerationJob {
+  status: "pending" | "done" | "error";
+  result?: Record<string, unknown>;
+  error?: string;
+  createdAt: number;
+}
+const generationJobs = new Map<string, GenerationJob>();
+
+// Purge jobs older than 15 minutes to avoid memory leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, job] of generationJobs.entries()) {
+    if (now - job.createdAt > 15 * 60 * 1000) generationJobs.delete(id);
+  }
+}, 5 * 60 * 1000).unref();
+
 export async function registerDocumentRoutes(app: FastifyInstance) {
   // ==========================================
   // GET /documents/stats - Totales por estado
@@ -456,17 +476,37 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         }
       }
 
-      // 3️⃣ Generar documento con nueva arquitectura
-      const { generateDocumentWithNewArchitecture } = await import("./modules/documents/services/generation-service.js");
+      // 3️⃣ Crear job asíncrono y responder inmediatamente para evitar timeout
+      // La generación con Claude puede tardar 60-90 segundos en documentos largos.
+      // El cliente hace polling a GET /documents/jobs/:jobId hasta que status === "done".
+      const jobId = `job_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      generationJobs.set(jobId, { status: "pending", createdAt: Date.now() });
 
-      app.log.info(`[api] Generating ${documentType} document with new architecture`);
+      // Snapshot de variables necesarias para el background task
+      const jobDocumentType = documentType;
+      const jobSanitizedData = sanitizedData;
+      const jobTone = tone;
+      const jobReferenceText = referenceText;
+      const jobResolvedReferenceDocumentId = resolvedReferenceDocumentId;
+      const jobResolvedExpedienteId = resolvedExpedienteId;
+      const jobUser = user;
+      const jobTenantId = tenantId;
+      const jobUserId = userId;
+      const jobJurisdiction = jurisdiction;
 
-      const generationResult = await generateDocumentWithNewArchitecture(
-        documentType,
-        sanitizedData,
-        tone,
-        referenceText
-      );
+      // Lanzar generación en segundo plano (no bloqueante)
+      setImmediate(async () => {
+        try {
+          const { generateDocumentWithNewArchitecture } = await import("./modules/documents/services/generation-service.js");
+
+          app.log.info(`[api][job:${jobId}] Generating ${jobDocumentType} document with new architecture`);
+
+          const generationResult = await generateDocumentWithNewArchitecture(
+            jobDocumentType,
+            jobSanitizedData,
+            jobTone,
+            jobReferenceText
+          );
 
       const contrato = generationResult.aiEnhancedDraft;
 
@@ -617,14 +657,14 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           const pdfServiceUrl =
             process.env.PDF_SERVICE_URL || "http://localhost:4100";
           
-          app.log.info(`[api] Calling PDF service at: ${pdfServiceUrl}/pdf/generate`);
-          app.log.info(`[api] PDF generation params: title=${documentType}, fileName=${fileName}, textLength=${contrato.length}`);
-          
+          app.log.info(`[api][job:${jobId}] Calling PDF service at: ${pdfServiceUrl}/pdf/generate`);
+          app.log.info(`[api][job:${jobId}] PDF generation params: title=${jobDocumentType}, fileName=${fileName}, textLength=${contrato.length}`);
+
           const pdfResponse = await fetch(`${pdfServiceUrl}/pdf/generate`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              title: documentType.toUpperCase(),
+              title: jobDocumentType.toUpperCase(),
               rawText: contrato,
               fileName: fileName,
             }),
@@ -659,29 +699,51 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         });
       }
 
-      // 9️⃣ Responder al cliente
-      return reply.status(200).send({
-        ok: true,
-        documentId: documentRecord.id,
-        contrato,
-        pdfUrl: pdfGenerated ? fileName : null,
-        // Pre-generation warnings (business rules on form data)
-        warnings: generationResult.warnings,
-        // Post-generation validation: placeholders, incomplete content, etc.
-        // incompleteDocument=true means the PDF was NOT generated and the document
-        // needs manual review before it can be considered final.
-        incompleteDocument: hasOutputErrors,
-        outputWarnings: outputValidation.issues,
-        metadata: {
-          documentType,
-          templateVersion: generationResult.metadata.templateVersion,
-          generationTimestamp: generationResult.metadata.generationTimestamp,
-        },
-      });
+          // 9️⃣ Marcar job como completado
+          generationJobs.set(jobId, {
+            status: "done",
+            createdAt: generationJobs.get(jobId)!.createdAt,
+            result: {
+              ok: true,
+              documentId: documentRecord.id,
+              contrato,
+              pdfUrl: pdfGenerated ? fileName : null,
+              warnings: generationResult.warnings,
+              incompleteDocument: hasOutputErrors,
+              outputWarnings: outputValidation.issues,
+              metadata: {
+                documentType: jobDocumentType,
+                templateVersion: generationResult.metadata.templateVersion,
+                generationTimestamp: generationResult.metadata.generationTimestamp,
+              },
+            },
+          });
+          app.log.info(`[api][job:${jobId}] Generation completed successfully`);
+        } catch (err: any) {
+          app.log.error({ err, jobId }, "[api] Background generation job failed");
+
+          let errorMessage = "Error al generar el documento";
+          if (err.statusCode === 400 || err.message?.includes("Validation failed") || err.validationErrors) {
+            errorMessage = err.message || "Validation failed";
+          } else if (err.message) {
+            errorMessage = err.message;
+          }
+
+          generationJobs.set(jobId, {
+            status: "error",
+            createdAt: generationJobs.get(jobId)?.createdAt ?? Date.now(),
+            error: errorMessage,
+          });
+        }
+      }); // end setImmediate
+
+      // Responder inmediatamente con el jobId para que el cliente haga polling
+      return reply.status(202).send({ ok: true, jobId });
+
     } catch (err: any) {
-      request.log?.error({ err }, "documents route error");
-      
-      // Handle validation errors (should return 400, not 500)
+      // Este catch solo captura errores sincrónicos (validación, auth, plan limits)
+      request.log?.error({ err }, "documents route sync error");
+
       if (err.statusCode === 400 || err.message?.includes("Validation failed") || err.validationErrors) {
         return reply.status(400).send({
           ok: false,
@@ -690,45 +752,58 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           details: err.validationErrors || (err.message ? [err.message] : []),
         });
       }
-      
-      // Log detallado del error de Prisma
-      if (err.code === "P2022" || err.message?.includes("P2022")) {
-        request.log?.error({
-          code: err.code,
-          meta: err.meta,
-          message: err.message,
-        }, "Prisma P2022: Columna no existe en la tabla");
-      }
-      
-      // Mensajes de error más descriptivos
+
       let errorMessage = "Error al generar el documento";
       let statusCode = 500;
-      
+
       if (err instanceof z.ZodError) {
         errorMessage = "Datos inválidos: " + err.errors.map((e: any) => e.message).join(", ");
         statusCode = 400;
-      } else if (err.message?.includes("OPENAI") || err.message?.includes("API key") || err.message?.includes("apiKey")) {
-        errorMessage = "Error de configuración: La clave de API de OpenAI no está configurada o es inválida";
-      } else if (err.code === "P2022" || err.message?.includes("P2022")) {
-        const columnName = err.meta?.column || "desconocida";
-        errorMessage = `Error de base de datos: La columna "${columnName}" no existe en la tabla. Es necesario ejecutar migraciones.`;
-        request.log?.error({ columnName, meta: err.meta }, "Columna faltante detectada");
-      } else if (err.message?.includes("Prisma") || err.message?.includes("database") || err.message?.includes("P2002")) {
-        errorMessage = "Error de base de datos: No se pudo guardar el documento";
       } else if (err.message?.includes("Tenant") || err.message?.includes("Usuario")) {
         errorMessage = err.message;
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
-      return reply.status(statusCode).send({ 
-        ok: false, 
+
+      return reply.status(statusCode).send({
+        ok: false,
         message: errorMessage,
         error: err.message || "INTERNAL_ERROR",
-        code: err.code,
-        meta: process.env.NODE_ENV === "development" ? err.meta : undefined,
       });
     }
+  });
+
+  // ==========================================
+  // GET /documents/jobs/:jobId  — polling endpoint
+  // ==========================================
+  app.get("/documents/jobs/:jobId", async (request, reply) => {
+    try {
+      requireAuth(request);
+    } catch {
+      return reply.status(401).send({ ok: false, error: "unauthorized" });
+    }
+
+    const { jobId } = request.params as { jobId: string };
+    const job = generationJobs.get(jobId);
+
+    if (!job) {
+      return reply.status(404).send({
+        ok: false,
+        error: "JOB_NOT_FOUND",
+        message: "El job no existe o ya expiró. Intentá generar el documento de nuevo.",
+      });
+    }
+
+    if (job.status === "pending") {
+      return reply.send({ ok: true, status: "pending" });
+    }
+
+    if (job.status === "error") {
+      return reply.status(400).send({ ok: false, status: "error", message: job.error });
+    }
+
+    // status === "done"
+    return reply.send({ ok: true, status: "done", ...job.result });
   });
 
   // ==========================================

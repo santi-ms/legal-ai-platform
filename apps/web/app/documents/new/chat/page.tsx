@@ -205,6 +205,8 @@ export default function ChatDocumentCreationPage() {
         ...(refId ? { referenceDocumentId: refId } : {}),
         ...(expId ? { expedienteId: expId } : {}),
       };
+
+      // 1. Iniciar generación — responde inmediatamente con un jobId
       const res = await fetch("/api/_proxy/documents/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -217,8 +219,30 @@ export default function ChatDocumentCreationPage() {
         throw new Error(data.message || "Error al generar el documento");
       }
 
-      setResult(data);
-      setStep("result");
+      const { jobId } = data;
+
+      // 2. Polling hasta que el job esté listo (máx. 4 minutos)
+      const MAX_ATTEMPTS = 120;
+      for (let i = 0; i < MAX_ATTEMPTS; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        const pollRes = await fetch(`/api/_proxy/documents/jobs/${jobId}`);
+        const pollData = await pollRes.json();
+
+        if (pollData.status === "done") {
+          setResult(pollData);
+          setStep("result");
+          return;
+        }
+
+        if (pollData.status === "error") {
+          throw new Error(pollData.message || "Error al generar el documento");
+        }
+
+        // status === "pending" → seguir esperando
+      }
+
+      throw new Error("El documento tardó demasiado en generarse. Intentá de nuevo.");
     } catch (err) {
       // Volvemos al chat con mensaje de error
       setStep("chat");
