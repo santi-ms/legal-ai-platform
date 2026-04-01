@@ -84,25 +84,33 @@ IMPORTANTE: si el usuario ya mencionó un dato en la conversación, usalo direct
   apercibimiento        : qué ocurre si no cumple (ej: "se iniciarán acciones legales")
 
 ── lease ──
-  locador_nombre    : propietario
-  locador_doc       : CUIT/DNI o "-"
-  locatario_nombre  : inquilino
-  locatario_doc     : CUIT/DNI o "-"
-  domicilio_inmueble: dirección completa del inmueble
-  monto_alquiler    : número entero (ej: 500000)
-  moneda            : "ARS" por defecto
-  forma_pago        : "transferencia_bancaria" | "efectivo" | "cheque"
-  duracion_meses    : número entero de meses
+  locador_nombre        : propietario
+  locador_doc           : CUIT/DNI o "-"
+  locador_domicilio     : domicilio del propietario (si no tiene, usá "-")
+  locatario_nombre      : inquilino
+  locatario_doc         : CUIT/DNI o "-"
+  locatario_domicilio   : domicilio del inquilino (si no tiene, usá "-")
+  domicilio_inmueble    : dirección completa del inmueble alquilado
+  monto_alquiler        : número entero (ej: 500000)
+  moneda                : "ARS" por defecto
+  forma_pago            : "transferencia_bancaria" | "efectivo" | "cheque"
+  fecha_inicio          : fecha de inicio en formato DD/MM/YYYY (OBLIGATORIO — default: fecha de hoy)
+  duracion_meses        : número entero de meses
+  penalizacion_rescision: true si hay penalización por rescisión anticipada, false si no
+  penalizacion_monto    : descripción de la penalización (ej: "2 meses de alquiler") — solo si penalizacion_rescision es true
+  deposito_meses        : número entero de meses de depósito de garantía (default: 1)
 
 ── debt_recognition ──
-  acreedor_nombre   : acreedor
-  acreedor_doc      : CUIT/DNI o "-"
-  deudor_nombre     : deudor
-  deudor_doc        : CUIT/DNI o "-"
-  monto_deuda       : número entero (ej: 200000)
-  moneda            : "ARS" por defecto
-  causa_deuda       : origen o causa de la deuda
-  forma_pago        : "transferencia_bancaria" | "efectivo" | "cheque"
+  acreedor_nombre       : acreedor
+  acreedor_doc          : CUIT/DNI o "-"
+  deudor_nombre         : deudor
+  deudor_doc            : CUIT/DNI o "-"
+  deudor_domicilio      : domicilio del deudor (si no tiene, usá "-")
+  monto_deuda           : número entero (ej: 200000)
+  moneda                : "ARS" por defecto
+  causa_deuda           : origen o causa de la deuda
+  forma_pago            : "transferencia_bancaria" | "efectivo" | "cheque"
+  fecha_reconocimiento  : fecha en formato DD/MM/YYYY (OBLIGATORIO — default: fecha de hoy)
 
 ── simple_authorization ──
   autorizante_nombre  : quien autoriza
@@ -110,6 +118,7 @@ IMPORTANTE: si el usuario ya mencionó un dato en la conversación, usalo direct
   autorizado_nombre   : quien recibe la autorización
   autorizado_doc      : DNI/CUIT o "-"
   tramite_autorizado  : descripción del trámite o acto autorizado
+  fecha_autorizacion  : fecha en formato DD/MM/YYYY (default: fecha de hoy)
 
 ━━━ FORMATO DE RESPUESTA ━━━
 Respondé SIEMPRE con JSON válido. Sin texto antes ni después del JSON.
