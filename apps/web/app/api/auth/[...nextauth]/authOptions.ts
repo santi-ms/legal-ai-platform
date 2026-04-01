@@ -126,10 +126,16 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, trigger }) {
       const fallbackId = typeof token.sub === "string" && token.sub ? token.sub : undefined;
       const fallbackEmail = typeof token.user?.email === "string" && token.user.email ? token.user.email : undefined;
-      const lookup = await loadCanonicalUser({
-        id: typeof (user as any)?.id === "string" && (user as any).id ? (user as any).id : fallbackId,
-        email: typeof user?.email === "string" && user.email ? user.email : fallbackEmail,
-      });
+
+      let lookup = null;
+      try {
+        lookup = await loadCanonicalUser({
+          id: typeof (user as any)?.id === "string" && (user as any).id ? (user as any).id : fallbackId,
+          email: typeof user?.email === "string" && user.email ? user.email : fallbackEmail,
+        });
+      } catch (err) {
+        console.error("[authOptions.jwt] loadCanonicalUser error (DB may be overloaded)", err);
+      }
 
       if (!lookup) {
         if (trigger === "update") {
@@ -137,6 +143,20 @@ export const authOptions: NextAuthOptions = {
             sub: token.sub,
             email: token.user?.email,
           });
+        }
+        // Fallback: if user came from authorize (first login), populate token directly
+        // so session is valid even when DB lookup fails temporarily
+        if (user && (user as any).id && !token.user) {
+          token.sub = (user as any).id;
+          token.email = user.email ?? "";
+          token.name = user.name ?? undefined;
+          token.user = {
+            id: (user as any).id,
+            email: user.email ?? "",
+            name: user.name ?? null,
+            role: (user as any).role ?? "member",
+            tenantId: (user as any).tenantId ?? null,
+          };
         }
         return token;
       }
