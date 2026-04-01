@@ -33,8 +33,7 @@ function getPlanFeatureList(plan: BillingPlan): string[] {
   if (limits.docsPerMonth === -1) list.push("Documentos ilimitados");
   else list.push(`${limits.docsPerMonth} documentos por mes`);
 
-  if (plan.code === "free") list.push("3 tipos de documentos");
-  else list.push("Todos los tipos de documentos");
+  list.push("Todos los tipos de documentos");
 
   if (features.chatIA) list.push("Chat con IA");
   if (features.edicion) list.push("Edición de documentos");

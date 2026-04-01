@@ -57,6 +57,14 @@ export async function getPlanForTenant(tenantId: string) {
     return { subscription: null, plan: freePlan };
   }
 
+  // Suscripciones pendientes de pago o canceladas → tratar como free
+  // (el usuario inició un checkout pero no completó el pago, o fue cancelada)
+  const INACTIVE_STATUSES = ["pending_payment", "canceled", "past_due"];
+  if (INACTIVE_STATUSES.includes(subscription.status)) {
+    const freePlan = await prisma.plan.findUnique({ where: { code: "free" } });
+    return { subscription: null, plan: freePlan };
+  }
+
   // Si el trial venció → degradar a free
   if (
     subscription.status === "trialing" &&
@@ -186,7 +194,7 @@ export async function registerBillingRoutes(app: FastifyInstance) {
             currency_id: "ARS",
             start_date: startDate.toISOString(),
           } as any,
-          back_url: `${frontendUrl}/settings/billing?status=success&plan=${planCode}`,
+          back_url: `${frontendUrl}/settings/billing?plan=${planCode}`,
           notification_url: `${apiUrl}/api/webhooks/mercado-pago`,
           status: "pending",
         } as any,
@@ -352,11 +360,28 @@ export async function registerBillingRoutes(app: FastifyInstance) {
         const now = new Date();
 
         if (mpStatus === "authorized") {
-          // Suscripción autorizada → activar
           const trialDays = (plan as any).trialDays ?? 0;
-          const trialEndsAt = trialDays > 0
-            ? new Date(now.getTime() + trialDays * 86_400_000)
-            : null;
+
+          if (trialDays === 0) {
+            // Sin período de prueba: "authorized" en MP significa que el usuario vio la
+            // pantalla de pago, pero NO garantiza que haya completado el cobro.
+            // Solo actualizamos el mpSubscriptionId para que el webhook de pago
+            // (`subscription_authorized_payment`) pueda encontrar la suscripción.
+            // El plan se activa recién cuando se confirma el primer pago real.
+            await prisma.subscription.updateMany({
+              where: { tenantId, status: "pending_payment" },
+              data: {
+                mpSubscriptionId: String(dataId),
+                mpPayerId: String(sub?.payer_id ?? ""),
+              },
+            });
+            console.log(`[webhook/mp] PreApproval authorized sin trial, esperando primer pago: tenant=${tenantId}`);
+            return;
+          }
+
+          // Con período de prueba: activar como trialing ya que el usuario autorizó
+          // el débito futuro y el trial comienza inmediatamente (sin cobro inicial).
+          const trialEndsAt = new Date(now.getTime() + trialDays * 86_400_000);
           const renewsAt = getNextMonthDate(now);
 
           await prisma.subscription.upsert({
@@ -364,7 +389,7 @@ export async function registerBillingRoutes(app: FastifyInstance) {
             create: {
               tenantId,
               planId: plan.id,
-              status: trialEndsAt ? "trialing" : "active",
+              status: "trialing",
               trialEndsAt,
               startsAt: now,
               renewsAt,
@@ -374,7 +399,7 @@ export async function registerBillingRoutes(app: FastifyInstance) {
             },
             update: {
               planId: plan.id,
-              status: trialEndsAt ? "trialing" : "active",
+              status: "trialing",
               trialEndsAt,
               renewsAt,
               maxUsers: totalUsers,
@@ -388,7 +413,7 @@ export async function registerBillingRoutes(app: FastifyInstance) {
             data: { currentPlanCode: planCode },
           });
 
-          console.log(`[webhook/mp] ✅ Suscripción activada: tenant=${tenantId} plan=${planCode}`);
+          console.log(`[webhook/mp] ✅ Trial activado: tenant=${tenantId} plan=${planCode} trial=${trialDays}d`);
 
         } else if (mpStatus === "cancelled" || mpStatus === "paused") {
           // Suscripción cancelada o pausada → degradar a free

@@ -26,15 +26,28 @@ const BaseDocumentDTOSchema = z.object({
     "simple_authorization",
     "supply_contract", // kept for legacy compatibility — not implemented, returns 400 on generation
   ]),
-  jurisdiction: z.enum([
-    "caba",
-    "buenos_aires",
-    "cordoba",
-    "santa_fe",
-    "mendoza",
-    "corrientes_capital",
-    "posadas_misiones",
-  ]),
+  jurisdiction: z.preprocess(
+    // Normalizar alias comunes que la IA puede extraer del texto del usuario
+    (val) => {
+      const aliases: Record<string, string> = {
+        misiones: "posadas_misiones",
+        corrientes: "corrientes_capital",
+        buenos_aires_provincia: "buenos_aires",
+        pba: "buenos_aires",
+        cba: "cordoba",
+      };
+      return typeof val === "string" && aliases[val] ? aliases[val] : val;
+    },
+    z.enum([
+      "caba",
+      "buenos_aires",
+      "cordoba",
+      "santa_fe",
+      "mendoza",
+      "corrientes_capital",
+      "posadas_misiones",
+    ])
+  ),
   tone: z.enum([
     "formal_technical",
     "commercial_clear",

@@ -418,18 +418,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           }
         }
 
-        // Verificar tipo de documento disponible en el plan
-        // Free solo tiene acceso a: service_contract, nda, legal_notice
-        const planCode: string = (plan as any)?.code ?? "free";
-        const FREE_TYPES = ["service_contract", "nda", "legal_notice"];
-        const docTypeId: string = typeof documentType === "string" ? documentType : (documentType as any)?.id ?? "";
-        if (planCode === "free" && docTypeId && !FREE_TYPES.includes(docTypeId)) {
-          return reply.status(403).send({
-            ok: false,
-            error: "TYPE_NOT_IN_PLAN",
-            message: `El tipo de documento no está disponible en el plan Free. Actualizá tu plan para acceder a todos los tipos.`,
-          });
-        }
+        // Todos los tipos de documento están disponibles en todos los planes
       }
 
       // 2.7️⃣ Cargar texto del documento de referencia (si se proporcionó)

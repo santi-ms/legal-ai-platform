@@ -78,7 +78,9 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (onboardingPath && tenantId) {
+  // Solo redirigir fuera del onboarding si ya tiene tenant Y no está en /onboarding/plan
+  // (el paso de elegir plan sí puede accederse teniendo tenant, es parte del flujo)
+  if (onboardingPath && tenantId && !pathname.startsWith("/onboarding/plan")) {
     const url = req.nextUrl.clone();
     url.pathname = "/documents";
     return NextResponse.redirect(url);
