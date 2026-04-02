@@ -233,7 +233,7 @@ obligaciones de las partes, rescisión/resolución, mora, jurisdicción y foro
 - Los montos en números Y letras: '$50.000 (pesos cincuenta mil)'
 - Los plazos en forma clara: '30 (treinta) días corridos a partir de...'
 - Cierre: 'En prueba de conformidad, las partes firman...' + líneas de firma para cada parte
-- Formato: texto plano con saltos de línea simples, sin markdown, sin bullets
+- Formato: texto plano. Separar cada párrafo/sección con una línea de guiones '----------' (diez guiones). NO usar líneas en blanco — solo el separador de guiones. Sin markdown, sin bullets
 - El documento es definitivo — absolutamente todos los campos completos, listo para firmar
 - NO dejés placeholders como [COMPLETAR], [INDICAR], {{VARIABLE}}
 - NO incluyas explicaciones ni meta-texto — solo el documento`;
@@ -777,7 +777,7 @@ function getPromptConfigForType(
     "Los plazos deben expresarse en forma clara: '30 (treinta) días corridos a partir de…'",
     "Usar lenguaje declarativo y fluido: 'las partes acuerdan', 'el locatario se obliga a', 'queda expresamente establecido que', 'en prueba de conformidad'",
     "Cierre: párrafo de conformidad ('En prueba de conformidad, las partes firman...'), luego espacio para firmas con línea (___________), nombre completo y aclaración para cada parte",
-    "Formato de salida: texto plano con saltos de línea simples entre párrafos, sin markdown, sin bullets, sin numeración de cláusulas",
+    "Formato de salida: texto plano. Separar cada párrafo/sección con una línea de guiones '----------' (diez guiones exactos). NO usar líneas en blanco entre párrafos — solo el separador de guiones. Sin markdown, sin bullets, sin numeración de cláusulas separadas",
   ];
 
   if (documentType === "service_contract") {

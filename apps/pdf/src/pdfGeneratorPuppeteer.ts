@@ -74,6 +74,7 @@ type LineType =
   | "section_title"   // Subtítulo de sección en mayúsculas (ej: PARTES, OBJETO)
   | "signature_line"  // Línea de firma (_____)
   | "signature_label" // Etiqueta bajo firma (Firma / Aclaración / DNI)
+  | "separator"       // Línea separadora de párrafos (--- / ----------)
   | "empty"           // Línea vacía
   | "body";           // Párrafo normal
 
@@ -96,6 +97,9 @@ function classifyLine(
   const trimmed = line.trim();
 
   if (trimmed.length === 0) return "empty";
+
+  // Separator line: 4+ dashes (e.g. "----------" or "----...----")
+  if (/^[-─—]{4,}$/.test(trimmed)) return "separator";
 
   // Signature underscores
   if (/^_{4,}/.test(trimmed)) return "signature_line";
@@ -231,6 +235,10 @@ function buildHtmlBody(rawText: string): string {
         );
         break;
 
+      case "separator":
+        html.push(`<hr class="para-separator">`);
+        break;
+
       case "signature_line":
         html.push(`<p class="sig-line">${escapeHtml(trimmed)}</p>`);
         break;
@@ -334,8 +342,8 @@ function buildFullHtml(title: string, bodyHtml: string): string {
       font-size: 12pt;
       font-weight: bold;
       text-align: justify;
-      margin-top: 14pt;
-      margin-bottom: 4pt;
+      margin-top: 0;
+      margin-bottom: 0;
       color: #000000;
       text-indent: 0;
     }
@@ -344,9 +352,9 @@ function buildFullHtml(title: string, bodyHtml: string): string {
     .body-text {
       font-size: 12pt;
       text-align: justify;
-      text-indent: 1.2em;
+      text-indent: 0;
       margin-top: 0;
-      margin-bottom: 6pt;
+      margin-bottom: 0;
       color: #000000;
     }
 
@@ -354,15 +362,22 @@ function buildFullHtml(title: string, bodyHtml: string): string {
     .subclause {
       font-size: 12pt;
       text-align: justify;
-      margin-left: 2.4em;
-      margin-top: 3pt;
-      margin-bottom: 3pt;
+      margin-left: 0;
+      margin-top: 0;
+      margin-bottom: 0;
       color: #000000;
     }
 
-    /* ── Spacer (blank lines) ───────────────────────────── */
+    /* ── Spacer (blank lines) — minimized ───────────────── */
     .spacer {
-      height: 6pt;
+      height: 2pt;
+    }
+
+    /* ── Paragraph separator (----) ─────────────────────── */
+    .para-separator {
+      border: none;
+      border-top: 0.5pt solid #000000;
+      margin: 5pt 0;
     }
 
     /* ── Signature block ────────────────────────────────── */
