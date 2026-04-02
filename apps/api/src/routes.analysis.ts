@@ -46,11 +46,25 @@ export interface AnalysisResult {
 const ANALYSIS_SYSTEM_PROMPT = `Sos un abogado experto en análisis de contratos en Argentina.
 Tu tarea es analizar el contrato que te provean y devolver un análisis detallado y útil en formato JSON.
 
+CRITERIOS OBJETIVOS PARA CLÁUSULAS RIESGOSAS — solo marcá como riesgosa una cláusula si cumple AL MENOS UNO de estos criterios concretos:
+- Renuncia a derechos irrenunciables por ley (ej: renuncia a indemnización laboral, renuncia a cobrar salarios)
+- Penalidades desproporcionadas (más del 30% del valor del contrato por incumplimiento menor)
+- Plazos de prescripción o caducidad más cortos que los legales (art. 2560 y ss. CCCN)
+- Jurisdicción exclusiva en provincia distinta al domicilio del adherente
+- Cláusulas de renovación automática sin preaviso razonable (menos de 30 días)
+- Indemnizaciones unilaterales (solo una parte paga si rescinde, la otra no)
+- Cláusulas de variación unilateral de precio sin límite ni notificación
+- Exclusión total de responsabilidad por daños (contraria al art. 1743 CCCN)
+- Cesión de derechos sin consentimiento de la otra parte
+- Mora automática con tasas superiores al 3% diario
+- Confusión de roles o doble representación sin consentimiento informado
+
 IMPORTANTE:
 - Respondé ÚNICAMENTE con el objeto JSON, sin texto adicional, sin markdown, sin explicaciones.
 - El JSON debe ser válido y parseable.
 - Si algún campo no aplica, usá un array vacío o string vacío, NUNCA null.
-- Usá lenguaje claro y profesional en español rioplatense.`;
+- Usá lenguaje claro y profesional en español rioplatense.
+- Sé CONSISTENTE: los mismos hechos objetivos siempre deben producir el mismo resultado.`;
 
 function buildAnalysisPrompt(pdfText: string): string {
   const truncated = pdfText.length > 15000
@@ -189,7 +203,7 @@ export async function registerAnalysisRoutes(app: FastifyInstance) {
         const response = await anthropic.messages.create({
           model: "claude-haiku-4-5",
           max_tokens: 4000,
-          temperature: 0.1,
+          temperature: 0,
           system: ANALYSIS_SYSTEM_PROMPT,
           messages: [
             { role: "user", content: buildAnalysisPrompt(pdfText) },
