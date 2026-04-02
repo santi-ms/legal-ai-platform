@@ -13,6 +13,7 @@ import type {
   DocumentGenerationResult,
   GenerationMetadata,
 } from "../domain/document-types.js";
+import { isTemplatedDocumentType } from "../domain/document-types.js";
 import {
   validateDocumentData,
   getValidationRulesForType,
@@ -53,23 +54,18 @@ export async function generateDocumentWithNewArchitecture(
 ): Promise<DocumentGenerationResult> {
   logger.info(`[generation-service] Generating ${documentType} document`);
 
-  // Guard: supply_contract is declared for legacy compatibility but has no template.
-  // Return a clear 400 instead of an opaque "Template not found" 500.
-  if (documentType === "supply_contract") {
-    const err = new Error(
-      "El tipo 'Contrato de Suministro' (supply_contract) no está implementado todavía. " +
-      "Para contratos de prestación de servicios usá 'Contrato de Servicios' (service_contract)."
-    );
-    (err as any).statusCode = 400;
-    throw err;
+  // Route free-form types (anything without a template) to the generic AI path
+  if (!isTemplatedDocumentType(documentType) || documentType === "supply_contract") {
+    logger.info(`[generation-service] Free-form generation for type: ${documentType}`);
+    return generateFreeFormDocument(documentType, data, tone, referenceText);
   }
 
   // 1. Get template
   const template = getTemplate(documentType);
   if (!template) {
-    const err = new Error(`Tipo documental '${documentType}' no reconocido por el motor de generación.`);
-    (err as any).statusCode = 400;
-    throw err;
+    // Fallback to free-form if template is somehow missing
+    logger.warn(`[generation-service] Template not found for ${documentType}, falling back to free-form`);
+    return generateFreeFormDocument(documentType, data, tone, referenceText);
   }
 
   // 2. Get clauses
@@ -168,6 +164,174 @@ export async function generateDocumentWithNewArchitecture(
     warnings: validationResult.warnings,
     metadata,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Free-form document generation (any document type without a template)
+// ---------------------------------------------------------------------------
+
+/**
+ * Generates any legal document type using pure AI — no template or clause system.
+ * Used for document types outside the 6 hardcoded ones (e.g. comodato, poder especial,
+ * contrato de franquicia, acta de directorio, convenio de honorarios, etc.)
+ */
+async function generateFreeFormDocument(
+  documentType: string,
+  data: StructuredDocumentData,
+  tone: string,
+  referenceText?: string | null
+): Promise<DocumentGenerationResult> {
+  const toneInstructions: Record<string, string> = {
+    formal_technical:
+      "Formal y técnico legal. Terminología jurídica precisa del derecho argentino. Cláusulas técnicas sin ambigüedad.",
+    commercial_clear:
+      "Comercial y claro. Lenguaje accesible para empresas y PyMEs sin sacrificar validez legal.",
+    balanced_professional:
+      "Equilibrado: profesional y riguroso, pero comprensible. Terminología jurídica correcta con definiciones cuando sea necesario.",
+  };
+  const toneInstruction = toneInstructions[tone] ?? toneInstructions.commercial_clear;
+
+  const jurisdiccionTexto = formatJurisdictionText(String(data.jurisdiccion || ""));
+  const context = buildGenericContextForAI(data, documentType);
+
+  const referenceSection = referenceText
+    ? `\nDOCUMENTO DE REFERENCIA (usarlo como modelo de formato y estilo, completar con los datos reales):
+<reference_document>
+${referenceText.substring(0, 3000)}
+</reference_document>\n`
+    : "";
+
+  const systemMessage = `Sos un abogado senior argentino con más de 25 años de experiencia en todas las ramas del derecho civil, comercial, laboral y administrativo. \
+Conocés en profundidad el Código Civil y Comercial de la Nación (Ley 26.994 y modificatorias), \
+la Ley de Sociedades Comerciales (Ley 19.550), el Código de Comercio, la Ley de Contrato de Trabajo (Ley 20.744), \
+y toda la normativa argentina vigente. \
+Redactás cualquier tipo de documento legal — contratos, poderes, actas, convenios, autorizaciones, \
+instrumentos privados y públicos — con precisión, completitud y ejecutabilidad. \
+Tu redacción nunca deja campos vacíos, nunca usa placeholders y siempre prevé los escenarios de incumplimiento. \
+Usás el estilo jurídico argentino clásico: texto corrido con conceptos en MAYÚSCULAS al inicio de cada párrafo.`;
+
+  const userPrompt = `Generá el siguiente documento legal completo y ejecutable:
+
+TIPO DE DOCUMENTO: ${documentType}
+TONO: ${toneInstruction}
+JURISDICCIÓN: ${jurisdiccionTexto}
+${referenceSection}
+DATOS PROPORCIONADOS:
+---
+${context}
+---
+
+INSTRUCCIONES DE REDACCIÓN:
+- Documento legalmente válido y ejecutable conforme al CCCN (Ley 26.994) y normativa argentina vigente
+- Usar TODOS los datos proporcionados: nombres, DNIs/CUITs, domicilios, montos, fechas — sin omitir ninguno
+- ESTILO: texto corrido al estilo jurídico argentino clásico. Sin cláusulas numeradas ni encabezados separados. \
+El documento fluye en párrafos continuos. Cada párrafo comienza con el concepto en MAYÚSCULAS seguido de dos puntos: \
+'OBJETO: Por el presente instrumento...' / 'PLAZO: El presente contrato tendrá...'
+- Encabezado: ciudad y fecha completa en la primera línea, luego título del documento en MAYÚSCULAS, luego identificación de las partes
+- Incluir TODAS las cláusulas necesarias para que el documento sea completo: objeto, plazo, precio/contraprestación si aplica, \
+obligaciones de las partes, rescisión/resolución, mora, jurisdicción y foro
+- Los montos en números Y letras: '$50.000 (pesos cincuenta mil)'
+- Los plazos en forma clara: '30 (treinta) días corridos a partir de...'
+- Cierre: 'En prueba de conformidad, las partes firman...' + líneas de firma para cada parte
+- Formato: texto plano con saltos de línea simples, sin markdown, sin bullets
+- El documento es definitivo — absolutamente todos los campos completos, listo para firmar
+- NO dejés placeholders como [COMPLETAR], [INDICAR], {{VARIABLE}}
+- NO incluyas explicaciones ni meta-texto — solo el documento`;
+
+  let generatedText = "";
+  let aiTokens: { prompt: number; completion: number } | undefined;
+  let aiUsed = false;
+  const warnings: DocumentGenerationResult["warnings"] = [];
+
+  if (process.env.SKIP_AI_ENHANCEMENT !== "true") {
+    try {
+      const message = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 4000,
+        system: systemMessage,
+        messages: [{ role: "user", content: userPrompt }],
+      });
+      const rawText = (message.content[0] as any)?.text?.trim() ?? "";
+      aiTokens = {
+        prompt: message.usage?.input_tokens ?? 0,
+        completion: message.usage?.output_tokens ?? 0,
+      };
+      generatedText = sanitizeAiOutput(rawText, context);
+      aiUsed = true;
+    } catch (error) {
+      logger.error(`[generation-service] Free-form AI error: ${error}`);
+      warnings.push({
+        id: "ai_generation_failed",
+        ruleId: "ai_generation_failed",
+        message: "La generación automática con IA no pudo completarse. Intentá de nuevo.",
+        severity: "error",
+      });
+      generatedText = context; // Fallback to raw context
+    }
+  } else {
+    generatedText = context;
+  }
+
+  const metadata: GenerationMetadata = {
+    documentType,
+    templateVersion: "freeform-1.0",
+    generationTimestamp: new Date().toISOString(),
+    aiModel: aiUsed ? "claude-sonnet-4-6" : "fallback",
+    aiTokens,
+  };
+
+  // Return in the same shape as the templated path
+  return {
+    structuredData: data,
+    clausePlan: { required: [], optional: [], order: [], metadata: {} },
+    baseDraft: context,
+    aiEnhancedDraft: generatedText,
+    warnings,
+    metadata,
+  };
+}
+
+/**
+ * Builds a generic context string from any data object.
+ * Used for free-form document generation when no type-specific mapping exists.
+ */
+function buildGenericContextForAI(data: StructuredDocumentData, documentType: string): string {
+  const lines: string[] = [];
+  lines.push(`Tipo de documento: ${documentType}`);
+  if (data.jurisdiccion) lines.push(`Jurisdicción: ${formatJurisdictionText(String(data.jurisdiccion))}`);
+  if (data.tono) lines.push(`Tono: ${data.tono}`);
+  lines.push("");
+
+  // Known field labels for readability
+  const fieldLabels: Record<string, string> = {
+    parte_a_nombre: "Parte A (nombre)",
+    parte_a_doc: "Parte A (DNI/CUIT)",
+    parte_a_domicilio: "Parte A (domicilio)",
+    parte_b_nombre: "Parte B (nombre)",
+    parte_b_doc: "Parte B (DNI/CUIT)",
+    parte_b_domicilio: "Parte B (domicilio)",
+    descripcion_documento: "Descripción / objeto del documento",
+    descripcion_adicional: "Descripción adicional",
+    monto: "Monto",
+    moneda: "Moneda",
+    fecha_inicio: "Fecha de inicio",
+    fecha_fin: "Fecha de fin / vencimiento",
+    duracion_meses: "Duración (meses)",
+    plazo: "Plazo",
+    observaciones: "Observaciones / cláusulas adicionales",
+    additionalClauses: "Cláusulas adicionales solicitadas",
+  };
+
+  const skipKeys = new Set(["documentType", "jurisdiccion", "tono", "jurisdiction"]);
+
+  for (const [key, value] of Object.entries(data)) {
+    if (skipKeys.has(key)) continue;
+    if (value === null || value === undefined || String(value).trim() === "") continue;
+    const label = fieldLabels[key] ?? key.replace(/_/g, " ");
+    lines.push(`${label}: ${value}`);
+  }
+
+  return lines.join("\n");
 }
 
 // ---------------------------------------------------------------------------

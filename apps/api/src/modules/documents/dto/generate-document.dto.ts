@@ -171,14 +171,49 @@ export const SimpleAuthorizationDTOSchema = LooseDocumentDTOSchema.extend({
   documentType: z.literal("simple_authorization"),
 });
 
-// supply_contract is kept in the base enum for legacy compatibility.
-// Attempting to generate it returns a 400 from generation-service.ts.
+// supply_contract is kept for legacy compatibility.
 export const SupplyContractDTOSchema = LooseDocumentDTOSchema.extend({
   documentType: z.literal("supply_contract"),
 });
 
 /**
- * Union of all DTO schemas
+ * Free-form DTO: accepts any document type string not in the known list.
+ * Used for "tipo libre" generation — Claude generates the full document from scratch.
+ * Requires at minimum: documentType (any string), jurisdiction, tone.
+ * All other fields are passed through as-is to the generation engine.
+ */
+export const FreeFormDocumentDTOSchema = z.object({
+  documentType: z.string().min(1).max(100),
+  jurisdiction: z.preprocess(
+    (val) => {
+      const aliases: Record<string, string> = {
+        misiones: "posadas_misiones",
+        corrientes: "corrientes_capital",
+        buenos_aires_provincia: "buenos_aires",
+        pba: "buenos_aires",
+        cba: "cordoba",
+      };
+      return typeof val === "string" && aliases[val] ? aliases[val] : val;
+    },
+    z.enum([
+      "caba",
+      "buenos_aires",
+      "cordoba",
+      "santa_fe",
+      "mendoza",
+      "corrientes_capital",
+      "posadas_misiones",
+    ]).default("caba")
+  ),
+  tone: z.enum([
+    "formal_technical",
+    "commercial_clear",
+    "balanced_professional",
+  ]).default("commercial_clear"),
+}).passthrough(); // Accept any additional fields
+
+/**
+ * Union of all DTO schemas (known types)
  */
 export const GenerateDocumentDTOSchema = z.discriminatedUnion("documentType", [
   ServiceContractDTOSchema,
@@ -193,23 +228,31 @@ export const GenerateDocumentDTOSchema = z.discriminatedUnion("documentType", [
 /**
  * Generate Document DTO Type
  */
-export type GenerateDocumentDTO = z.infer<typeof GenerateDocumentDTOSchema>;
+export type GenerateDocumentDTO =
+  | z.infer<typeof GenerateDocumentDTOSchema>
+  | z.infer<typeof FreeFormDocumentDTOSchema>;
 
 /**
- * Validate generate document request
- * 
- * @param data - Request data
- * @returns Validation result
+ * Validate generate document request.
+ * 1. Try the known-type discriminated union first (strict validation per type).
+ * 2. Fall back to free-form schema (any documentType string, passthrough fields).
  */
 export function validateGenerateDocumentRequest(
   data: unknown
 ): { success: true; data: GenerateDocumentDTO } | { success: false; error: z.ZodError } {
+  // Try known types first
   const result = GenerateDocumentDTOSchema.safeParse(data);
-  
   if (result.success) {
     return { success: true, data: result.data };
   }
-  
+
+  // Fall back to free-form for any other document type
+  const freeResult = FreeFormDocumentDTOSchema.safeParse(data);
+  if (freeResult.success) {
+    return { success: true, data: freeResult.data };
+  }
+
+  // Both failed — return the original union error (more informative)
   return { success: false, error: result.error };
 }
 

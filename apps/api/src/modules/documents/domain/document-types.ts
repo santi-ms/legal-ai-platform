@@ -11,22 +11,41 @@
 /**
  * Canonical document type identifiers — source of truth for all backend modules.
  *
- * Active types (have template + clauses + validation rules):
+ * Template-backed types (have template + clauses + AI prompt):
  *   service_contract | nda | legal_notice | lease | debt_recognition | simple_authorization
  *
- * Legacy / not implemented:
- *   supply_contract — kept for backward compatibility with existing DB records that
- *   use "contrato_suministro". Attempting to generate it returns HTTP 400.
- *   Do NOT add new features for this type without first implementing its template.
+ * Free-form types: any other string is accepted and handled by the generic AI
+ *   generation path (no template required — Claude generates the full document).
+ *
+ * Legacy / deprecated:
+ *   supply_contract — kept for backward compatibility with existing DB records.
  */
-export type DocumentTypeId =
+export type KnownDocumentTypeId =
   | "service_contract"
   | "nda"
   | "legal_notice"
   | "lease"
   | "debt_recognition"
   | "simple_authorization"
-  | "supply_contract"; // @deprecated — not implemented, returns 400 on generation
+  | "supply_contract"; // @deprecated
+
+/** Accepts all known types AND any free-form string (e.g. "comodato", "poder_especial") */
+export type DocumentTypeId = KnownDocumentTypeId | string;
+
+/** List of types that have a full template + clause system */
+export const TEMPLATED_DOCUMENT_TYPES: KnownDocumentTypeId[] = [
+  "service_contract",
+  "nda",
+  "legal_notice",
+  "lease",
+  "debt_recognition",
+  "simple_authorization",
+];
+
+/** Returns true if the given type has a template + clause pipeline */
+export function isTemplatedDocumentType(type: string): type is KnownDocumentTypeId {
+  return TEMPLATED_DOCUMENT_TYPES.includes(type as KnownDocumentTypeId);
+}
 
 /**
  * Document Tone Options
@@ -89,7 +108,7 @@ export type DocumentStatus =
  * Document Generation Metadata
  */
 export interface GenerationMetadata {
-  documentType: DocumentTypeId;
+  documentType: string;
   templateVersion: string;
   generationTimestamp: string;
   aiModel?: string;
