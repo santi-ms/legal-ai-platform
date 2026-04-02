@@ -61,18 +61,6 @@ export const leaseAgreementSchema: DocumentSchemaDefinition = {
             { value: "posadas_misiones", label: "Posadas, Misiones" },
           ],
         },
-        {
-          id: "tono",
-          label: "Tono del Documento",
-          type: "select",
-          required: true,
-          helpText: "Estilo de redacción del contrato",
-          options: [
-            { value: "formal_technical", label: "Formal y técnico legal" },
-            { value: "commercial_clear", label: "Comercial y claro" },
-            { value: "balanced_professional", label: "Balanceado profesional" },
-          ],
-        },
       ],
     },
     {

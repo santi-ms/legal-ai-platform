@@ -314,7 +314,7 @@ export default function GuidedDocumentCreationPage() {
       const requestPayload = {
         documentType: selectedDocumentType,
         jurisdiction: formData.jurisdiccion,
-        tone: formData.tono,
+        tone: "formal_technical",
         ...formData,
         ...(selectedReferenceId ? { referenceDocumentId: selectedReferenceId } : {}),
         ...(selectedExpedienteId ? { expedienteId: selectedExpedienteId } : {}),
