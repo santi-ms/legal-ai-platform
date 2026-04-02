@@ -131,16 +131,10 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
           _count: { matter: true },
           orderBy: { _count: { matter: "desc" } },
         }),
-        // Active (non-expired, non-revoked) document shares
-        prisma.documentShare.count({
-          where: {
-            tenantId,
-            status: "active",
-            expiresAt: { gt: now },
-          },
-        }),
-        // Total contract analyses
-        prisma.contractAnalysis.count({ where: { tenantId } }),
+        // documentShare model not yet in schema — default to 0
+        Promise.resolve(0),
+        // contractAnalysis model not yet in schema — default to 0
+        Promise.resolve(0),
       ]);
 
       const byStatus: Record<string, number> = {
