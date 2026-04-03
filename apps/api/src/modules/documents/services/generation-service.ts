@@ -33,6 +33,7 @@ import {
   getOptionalClauseIds,
 } from "../clauses/index.js";
 import { logger } from "../../../utils/logger.js";
+import { prisma } from "../../../db.js";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -116,7 +117,7 @@ export async function generateDocumentWithNewArchitecture(
   logger.info(`[generation-service] Base draft generated (${baseDraft.length} chars)`);
 
   // 6. Enhance with AI — now passes full data alongside the baseDraft
-  const promptConfig = getPromptConfigForType(documentType, tone);
+  const promptConfig = await getPromptConfigForType(documentType, tone);
   let aiEnhancedDraft: string;
   let aiTokens: { prompt: number; completion: number } | undefined;
 
@@ -748,11 +749,49 @@ function sanitizeAiOutput(text: string, fallback: string): string {
 
 /**
  * Returns the prompt configuration for a given document type.
- * Each type has a specialized system message and type-specific instructions.
+ * Queries the DocumentPrompt table first; falls back to hardcoded config if not found.
  */
-function getPromptConfigForType(
+async function getPromptConfigForType(
   documentType: DocumentTypeId,
   _tone: string
+): Promise<{
+  systemMessage: string;
+  baseInstructions: string[];
+  toneInstructions: Record<string, string>;
+}> {
+  // Try to load from DB first
+  try {
+    const dbPrompt = await prisma.documentPrompt.findUnique({
+      where: { documentType: documentType as string },
+    });
+    if (dbPrompt && dbPrompt.isActive) {
+      const toneInstructions = {
+        formal_technical:
+          "Formal y técnico legal. Terminología jurídica precisa del derecho argentino. Cláusulas técnicas sin ambigüedad. Voz activa e imperativa.",
+        commercial_clear:
+          "Comercial y claro. Lenguaje accesible para empresas y PyMEs sin sacrificar validez legal. Evitar latinismos innecesarios.",
+        balanced_professional:
+          "Equilibrado: profesional y riguroso, pero comprensible. Terminología jurídica correcta con definiciones cuando sea necesario.",
+      };
+      logger.info(`[generation-service] Using DB prompt for: ${documentType}`);
+      return {
+        systemMessage: dbPrompt.systemMessage,
+        baseInstructions: dbPrompt.baseInstructions as string[],
+        toneInstructions,
+      };
+    }
+  } catch (err) {
+    logger.warn(`[generation-service] Could not load DB prompt for ${documentType}, using hardcoded: ${err}`);
+  }
+
+  return getHardcodedPromptConfig(documentType);
+}
+
+/**
+ * Hardcoded fallback prompt configuration per document type.
+ */
+function getHardcodedPromptConfig(
+  documentType: DocumentTypeId
 ): {
   systemMessage: string;
   baseInstructions: string[];

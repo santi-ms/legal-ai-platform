@@ -1204,3 +1204,227 @@ export async function getSharedDocument(token: string): Promise<SharedDocumentIn
   }
   return { share: data.share, document: data.document };
 }
+
+// ---------------------------------------------------------------------------
+// Document Prompt Library
+// ---------------------------------------------------------------------------
+
+export interface DocumentPrompt {
+  id: string;
+  documentType: string;
+  label: string;
+  systemMessage: string;
+  baseInstructions: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PromptBody {
+  documentType: string;
+  label: string;
+  systemMessage: string;
+  baseInstructions: string[];
+  isActive?: boolean;
+}
+
+export interface PromptPatch {
+  label?: string;
+  systemMessage?: string;
+  baseInstructions?: string[];
+  isActive?: boolean;
+}
+
+/** Listar todos los prompts */
+export async function listPrompts(): Promise<DocumentPrompt[]> {
+  const { data } = await proxyJson<any>(`/prompts`);
+  return data.prompts ?? [];
+}
+
+/** Obtener un prompt por tipo de documento */
+export async function getPrompt(documentType: string): Promise<DocumentPrompt> {
+  const { data } = await proxyJson<any>(`/prompts/${encodeURIComponent(documentType)}`);
+  return data.prompt;
+}
+
+/** Crear un nuevo prompt (admin only) */
+export async function createPrompt(body: PromptBody): Promise<DocumentPrompt> {
+  const { data } = await proxyJson<any>(`/prompts`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  return data.prompt;
+}
+
+/** Upsert (crear o reemplazar) un prompt por tipo (admin only) */
+export async function upsertPrompt(documentType: string, body: Omit<PromptBody, "documentType">): Promise<DocumentPrompt> {
+  const { data } = await proxyJson<any>(`/prompts/${encodeURIComponent(documentType)}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+  return data.prompt;
+}
+
+/** Actualización parcial de un prompt (admin only) */
+export async function patchPrompt(documentType: string, patch: PromptPatch): Promise<DocumentPrompt> {
+  const { data } = await proxyJson<any>(`/prompts/${encodeURIComponent(documentType)}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+  return data.prompt;
+}
+
+/** Eliminar un prompt (admin only) */
+export async function deletePrompt(documentType: string): Promise<void> {
+  await proxyJson<any>(`/prompts/${encodeURIComponent(documentType)}`, {
+    method: "DELETE",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Super-Admin API
+// ---------------------------------------------------------------------------
+
+export interface SuperAdminOverview {
+  totalTenants: number;
+  totalUsers: number;
+  totalDocuments: number;
+  docsThisMonth: number;
+  totalClients: number;
+  totalExpedientes: number;
+  totalAnalyses: number;
+  totalAiCostUsd: number;
+  planBreakdown: Array<{ plan: string; count: number }>;
+  recentTenants: Array<{
+    id: string;
+    name: string;
+    currentPlanCode: string;
+    createdAt: string;
+    _count: { users: number; documents: number };
+  }>;
+}
+
+export interface SuperAdminTenant {
+  id: string;
+  name: string;
+  cuit: string | null;
+  address: string | null;
+  phone: string | null;
+  website: string | null;
+  currentPlanCode: string;
+  createdAt: string;
+  updatedAt: string;
+  aiCostUsd: number;
+  _count: {
+    users: number;
+    documents: number;
+    clients: number;
+    expedientes: number;
+    contractAnalyses: number;
+  };
+}
+
+export interface SuperAdminTenantDetail extends SuperAdminTenant {
+  subscription: {
+    status: string;
+    startsAt: string | null;
+    renewsAt: string | null;
+    trialEndsAt: string | null;
+    maxUsers: number | null;
+    plan: { code: string; name: string; priceArs: number | null } | null;
+  } | null;
+  users: Array<{
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    name: string | null;
+    email: string;
+    role: string;
+    professionalRole: string | null;
+    especialidad: string | null;
+    createdAt: string;
+    emailVerified: string | null;
+  }>;
+  recentDocuments: Array<{
+    id: string;
+    type: string;
+    jurisdiccion: string;
+    estado: string;
+    costUsd: number | null;
+    createdAt: string;
+    client: { name: string } | null;
+    createdBy: { firstName: string | null; lastName: string | null; email: string } | null;
+  }>;
+  recentClients: Array<{
+    id: string;
+    name: string;
+    type: string;
+    documentNumber: string | null;
+    email: string | null;
+    createdAt: string;
+  }>;
+  analyses: Array<{
+    id: string;
+    originalName: string;
+    status: string;
+    fileSize: number;
+    createdAt: string;
+  }>;
+  aiUsage: {
+    total: { costUsd: number; promptTokens: number; completionTokens: number; calls: number };
+    byService: Array<{
+      service: string;
+      costUsd: number;
+      promptTokens: number;
+      completionTokens: number;
+      calls: number;
+    }>;
+  };
+  docsByType: Array<{ type: string; count: number }>;
+}
+
+export interface SuperAdminUser {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  name: string | null;
+  email: string;
+  role: string;
+  professionalRole: string | null;
+  especialidad: string | null;
+  createdAt: string;
+  emailVerified: string | null;
+  tenantId: string | null;
+  tenant: { name: string; currentPlanCode: string } | null;
+}
+
+export async function getSuperAdminOverview(): Promise<SuperAdminOverview> {
+  const { data } = await proxyJson<any>(`/superadmin/overview`);
+  return data.overview;
+}
+
+export async function getSuperAdminTenants(params?: {
+  page?: number;
+  pageSize?: number;
+  plan?: string;
+  search?: string;
+}): Promise<{ tenants: SuperAdminTenant[]; total: number; page: number; pageSize: number }> {
+  const qs = buildQuery(params ?? {});
+  const { data } = await proxyJson<any>(`/superadmin/tenants${qs}`);
+  return { tenants: data.tenants, total: data.total, page: data.page, pageSize: data.pageSize };
+}
+
+export async function getSuperAdminTenant(id: string): Promise<SuperAdminTenantDetail> {
+  const { data } = await proxyJson<any>(`/superadmin/tenants/${id}`);
+  return data.tenant;
+}
+
+export async function getSuperAdminUsers(params?: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+}): Promise<{ users: SuperAdminUser[]; total: number; page: number; pageSize: number }> {
+  const qs = buildQuery(params ?? {});
+  const { data } = await proxyJson<any>(`/superadmin/users${qs}`);
+  return { users: data.users, total: data.total, page: data.page, pageSize: data.pageSize };
+}

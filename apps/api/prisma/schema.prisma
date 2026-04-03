@@ -529,3 +529,19 @@ model VerificationToken {
 }
 
 
+
+// ─── Document Prompt Library ─────────────────────────────────────────────────
+
+model DocumentPrompt {
+  id               String   @id @default(uuid())
+  documentType     String   @unique  // "lease", "comodato", "poder_especial", etc.
+  label            String            // "Contrato de Locación"
+  systemMessage    String   @db.Text
+  baseInstructions Json              // string[]
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([documentType])
+  @@index([isActive])
+}

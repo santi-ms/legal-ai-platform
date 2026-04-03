@@ -17,6 +17,8 @@ import { registerCalendarRoutes } from "./routes.calendar.js";
 import { registerAnalysisRoutes } from "./routes.analysis.js";
 import { registerAssistantRoutes } from "./routes.assistant.js";
 import { registerSharingRoutes } from "./routes.sharing.js";
+import { registerPromptRoutes } from "./routes.prompts.js";
+import { registerSuperAdminRoutes } from "./routes.superadmin.js";
 import { initializeDocumentRegistry } from "./modules/documents/domain/document-registry.js";
 import { runDeadlineNotifier } from "./services/deadline-notifier.js";
 import { logger } from "./utils/logger.js";
@@ -102,6 +104,8 @@ async function buildServer() {
   await registerAnalysisRoutes(app);
   await registerAssistantRoutes(app);
   await registerSharingRoutes(app);
+  await registerPromptRoutes(app);
+  await registerSuperAdminRoutes(app);
 
   const { registerUserRoutes } = await import("./routes.user.js");
   await registerUserRoutes(app);
