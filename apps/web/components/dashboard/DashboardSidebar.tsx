@@ -108,11 +108,12 @@ export function DashboardSidebar({ isOpen = false, onClose }: DashboardSidebarPr
   const sidebarContent = (
     <aside
       className={cn(
-        "w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col h-screen",
-        // Desktop: siempre visible, sticky
-        "lg:sticky lg:top-0 lg:flex",
-        // Mobile: fixed drawer, controlado por isOpen
-        "fixed top-0 left-0 z-50 transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto",
+        // Base: ancho fijo, altura completa, columna flex
+        "w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col h-full shrink-0",
+        // Mobile: drawer fijo sobre el contenido
+        "fixed top-0 left-0 z-50 h-screen transition-transform duration-300",
+        // Desktop: parte del flujo normal (el parent ya tiene h-screen)
+        "lg:relative lg:translate-x-0 lg:z-auto",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}
     >

@@ -95,12 +95,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <DeadlineProvider>
-      <div className="flex min-h-screen bg-background-light dark:bg-background-dark font-display">
+      <div className="flex h-screen overflow-hidden bg-background-light dark:bg-background-dark font-display">
         <DashboardSidebar
           isOpen={isMobileMenuOpen}
           onClose={() => setIsMobileMenuOpen(false)}
         />
-        <main className="flex-1 flex flex-col min-w-0">
+        <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
           <DashboardHeader
           onMenuToggle={() => setIsMobileMenuOpen((v) => !v)}
           onSearchOpen={() => setShowSearch(true)}
