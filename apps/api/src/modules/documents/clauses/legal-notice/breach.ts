@@ -1,8 +1,7 @@
 /**
- * Legal Notice Clause: Breach
+ * Legal Notice Clause: Breach / Non-compliance
  *
- * Describes the specific failure or non-compliance.
- * States facts, not legal conclusions — conclusions belong in the demand clause.
+ * States the specific failure. No section header — flows as plain paragraph.
  */
 
 import type { ClauseDefinition } from "../../domain/generation-engine.js";
@@ -12,7 +11,5 @@ export const legalNoticeBreachClause: ClauseDefinition = {
   name: "Incumplimiento",
   category: "type_specific",
   required: true,
-  content: `III. INCUMPLIMIENTO
-
-{{BREACH}}`,
+  content: `{{BREACH}}`,
 };

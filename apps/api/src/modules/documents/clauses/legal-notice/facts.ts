@@ -1,8 +1,8 @@
 /**
  * Legal Notice Clause: Facts
  *
- * Chronological narrative of the relevant events.
- * Plain, direct language — no contract-style closing phrases.
+ * Brief factual statement of what happened and what is owed.
+ * No section header — flows as plain paragraph.
  */
 
 import type { ClauseDefinition } from "../../domain/generation-engine.js";
@@ -12,7 +12,5 @@ export const legalNoticeFactsClause: ClauseDefinition = {
   name: "Hechos",
   category: "type_specific",
   required: true,
-  content: `II. HECHOS
-
-{{FACTS}}`,
+  content: `{{FACTS}}`,
 };
