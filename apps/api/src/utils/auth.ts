@@ -34,9 +34,9 @@ export function getUserFromRequest(request: FastifyRequest): AuthUser | null {
     // NextAuth JWT tiene esta estructura en el token
     return {
       userId: decoded.id || decoded.sub,
-      tenantId: decoded.tenantId,
+      tenantId: decoded.tenantId ?? null,
       role: decoded.role || "user",
-      email: decoded.email,
+      email: decoded.email ?? "",
     };
   } catch (error) {
     // Token inválido o expirado

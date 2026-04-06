@@ -127,7 +127,6 @@ export async function generateDocumentWithNewArchitecture(
     const enhancedResult = await enhanceDraftWithAIWrapper(
       baseDraft,
       documentType,
-      tone,
       promptConfig,
       data,
       referenceText
@@ -182,16 +181,6 @@ async function generateFreeFormDocument(
   tone: string,
   referenceText?: string | null
 ): Promise<DocumentGenerationResult> {
-  const toneInstructions: Record<string, string> = {
-    formal_technical:
-      "Formal y técnico legal. Terminología jurídica precisa del derecho argentino. Cláusulas técnicas sin ambigüedad.",
-    commercial_clear:
-      "Comercial y claro. Lenguaje accesible para empresas y PyMEs sin sacrificar validez legal.",
-    balanced_professional:
-      "Equilibrado: profesional y riguroso, pero comprensible. Terminología jurídica correcta con definiciones cuando sea necesario.",
-  };
-  const toneInstruction = toneInstructions[tone] ?? toneInstructions.commercial_clear;
-
   const jurisdiccionTexto = formatJurisdictionText(String(data.jurisdiccion || ""));
   const context = buildGenericContextForAI(data, documentType);
 
@@ -214,7 +203,6 @@ Usás el estilo jurídico argentino clásico: texto corrido con conceptos en MAY
   const userPrompt = `Generá el siguiente documento legal completo y ejecutable:
 
 TIPO DE DOCUMENTO: ${documentType}
-TONO: ${toneInstruction}
 JURISDICCIÓN: ${jurisdiccionTexto}
 ${referenceSection}
 DATOS PROPORCIONADOS:
@@ -590,11 +578,9 @@ export function buildStructuredContextForAI(
 async function enhanceDraftWithAIWrapper(
   baseDraft: string,
   documentType: DocumentTypeId,
-  tone: string,
   promptConfig: {
     systemMessage: string;
     baseInstructions: string[];
-    toneInstructions: Record<string, string>;
   },
   data: StructuredDocumentData,
   referenceText?: string | null
@@ -604,10 +590,6 @@ async function enhanceDraftWithAIWrapper(
   if (process.env.SKIP_AI_ENHANCEMENT === "true") {
     return { text: baseDraft, tokens: { prompt: 0, completion: 0 } };
   }
-
-  const toneInstruction =
-    promptConfig.toneInstructions[tone] ||
-    promptConfig.toneInstructions.commercial_clear;
 
   const jurisdiccionTexto = formatJurisdictionText(String(data.jurisdiccion || ""));
   const structuredContext = buildStructuredContextForAI(data, documentType);
@@ -626,7 +608,6 @@ ${referenceText.substring(0, 3000)}
 
   const userPrompt = `Generá el documento legal final completo del siguiente tipo: ${documentType}
 
-TONO: ${toneInstruction}
 JURISDICCIÓN: ${jurisdiccionTexto}
 ${referenceSection}
 BORRADOR BASE (estructura y cláusulas ya ensambladas — usarlo como esqueleto):
@@ -757,7 +738,6 @@ async function getPromptConfigForType(
 ): Promise<{
   systemMessage: string;
   baseInstructions: string[];
-  toneInstructions: Record<string, string>;
 }> {
   // Try to load from DB first
   try {
@@ -765,19 +745,10 @@ async function getPromptConfigForType(
       where: { documentType: documentType as string },
     });
     if (dbPrompt && dbPrompt.isActive) {
-      const toneInstructions = {
-        formal_technical:
-          "Formal y técnico legal. Terminología jurídica precisa del derecho argentino. Cláusulas técnicas sin ambigüedad. Voz activa e imperativa.",
-        commercial_clear:
-          "Comercial y claro. Lenguaje accesible para empresas y PyMEs sin sacrificar validez legal. Evitar latinismos innecesarios.",
-        balanced_professional:
-          "Equilibrado: profesional y riguroso, pero comprensible. Terminología jurídica correcta con definiciones cuando sea necesario.",
-      };
       logger.info(`[generation-service] Using DB prompt for: ${documentType}`);
       return {
         systemMessage: dbPrompt.systemMessage,
         baseInstructions: dbPrompt.baseInstructions as string[],
-        toneInstructions,
       };
     }
   } catch (err) {
@@ -795,16 +766,7 @@ function getHardcodedPromptConfig(
 ): {
   systemMessage: string;
   baseInstructions: string[];
-  toneInstructions: Record<string, string>;
 } {
-  const toneInstructions = {
-    formal_technical:
-      "Formal y técnico legal. Terminología jurídica precisa del derecho argentino. Cláusulas técnicas sin ambigüedad. Voz activa e imperativa.",
-    commercial_clear:
-      "Comercial y claro. Lenguaje accesible para empresas y PyMEs sin sacrificar validez legal. Evitar latinismos innecesarios.",
-    balanced_professional:
-      "Equilibrado: profesional y riguroso, pero comprensible. Terminología jurídica correcta con definiciones cuando sea necesario.",
-  };
 
   // Instrucciones comunes a todos los tipos — enfocadas en calidad de redacción
   const commonInstructions = [
@@ -833,7 +795,6 @@ Nunca dejás cláusulas abiertas ni con datos faltantes.`,
         "En RESCISIÓN: indicar si hay penalidad por rescisión anticipada y su monto; siempre incluir preaviso mínimo",
         "FORO: 'Para todos los efectos legales emergentes del presente instrumento, las partes se someten a la jurisdicción de los Tribunales Ordinarios de [JURISDICCIÓN], renunciando expresamente a cualquier otro fuero o jurisdicción que pudiera corresponderles'",
       ],
-      toneInstructions,
     };
   }
 
@@ -850,7 +811,6 @@ Nunca dejás definiciones abiertas que puedan ser interpretadas en contra de la 
         "Exclusiones clásicas: información de dominio público, información conocida antes del acuerdo, información obtenida de terceros lícitamente",
         "Penalidad: 'El incumplimiento de las obligaciones de confidencialidad dará derecho a [REVELADOR] a reclamar los daños y perjuicios sufridos, sin perjuicio de las acciones penales que pudieran corresponder'",
       ],
-      toneInstructions,
     };
   }
 
@@ -873,7 +833,6 @@ Tu redacción es directa, cronológica y contundente. Cada carta documento que r
         "Cierre: 'Sin otro particular, saludo a Ud. atentamente.' + espacio para firma + nombre del remitente",
         "El documento es definitivo — absolutamente todos los campos completos con datos reales",
       ],
-      toneInstructions,
     };
   }
 
@@ -902,7 +861,6 @@ Nunca omitís datos provistos, nunca dejás campos vacíos, nunca contradecís e
         "Restitución: 'El LOCATARIO deberá restituir el inmueble en el mismo estado en que lo recibió, salvo el deterioro proveniente del uso normal y del tiempo transcurrido, con todos los servicios al día'",
         "Cierre: líneas de firma para LOCADOR y LOCATARIO; si hay FIADOR, agregar su línea de firma separada con aclaración 'Fiador — Firma y aclaración'",
       ],
-      toneInstructions,
     };
   }
 
@@ -923,7 +881,6 @@ plan de pago detallado con fechas exactas, y cláusula de aceleración cuando co
         "Aceleración: 'El incumplimiento de dos (2) cuotas consecutivas o alternadas hará exigible la totalidad del saldo adeudado en forma inmediata'",
         "Cerrar con FIRMA del deudor únicamente (es quien reconoce la deuda); el acreedor puede firmar como receptor",
       ],
-      toneInstructions,
     };
   }
 
@@ -943,7 +900,6 @@ Nunca dejás el alcance abierto ni usás términos ambiguos que puedan dar poder
         "Revocación: 'La presente autorización podrá ser revocada por el autorizante en cualquier momento mediante notificación fehaciente al autorizado'",
         "Cerrar solo con FIRMA del autorizante (quien otorga el poder)",
       ],
-      toneInstructions,
     };
   }
 
@@ -958,7 +914,6 @@ y la normativa argentina vigente. Tu redacción es precisa, sin ambigüedades y 
       "Numerar cláusulas en mayúsculas: PRIMERA, SEGUNDA, etc.",
       "Cerrar con sección de FIRMAS",
     ],
-    toneInstructions,
   };
 }
 

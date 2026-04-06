@@ -118,12 +118,14 @@ function classifyLine(
   }
 
   // City/date line at the beginning of the document (first ~5 non-empty lines)
+  // Must be checked BEFORE the generic title rule so "Buenos Aires, 5 de abril…"
+  // at position 0 is not mistakenly promoted to a bold h1 title.
   const nonEmptyBefore = allLines
     .slice(0, index)
     .filter((l) => l.trim().length > 0).length;
   if (
     nonEmptyBefore <= 4 &&
-    /^\w[\w\s]+,\s+\d{1,2}\s+de\s+\w+/i.test(trimmed)
+    /^\w[\w\s,]+,\s+\d{1,2}\s+de\s+\w+/i.test(trimmed)
   ) {
     return "location_date";
   }
@@ -236,7 +238,8 @@ function buildHtmlBody(rawText: string): string {
         break;
 
       case "separator":
-        html.push(`<hr class="para-separator">`);
+        // Treat separator lines (---) as blank space — legal docs don't use visible dividers
+        html.push('<div class="spacer"></div>');
         break;
 
       case "signature_line":
@@ -368,16 +371,9 @@ function buildFullHtml(title: string, bodyHtml: string): string {
       color: #000000;
     }
 
-    /* ── Spacer (blank lines) — minimized ───────────────── */
+    /* ── Spacer (blank lines and separators ---) ────────── */
     .spacer {
-      height: 2pt;
-    }
-
-    /* ── Paragraph separator (----) ─────────────────────── */
-    .para-separator {
-      border: none;
-      border-top: 0.5pt solid #000000;
-      margin: 5pt 0;
+      height: 6pt;
     }
 
     /* ── Signature block ────────────────────────────────── */

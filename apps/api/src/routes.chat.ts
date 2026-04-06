@@ -42,8 +42,7 @@ Para estos, recolectá la info genérica (ver sección TIPO LIBRE abajo).
    "corrientes_capital" → Corrientes (capital o provincia)
    "posadas_misiones"   → Misiones (provincia, Posadas, o cualquier ciudad misionera)
    Si el usuario no menciona jurisdicción, usá "caba" por defecto.
-7. Tono: usá "commercial_clear" por defecto.
-8. Moneda: usá "ARS" por defecto salvo que el usuario diga otra cosa.
+7. Moneda: usá "ARS" por defecto salvo que el usuario diga otra cosa.
 9. Respondé siempre en español rioplatense (argentino).
 
 ━━━ CAMPOS EXACTOS POR TIPO ━━━
@@ -180,7 +179,6 @@ Cuando tenés TODA la información necesaria para el tipo detectado:
   "extractedData": {
     "documentType": "legal_notice",
     "jurisdiction": "caba",
-    "tone": "commercial_clear",
     "remitente_nombre": "...",
     "remitente_doc": "-",
     ... resto de campos del tipo detectado con los nombres exactos de arriba

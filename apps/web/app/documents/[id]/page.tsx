@@ -743,68 +743,77 @@ export default function DocumentDetailPage() {
         )}
 
         {/* CARD DE METADATOS */}
-        <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
-          <div className="mb-5 flex items-center justify-between gap-4">
+        <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-slate-100 dark:border-slate-700/60">
             <div>
-              <h2 className="text-base font-semibold text-slate-900 dark:text-white">Resumen del documento</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Metadata operativa y contexto de esta versión.</p>
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Resumen del documento</h2>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Metadata operativa de esta versión</p>
             </div>
             <DocumentStatusBadge status={currentStatus} />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 text-sm">
-            <MetaField
-              label="Tipo de documento"
-              value={sanitizeInput(doc.type || "")}
-            />
-            <MetaField
-              label="Jurisdicción"
-              value={sanitizeInput(doc.jurisdiccion || "")}
-            />
-            <MetaField
-              label="Identificador"
-              value={doc.id}
-              mono
-              small
-            />
-            <MetaField
-              label="Estado"
-              value={
-                doc.estado === "needs_review" ? "Requiere revisión"
-                : doc.estado === "generated" || doc.estado === "generated_text" ? "Generado"
-                : sanitizeInput(doc.estado || "")
-              }
-              valueClassName={
-                doc.estado === "GENERATED" || doc.estado === "generated" || doc.estado === "generated_text"
-                  ? "text-emerald-700 dark:text-emerald-400"
-                  : doc.estado === "needs_review"
-                  ? "text-amber-600 dark:text-amber-400 font-semibold"
-                  : doc.estado === "DRAFT"
-                  ? "text-amber-700"
-                  : "text-gray-700"
-              }
-            />
-            <MetaField
-              label="Tono"
-              value={sanitizeInput(doc.tono || "—")}
-            />
-            <MetaField
-              label="Costo estimado (USD)"
-              value={
-                doc.costUsd !== null ? `$${doc.costUsd}` : "—"
-              }
-            />
-            <MetaField
-              label="Versión visible"
-              value={last ? `#${last.id.slice(0, 8)}` : "—"}
-            />
-            {last?.pdfUrl && (
-              <MetaField
-                label="PDF"
-                value="Disponible para descarga"
-              />
-            )}
+          {/* Grid */}
+          <div className="grid grid-cols-2 xl:grid-cols-3 divide-x divide-y divide-slate-100 dark:divide-slate-700/60">
+            {[
+              {
+                label: "Tipo de documento",
+                value: sanitizeInput(doc.type || ""),
+              },
+              {
+                label: "Jurisdicción",
+                value: sanitizeInput(doc.jurisdiccion || ""),
+              },
+              {
+                label: "Estado",
+                value:
+                  doc.estado === "needs_review" ? "Requiere revisión"
+                  : doc.estado === "generated" || doc.estado === "generated_text" ? "Generado"
+                  : sanitizeInput(doc.estado || ""),
+                valueClassName:
+                  doc.estado === "generated" || doc.estado === "generated_text" || doc.estado === "GENERATED"
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : doc.estado === "needs_review"
+                    ? "text-amber-600 dark:text-amber-400"
+                    : undefined,
+              },
+              {
+                label: "Costo estimado (USD)",
+                value: doc.costUsd !== null ? `$${doc.costUsd}` : "—",
+              },
+              {
+                label: "Versión visible",
+                value: last ? `#${last.id.slice(0, 8)}` : "—",
+                mono: true,
+                small: true,
+              },
+              {
+                label: "Identificador",
+                value: doc.id,
+                mono: true,
+                small: true,
+              },
+            ].map((f) => (
+              <div key={f.label} className="px-5 py-4">
+                <MetaField
+                  label={f.label}
+                  value={f.value}
+                  valueClassName={f.valueClassName}
+                  mono={f.mono}
+                  small={f.small}
+                />
+              </div>
+            ))}
           </div>
+
+          {/* PDF row — solo si hay PDF */}
+          {last?.pdfUrl && (
+            <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center gap-2">
+              <span className="text-[10px] uppercase font-semibold tracking-widest text-slate-400 dark:text-slate-500 shrink-0">PDF</span>
+              <span className="h-3 w-px bg-slate-200 dark:bg-slate-700" />
+              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Disponible para descarga</span>
+            </div>
+          )}
         </section>
 
         {/* CLIENTE ASOCIADO */}
@@ -908,15 +917,15 @@ function MetaField({
   small?: boolean;
 }) {
   return (
-    <div className="flex flex-col">
-      <span className="text-[11px] uppercase font-medium text-gray-500 tracking-wide">
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[10px] uppercase font-semibold tracking-widest text-slate-400 dark:text-slate-500">
         {label}
       </span>
       <span
         className={[
-          "font-medium text-gray-900",
-          mono ? "font-mono break-words" : "",
-          small ? "text-[11px] leading-normal text-gray-500" : "text-sm",
+          "font-medium text-slate-800 dark:text-slate-100",
+          mono ? "font-mono break-all" : "",
+          small ? "text-[11px] leading-normal text-slate-500 dark:text-slate-400" : "text-sm",
           valueClassName || "",
         ]
           .filter(Boolean)

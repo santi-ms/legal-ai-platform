@@ -36,6 +36,7 @@ const UpdateSettingsSchema = z.object({
 const CompleteOnboardingSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
   company: z.string().min(2, "La empresa o estudio debe tener al menos 2 caracteres"),
+  professionalRole: z.string().optional(),
 });
 
 type UpdateSettingsBody = z.infer<typeof UpdateSettingsSchema>;
@@ -497,6 +498,7 @@ export async function registerUserRoutes(app: FastifyInstance) {
               firstName: parsedName.firstName || null,
               lastName: parsedName.lastName || null,
               company: bodyParsed.data.company.trim(),
+              professionalRole: bodyParsed.data.professionalRole?.trim() || null,
               tenantId: tenant.id,
             },
             select: {

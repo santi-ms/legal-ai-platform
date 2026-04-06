@@ -13,8 +13,52 @@
 
 import { FastifyInstance } from "fastify";
 import { MercadoPagoConfig, PreApproval, Payment } from "mercadopago";
+import { createHmac } from "node:crypto";
 import { getUserFromRequest } from "./utils/auth.js";
 import { prisma } from "./db.js";
+
+// ─── Webhook signature verification ──────────────────────────────────────────
+// MP firma los webhooks con HMAC-SHA256 usando el secret del panel de MP.
+// Header x-signature = "ts=<timestamp>,v1=<hmac>"
+// El mensaje firmado es: "id:<dataId>;request-id:<x-request-id>;ts:<timestamp>"
+//
+// Para activar: agregar MP_WEBHOOK_SECRET en Railway con el valor del
+// "Clave secreta" de la sección Webhooks del panel de Mercado Pago.
+// Sin la variable, la verificación se omite (con warning en logs).
+function verifyMPWebhookSignature(
+  request: any,
+  dataId: string,
+): boolean {
+  const secret = process.env.MP_WEBHOOK_SECRET;
+  if (!secret) {
+    console.warn("[webhook/mp] MP_WEBHOOK_SECRET no configurado — omitiendo verificación de firma");
+    return true; // dejar pasar hasta que se configure el secret
+  }
+
+  const xSignature  = request.headers["x-signature"] as string | undefined;
+  const xRequestId  = request.headers["x-request-id"] as string | undefined;
+
+  if (!xSignature || !xRequestId) {
+    console.warn("[webhook/mp] Webhook sin x-signature o x-request-id — rechazado");
+    return false;
+  }
+
+  // Extraer ts y v1 del header "ts=<ts>,v1=<hash>"
+  const parts: Record<string, string> = {};
+  for (const part of xSignature.split(",")) {
+    const [k, v] = part.split("=");
+    if (k && v) parts[k.trim()] = v.trim();
+  }
+
+  const ts = parts["ts"];
+  const v1 = parts["v1"];
+  if (!ts || !v1) return false;
+
+  const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+  const expected = createHmac("sha256", secret).update(manifest).digest("hex");
+
+  return expected === v1;
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -327,6 +371,12 @@ export async function registerBillingRoutes(app: FastifyInstance) {
     const dataId = body?.data?.id;
 
     if (!dataId) return;
+
+    // Verificar firma HMAC-SHA256 de Mercado Pago
+    if (!verifyMPWebhookSignature(request, String(dataId))) {
+      console.warn(`[webhook/mp] Firma inválida — evento descartado (tipo=${type} id=${dataId})`);
+      return;
+    }
 
     console.log(`[webhook/mp] tipo=${type} id=${dataId}`);
 

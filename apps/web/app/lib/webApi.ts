@@ -455,6 +455,7 @@ export interface UpdateProfileData {
 export interface OnboardingPayload {
   name: string;
   company: string;
+  professionalRole?: string;
 }
 
 export interface OnboardingResult {

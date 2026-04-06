@@ -3,12 +3,21 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Loader2, Building2, User } from "lucide-react";
+import { Loader2, Building2, User, Briefcase } from "lucide-react";
 import { completeOnboarding } from "@/app/lib/webApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
+
+const ROLE_OPTIONS = [
+  { value: "", label: "Seleccioná tu rol (opcional)" },
+  { value: "socio_director", label: "Socio / Director" },
+  { value: "abogado_asociado", label: "Abogado/a Asociado/a" },
+  { value: "pasante_paralegal", label: "Pasante / Paralegal" },
+  { value: "abogado_inhouse", label: "Abogado/a In-House" },
+  { value: "otro", label: "Otro" },
+];
 
 type OnboardingFormProps = {
   initialName: string;
@@ -22,6 +31,7 @@ export function OnboardingForm({ initialName, initialEmail }: OnboardingFormProp
   const [isPending, startTransition] = useTransition();
   const [name, setName] = useState(initialName);
   const [company, setCompany] = useState("");
+  const [professionalRole, setProfessionalRole] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -42,6 +52,7 @@ export function OnboardingForm({ initialName, initialEmail }: OnboardingFormProp
       await completeOnboarding({
         name: name.trim(),
         company: company.trim(),
+        professionalRole: professionalRole || undefined,
       });
 
       await update({ reason: "onboarding-complete" });
@@ -97,6 +108,28 @@ export function OnboardingForm({ initialName, initialEmail }: OnboardingFormProp
               placeholder="Ej. Estudio Pérez & Asociados"
               disabled={isPending}
             />
+          </div>
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="professionalRole" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+            Cargo / Rol <span className="text-slate-400 font-normal">(opcional)</span>
+          </Label>
+          <div className="relative">
+            <Briefcase className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+            <select
+              id="professionalRole"
+              value={professionalRole}
+              onChange={(event) => setProfessionalRole(event.target.value)}
+              disabled={isPending}
+              className="w-full pl-10 pr-4 py-2 rounded-md border border-input bg-background text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:opacity-50"
+            >
+              {ROLE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>

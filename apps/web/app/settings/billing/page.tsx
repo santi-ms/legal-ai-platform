@@ -308,20 +308,71 @@ function BillingPageContent() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
+    const planParam   = searchParams.get("plan");
+    const statusParam = searchParams.get("status");
+
     Promise.allSettled([
       getBillingSubscription(),
       getBillingPlans(),
       getInvoices(),
     ]).then(([billingResult, plansResult, invoicesResult]) => {
-      if (billingResult.status === "fulfilled") setBilling(billingResult.value);
-      else console.error("[billing] getBillingSubscription failed:", billingResult.reason);
+      let billingData: BillingData | null = null;
+
+      if (billingResult.status === "fulfilled") {
+        billingData = billingResult.value;
+        setBilling(billingData);
+      } else {
+        console.error("[billing] getBillingSubscription failed:", billingResult.reason);
+      }
 
       if (plansResult.status === "fulfilled") setPlans(plansResult.value);
       else console.error("[billing] getBillingPlans failed:", plansResult.reason);
 
       if (invoicesResult.status === "fulfilled") setInvoices(invoicesResult.value);
       else console.error("[billing] getInvoices failed:", invoicesResult.reason);
+
+      // Retorno desde MP vía back_url (?plan= sin ?status=)
+      // Muestra mensaje según el estado REAL de la suscripción en la BD
+      if (planParam && !statusParam && billingData) {
+        const subStatus = billingData.subscription?.status;
+        if (subStatus === "trialing" || subStatus === "active") {
+          setStatusMsg({
+            type: "success",
+            text: subStatus === "trialing"
+              ? `¡Tu período de prueba del plan ${billingData.plan?.name ?? planParam} comenzó! Se te cobrará automáticamente al vencimiento.`
+              : `¡Suscripción activada! Ya sos parte del plan ${billingData.plan?.name ?? planParam}.`,
+          });
+        } else {
+          // pending_payment, canceled o sin suscripción → no se completó el pago
+          setStatusMsg({
+            type: "error",
+            text: "El proceso no se completó o fue cancelado. Tu plan no fue modificado. Podés intentarlo cuando quieras.",
+          });
+        }
+        // Limpiar ?plan= de la URL para que no se vuelva a mostrar al refrescar
+        router.replace("/settings/billing", { scroll: false } as any);
+      }
     }).finally(() => setLoading(false));
+  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Restauración desde bfcache (botón "atrás" del browser)
+  // Cuando el usuario vuelve desde MP sin completar el pago, el browser puede restaurar
+  // la página con checkoutLoading=true (estado previo a la redirección). Esto lo resuelve.
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return; // Solo aplica a restauración desde bfcache
+      setCheckoutLoading(false);
+      if (!isAuthenticated) return;
+      // Refetch para mostrar el estado real (no el estado cacheado pre-redirección)
+      Promise.allSettled([getBillingSubscription(), getBillingPlans(), getInvoices()])
+        .then(([br, pr, ir]) => {
+          if (br.status === "fulfilled") setBilling(br.value);
+          if (pr.status === "fulfilled") setPlans(pr.value);
+          if (ir.status === "fulfilled") setInvoices(ir.value);
+        });
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
   }, [isAuthenticated]);
 
   const handleCheckout = async (planCode: string) => {

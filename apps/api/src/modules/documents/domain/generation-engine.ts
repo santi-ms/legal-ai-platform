@@ -830,11 +830,9 @@ export function generateDocument(
 export async function enhanceDraftWithAI(
   baseDraft: string,
   documentType: DocumentTypeId,
-  tone: string,
   promptConfig: {
     systemMessage: string;
     baseInstructions: string[];
-    toneInstructions: Record<string, string>;
   }
 ): Promise<string> {
   // TODO: Implement AI enhancement

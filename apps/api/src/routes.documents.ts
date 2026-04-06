@@ -1,16 +1,11 @@
 import { FastifyInstance } from "fastify";
 import { GenerateDocumentSchema } from "./types.js";
-import OpenAI from "openai";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { getUserFromRequest, requireAuth } from "./utils/auth.js";
 import bcrypt from "bcryptjs";
 import { sanitizeObject } from "./utils/sanitize.js";
 import { prisma } from "./db.js";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 // Tipo para documentos con versión incluida (usado en GET /documents)
 interface DocumentWithVersion {
