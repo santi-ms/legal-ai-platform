@@ -54,6 +54,8 @@ type LineType =
 function classifyLine(line: string, index: number, allLines: string[]): LineType {
   const trimmed = line.trim();
   if (trimmed.length === 0) return "empty";
+  // Separator lines (---) → treat as empty space, never print as text
+  if (/^[-─—]{3,}$/.test(trimmed)) return "empty";
   if (/^_{4,}/.test(trimmed)) return "signature_line";
 
   const prevNonEmpty = allLines.slice(0, index).reverse().find(l => l.trim().length > 0);

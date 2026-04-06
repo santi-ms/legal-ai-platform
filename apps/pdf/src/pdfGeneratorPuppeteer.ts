@@ -57,6 +57,9 @@ function stripMarkdown(text: string): string {
     .replace(/\*(.*?)\*/gs, "$1")
     .replace(/_(.*?)_/gs, "$1")
     .replace(/^#{1,6}\s+/gm, "")
+    // Normalize separator lines: ensure --- lines have blank lines around them
+    // so classifyLine sees them as isolated separator tokens
+    .replace(/\n([-─—]{3,})\n/g, "\n\n$1\n\n")
     .trim();
 }
 
@@ -98,8 +101,8 @@ function classifyLine(
 
   if (trimmed.length === 0) return "empty";
 
-  // Separator line: 4+ dashes (e.g. "----------" or "----...----")
-  if (/^[-─—]{4,}$/.test(trimmed)) return "separator";
+  // Separator line: 3+ dashes/em-dashes (e.g. "---", "----------")
+  if (/^[-─—]{3,}$/.test(trimmed)) return "separator";
 
   // Signature underscores
   if (/^_{4,}/.test(trimmed)) return "signature_line";
