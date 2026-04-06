@@ -592,13 +592,19 @@ export function buildStructuredContextForAI(
  * - additionalClauses when present
  * - Explicit output instructions
  */
+type PromptUserContext = {
+  baseDraft: string;
+  jurisdiccionTexto: string;
+  structuredContext: string;
+  hasAdditionalClauses: boolean;
+  referenceSection: string;
+  data: StructuredDocumentData;
+};
+
 async function enhanceDraftWithAIWrapper(
   baseDraft: string,
   documentType: DocumentTypeId,
-  promptConfig: {
-    systemMessage: string;
-    baseInstructions: string[];
-  },
+  promptConfig: PromptConfig,
   data: StructuredDocumentData,
   referenceText?: string | null
 ): Promise<{ text: string; tokens: { prompt: number; completion: number } }> {
@@ -623,7 +629,20 @@ ${referenceText.substring(0, 3000)}
 `
     : "";
 
-  const userPrompt = `Generá el documento legal final completo del siguiente tipo: ${documentType}
+  // Si el tipo de documento tiene un userPrompt personalizado, usarlo.
+  // Si no, usar el prompt genérico estándar.
+  const promptCtx: PromptUserContext = {
+    baseDraft,
+    jurisdiccionTexto,
+    structuredContext,
+    hasAdditionalClauses: !!hasAdditionalClauses,
+    referenceSection,
+    data,
+  };
+
+  const userPrompt = promptConfig.buildCustomUserPrompt
+    ? promptConfig.buildCustomUserPrompt(promptCtx)
+    : `Generá el documento legal final completo del siguiente tipo: ${documentType}
 
 JURISDICCIÓN: ${jurisdiccionTexto}
 ${referenceSection}
@@ -749,13 +768,16 @@ function sanitizeAiOutput(text: string, fallback: string): string {
  * Returns the prompt configuration for a given document type.
  * Queries the DocumentPrompt table first; falls back to hardcoded config if not found.
  */
+type PromptConfig = {
+  systemMessage: string;
+  baseInstructions: string[];
+  buildCustomUserPrompt?: (ctx: PromptUserContext) => string;
+};
+
 async function getPromptConfigForType(
   documentType: DocumentTypeId,
   _tone: string
-): Promise<{
-  systemMessage: string;
-  baseInstructions: string[];
-}> {
+): Promise<PromptConfig> {
   // Try to load from DB first
   try {
     const dbPrompt = await prisma.documentPrompt.findUnique({
@@ -780,10 +802,7 @@ async function getPromptConfigForType(
  */
 function getHardcodedPromptConfig(
   documentType: DocumentTypeId
-): {
-  systemMessage: string;
-  baseInstructions: string[];
-} {
+): PromptConfig {
 
   // Instrucciones comunes a todos los tipos — enfocadas en calidad de redacción
   const commonInstructions = [
@@ -862,32 +881,100 @@ Priorizás concisión, claridad y aptitud postal sobre el lucimiento jurídico.`
 
   if (documentType === "lease") {
     return {
-      systemMessage: `Sos un abogado argentino que redacta contratos de locación claros, equilibrados y fieles al acuerdo de las partes. \
-Tu regla fundamental es FIDELIDAD ABSOLUTA AL INPUT: usás exactamente los datos, condiciones y restricciones que el usuario proveyó, \
-sin cambiarlos, sin endurecerlos, sin agregar cláusulas no pedidas. \
-Conocés el CCCN y el DNU 70/2023 para uso habitacional (plazo mínimo 2 años, resolución ante 1 mes de impago). \
-El contrato debe ser completo, ejecutable y legible — no extenso ni litigioso. \
-GÉNERO: si el locador es mujer, usar LOCADORA; si el locatario es mujer, usar LOCATARIA; adaptar artículos y pronombres en consecuencia.`,
+      systemMessage: `Sos un abogado argentino especializado en redacción contractual. Redactás contratos de locación claros, consistentes, equilibrados y fieles al acuerdo de las partes.
+
+REGLA SUPREMA: FIDELIDAD ABSOLUTA AL INPUT.
+Debés usar exactamente los datos, condiciones, montos, índices, plazos, domicilios, restricciones y asignaciones de gastos provistas por el usuario, sin modificarlas, sin endurecerlas, sin suavizarlas, sin reemplazarlas por otras, y sin agregar penalidades, sanciones o cláusulas no pedidas.
+
+JERARQUÍA OBLIGATORIA DE FUENTES:
+1. DATOS ESTRUCTURADOS DEL FORMULARIO = fuente suprema e inderogable.
+2. CAMPOS FIJOS = deben reproducirse literalmente.
+3. BORRADOR BASE = usar solo como estructura y redacción auxiliar.
+4. DERECHO ARGENTINO SUPLETORIO VIGENTE = usar solo para completar lo estrictamente indispensable cuando no exista regulación expresa en 1, 2 o 3.
+
+REGLAS DURAS:
+- No inventes información faltante.
+- No cambies números, nombres, domicilios, fechas, CBU/Alias, índices, periodicidades, montos, porcentajes ni plazos.
+- No agregues intereses punitorios, multas diarias, cláusulas penales, sanciones por mora, penalidades por no restitución, renuncias especiales, facultades resolutorias agravadas ni obligaciones accesorias, salvo que estén expresamente previstas en los datos estructurados o en el borrador base.
+- No reemplaces el mecanismo de actualización del canon si ya fue indicado.
+- No redistribuyas gastos, impuestos, tasas, expensas o servicios.
+- No cites artículos, leyes o decretos salvo que sea necesario para redactar correctamente una cláusula ya pedida.
+- No incorpores explicaciones, comentarios, advertencias, notas al pie ni meta-texto.
+- No hagas un texto más "duro", más "protector", más "litigioso" o más "completo" que lo pedido.
+- Si el borrador base contradice un dato estructurado o un campo fijo, prevalece siempre el dato estructurado o campo fijo.
+- Si falta un dato esencial que no puede ser suplido sin inventar, conservá el placeholder correspondiente si existe; no lo reemplaces por información imaginada.
+
+ALCANCE:
+- Redactá únicamente el documento final.
+- Debe leerse como un contrato real, limpio y bien numerado.
+- Mantené numeración correlativa de cláusulas.
+- Mantené consistencia terminológica en todo el documento.
+- Si el locador es mujer, usar LOCADORA. Si el locatario es mujer, usar LOCATARIA.
+- Adaptar artículos, sustantivos y pronombres en consecuencia.`,
+
       baseInstructions: [
         ...commonInstructions,
-        "REGLA PRINCIPAL: respetar fielmente cada dato y condición que el usuario proveyó. NUNCA modificar: índice de actualización, período de ajuste, CBU, monto del canon, plazo, restricciones sobre mascotas u otras condiciones específicas.",
-        "CLÁUSULAS OBLIGATORIAS (en texto corrido, sin numeración visible salvo nombre de cláusula en mayúsculas):",
-        "  OBJETO: dirección exacta del inmueble, superficie aproximada si se indicó, descripción de ambientes, destino de uso.",
-        "  PLAZO: fecha de inicio y vencimiento tal como fueron provistos. Mínimo 2 años para uso habitacional (DNU 70/2023).",
-        "  CANON: monto en números y letras, día de pago, forma de pago. Si se proveyó CBU, incluirlo exactamente.",
-        "  ACTUALIZACIÓN: usar exactamente el índice y período que indicó el usuario (ej: IPC INDEC trimestral, ICL semestral, etc.). NO sustituir por otro índice ni cambiar la periodicidad.",
-        "  MORA: la mora opera automáticamente al vencimiento. Para el interés: si el usuario especificó tasa, usarla; si no, usar 'intereses a tasa activa del Banco Nación Argentina' — NO inventar porcentajes diarios.",
-        "  DEPÓSITO: monto exacto provisto, devolución dentro de los 30 días hábiles de restituido el inmueble en las condiciones pactadas.",
-        "  OBLIGACIONES DEL LOCATARIO: mantenimiento ordinario, destino exclusivo al uso pactado, no subalquilar. Agregar solo las restricciones específicas que el usuario indicó (mascotas, modificaciones, etc.) tal como las indicó — sin endurecerlas.",
-        "  RESCISIÓN ANTICIPADA: conforme art. 1221 CCCN. No inventar penalidades no pedidas.",
-        "  RESTITUCIÓN: el locatario devuelve el inmueble en el estado en que lo recibió, salvo deterioro por uso normal, con servicios al día.",
-        "  FIADOR (solo si se proveyeron datos): fiador solidario, liso, llano y principal pagador, con renuncia a excusión y división, con todos sus datos y línea de firma.",
-        "  JURISDICCIÓN: tribunales del lugar indicado por el usuario.",
-        "Canon: expresar en números Y en letras: '$420.000 (pesos cuatrocientos veinte mil)'",
-        "Inventario: si el usuario proveyó items de inventario, incluirlos en la cláusula de estado del inmueble o en anexo.",
-        "Extensión: el contrato debe ser conciso. No agregar cláusulas sobre lavarropas, aires de pared, inspecciones ni otras restricciones que el usuario NO mencionó.",
-        "Cierre: líneas de firma para LOCADOR y LOCATARIO. Si hay FIADOR, agregar línea de firma separada con la aclaración 'FIADOR — Firma y aclaración'.",
       ],
+
+      buildCustomUserPrompt: ({
+        baseDraft,
+        jurisdiccionTexto,
+        structuredContext,
+        hasAdditionalClauses,
+        referenceSection,
+        data,
+      }: PromptUserContext): string => {
+        const tipoLocacion = String(data.destino_uso || "").trim() || "locación";
+        const additionalClausesNote = hasAdditionalClauses
+          ? "\n- El borrador incluye una sección CLÁUSULAS ADICIONALES solicitada por el usuario — es OBLIGATORIA, incorporarla y numerarla correctamente como cláusula dentro del documento."
+          : "";
+        const referenceNote = referenceSection
+          ? "\n- Seguí el formato, estructura y estilo de redacción del documento de referencia, adaptándolo a los datos del formulario."
+          : "";
+
+        return `Generá el contrato de locación final y completo.
+
+TIPO DE LOCACIÓN: ${tipoLocacion}
+
+JURISDICCIÓN: ${jurisdiccionTexto}
+${referenceSection}
+BORRADOR BASE (usar solo como estructura principal y apoyo de redacción; NO alterar su lógica económica o jurídica salvo para ajustarlo a los datos estructurados):
+---
+${baseDraft}
+---
+
+DATOS ESTRUCTURADOS DEL FORMULARIO (FUENTE SUPREMA DE VERDAD):
+---
+${structuredContext}
+---
+
+INSTRUCCIONES DE REDACCIÓN:
+- Respetá literalmente todos los campos fijos y datos estructurados.
+- Usá el borrador base únicamente como esqueleto de redacción y orden de cláusulas.
+- No agregues cláusulas que no surjan del borrador base o de los datos estructurados.
+- No inventes sanciones ni penalidades.
+- Si no se especificó tasa de mora, usar remisión neutral a la tasa activa cartera general del Banco de la Nación Argentina, sin agregar porcentajes diarios.
+- Si no se especificó cláusula penal por no restitución, no crear una.
+- La cláusula de rescisión anticipada debe respetar exactamente lo pactado en los datos estructurados; no agregar excepciones, beneficios, castigos o fórmulas no pedidas.
+- El canon debe expresarse en números y letras.
+- Las cargas económicas deben asignarse exactamente como fueron indicadas.
+- Mantener numeración correlativa, lenguaje claro y formato de contrato listo para firma.
+- Incluir al final líneas de firma para LOCADOR y LOCATARIO.
+- Incluir firma del FIADOR solo si fue informado.${additionalClausesNote}${referenceNote}
+- NO dejés placeholders como [indicar], [COMPLETAR], [___], {{VARIABLE}} — si falta un dato usá lo que ya está en el borrador.
+- Respondé únicamente con el texto final del contrato, sin explicaciones ni encabezados meta.
+
+CONTROL DE CONSISTENCIA OBLIGATORIO ANTES DE RESPONDER:
+Verificá internamente, antes de emitir el texto final, que:
+1. el canon del contrato coincida exactamente con el canon informado;
+2. el índice y periodicidad de actualización coincidan exactamente con los informados;
+3. no aparezca ninguna multa, interés diario, porcentaje o penalidad no informada;
+4. las fechas de inicio, vencimiento y duración sean consistentes entre sí;
+5. la asignación de servicios, tasas, impuestos y expensas coincida exactamente con los datos;
+6. la numeración de cláusulas sea correlativa;
+7. no exista ninguna contradicción entre borrador base y datos estructurados.
+Si detectás contradicción, prevalecen siempre los datos estructurados y los campos fijos.`;
+      },
     };
   }
 
