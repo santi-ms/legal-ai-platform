@@ -52,13 +52,19 @@ function stripMarkdown(text: string): string {
   return text
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
+    // Strip any HTML tags the AI might emit (e.g. <div align="center">...</div>)
+    // keeping only the inner text
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
     .replace(/\*\*(.*?)\*\*/gs, "$1")
     .replace(/__(.*?)__/gs, "$1")
     .replace(/\*(.*?)\*/gs, "$1")
     .replace(/_(.*?)_/gs, "$1")
     .replace(/^#{1,6}\s+/gm, "")
     // Normalize separator lines: ensure --- lines have blank lines around them
-    // so classifyLine sees them as isolated separator tokens
     .replace(/\n([-─—]{3,})\n/g, "\n\n$1\n\n")
     .trim();
 }
@@ -104,8 +110,8 @@ function classifyLine(
   // Separator line: 3+ dashes/em-dashes (e.g. "---", "----------")
   if (/^[-─—]{3,}$/.test(trimmed)) return "separator";
 
-  // Signature underscores
-  if (/^_{4,}/.test(trimmed)) return "signature_line";
+  // Signature underscores (1+ underscores, or lone dash used as placeholder line)
+  if (/^_+$/.test(trimmed) || /^_{4,}/.test(trimmed)) return "signature_line";
 
   // Signature labels (short lines near signature lines)
   const prevNonEmpty = allLines

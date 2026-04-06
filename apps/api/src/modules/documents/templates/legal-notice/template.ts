@@ -32,7 +32,9 @@ CARTA DOCUMENTO
 
 {{CLAUSE_WARNING}}
 
-___________________________
+Sin otro particular, saludo a Ud. atentamente.
+
+_______________________________
 {{REMITENTE_NOMBRE}}
 Firma y aclaración
 `,
