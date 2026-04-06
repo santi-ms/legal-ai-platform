@@ -849,7 +849,8 @@ Priorizás concisión, claridad y aptitud postal sobre el lucimiento jurídico.`
 Tu regla fundamental es FIDELIDAD ABSOLUTA AL INPUT: usás exactamente los datos, condiciones y restricciones que el usuario proveyó, \
 sin cambiarlos, sin endurecerlos, sin agregar cláusulas no pedidas. \
 Conocés el CCCN y el DNU 70/2023 para uso habitacional (plazo mínimo 2 años, resolución ante 1 mes de impago). \
-El contrato debe ser completo, ejecutable y legible — no extenso ni litigioso.`,
+El contrato debe ser completo, ejecutable y legible — no extenso ni litigioso. \
+GÉNERO: si el locador es mujer, usar LOCADORA; si el locatario es mujer, usar LOCATARIA; adaptar artículos y pronombres en consecuencia.`,
       baseInstructions: [
         ...commonInstructions,
         "REGLA PRINCIPAL: respetar fielmente cada dato y condición que el usuario proveyó. NUNCA modificar: índice de actualización, período de ajuste, CBU, monto del canon, plazo, restricciones sobre mascotas u otras condiciones específicas.",
