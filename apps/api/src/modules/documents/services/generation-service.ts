@@ -479,29 +479,46 @@ export function buildStructuredContextForAI(
     add("Apercibimiento", data.apercibimiento);
 
   } else if (documentType === "lease") {
+    section("⚠️ CAMPOS FIJOS — USAR EXACTAMENTE COMO SE INDICA, SIN MODIFICAR");
+    if (data.cbu_locador) add("CBU/Alias del locador (USAR ESTE EXACTO)", data.cbu_locador);
+    if (data.ajuste_precio && data.ajuste_precio !== "ninguno") {
+      const indexMap: Record<string,string> = { icl:"ICL (BCRA)", ipc:"IPC (INDEC)", ipcba:"IPC-BA (DGEyC)", ripte:"RIPTE", acuerdo:"Por acuerdo entre partes" };
+      const indexLabel = indexMap[String(data.ajuste_precio)] || String(data.ajuste_precio);
+      const periodoMap: Record<string,string> = { trimestral:"trimestral", cuatrimestral:"cuatrimestral", semestral:"semestral", anual:"anual" };
+      const periodoLabel = data.ajuste_periodo ? (periodoMap[String(data.ajuste_periodo)] || String(data.ajuste_periodo)) : "semestral";
+      add("Índice de actualización del canon (USAR ESTE EXACTO)", `${indexLabel} con periodicidad ${periodoLabel}`);
+    }
+    if (data.restricciones_uso) add("Restricciones de uso pactadas (INCLUIR TAL COMO SE INDICA)", data.restricciones_uso);
+
     section("Objeto de la locación");
     add("Descripción del bien", data.descripcion_inmueble);
     add("Dirección del bien", data.domicilio_inmueble);
     add("Destino de uso", data.destino_uso);
+    add("Estado del inmueble", data.estado_inmueble);
+    add("Inventario incluido", data.inventario);
 
     section("Condiciones económicas");
     if (data.monto_alquiler && data.moneda) add("Canon mensual", `${data.moneda} ${data.monto_alquiler}`);
     add("Forma de pago", data.forma_pago);
     add("Día de pago del mes", data.dia_pago);
-    add("Ajuste del canon", data.ajuste_precio);
+    if (!data.ajuste_precio || data.ajuste_precio === "ninguno") {
+      add("Ajuste del canon", "Sin ajuste");
+    }
 
     section("Plazo");
     add("Fecha de inicio", data.fecha_inicio);
+    add("Fecha de vencimiento", data.fecha_fin);
     add("Duración (meses)", data.duracion_meses);
     addBool("Renovación automática", data.renovacion_automatica);
 
     section("Condiciones adicionales");
-    add("Meses de depósito de garantía", data.deposito_meses ?? 1);
+    if (data.deposito_meses) add("Meses de depósito de garantía", data.deposito_meses);
     add("Servicios a cargo del locatario", data.servicios_cargo_locatario);
+    add("Impuestos/tasas a cargo del locador", data.impuestos_cargo_locador);
     add("Preaviso para rescisión (días)", data.preaviso_rescision);
     add("Usuarios adicionales del inmueble", data.usuarios_inmueble);
 
-    if (data.fiador_nombre) {
+    if (data.fiador_nombre || data.tiene_fiador) {
       section("Fiador / Garante");
       add("Nombre del fiador", data.fiador_nombre);
       add("DNI/CUIT del fiador", data.fiador_doc);
