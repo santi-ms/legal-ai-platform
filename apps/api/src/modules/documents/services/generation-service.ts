@@ -904,11 +904,11 @@ REGLAS DURAS:
 - Si el borrador base contradice un dato estructurado o un campo fijo, prevalece siempre el dato estructurado o campo fijo.
 - Si falta un dato esencial que no puede ser suplido sin inventar, conservá el placeholder correspondiente si existe; no lo reemplaces por información imaginada.
 
-ALCANCE:
-- Redactá únicamente el documento final.
-- Debe leerse como un contrato real, limpio y bien numerado.
-- Mantené numeración correlativa de cláusulas.
-- Mantené consistencia terminológica en todo el documento.
+ALCANCE Y ESTILO:
+- Redactá únicamente el documento final, sin explicaciones ni meta-texto.
+- El documento debe leerse exactamente como un contrato de locación redactado por un abogado argentino para ser presentado ante un juzgado civil: prosa notarial densa y continua, sin bullets, sin viñetas, sin negritas decorativas, sin lenguaje corporativo moderno.
+- Cada cláusula es texto corrido. Los ítems numerados (1-, 2-, 3-) son párrafos completos en prosa formal. Los sub-ítems a), b), c) se integran al flujo de la oración.
+- Mantené numeración correlativa de cláusulas y consistencia terminológica en todo el documento.
 - Si el locador es mujer, usar LOCADORA. Si el locatario es mujer, usar LOCATARIA.
 - Adaptar artículos, sustantivos y pronombres en consecuencia.`,
 
@@ -961,12 +961,13 @@ INSTRUCCIONES DE REDACCIÓN:
 - NO dejés placeholders como [indicar], [COMPLETAR], [___], {{VARIABLE}} — si falta un dato usá lo que ya está en el borrador.
 - Respondé únicamente con el texto final del contrato, sin explicaciones ni encabezados meta.
 
-GUÍA DE ESTILO (contrato de locación argentino real):
-- Encabezado de cada cláusula: "PRIMERA. OBJETO:" — ordinal en mayúsculas, punto, título en mayúsculas, dos puntos.
-- Sub-ítems dentro de cada cláusula: formato "1-", "2-", "3-" (guion, no paréntesis).
-- Para sub-sub-ítems: "a)", "b)", "c)".
+GUÍA DE ESTILO (contrato de locación argentino — registro notarial):
+PROSA: El cuerpo de cada cláusula debe estar escrito en TEXTO CORRIDO notarial argentino: prosa formal continua, densa, sin viñetas, sin bullets, sin guiones de lista libre, sin títulos intermedios en negrita. El estilo es el de un escribano o abogado porteño redactando para un juzgado civil: oraciones largas, subordinadas, con precisión técnica y sin lenguaje coloquial ni corporativo moderno.
+PROHIBIDO: no usar listas con "•", "-", "*"; no usar negritas para destacar datos; no usar lenguaje de documento digital ("haga clic", "ver sección X"); no usar tablas; no usar saltos de línea decorativos.
+ESTRUCTURA INTERNA DE CADA CLÁUSULA: cada ítem numerado (1-, 2-, 3-) es un párrafo completo en prosa. Los sub-ítems a), b), c) son parte del flujo de la oración principal ("…deberá: a) destinar el inmueble al uso pactado; b) no subalquilar…").
+- Encabezado de cláusula: "PRIMERA. OBJETO:" — ordinal en mayúsculas, punto, título en mayúsculas, dos puntos. El texto de la cláusula comienza en el renglón siguiente.
 - Términos definidos entre «guillemets»: «CONTRATO», «FIADOR», «LOCADOR», «LOCATARIO».
-- Sección de partes: párrafo corrido con nombre completo, DNI/CUIT, domicilio y "en adelante denominado EL LOCADOR / EL LOCATARIO".
+- Sección de partes: un único párrafo corrido. Ejemplo: "Entre JUAN PÉREZ, D.N.I. Nº 12.345.678, con domicilio en Av. Corrientes 1234, Ciudad Autónoma de Buenos Aires, en adelante denominado EL LOCADOR, por una parte; y por la otra, MARÍA GÓMEZ, D.N.I. Nº 23.456.789, con domicilio real en el inmueble objeto de este contrato, en adelante denominada LA LOCATARIA; celebran el presente CONTRATO DE LOCACIÓN CON DESTINO HABITACIONAL, en adelante «CONTRATO», sujeto al régimen legal vigente y a las estipulaciones siguientes:"
 - Canon y toda suma de dinero: siempre en números Y letras: "$420.000 (pesos cuatrocientos veinte mil)".
 - Cierre antes de firmas: "Se suscriben DOS (2) juegos de ejemplares de igual tenor y a un solo efecto. Celebrado en [CIUDAD], [PROVINCIA], el día [DD] del mes de [MES] del año [AAAA]."
 - Firmas: línea de firma separada para LOCADOR, LOCATARIO, y FIADOR (solo si hay fiador).
