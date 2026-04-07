@@ -8,9 +8,11 @@ export const leaseTermClause: ClauseDefinition = {
   name: "Plazo del Contrato",
   category: "type_specific",
   required: true,
-  content: `{{CLAUSE_NUMBER}}: PLAZO DEL CONTRATO
+  content: `{{CLAUSE_NUMBER}}. PLAZO:
 
-El presente contrato tendrá una duración de {{LEASE_TERM}}.
+1- El plazo total del presente CONTRATO será de {{LEASE_TERM}}.
+
+2- Al vencimiento del plazo el LOCATARIO restituirá el inmueble sin necesidad de interpelación previa.
 
 {{LEASE_RENEWAL}}`,
 };

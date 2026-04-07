@@ -13,9 +13,14 @@ export const leaseObligationsClause: ClauseDefinition = {
   name: "Obligaciones Especiales del Locatario",
   category: "type_specific",
   required: true,
-  content: `{{CLAUSE_NUMBER}}: OBLIGACIONES DEL LOCATARIO
+  content: `{{CLAUSE_NUMBER}}. OBLIGACIONES DEL LOCATARIO:
 
-El LOCATARIO se obliga a: (a) destinar el inmueble exclusivamente al uso pactado; (b) no subalquilar, ceder ni transferir el contrato sin autorización escrita del LOCADOR; (c) mantener el inmueble en buen estado de conservación y realizar las reparaciones locativas a su cargo; (d) no efectuar modificaciones ni obras sin autorización escrita previa del LOCADOR.
+1- El LOCATARIO se obliga especialmente a:
+a) Destinar el inmueble exclusivamente al uso pactado.
+b) No subalquilar, ceder ni transferir el contrato sin autorización escrita del LOCADOR.
+c) Mantener el inmueble en buen estado de conservación; las reparaciones locativas de mero mantenimiento serán exclusivamente a su cargo, sin derecho a reembolso.
+d) No efectuar modificaciones, reformas ni mejoras sin autorización escrita previa del LOCADOR. Las realizadas sin autorización quedarán en beneficio del inmueble sin indemnización y facultarán al LOCADOR a resolver el contrato.
+e) Devolver el inmueble al vencimiento desocupado, limpio y en el mismo estado en que lo recibió.
 
-{{RESTRICCIONES_ADICIONALES}}`,
+2- {{RESTRICCIONES_ADICIONALES}}`,
 };

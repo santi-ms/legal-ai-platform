@@ -938,7 +938,7 @@ TIPO DE LOCACIÓN: ${tipoLocacion}
 
 JURISDICCIÓN: ${jurisdiccionTexto}
 ${referenceSection}
-BORRADOR BASE (usar solo como estructura principal y apoyo de redacción; NO alterar su lógica económica o jurídica salvo para ajustarlo a los datos estructurados):
+BORRADOR BASE (usar como esqueleto de estructura y redacción; prevalecen siempre los datos estructurados):
 ---
 ${baseDraft}
 ---
@@ -956,13 +956,21 @@ INSTRUCCIONES DE REDACCIÓN:
 - Si no se especificó tasa de mora, usar remisión neutral a la tasa activa cartera general del Banco de la Nación Argentina, sin agregar porcentajes diarios.
 - Si no se especificó cláusula penal por no restitución, no crear una.
 - La cláusula de rescisión anticipada debe respetar exactamente lo pactado en los datos estructurados; no agregar excepciones, beneficios, castigos o fórmulas no pedidas.
-- El canon debe expresarse en números y letras.
-- Las cargas económicas deben asignarse exactamente como fueron indicadas.
-- Mantener numeración correlativa, lenguaje claro y formato de contrato listo para firma.
-- Incluir al final líneas de firma para LOCADOR y LOCATARIO.
-- Incluir firma del FIADOR solo si fue informado.${additionalClausesNote}${referenceNote}
+- El canon debe expresarse en números Y en letras: '$420.000 (pesos cuatrocientos veinte mil)'.
+- Las cargas económicas deben asignarse exactamente como fueron indicadas.${additionalClausesNote}${referenceNote}
 - NO dejés placeholders como [indicar], [COMPLETAR], [___], {{VARIABLE}} — si falta un dato usá lo que ya está en el borrador.
 - Respondé únicamente con el texto final del contrato, sin explicaciones ni encabezados meta.
+
+GUÍA DE ESTILO (contrato de locación argentino real):
+- Encabezado de cada cláusula: "PRIMERA. OBJETO:" — ordinal en mayúsculas, punto, título en mayúsculas, dos puntos.
+- Sub-ítems dentro de cada cláusula: formato "1-", "2-", "3-" (guion, no paréntesis).
+- Para sub-sub-ítems: "a)", "b)", "c)".
+- Términos definidos entre «guillemets»: «CONTRATO», «FIADOR», «LOCADOR», «LOCATARIO».
+- Sección de partes: párrafo corrido con nombre completo, DNI/CUIT, domicilio y "en adelante denominado EL LOCADOR / EL LOCATARIO".
+- Canon y toda suma de dinero: siempre en números Y letras: "$420.000 (pesos cuatrocientos veinte mil)".
+- Cierre antes de firmas: "Se suscriben DOS (2) juegos de ejemplares de igual tenor y a un solo efecto. Celebrado en [CIUDAD], [PROVINCIA], el día [DD] del mes de [MES] del año [AAAA]."
+- Firmas: línea de firma separada para LOCADOR, LOCATARIO, y FIADOR (solo si hay fiador).
+- Numeración de cláusulas en orden correlativo: PRIMERA, SEGUNDA, TERCERA... DÉCIMA, UNDÉCIMA, DÉCIMO SEGUNDA, etc.
 
 CONTROL DE CONSISTENCIA OBLIGATORIO ANTES DE RESPONDER:
 Verificá internamente, antes de emitir el texto final, que:

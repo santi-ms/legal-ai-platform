@@ -13,11 +13,13 @@ export const leaseAmountClause: ClauseDefinition = {
   name: "Canon Locativo y Forma de Pago",
   category: "type_specific",
   required: true,
-  content: `{{CLAUSE_NUMBER}}: CANON LOCATIVO Y FORMA DE PAGO
+  content: `{{CLAUSE_NUMBER}}. PRECIO Y FORMA DE PAGO:
 
-El canon locativo mensual se fija en la suma de {{RENT_AMOUNT}}, que el LOCATARIO abonará al LOCADOR los días {{DIA_PAGO}} de cada mes mediante {{PAYMENT_TERMS}}.
+1- Las partes convienen un canon locativo mensual de {{RENT_AMOUNT}}.
 
-{{AJUSTE_CANON}}
+2- El pago se realizará mediante {{PAYMENT_TERMS}}, con vencimiento el {{DIA_PAGO}} de cada mes.
 
-MORA EN EL PAGO: El incumplimiento en el pago del canon locativo en los plazos pactados devengará intereses moratorios a la tasa activa del Banco de la Nación Argentina para operaciones de descuento a treinta días, desde el vencimiento hasta el efectivo pago.`,
+3- {{AJUSTE_CANON}}
+
+4- MORA: El incumplimiento en el pago del canon locativo devengará intereses moratorios a la tasa activa del Banco de la Nación Argentina para operaciones de descuento a treinta días, desde el vencimiento hasta el efectivo pago, sin necesidad de interpelación previa.`,
 };

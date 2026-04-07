@@ -8,11 +8,11 @@ export const leasePropertyClause: ClauseDefinition = {
   name: "Objeto de la Locación",
   category: "type_specific",
   required: true,
-  content: `{{CLAUSE_NUMBER}}: OBJETO DE LA LOCACIÓN
+  content: `{{CLAUSE_NUMBER}}. OBJETO DE LA LOCACIÓN:
 
-El LOCADOR da en locación al LOCATARIO el siguiente bien:
+1- El LOCADOR entrega en locación al LOCATARIO el inmueble ubicado en {{PROPERTY_ADDRESS}}, con destino de uso: {{PROPERTY_USE}}.
 
-Descripción: {{PROPERTY_DESC}}
-Dirección: {{PROPERTY_ADDRESS}}
-Destino de uso: {{PROPERTY_USE}}`,
+2- Descripción del bien: {{PROPERTY_DESC}}.
+
+3- El LOCATARIO toma posesión del inmueble en las condiciones descriptas y se compromete a restituirlo al vencimiento del contrato en idéntico estado de conservación, salvo el deterioro propio del uso normal y el transcurso del tiempo.`,
 };

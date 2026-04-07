@@ -43,6 +43,8 @@ import { leaseConditionsClause } from "./lease/conditions.js";
 import { leaseObligationsClause } from "./lease/obligations.js";
 import { leaseGuarantorClause } from "./lease/guarantor.js";
 import { leaseEarlyTerminationClause } from "./lease/early-termination.js";
+import { leaseDomiciliosClause } from "./lease/domicilios.js";
+import { leaseJurisdictionClause } from "./lease/jurisdiction.js";
 
 // Debt recognition
 import { debtRecognitionDebtClause } from "./debt-recognition/debt.js";
@@ -58,8 +60,9 @@ import { authValidityClause, authObservationsClause } from "./simple-authorizati
 export function getClausesForType(documentType: string): Map<string, ClauseDefinition> {
   const clauses = new Map<string, ClauseDefinition>();
 
-  // Contract-style common clauses: not used in legal_notice (see comment there)
-  if (documentType !== "legal_notice") {
+  // Contract-style common clauses: not used in legal_notice or lease
+  // (lease uses its own jurisdiction/domicilios clauses)
+  if (documentType !== "legal_notice" && documentType !== "lease") {
     clauses.set(identificationClause.id, identificationClause);
     clauses.set(jurisdictionClause.id, jurisdictionClause);
     clauses.set(disputesClause.id, disputesClause);
@@ -94,12 +97,14 @@ export function getClausesForType(documentType: string): Map<string, ClauseDefin
 
   if (documentType === "lease") {
     clauses.set(leasePropertyClause.id, leasePropertyClause);
-    clauses.set(leaseAmountClause.id, leaseAmountClause);
     clauses.set(leaseTermClause.id, leaseTermClause);
+    clauses.set(leaseAmountClause.id, leaseAmountClause);
     clauses.set(leaseConditionsClause.id, leaseConditionsClause);
     clauses.set(leaseObligationsClause.id, leaseObligationsClause);
     clauses.set(leaseGuarantorClause.id, leaseGuarantorClause);
     clauses.set(leaseEarlyTerminationClause.id, leaseEarlyTerminationClause);
+    clauses.set(leaseDomiciliosClause.id, leaseDomiciliosClause);
+    clauses.set(leaseJurisdictionClause.id, leaseJurisdictionClause);
   }
 
   if (documentType === "debt_recognition") {

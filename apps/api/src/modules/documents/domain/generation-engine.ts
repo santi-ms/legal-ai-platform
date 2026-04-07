@@ -182,6 +182,8 @@ export function assembleBaseDraft(
         clauseId === "obligaciones_especiales_locacion" ? "{{CLAUSE_OBLIGATIONS}}" : null,
         clauseId === "fiador_garante_locacion" ? "{{CLAUSE_GUARANTOR}}" : null,
         clauseId === "rescision_anticipada_locacion" ? "{{CLAUSE_LEASE_TERMINATION}}" : null,
+        clauseId === "domicilios_locacion" ? "{{CLAUSE_JURISDICTION}}" : null,
+        clauseId === "jurisdiccion_locacion" ? "{{CLAUSE_DISPUTES}}" : null,
         // Map clause IDs to template slot names - Debt Recognition
         clauseId === "reconocimiento_deuda" ? "{{CLAUSE_DEBT}}" : null,
         clauseId === "forma_pago_deuda" ? "{{CLAUSE_PAYMENT}}" : null,
@@ -222,28 +224,39 @@ export function assembleBaseDraft(
 }
 
 /**
- * Get clause number text (PRIMERA, SEGUNDA, etc.)
+ * Get clause number text (PRIMERA, SEGUNDA, ... VIGÉSIMA PRIMERA, etc.)
+ * Follows Argentine legal drafting conventions.
  */
 function getClauseNumberText(num: number): string {
   const numbers = [
-    "PRIMERA",
-    "SEGUNDA",
-    "TERCERA",
-    "CUARTA",
-    "QUINTA",
-    "SEXTA",
-    "SÉPTIMA",
-    "OCTAVA",
-    "NOVENA",
-    "DÉCIMA",
+    "PRIMERA",        //  1
+    "SEGUNDA",        //  2
+    "TERCERA",        //  3
+    "CUARTA",         //  4
+    "QUINTA",         //  5
+    "SEXTA",          //  6
+    "SÉPTIMA",        //  7
+    "OCTAVA",         //  8
+    "NOVENA",         //  9
+    "DÉCIMA",         // 10
+    "UNDÉCIMA",       // 11
+    "DÉCIMO SEGUNDA", // 12
+    "DÉCIMO TERCERA", // 13
+    "DÉCIMO CUARTA",  // 14
+    "DÉCIMO QUINTA",  // 15
+    "DÉCIMO SEXTA",   // 16
+    "DÉCIMO SÉPTIMA", // 17
+    "DÉCIMO OCTAVA",  // 18
+    "DÉCIMO NOVENA",  // 19
+    "VIGÉSIMA",       // 20
   ];
-  
-  if (num <= numbers.length) {
+
+  if (num >= 1 && num <= numbers.length) {
     return numbers[num - 1];
   }
-  
-  // For numbers > 10, use ordinal
-  return `CLÁUSULA ${num}ª`;
+
+  // For numbers > 20, use ordinal
+  return `VIGÉSIMA ${getClauseNumberText(num - 20)}`;
 }
 
 /**
@@ -263,6 +276,9 @@ function getPlaceholderValue(placeholder: string, data: StructuredDocumentData):
     PARTIES: formatParties(data),
     JURISDICTION: formatJurisdiction(data),
     FECHA_ACTUAL: new Date().toLocaleDateString("es-AR"),
+    FECHA_DIA: new Date().getDate().toString().padStart(2, "0"),
+    FECHA_MES: new Date().toLocaleDateString("es-AR", { month: "long" }).toUpperCase(),
+    FECHA_ANIO: new Date().getFullYear().toString(),
 
     // ---- Service contract ----
     OBJECT: String(data.descripcion_servicio || data.definicion_informacion || data.hechos || ""),
@@ -328,6 +344,10 @@ function getPlaceholderValue(placeholder: string, data: StructuredDocumentData):
     USUARIOS_INMUEBLE: formatUsuariosInmueble(data),
     FIADOR_INFO: formatFiadorInfo(data),
     FIADOR_FIRMA: formatFiadorFirma(data),
+    RESTRICCIONES_ADICIONALES: data.restricciones_uso
+      ? `Restricciones específicas pactadas: ${String(data.restricciones_uso)}.`
+      : "",
+    PREAVISO_RESCISION_LOCACION: String(data.preaviso_rescision ? `${data.preaviso_rescision} días` : "30 días"),
 
     // ---- Debt Recognition ----
     ACREEDOR_NOMBRE: String(data.acreedor_nombre || ""),
@@ -372,7 +392,18 @@ function formatParties(data: StructuredDocumentData): string {
     return `${p("REMITENTE", data.remitente_nombre, data.remitente_doc, data.remitente_domicilio)}\n${p("DESTINATARIO", data.destinatario_nombre, data.destinatario_doc, data.destinatario_domicilio)}`;
   }
   if (data.locador_nombre && data.locatario_nombre) {
-    return `${p("LOCADOR", data.locador_nombre, data.locador_doc, data.locador_domicilio)}\n${p("LOCATARIO", data.locatario_nombre, data.locatario_doc, data.locatario_domicilio)}`;
+    const destino = String(data.destino_uso || "habitacional").toLowerCase();
+    const tipoLabel = destino.includes("comercial") ? "CON DESTINO COMERCIAL"
+      : destino.includes("profesional") ? "CON DESTINO PROFESIONAL"
+      : "CON DESTINO HABITACIONAL";
+    const locadorNombre = String(data.locador_nombre || "");
+    const locatarioNombre = String(data.locatario_nombre || "");
+    const locadorDoc = String(data.locador_doc || "");
+    const locatarioDoc = String(data.locatario_doc || "");
+    const locadorDom = String(data.locador_domicilio || "");
+    const locatarioDom = String(data.locatario_domicilio || "");
+    const locatarioEmail = data.locatario_email ? `, correo electrónico: ${String(data.locatario_email)}` : "";
+    return `Entre ${locadorNombre}, D.N.I./C.U.I.T. Nº ${locadorDoc}, con domicilio en ${locadorDom}, en adelante denominado EL LOCADOR, por una parte; y por la otra, ${locatarioNombre}, D.N.I./C.U.I.T. Nº ${locatarioDoc}${locatarioEmail}, con domicilio real en ${locatarioDom}, en adelante denominado EL LOCATARIO; celebran el presente CONTRATO DE LOCACIÓN ${tipoLabel}, en adelante «CONTRATO», sujeto al régimen legal vigente y a las estipulaciones siguientes:`;
   }
   if (data.acreedor_nombre && data.deudor_nombre) {
     return `${p("ACREEDOR", data.acreedor_nombre, data.acreedor_doc, data.acreedor_domicilio)}\n${p("DEUDOR", data.deudor_nombre, data.deudor_doc, data.deudor_domicilio)}`;
