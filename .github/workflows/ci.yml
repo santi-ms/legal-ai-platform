@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: legal_ai_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/legal_ai_test
+      NEXTAUTH_SECRET: test-secret-for-ci-only
+      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_API_URL: http://localhost:4001
+      FRONTEND_URL: http://localhost:3000
+      EMAIL_SERVER_HOST: smtp.example.com
+      EMAIL_SERVER_PORT: 587
+      EMAIL_SERVER_USER: test
+      EMAIL_SERVER_PASSWORD: test
+      EMAIL_FROM: test@example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate --schema=packages/db/prisma/schema.prisma
+
+      - name: Run database migrations
+        run: cd apps/api && npm run migrate:deploy
+
+      - name: Seed database
+        run: cd apps/api && npm run db:seed
+
+      - name: Build all packages
+        run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build frontend (for E2E)
+        run: cd apps/web && npm run build
+        env:
+          SKIP_ENV_VALIDATION: true
+
+      - name: Start API server
+        run: |
+          cd apps/api
+          npm run build
+          npm start &
+          sleep 5
+          curl -f http://localhost:4001/healthz || exit 1
+        env:
+          PORT: 4001
+
+      - name: Start web server
+        run: |
+          cd apps/web
+          npm run build
+          npm start &
+          sleep 10
+          curl -f http://localhost:3000 || exit 1
+        env:
+          PORT: 3000
+
+      - name: Run E2E tests
+        run: npm run e2e
+        env:
+          E2E_BASE_URL: http://localhost:3000
+          E2E_API_URL: http://localhost:4001
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/legal_ai_test
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+      # Comentado: Para usar con Vercel Preview URLs
+      # - name: Run E2E on Preview
+      #   if: github.event_name == 'pull_request' && env.VERCEL_URL != ''
+      #   run: npm run e2e
+      #   env:
+      #     E2E_BASE_URL: ${{ env.VERCEL_URL }}
+      #     E2E_API_URL: ${{ env.RAILWAY_API_URL }}

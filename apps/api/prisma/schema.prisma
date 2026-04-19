@@ -1,0 +1,598 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Tenant {
+  id           String        @id @default(uuid())
+  name         String
+  cuit         String?
+  address      String?
+  phone        String?
+  website      String?
+  logoUrl      String?       // Logo del estudio (base64 data URI o URL externa)
+
+  // Plan actual (desnormalizado para acceso rápido sin JOIN)
+  currentPlanCode String @default("free") // "free" | "pro" | "proplus" | "estudio"
+
+  users        User[]
+  documents    Document[]
+  clients      Client[]
+  expedientes  Expediente[]
+  logs         IAUsageLog[]
+  referenceDocuments ReferenceDocument[]
+  contractAnalyses   ContractAnalysis[]
+  subscription       Subscription?
+  teamInvitations    TeamInvitation[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String?
+  firstName     String?
+  lastName      String?
+  email         String   @unique
+  passwordHash  String   @map("password") // Mapeado a columna "password" existente en DB
+  emailVerified DateTime?
+  emailVerificationCodeHash String?
+  emailVerificationExpiresAt DateTime?
+  emailVerificationAttempts Int @default(0)
+  emailVerificationLastSentAt DateTime?
+  emailVerificationResendAfter DateTime?
+  company       String?
+  role          String   @default("user")
+  professionalRole String?
+  tenantId      String?
+  
+  // Profile fields
+  bio                   String?  // Biografía profesional
+  phone                 String?  // Teléfono de contacto
+  matricula             String?  // Matrícula profesional (CPACF u otras)
+  especialidad          String?  // Especialidad jurídica (civil, penal, laboral, etc.)
+  notificationPreferences Json?   // Preferencias de notificación (JSON)
+
+  tenant    Tenant?   @relation(fields: [tenantId], references: [id])
+
+  documentsCreated        Document[]             @relation("CreatedByUser")
+  clientsCreated          Client[]               @relation("ClientsCreatedBy")
+  expedientesCreated      Expediente[]           @relation("ExpedientesCreatedBy")
+  annotations             DocumentAnnotation[]   @relation("AnnotationsWrittenBy")
+  referenceDocuments      ReferenceDocument[]    @relation("ReferenceDocsUploadedBy")
+  contractAnalyses        ContractAnalysis[]     @relation("ContractAnalysesUploadedBy")
+  accounts                Account[]
+  sessions                Session[]
+  subscriptionUsers       SubscriptionUser[]
+  invitationsSent         TeamInvitation[]       @relation("InvitationsSentBy")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("User")
+}
+
+model Document {
+  id             String            @id @default(uuid())
+
+  // relación con Tenant
+  tenantId       String
+  tenant         Tenant            @relation(fields: [tenantId], references: [id])
+
+  // quién lo creó (User)
+  createdById    String
+  createdBy      User              @relation("CreatedByUser", fields: [createdById], references: [id])
+
+  type           String            // ej: "contrato_servicios"
+  jurisdiccion   String            // ej: "corrientes_capital"
+  tono           String            // ej: "comercial_claro"
+  estado         String            // "generated_text" | "ready_pdf" | "error"
+  costUsd        Float?
+
+  // Cliente asociado (opcional)
+  clientId       String?
+  client         Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  // Expediente asociado (opcional)
+  expedienteId   String?
+  expediente     Expediente?       @relation(fields: [expedienteId], references: [id], onDelete: SetNull)
+
+  // Documento de referencia usado en la generación (opcional)
+  referenceDocumentId String?
+  referenceDocument   ReferenceDocument? @relation(fields: [referenceDocumentId], references: [id], onDelete: SetNull)
+
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  versions       DocumentVersion[]
+  logs           IAUsageLog[]      @relation("DocLogs")
+  annotations    DocumentAnnotation[]
+  shares         DocumentShare[]
+}
+
+model DocumentVersion {
+  id              String    @id @default(uuid())
+
+  documentId      String
+  document        Document  @relation(fields: [documentId], references: [id])
+
+  versionNumber   Int
+  rawText         String    // Contenido original generado por IA (inmutable)
+  editedContent   String?   // Contenido editado manualmente por el usuario (nullable)
+  pdfUrl          String?
+  hashSha256      String?
+  generatedBy     String    // "gpt-5", "claude", etc.
+  
+  // New structured data fields (nullable for backward compatibility)
+  structuredData      Json?     // Structured document data (user input)
+  clausePlan          Json?     // Plan of clauses to include
+  generationWarnings  Json?     // Pre-generation warnings (semantic validation rules)
+  outputWarnings      Json?     // Post-generation warnings (placeholder/completeness detection)
+  templateVersion     String?   // Version of template used
+  status              String?   // "draft" | "generated" | "reviewed" | "final" | "needs_review"
+  
+  createdAt       DateTime  @default(now())
+}
+
+
+model Client {
+  id             String   @id @default(uuid())
+
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+
+  createdById    String
+  createdBy      User     @relation("ClientsCreatedBy", fields: [createdById], references: [id])
+
+  // Tipo: "persona_fisica" | "persona_juridica"
+  type           String   @default("persona_fisica")
+
+  // Identificación
+  name           String
+  documentType   String?  // "DNI" | "CUIT" | "CUIL" | "Pasaporte"
+  documentNumber String?
+
+  // Contacto
+  email          String?
+  phone          String?
+
+  // Domicilio
+  address        String?
+  city           String?
+  province       String?
+
+  // Persona de contacto (solo para persona_juridica)
+  contactPersonName  String?  // Nombre del contacto en la empresa
+  contactPersonRole  String?  // Cargo (ej: "Gerente", "Apoderado")
+  contactPersonPhone String?
+  contactPersonEmail String?
+
+  // Notas internas del estudio
+  notes          String?
+
+  // Soft delete — archivar en lugar de borrar
+  archivedAt     DateTime?
+
+  // Documentos asociados
+  documents      Document[]
+
+  // Expedientes en los que aparece como cliente
+  expedientes    Expediente[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([archivedAt])
+}
+
+model Expediente {
+  id             String    @id @default(uuid())
+
+  tenantId       String
+  tenant         Tenant    @relation(fields: [tenantId], references: [id])
+
+  createdById    String
+  createdBy      User      @relation("ExpedientesCreatedBy", fields: [createdById], references: [id])
+
+  // Identificación
+  number         String?   // Número de expediente (ej: "2024/001234")
+  title          String    // Título/descripción del caso
+  matter         String    // Materia: civil, penal, laboral, familia, comercial, administrativo, otro
+
+  // Estado: activo, cerrado, archivado, suspendido
+  status         String    @default("activo")
+
+  // Cliente principal (opcional)
+  clientId       String?
+  client         Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  // Datos judiciales (opcionales)
+  court          String?   // Juzgado / Tribunal
+  judge          String?   // Juez interviniente
+  opposingParty  String?   // Parte contraria
+
+  // Fechas
+  openedAt       DateTime  @default(now())
+  closedAt       DateTime?
+  deadline       DateTime?
+
+  // Notas internas
+  notes          String?
+
+  // Notificaciones de deadline
+  deadlineNotifiedAt DateTime?  // Última vez que se envió notif de vencimiento
+
+  // Documentos vinculados
+  documents      Document[]
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([clientId])
+  @@index([deadline])
+}
+
+model DocumentAnnotation {
+  id          String   @id @default(uuid())
+
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  tenantId    String
+
+  // Who wrote it (optional — may be a system note)
+  authorId    String?
+  author      User?    @relation("AnnotationsWrittenBy", fields: [authorId], references: [id], onDelete: SetNull)
+
+  content     String   // The annotation text
+  resolved    Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([documentId])
+  @@index([tenantId])
+}
+
+model IAUsageLog {
+  id               String   @id @default(uuid())
+
+  // Relación con Tenant
+  tenantId         String
+  tenant           Tenant   @relation(fields: [tenantId], references: [id])
+
+  // Relación opcional con Document
+  documentId       String?
+  document         Document? @relation("DocLogs", fields: [documentId], references: [id])
+
+  service          String   // "draft-service" | "review-service"
+  modelName        String   // "gpt-5"
+  promptTokens     Int
+  completionTokens Int
+  costUsd          Float
+  timestamp        DateTime @default(now())
+}
+
+model ReferenceDocument {
+  id           String    @id @default(uuid())
+
+  // Multi-tenant
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Quién subió el archivo
+  uploadedById String
+  uploadedBy   User      @relation("ReferenceDocsUploadedBy", fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  // Metadata del archivo
+  originalName String    // Nombre original del archivo
+  fileName     String    // Nombre en el servidor
+  fileSize     Int       // Tamaño en bytes
+  fileType     String    @default("pdf")
+
+  // Tipo de documento legal al que pertenece
+  documentType String    // "legal_notice" | "service_contract" | "nda" | etc.
+
+  // Texto extraído del PDF (para que la IA lo use como referencia)
+  pdfText      String?   @db.Text
+
+  // URL para acceder/descargar el archivo
+  storageUrl   String
+
+  // Documentos generados usando esta referencia
+  documents    Document[]
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime? // Borrado suave
+
+  @@index([tenantId])
+  @@index([documentType])
+  @@index([deletedAt])
+}
+
+// ─── Suscripciones y Billing ─────────────────────────────────────────────────
+
+model Plan {
+  id          String  @id @default(uuid())
+  code        String  @unique // "free" | "pro" | "proplus" | "estudio"
+  name        String           // "Free" | "Pro" | "Pro+" | "Estudio"
+  description String
+  priceArs    Int?             // null para Free
+  trialDays   Int     @default(0) // 7 para Pro, 0 para los demás
+  limits      Json             // { docsPerMonth, maxUsers, maxClients, maxExpedientes, maxReferenceFiles }
+  features    Json             // { chatIA, edicion, analytics, anotaciones, logoEstudio, ... }
+
+  subscriptions Subscription[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Subscription {
+  id       String @id @default(uuid())
+
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  planId   String
+  plan     Plan   @relation(fields: [planId], references: [id])
+
+  // Estado: "trialing" | "active" | "canceled" | "past_due" | "paused"
+  status   String @default("active")
+
+  trialEndsAt DateTime? // Solo para plan Pro (7 días)
+  startsAt    DateTime  @default(now())
+  renewsAt    DateTime? // Próxima renovación (null si free o cancelado)
+
+  // Mercado Pago
+  mpPreferenceId   String? // ID de la preference de MP
+  mpSubscriptionId String? // ID de suscripción recurrente en MP
+  mpPayerId        String? // ID del pagador en MP
+
+  // Para plan Estudio
+  maxUsers Int @default(1) // 1 para pro/proplus, 3+ para estudio
+
+  users    SubscriptionUser[]
+  invoices Invoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([planId])
+  @@index([status])
+}
+
+model SubscriptionUser {
+  id             String       @id @default(uuid())
+
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  addedAt        DateTime     @default(now())
+
+  @@unique([subscriptionId, userId])
+  @@index([subscriptionId])
+}
+
+model Invoice {
+  id             String       @id @default(uuid())
+
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  mpPaymentId    String? // ID del pago en Mercado Pago
+  status         String  @default("pending") // "pending" | "approved" | "rejected" | "refunded"
+
+  amountArs      Int     // Monto en pesos
+  period         String  // Formato "YYYY-MM" (ej: "2025-05")
+
+  dueAt          DateTime
+  paidAt         DateTime?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([subscriptionId])
+  @@index([status])
+}
+
+// ─── Invitaciones de equipo ───────────────────────────────────────────────────
+
+model TeamInvitation {
+  id            String    @id @default(uuid())
+
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  invitedById   String
+  invitedBy     User      @relation("InvitationsSentBy", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  email         String    // Email del invitado
+  tokenHash     String    @unique // SHA-256 del token enviado por email
+  status        String    @default("pending") // "pending" | "accepted" | "expired" | "canceled"
+
+  expiresAt     DateTime  // 72hs desde creación
+  acceptedAt    DateTime?
+  acceptedById  String?   // ID del User que aceptó (puede ser nuevo o existente)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([email])
+  @@index([status])
+}
+
+// ─── Links de compartición de documentos ─────────────────────────────────────
+
+model DocumentShare {
+  id          String    @id @default(uuid())
+
+  documentId  String
+  document    Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  tenantId    String
+  createdById String
+
+  token       String    @unique // Token público random (32 bytes hex)
+  expiresAt   DateTime
+  viewCount   Int       @default(0)
+  lastViewedAt DateTime?
+  status      String    @default("active") // "active" | "revoked"
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([documentId])
+  @@index([tenantId])
+  @@index([token])
+  @@index([status])
+}
+
+// ─── Análisis de contratos ────────────────────────────────────────────────────
+
+model ContractAnalysis {
+  id           String    @id @default(uuid())
+
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  uploadedById String
+  uploadedBy   User      @relation("ContractAnalysesUploadedBy", fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  // Archivo subido
+  originalName String
+  fileName     String
+  fileSize     Int
+  storageUrl   String
+  pdfText      String?   @db.Text
+
+  // Estado del análisis
+  status       String    @default("pending") // "pending" | "processing" | "done" | "error"
+  errorMessage String?
+
+  // Resultado del análisis (JSON estructurado de Claude)
+  result       Json?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+}
+
+// NextAuth models
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+
+
+// ─── Document Prompt Library ─────────────────────────────────────────────────
+
+model DocumentPrompt {
+  id               String   @id @default(uuid())
+  documentType     String   @unique  // "lease", "comodato", "poder_especial", etc.
+  label            String            // "Contrato de Locación"
+  systemMessage    String   @db.Text
+  baseInstructions Json              // string[]
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([documentType])
+  @@index([isActive])
+}
+
+// ─── Generation Job Queue (DB-backed, survives server restarts) ──────────────
+
+model GenerationJob {
+  id        String   @id
+  tenantId  String
+  status    String   @default("pending") // "pending" | "done" | "error"
+  result    Json?
+  error     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ─── Códigos Promocionales ────────────────────────────────────────────────────
+
+model PromoCode {
+  id        String   @id @default(uuid())
+  code      String   @unique  // Ej: "ABOGACIA2026" (siempre en mayúsculas)
+  planCode  String   @default("pro")  // Plan a activar al canjear
+  trialDays Int      @default(14)     // Días de trial que otorga
+  maxUses   Int      @default(-1)     // -1 = ilimitado
+  usedCount Int      @default(0)      // Cuántas veces fue usado
+  isActive  Boolean  @default(true)
+  expiresAt DateTime?                 // Fecha límite para canjearlo (null = sin límite)
+  note      String?                   // Nota interna (ej: "Charla UBA mayo 2026")
+
+  uses      PromoCodeUse[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+  @@index([isActive])
+}
+
+model PromoCodeUse {
+  id          String    @id @default(uuid())
+
+  promoCodeId String
+  promoCode   PromoCode @relation(fields: [promoCodeId], references: [id])
+
+  tenantId    String    @unique  // Cada tenant solo puede canjear un código promo
+  usedAt      DateTime  @default(now())
+
+  @@index([promoCodeId])
+}

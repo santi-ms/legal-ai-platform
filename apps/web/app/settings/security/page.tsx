@@ -1,0 +1,368 @@
+"use client";
+
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { SettingsHeader } from "@/components/settings/SettingsHeader";
+import { SettingsTabs } from "@/components/settings/SettingsTabs";
+import { SupportBanner } from "@/components/settings/SupportBanner";
+import { useAuth } from "@/app/lib/hooks/useAuth";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useToast } from "@/components/ui/toast";
+import {
+  Loader2,
+  Lock,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  Check,
+  AlertCircle,
+  KeyRound,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+// ─── Schema ───────────────────────────────────────────────────────────────────
+
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "La contraseña actual es requerida"),
+    newPassword: z
+      .string()
+      .min(8, "Mínimo 8 caracteres")
+      .regex(/[a-z]/, "Debe contener una minúscula")
+      .regex(/[A-Z]/, "Debe contener una mayúscula")
+      .regex(/\d/, "Debe contener un número"),
+    confirmPassword: z.string().min(1, "Confirmá la nueva contraseña"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Las contraseñas no coinciden",
+    path: ["confirmPassword"],
+  });
+
+type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+// ─── Password strength (reutilizamos la misma lógica que en registro) ─────────
+
+const REQUIREMENTS = [
+  { id: "length",    label: "Mínimo 8 caracteres",  test: (v: string) => v.length >= 8 },
+  { id: "lowercase", label: "Una minúscula",         test: (v: string) => /[a-z]/.test(v) },
+  { id: "uppercase", label: "Una mayúscula",         test: (v: string) => /[A-Z]/.test(v) },
+  { id: "number",    label: "Un número",             test: (v: string) => /\d/.test(v) },
+];
+
+function PasswordStrengthMini({ value }: { value: string }) {
+  if (!value) return null;
+  const score = REQUIREMENTS.filter((r) => r.test(value)).length;
+  const colors = ["", "bg-red-500", "bg-orange-400", "bg-yellow-400", "bg-emerald-500"];
+  const labels = ["", "Muy débil", "Débil", "Aceptable", "Fuerte"];
+  const labelColors = ["", "text-red-500", "text-orange-400", "text-yellow-500", "text-emerald-500"];
+
+  return (
+    <div className="space-y-2 mt-2">
+      <div className="flex gap-1">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+              i < score ? colors[score] : "bg-slate-200 dark:bg-slate-700"
+            }`}
+          />
+        ))}
+      </div>
+      {score > 0 && (
+        <p className={`text-xs font-medium ${labelColors[score]}`}>{labels[score]}</p>
+      )}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+        {REQUIREMENTS.map((req) => {
+          const met = req.test(value);
+          return (
+            <div key={req.id} className="flex items-center gap-1.5">
+              <Check className={`w-3 h-3 flex-shrink-0 ${met ? "text-emerald-500" : "text-slate-300 dark:text-slate-600"}`} />
+              <span className={`text-xs ${met ? "text-slate-600 dark:text-slate-300" : "text-slate-400 dark:text-slate-500"}`}>
+                {req.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Change Password Form ─────────────────────────────────────────────────────
+
+function ChangePasswordSection() {
+  const { success, error: showError } = useToast();
+  const [show, setShow] = useState({ current: false, new: false, confirm: false });
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ChangePasswordInput>({
+    resolver: zodResolver(changePasswordSchema),
+  });
+
+  const newPasswordValue = watch("newPassword") ?? "";
+
+  const onSubmit = async (data: ChangePasswordInput) => {
+    setApiError(null);
+    setIsSuccess(false);
+
+    try {
+      const res = await fetch("/api/_proxy/api/user/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
+        }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json.ok) {
+        if (json.error === "invalid_current_password") {
+          setApiError("La contraseña actual es incorrecta.");
+        } else if (json.error === "no_password") {
+          setApiError("Tu cuenta usa Google para iniciar sesión. No tenés contraseña para cambiar.");
+        } else {
+          setApiError(json.message || "No pudimos cambiar la contraseña. Intentá de nuevo.");
+        }
+        return;
+      }
+
+      setIsSuccess(true);
+      reset();
+      success("Contraseña actualizada correctamente");
+    } catch {
+      setApiError("Error de conexión. Revisá tu internet e intentá de nuevo.");
+    }
+  };
+
+  return (
+    <div className="px-4 py-6">
+      <div className="flex items-center gap-4 mb-6">
+        <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center">
+          <KeyRound className="w-6 h-6 text-primary" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Cambiar contraseña</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Usá una contraseña segura que no uses en otros sitios.
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="max-w-md space-y-5">
+        {/* Contraseña actual */}
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+            Contraseña actual
+          </Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+            <Input
+              type={show.current ? "text" : "password"}
+              placeholder="Tu contraseña actual"
+              {...register("currentPassword")}
+              className={`pl-10 pr-10 ${errors.currentPassword ? "border-red-500" : ""}`}
+            />
+            <button
+              type="button"
+              onClick={() => setShow((s) => ({ ...s, current: !s.current }))}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              {show.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          {errors.currentPassword && (
+            <p className="text-xs text-red-500">{errors.currentPassword.message}</p>
+          )}
+        </div>
+
+        {/* Nueva contraseña */}
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+            Nueva contraseña
+          </Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+            <Input
+              type={show.new ? "text" : "password"}
+              placeholder="Nueva contraseña"
+              {...register("newPassword")}
+              className={`pl-10 pr-10 ${errors.newPassword ? "border-red-500" : ""}`}
+            />
+            <button
+              type="button"
+              onClick={() => setShow((s) => ({ ...s, new: !s.new }))}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              {show.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          <PasswordStrengthMini value={newPasswordValue} />
+          {errors.newPassword && (
+            <p className="text-xs text-red-500">{errors.newPassword.message}</p>
+          )}
+        </div>
+
+        {/* Confirmar nueva contraseña */}
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+            Confirmar nueva contraseña
+          </Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+            <Input
+              type={show.confirm ? "text" : "password"}
+              placeholder="Repetí la nueva contraseña"
+              {...register("confirmPassword")}
+              className={`pl-10 pr-10 ${errors.confirmPassword ? "border-red-500" : ""}`}
+            />
+            <button
+              type="button"
+              onClick={() => setShow((s) => ({ ...s, confirm: !s.confirm }))}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              {show.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          {errors.confirmPassword && (
+            <p className="text-xs text-red-500">{errors.confirmPassword.message}</p>
+          )}
+        </div>
+
+        {/* API error */}
+        {apiError && (
+          <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700 dark:text-red-300">{apiError}</p>
+          </div>
+        )}
+
+        {/* Success */}
+        {isSuccess && (
+          <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+            <ShieldCheck className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+            <p className="text-sm text-emerald-700 dark:text-emerald-300 font-medium">
+              Contraseña actualizada correctamente.
+            </p>
+          </div>
+        )}
+
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-primary text-white hover:bg-primary/90 font-semibold"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Actualizando...
+            </>
+          ) : (
+            "Actualizar contraseña"
+          )}
+        </Button>
+      </form>
+    </div>
+  );
+}
+
+// ─── Coming soon: 2FA ─────────────────────────────────────────────────────────
+
+function TwoFactorSection() {
+  return (
+    <div className="mx-4 mb-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+      <div className="flex items-center gap-4 mb-4">
+        <div className="size-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+          <ShieldCheck className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              Autenticación de dos factores
+            </h3>
+            <span className="text-xs font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full">
+              Próximamente
+            </span>
+          </div>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            Agregá una capa extra de seguridad a tu cuenta con 2FA por app o SMS.
+          </p>
+        </div>
+      </div>
+      <Button disabled variant="outline" className="opacity-50 cursor-not-allowed">
+        Configurar 2FA
+      </Button>
+    </div>
+  );
+}
+
+// ─── Página principal ─────────────────────────────────────────────────────────
+
+export default function SecuritySettingsPage() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/auth/login?callbackUrl=/settings/security");
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return null;
+
+  return (
+    <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
+      <div className="layout-container flex h-full grow flex-col">
+        <div className="px-4 md:px-20 lg:px-40 flex flex-1 justify-center py-5">
+          <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
+            <SettingsHeader />
+
+            <div className="flex flex-wrap justify-between gap-3 p-4 mt-6">
+              <div className="flex min-w-72 flex-col gap-3">
+                <p className="text-4xl font-black leading-tight tracking-[-0.033em] text-slate-900 dark:text-white">
+                  Ajustes del Sistema
+                </p>
+                <p className="text-slate-500 dark:text-slate-400 text-base">
+                  Administrá tu cuenta, suscripciones y preferencias de seguridad.
+                </p>
+              </div>
+            </div>
+
+            <SettingsTabs activeTab="security" />
+
+            {/* Cambio de contraseña */}
+            <div className="mx-4 mb-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+              <ChangePasswordSection />
+            </div>
+
+            {/* 2FA — próximamente */}
+            <TwoFactorSection />
+
+            <SupportBanner />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
