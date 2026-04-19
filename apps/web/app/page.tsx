@@ -93,7 +93,7 @@ export const metadata: Metadata = {
       "Creá contratos, NDAs, cartas documento y más en minutos. Para abogados, estudios y pymes en Argentina.",
   },
   alternates: {
-    canonical: "https://doculex.com.ar",
+    canonical: "https://doculex.vercel.app",
   },
 };
 
