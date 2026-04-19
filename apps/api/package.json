@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx src/server.ts",
     "build": "npm run prisma:generate && tsc",
-    "prestart": "npm run prisma:generate && npm run migrate:deploy && npm run db:seed-plans",
+    "prestart": "npm run prisma:generate && npm run db:seed-plans",
     "start": "node dist/server.js",
     "postinstall": "npm run prisma:generate || echo 'Prisma generate failed, will retry on start'",
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",
