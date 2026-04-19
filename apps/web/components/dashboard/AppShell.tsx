@@ -8,6 +8,7 @@ import { KeyboardShortcutsModal } from "@/components/ui/KeyboardShortcutsModal";
 import { GlobalSearch } from "@/components/ui/GlobalSearch";
 import { DeadlineProvider } from "@/app/lib/contexts/DeadlineContext";
 import { FloatingAssistant } from "@/components/assistant/FloatingAssistant";
+import { WelcomeModal } from "@/components/ui/WelcomeModal";
 
 function useSequenceShortcut(onMatch: (seq: string) => void) {
   const lastKey = { value: "", time: 0 };
@@ -116,6 +117,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onClose={() => setShowSearch(false)}
         />
         <FloatingAssistant />
+        <WelcomeModal />
       </div>
     </DeadlineProvider>
   );

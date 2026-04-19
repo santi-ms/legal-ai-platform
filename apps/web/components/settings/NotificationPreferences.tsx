@@ -35,7 +35,7 @@ export function NotificationPreferences({
         <NotificationToggle
           id="email-notifications"
           title="Notificaciones por Email"
-          description="Recibí resúmenes diarios de actividad."
+          description="Recordatorios de vencimientos de expedientes."
           checked={preferences.emailNotifications}
           onChange={(checked) => onPreferenceChange("emailNotifications", checked)}
         />

@@ -4,9 +4,9 @@
  * OnboardingChecklist — Guía de configuración inicial para nuevos usuarios.
  *
  * Se muestra cuando el usuario no tiene datos suficientes (detectado desde stats).
- * Tres pasos: cliente → expediente → documento.
+ * Cuatro pasos: cliente → expediente → documento → referencia IA.
  * Cada paso muestra su estado (completo/pendiente) con CTA.
- * Colapsable y dismissible (localStorage). No vuelve a aparecer una vez completado.
+ * Colapsable y dismissible (localStorage, clave por usuario). No vuelve a aparecer una vez completado.
  */
 
 import { useState, useEffect } from "react";
@@ -14,7 +14,8 @@ import Link from "next/link";
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, X, Sparkles, ArrowRight } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 
-const DISMISSED_KEY = "lt_onboarding_dismissed";
+const dismissedKey = (userId?: string) =>
+  userId ? `lt_onboarding_dismissed_${userId}` : "lt_onboarding_dismissed";
 
 interface Step {
   id: string;
@@ -29,12 +30,16 @@ interface OnboardingChecklistProps {
   hasDocs:         boolean;
   hasClients:      boolean;
   hasExpedientes:  boolean;
+  hasReferences?:  boolean;
+  userId?:         string;
 }
 
 export function OnboardingChecklist({
   hasDocs,
   hasClients,
   hasExpedientes,
+  hasReferences = false,
+  userId,
 }: OnboardingChecklistProps) {
   const [dismissed,  setDismissed]  = useState(false);
   const [collapsed,  setCollapsed]  = useState(false);
@@ -43,9 +48,9 @@ export function OnboardingChecklist({
   useEffect(() => {
     setMounted(true);
     if (typeof window !== "undefined") {
-      setDismissed(!!localStorage.getItem(DISMISSED_KEY));
+      setDismissed(!!localStorage.getItem(dismissedKey(userId)));
     }
-  }, []);
+  }, [userId]);
 
   const steps: Step[] = [
     {
@@ -72,6 +77,14 @@ export function OnboardingChecklist({
       href:        "/documents/new",
       done:        hasDocs,
     },
+    {
+      id:          "reference",
+      title:       "Subí un documento de referencia",
+      description: "Cargá tus propios PDFs para que la IA imite tu formato y estilo al generar documentos.",
+      cta:         "Subir referencia",
+      href:        "/documents/references",
+      done:        hasReferences,
+    },
   ];
 
   const completedCount = steps.filter(s => s.done).length;
@@ -82,15 +95,15 @@ export function OnboardingChecklist({
   useEffect(() => {
     if (allDone && mounted) {
       const t = setTimeout(() => {
-        localStorage.setItem(DISMISSED_KEY, "1");
+        localStorage.setItem(dismissedKey(userId), "1");
         setDismissed(true);
       }, 4000);
       return () => clearTimeout(t);
     }
-  }, [allDone, mounted]);
+  }, [allDone, mounted, userId]);
 
   const handleDismiss = () => {
-    localStorage.setItem(DISMISSED_KEY, "1");
+    localStorage.setItem(dismissedKey(userId), "1");
     setDismissed(true);
   };
 
@@ -159,7 +172,7 @@ export function OnboardingChecklist({
 
       {/* Steps */}
       {!collapsed && (
-        <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {steps.map((step, i) => (
             <div
               key={step.id}

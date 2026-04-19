@@ -226,6 +226,7 @@ function DashboardContent() {
           hasDocs={totalDocuments > 0}
           hasClients={totalClients > 0}
           hasExpedientes={expedientesActivos > 0}
+          userId={(session?.user as any)?.id}
         />
       )}
 

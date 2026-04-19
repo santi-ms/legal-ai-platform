@@ -110,7 +110,7 @@ function buildEmailHtml(
       </table>
 
       <div style="margin-top: 24px; text-align: center;">
-        <a href="${process.env.APP_URL || "https://legal-ai-platform.vercel.app"}/expedientes"
+        <a href="${process.env.FRONTEND_URL || "https://legal-ai-platform.vercel.app"}/expedientes"
            style="display: inline-block; background: #3b2fc9; color: white; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px;">
           Ver expedientes →
         </a>
@@ -137,7 +137,7 @@ function buildEmailText(
     (exp) =>
       `- ${exp.title}${exp.number ? ` (Nº ${exp.number})` : ""} — Vence: ${formatDateAR(exp.deadline)} (${exp.daysLeft} día${exp.daysLeft !== 1 ? "s" : ""})`
   );
-  return `Hola ${userName},\n\nTenés ${expedientes.length} expediente(s) con vencimientos próximos:\n\n${lines.join("\n")}\n\nAccedé a tus expedientes: ${process.env.APP_URL || "https://legal-ai-platform.vercel.app"}/expedientes\n\n— Legal AI Platform`;
+  return `Hola ${userName},\n\nTenés ${expedientes.length} expediente(s) con vencimientos próximos:\n\n${lines.join("\n")}\n\nAccedé a tus expedientes: ${process.env.FRONTEND_URL || "https://legal-ai-platform.vercel.app"}/expedientes\n\n— Legal AI Platform`;
 }
 
 export async function runDeadlineNotifier(): Promise<void> {
