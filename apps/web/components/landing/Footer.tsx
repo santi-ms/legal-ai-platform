@@ -12,21 +12,16 @@ const createMailtoLink = (subject: string) => {
 
 const footerLinks = {
   producto: [
-    { name: "Funciones", href: "#funciones", isAnchor: true }, // Existe en Features
-    { name: "Plantillas", href: createMailtoLink("Consulta sobre Plantillas"), isAnchor: false },
-    { name: "Precios", href: createMailtoLink("Consulta sobre Precios"), isAnchor: false },
-    { name: "API", href: createMailtoLink("Consulta sobre API"), isAnchor: false },
+    { name: "Funciones", href: "#funciones", isAnchor: true },
+    { name: "Precios",   href: "#precios",   isAnchor: true },
   ],
   compañía: [
-    { name: "Sobre nosotros", href: createMailtoLink("Consulta sobre la empresa"), isAnchor: false },
-    { name: "Blog", href: createMailtoLink("Consulta sobre Blog"), isAnchor: false },
-    { name: "Carreras", href: createMailtoLink("Consulta sobre Carreras"), isAnchor: false },
     { name: "Contacto", href: createMailtoLink("Contacto"), isAnchor: false },
   ],
   legal: [
-    { name: "Privacidad", href: "/privacidad", isAnchor: false },
-    { name: "Términos", href: "/terminos", isAnchor: false },
-    { name: "Cookies", href: "/privacidad#cookies", isAnchor: false },
+    { name: "Privacidad", href: "/privacidad",        isAnchor: false },
+    { name: "Términos",   href: "/terminos",           isAnchor: false },
+    { name: "Cookies",    href: "/privacidad#cookies", isAnchor: false },
   ],
 };
 
