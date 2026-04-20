@@ -2339,3 +2339,102 @@ export async function reopenVencimiento(id: string): Promise<void> {
 export async function deleteVencimiento(id: string): Promise<void> {
   await proxyJson(`/vencimientos/${id}`, { method: "DELETE" });
 }
+
+// ─── Actuaciones ───────────────────────────────────────────────────────────────
+
+export type TipoActuacion =
+  | "audiencia"
+  | "escrito"
+  | "notificacion"
+  | "resolucion"
+  | "pericia"
+  | "reunion_cliente"
+  | "pago"
+  | "otro";
+
+export const TIPO_ACTUACION_LABELS: Record<TipoActuacion, string> = {
+  audiencia:       "Audiencia",
+  escrito:         "Escrito",
+  notificacion:    "Notificación",
+  resolucion:      "Resolución",
+  pericia:         "Pericia",
+  reunion_cliente: "Reunión con cliente",
+  pago:            "Pago",
+  otro:            "Otro",
+};
+
+export interface Actuacion {
+  id:           string;
+  expedienteId: string;
+  createdById:  string;
+  tipo:         TipoActuacion;
+  fecha:        string;
+  titulo:       string;
+  descripcion:  string | null;
+  monto:        number | null;
+  moneda:       string | null;
+  adjuntoUrl:   string | null;
+  createdAt:    string;
+  updatedAt:    string;
+  createdBy: {
+    id:        string;
+    name:      string | null;
+    firstName: string | null;
+    lastName:  string | null;
+  };
+}
+
+export interface CreateActuacionPayload {
+  tipo:        TipoActuacion;
+  fecha:       string;
+  titulo:      string;
+  descripcion?: string | null;
+  monto?:       number | null;
+  moneda?:      string | null;
+  adjuntoUrl?:  string | null;
+}
+
+export async function listActuaciones(
+  expedienteId: string,
+  params?: { tipo?: TipoActuacion; limit?: number; offset?: number }
+): Promise<{ actuaciones: Actuacion[]; total: number }> {
+  const qs = new URLSearchParams();
+  if (params?.tipo)   qs.set("tipo",   params.tipo);
+  if (params?.limit)  qs.set("limit",  String(params.limit));
+  if (params?.offset) qs.set("offset", String(params.offset));
+  const q = qs.toString() ? `?${qs}` : "";
+  const { data } = await proxyJson<any>(`/expedientes/${expedienteId}/actuaciones${q}`);
+  return { actuaciones: data.actuaciones as Actuacion[], total: data.total as number };
+}
+
+export async function createActuacion(
+  expedienteId: string,
+  payload: CreateActuacionPayload
+): Promise<Actuacion> {
+  const { data } = await proxyJson<any>(`/expedientes/${expedienteId}/actuaciones`, {
+    method: "POST",
+    body:   JSON.stringify(payload),
+  });
+  return data.actuacion as Actuacion;
+}
+
+export async function updateActuacion(
+  expedienteId: string,
+  actuacionId: string,
+  payload: Partial<CreateActuacionPayload>
+): Promise<Actuacion> {
+  const { data } = await proxyJson<any>(
+    `/expedientes/${expedienteId}/actuaciones/${actuacionId}`,
+    { method: "PUT", body: JSON.stringify(payload) }
+  );
+  return data.actuacion as Actuacion;
+}
+
+export async function deleteActuacion(
+  expedienteId: string,
+  actuacionId: string
+): Promise<void> {
+  await proxyJson(`/expedientes/${expedienteId}/actuaciones/${actuacionId}`, {
+    method: "DELETE",
+  });
+}

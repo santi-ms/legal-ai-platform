@@ -357,4 +357,529 @@ export const LEGAL_CODE_SEED: SeedChunk[] = [
     article: "43", sectionTitle: "Período de exclusividad — Propuesta",
     text: "Dentro de los noventa (90) días desde que quede firme la resolución que hace saber el resultado del período informatorio, el deudor goza de un período de exclusividad para formular propuestas de acuerdo preventivo a sus acreedores y obtener su conformidad. Este plazo puede ser prorrogado por el juez por treinta (30) días más, si concurrieren causas justificadas.",
   },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CCCN — Derecho de Familia
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "435", sectionTitle: "Matrimonio — Causas de disolución",
+    text: "El matrimonio se disuelve por: a) muerte de uno de los cónyuges; b) sentencia firme de ausencia con presunción de fallecimiento; c) divorcio declarado judicialmente.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "437", sectionTitle: "Matrimonio — Divorcio. Requisitos",
+    text: "El divorcio se decreta judicialmente a petición de ambos o de uno solo de los cónyuges.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "438", sectionTitle: "Matrimonio — Divorcio. Requisitos y procedimiento",
+    text: "Toda petición de divorcio debe ser acompañada de una propuesta que regule los efectos derivados de éste; la omisión de la propuesta impide dar trámite a la petición. Si el divorcio es peticionado por uno solo de los cónyuges, el otro puede ofrecer una propuesta reguladora distinta. Al momento de formular las propuestas, las partes deben acompañar los elementos en que se fundan; el juez puede ordenar, de oficio o a petición de parte, que se incorporen otros que se estiman pertinentes. Las propuestas deben ser evaluadas por el juez, debiendo convocar a los cónyuges a una audiencia. En ningún caso el desacuerdo en el convenio suspende el dictado de la sentencia de divorcio.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "441", sectionTitle: "Matrimonio — Compensación económica",
+    text: "El cónyuge a quien el divorcio produce un desequilibrio manifiesto que signifique un empeoramiento de su situación y que tiene por causa adecuada el vínculo matrimonial y su ruptura, tiene derecho a una compensación. Esta puede consistir en una prestación única, en una renta por tiempo determinado o, excepcionalmente, por plazo indeterminado. Puede pagarse con dinero, con el usufructo de determinados bienes o de cualquier otro modo que acuerden las partes o decida el juez.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "509", sectionTitle: "Uniones convivenciales — Requisitos",
+    text: "Las disposiciones de este Título se aplican a la unión basada en relaciones afectivas de carácter singular, pública, notoria, estable y permanente de dos personas que conviven y comparten un proyecto de vida común, sean del mismo o de diferente sexo.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "537", sectionTitle: "Alimentos — Parientes obligados",
+    text: "Los parientes se deben alimentos en el siguiente orden: a) los ascendientes y descendientes. Entre ellos, están obligados preferentemente los más próximos en grado; b) los hermanos bilaterales y unilaterales. En cualquiera de los supuestos, los alimentos son debidos por los que están en mejores condiciones para proporcionarlos.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "539", sectionTitle: "Alimentos — Caracteres",
+    text: "La obligación de prestar alimentos no puede ser compensada, ni el derecho a reclamarlos o percibirlos, ser objeto de transacción, renuncia, cesión, gravamen o embargo alguno. Tampoco puede ser objeto de legado, entrega en pago, ni cualquier otra forma de disposición.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "541", sectionTitle: "Alimentos — Contenido de la obligación alimentaria",
+    text: "La prestación de alimentos comprende lo necesario para la subsistencia, habitación, vestuario y asistencia médica, correspondientes a la condición del que la recibe, en la medida en que el alimentante pueda darlos. También comprende lo necesario para la educación del alimentado.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "542", sectionTitle: "Alimentos — Modo de cumplimiento",
+    text: "La prestación se cumple mediante el pago de una renta en dinero, pero el obligado puede solicitar que se lo autorice a solventarla de otra manera, si justifica motivos suficientes.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "543", sectionTitle: "Alimentos — Proceso",
+    text: "La petición de alimentos tramita por el proceso más breve que establezca la ley local, y no se acumula a otra pretensión.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "638", sectionTitle: "Responsabilidad parental — Concepto",
+    text: "La responsabilidad parental es el conjunto de deberes y derechos que corresponden a los progenitores sobre la persona y bienes del hijo, para su protección, desarrollo y formación integral mientras sea menor de edad y no se haya emancipado.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "641", sectionTitle: "Responsabilidad parental — Titular",
+    text: "Si uno de los progenitores no vive con el hijo, el ejercicio de la responsabilidad parental le corresponde al progenitor conviviente; el otro tiene el derecho y el deber de fluida comunicación con el hijo y de supervisar su educación, crianza y bienestar.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "646", sectionTitle: "Responsabilidad parental — Deberes de los hijos",
+    text: "Son deberes de los hijos: a) respetar y obedecer a sus progenitores y demás ascendientes; b) cumplir con las decisiones de los progenitores que no sean contrarias a su interés superior; c) prestar colaboración propia de su edad y desarrollo en el hogar.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "655", sectionTitle: "Responsabilidad parental — Plan de parentalidad",
+    text: "Los progenitores pueden presentar un plan de parentalidad relativo al cuidado del hijo, que contenga: a) lugar y tiempo en que el hijo permanece con cada progenitor; b) responsabilidades que cada uno asume; c) régimen de vacaciones, días festivos y otras fechas significativas para la familia; d) régimen de relación y comunicación del hijo con cada progenitor.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "658", sectionTitle: "Alimentos para los hijos",
+    text: "Ambos progenitores tienen la obligación y el derecho de criar a sus hijos, alimentarlos y educarlos conforme a su condición y fortuna, aunque el cuidado personal esté a cargo de uno de ellos. La obligación de prestar alimentos a los hijos se extiende hasta los veintiún años, excepto que el obligado acredite que el hijo mayor de edad cuenta con recursos o ingresos propios suficientes para proveérselos él mismo.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "659", sectionTitle: "Contenido de la obligación alimentaria",
+    text: "La obligación de alimentos comprende la satisfacción de las necesidades de los hijos de manutención, educación, esparcimiento, vestimenta, habitación, asistencia, gastos por enfermedad y los gastos necesarios para adquirir una profesión u oficio. Los alimentos están constituidos por prestaciones monetarias o en especie y son proporcionales a las necesidades del alimentado y a los recursos económicos del alimentante.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "663", sectionTitle: "Alimentos a los hijos mayores",
+    text: "La obligación de los progenitores de proveer recursos al hijo subsiste hasta que éste alcance la edad de veinticinco años, si la prosecución de estudios o preparación profesional de un arte u oficio, le impide proveerse de medios necesarios para sostenerse independientemente. Pueden ser solicitados por el hijo o por el progenitor con quien convive; debe acreditar que la carencia de recursos no le es imputable.",
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CCCN — Derechos Reales y Locación
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1882", sectionTitle: "Derechos reales — Concepto",
+    text: "El derecho real es el poder jurídico, de estructura legal, que se ejerce directamente sobre su objeto, en forma autónoma y que atribuye a su titular las facultades de persecución y preferencia, y las demás previstas en este Código.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1888", sectionTitle: "Derechos reales — Clasificación",
+    text: "Son derechos reales sobre cosa propia: el dominio; el condominio; la propiedad horizontal; los conjuntos inmobiliarios; el tiempo compartido; el cementerio privado; la superficie. Los derechos reales sobre cosa ajena son: el usufructo; el uso; la habitación; la servidumbre; la hipoteca; la anticresis; la prenda.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1929", sectionTitle: "Dominio — Concepto",
+    text: "El dominio perfecto es el derecho real que otorga todas las facultades de usar, gozar y disponer material y jurídicamente de una cosa, dentro de los límites previstos por la ley. El dominio se presume perfecto hasta que se pruebe lo contrario.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1945", sectionTitle: "Dominio — Extensión",
+    text: "El dominio de una cosa comprende los objetos que forman un todo con ella o son sus accesorios. El dominio de una cosa inmueble se extiende al subsuelo y al espacio aéreo, en la medida en que su aprovechamiento sea posible, excepto lo dispuesto por leyes especiales.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "2159", sectionTitle: "Hipoteca — Concepto",
+    text: "La hipoteca es el derecho real de garantía que recae sobre uno o más inmuebles individualizados que continúan en poder del constituyente y que otorga al acreedor, ante el incumplimiento del deudor, las facultades de persecución y preferencia para cobrar sobre el producido de dichos bienes.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "2160", sectionTitle: "Hipoteca — Legitimación",
+    text: "Pueden constituir hipoteca los titulares de los derechos reales de dominio, condominio, propiedad horizontal, conjuntos inmobiliarios y superficie.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1187", sectionTitle: "Locación — Concepto",
+    text: "Hay contrato de locación si una parte se obliga a otorgar a la otra el uso y goce temporario de una cosa, a cambio del pago de un precio en dinero. Al contrato de locación se aplica en subsidio lo dispuesto con respecto al consentimiento, precio y objeto del contrato de compraventa.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1188", sectionTitle: "Locación — Forma",
+    text: "El contrato de locación de cosa inmueble o mueble registrable, de una universalidad que incluya a alguna de ellas, o de parte material de un inmueble, debe ser hecho por escrito. Esta regla se aplica también a sus prórrogas y modificaciones.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1198", sectionTitle: "Locación — Obligaciones del locador",
+    text: "El locador debe: a) entregar la cosa conforme a lo acordado. A falta de previsión convencional debe entregarla en estado apropiado para su destino, excepto los defectos que el locatario conoció o pudo haber conocido; b) conservar la cosa con aptitud para el uso convenido; c) pagar las mejoras necesarias hechas por el locatario; d) pagar al locatario el mayor valor adquirido por la cosa como consecuencia de las mejoras hechas con su consentimiento; e) mantener al locatario en el uso y goce pacífico de la cosa durante el tiempo del contrato.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1200", sectionTitle: "Locación — Obligaciones del locatario",
+    text: "El locatario debe: a) destinar la cosa al uso acordado, no usar la cosa para usos contrarios a la ley o reglamentos, ni causar daños a ésta; b) pagar el canon convenido; c) pagar las cargas y contribuciones que graven las cosas arrendadas; d) restituir la cosa al concluir el contrato.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1219", sectionTitle: "Locación — Extinción",
+    text: "El contrato de locación se extingue: a) por el cumplimiento del plazo convenido, o del que fijen las leyes si el pactado no hubiese precedido; b) por resolución anticipada.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1221", sectionTitle: "Locación — Resolución anticipada",
+    text: "El contrato de locación puede ser resuelto anticipadamente por el locatario: a) si la cosa locada es un inmueble y han transcurrido seis meses de contrato, debiendo notificar en forma fehaciente su decisión al locador. Si hace uso de la opción resolutoria en el primer año de vigencia de la relación locativa, debe abonar al locador, en concepto de indemnización, la suma equivalente a un mes y medio de alquiler al momento de desocupar el inmueble y la de un mes si la opción se ejercita transcurrido dicho lapso; b) en los casos del artículo 1199.",
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CCCN — Responsabilidad Civil (ampliación)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1721", sectionTitle: "Responsabilidad civil — Factores de atribución",
+    text: "La atribución de un daño al responsable puede basarse en factores objetivos o subjetivos. En ausencia de normativa, el factor de atribución es la culpa.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1722", sectionTitle: "Responsabilidad civil — Factor objetivo",
+    text: "El factor de atribución es objetivo cuando la culpa del agente es irrelevante a los efectos de atribuir responsabilidad. En tales casos, el responsable se libera demostrando la causa ajena, excepto disposición legal en contrario.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1724", sectionTitle: "Responsabilidad civil — Factores subjetivos",
+    text: "Son factores subjetivos de atribución la culpa y el dolo. La culpa consiste en la omisión de la diligencia debida según la naturaleza de la obligación y las circunstancias de las personas, el tiempo y el lugar. Comprende la imprudencia, la negligencia y la impericia en el arte o profesión. El dolo se configura por la producción de un daño de manera intencional o con manifiesta indiferencia por los intereses ajenos.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1730", sectionTitle: "Responsabilidad civil — Caso fortuito y fuerza mayor",
+    text: "Se considera caso fortuito o fuerza mayor al hecho que no ha podido ser previsto o que, habiendo sido previsto, no ha podido ser evitado. El caso fortuito o fuerza mayor exime de responsabilidad, excepto disposición en contrario. Este Código emplea los términos 'caso fortuito' y 'fuerza mayor' como sinónimos.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1741", sectionTitle: "Responsabilidad civil — Indemnización de las consecuencias no patrimoniales",
+    text: "Está legitimado para reclamar la indemnización de las consecuencias no patrimoniales el damnificado directo. Si del hecho resulta su muerte o sufre gran discapacidad también tienen legitimación a título personal, según las circunstancias, los ascendientes, los descendientes, el cónyuge y quienes convivían con aquél recibiendo trato familiar ostensible. La acción sólo se transmite a los sucesores universales del legitimado si es interpuesta por éste. El monto de la indemnización debe fijarse ponderando las satisfacciones sustitutivas y compensatorias que pueden procurar las sumas reconocidas.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1745", sectionTitle: "Responsabilidad civil — Indemnización por fallecimiento",
+    text: "En caso de muerte, la indemnización debe consistir en: a) los gastos necesarios para asistencia y posterior funeral de la víctima; el derecho a repetirlos incumbe a quien los paga, aunque sea en razón de una obligación legal; b) lo necesario para alimentos del cónyuge, del conviviente, de los hijos menores de veintiún años de edad con derecho alimentario, de los hijos con discapacidad; c) la pérdida de chance de ayuda futura como consecuencia de la muerte de los hijos; d) desmedro económico causado al reclamante por la muerte del causante.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1746", sectionTitle: "Responsabilidad civil — Indemnización por lesiones",
+    text: "En caso de lesiones o incapacidad permanente, física o psíquica, total o parcial, la indemnización debe ser evaluada mediante la determinación de un capital, de tal modo que sus rentas cubran la disminución de la aptitud del damnificado para realizar actividades productivas o económicamente valorables, y que se agote al término del plazo en que razonablemente pudo continuar realizando tales actividades. Se presumen los gastos médicos, farmacéuticos y por transporte que resultan razonables en función de la índole de las lesiones o la incapacidad. En el supuesto de incapacidad permanente se debe indemnizar el daño aunque el damnificado continúe ejerciendo una tarea remunerada. Esta indemnización procede aun cuando otra persona deba prestar alimentos al damnificado.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1757", sectionTitle: "Responsabilidad civil — Actividades riesgosas",
+    text: "Toda persona responde por el daño causado por el riesgo o vicio de las cosas, o de las actividades que sean riesgosas o peligrosas por su naturaleza, por los medios empleados o por las circunstancias de su realización. La responsabilidad es objetiva. No son eximentes la autorización administrativa para el uso de la cosa o la realización de la actividad, ni el cumplimiento de las técnicas de prevención.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "1758", sectionTitle: "Responsabilidad civil — Sujetos responsables",
+    text: "El dueño y el guardián son responsables concurrentes del daño causado por las cosas. Se considera guardián a quien ejerce, por sí o por terceros, el uso, la dirección y el control de la cosa, o a quien obtiene un provecho de ella. El dueño y el guardián no responden si prueban que la cosa fue usada en contra de su voluntad expresa o presunta. En caso de actividad riesgosa o peligrosa responde quien la realiza, se sirve u obtiene provecho de ella, por sí o por terceros, excepto lo dispuesto por la legislación especial.",
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CCCN — Prescripción (ampliación)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "2532", sectionTitle: "Prescripción — Ámbito de aplicación",
+    text: "En ausencia de disposiciones específicas, las normas de este Capítulo son aplicables a la prescripción adquisitiva y liberatoria. Las legislaciones locales podrán regular esta última en cuanto al plazo de tributos.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "2541", sectionTitle: "Prescripción — Interrupción por reconocimiento",
+    text: "El curso de la prescripción se interrumpe: a) por el reconocimiento que el deudor o poseedor efectúa del derecho de aquel contra quien prescribe; b) por petición judicial.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "2546", sectionTitle: "Prescripción — Interrupción por petición judicial",
+    text: "El curso de la prescripción se interrumpe por toda petición del titular del derecho ante autoridad judicial que traduce su intención de no abandonarlo, contra el poseedor, su representante en la posesión, o el deudor, aunque sea defectuosa, realizada por persona incapaz, ante tribunal incompetente, o en el plazo de gracia previsto en el ordenamiento procesal aplicable.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "2554", sectionTitle: "Prescripción — Cómputo del plazo",
+    text: "El transcurso del plazo de prescripción comienza el día en que la prestación es exigible. En las obligaciones de no hacer, comienza cuando se produce el incumplimiento. En las obligaciones de garantía, cuando la evicción se ha producido efectivamente.",
+  },
+  {
+    code: "CCCN", jurisdiction: "nacional",
+    article: "2558", sectionTitle: "Prescripción — Acciones personales y reales",
+    text: "El reclamo del resarcimiento de daños por agresiones sexuales infligidas a personas incapaces prescribe a los diez (10) años. El cómputo del plazo de prescripción comienza a partir del cese de la incapacidad.",
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // LCT — Ley de Contrato de Trabajo (ampliación)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    code: "LCT", jurisdiction: "nacional",
+    article: "92 bis", sectionTitle: "Período de prueba",
+    text: "El contrato de trabajo por tiempo indeterminado, excepto el referido en el artículo 96, se entenderá celebrado a prueba durante los primeros TRES (3) meses de vigencia. Cualquiera de las partes podrá extinguir la relación durante ese lapso sin expresión de causa, sin derecho a indemnización con motivo de la extinción, pero con obligación de preavisar según lo establecido en los artículos 231 y 232. El empleador no puede contratar a un mismo trabajador, más de una vez, utilizando el período de prueba. De hacerlo, se considerará de pleno derecho, que el empleador ha renunciado al período de prueba. El uso abusivo del período de prueba con el objeto de evitar la efectivización de trabajadores será pasible de las sanciones previstas en los regímenes sobre infracciones a la legislación del trabajo.",
+  },
+  {
+    code: "LCT", jurisdiction: "nacional",
+    article: "103", sectionTitle: "Remuneración — Concepto",
+    text: "A los fines de esta ley, se entiende por remuneración la contraprestación que debe percibir el trabajador como consecuencia del contrato de trabajo. Dicha remuneración no podrá ser inferior al salario mínimo vital y móvil. El empleador debe al trabajador la remuneración, aunque éste no preste servicios, por la mera circunstancia de haber puesto su fuerza de trabajo a disposición de aquél.",
+  },
+  {
+    code: "LCT", jurisdiction: "nacional",
+    article: "121", sectionTitle: "Sueldo anual complementario — Concepto",
+    text: "Se entiende por sueldo anual complementario la doceava parte del total de las remuneraciones definidas en el Artículo 103 de esta ley, percibidas por el trabajador en el respectivo año calendario.",
+  },
+  {
+    code: "LCT", jurisdiction: "nacional",
+    article: "150", sectionTitle: "Vacaciones — Licencia ordinaria",
+    text: "El trabajador gozará de un período mínimo y continuado de descanso anual remunerado por los siguientes plazos: a) De catorce (14) días hábiles cuando la antigüedad en el empleo no exceda de cinco (5) años. b) De veintiún (21) días hábiles cuando siendo la antigüedad mayor de cinco (5) años no exceda de diez (10). c) De veintiocho (28) días hábiles cuando la antigüedad siendo mayor de diez (10) años no exceda de veinte (20). d) De treinta y cinco (35) días hábiles cuando la antigüedad exceda de veinte (20) años.",
+  },
+  {
+    code: "LCT", jurisdiction: "nacional",
+    article: "208", sectionTitle: "Accidentes y enfermedades inculpables — Plazo",
+    text: "Cada accidente o enfermedad inculpable que impida la prestación del servicio no afectará el derecho del trabajador a percibir su remuneración durante un período de tres (3) meses, si su antigüedad en el servicio fuere menor de cinco (5) años, y de seis (6) meses si fuera mayor. En los casos que el trabajador tuviere carga de familia y por las mismas circunstancias se encontrara impedido, los períodos durante los cuales tendrá derecho a percibir su remuneración se extenderán a seis (6) y doce (12) meses respectivamente, según si su antigüedad fuese inferior o superior a cinco (5) años.",
+  },
+  {
+    code: "LCT", jurisdiction: "nacional",
+    article: "212", sectionTitle: "Accidentes y enfermedades inculpables — Reincorporación",
+    text: "Vigente el plazo de conservación del empleo, si del accidente o enfermedad resultase una disminución definitiva en la capacidad laboral del trabajador y éste no estuviese en condiciones de realizar las tareas que anteriormente cumplía, el empleador deberá asignarle otras que pueda ejecutar sin disminución de su remuneración. Si el empleador no pudiese dar cumplimiento a esta obligación por causa que no le fuere imputable, deberá abonar al trabajador una indemnización igual a la prevista en el artículo 247 de esta ley.",
+  },
+  {
+    code: "LCT", jurisdiction: "nacional",
+    article: "218", sectionTitle: "Suspensión disciplinaria",
+    text: "Toda suspensión dispuesta por el empleador para ser considerada válida, deberá fundarse en justa causa, tener plazo fijo y ser notificada por escrito al trabajador.",
+  },
+  {
+    code: "LCT", jurisdiction: "nacional",
+    article: "219", sectionTitle: "Justa causa de suspensión",
+    text: "Se considera que tiene justa causa la suspensión que se deba a falta o disminución de trabajo no imputable al empleador, a razones disciplinarias o a causas económicas o tecnológicas.",
+  },
+  {
+    code: "LCT", jurisdiction: "nacional",
+    article: "220", sectionTitle: "Plazo máximo de suspensión",
+    text: "Las suspensiones fundadas en razones disciplinarias o debidas a falta o disminución de trabajo no imputables al empleador, no podrán exceder de treinta (30) días en un (1) año, contados a partir de la primera suspensión.",
+  },
+  {
+    code: "LCT", jurisdiction: "nacional",
+    article: "242", sectionTitle: "Despido con justa causa — Injuria",
+    text: "Una de las partes podrá hacer denuncia del contrato de trabajo en caso de inobservancia por parte de la otra de las obligaciones resultantes del mismo que configuren injuria y que, por su gravedad, no consienta la prosecución de la relación. La valoración deberá ser hecha prudencialmente por los jueces, teniendo en consideración el carácter de las relaciones que resulta de un contrato de trabajo, según lo disponen las leyes respectivas, y las modalidades y circunstancias personales en cada caso.",
+  },
+  {
+    code: "LCT", jurisdiction: "nacional",
+    article: "243", sectionTitle: "Despido con justa causa — Comunicación",
+    text: "El despido por justa causa dispuesto por el empleador como la denuncia del contrato de trabajo fundada en justa causa que hiciera el trabajador, deberán comunicarse por escrito, con expresión suficientemente clara de los motivos en que se funda la ruptura del contrato. Ante la demanda que promoviere la parte interesada, no se admitirá la modificación de la causal de despido consignada en las comunicaciones antes referidas.",
+  },
+  {
+    code: "LCT", jurisdiction: "nacional",
+    article: "255", sectionTitle: "Reingreso del trabajador",
+    text: "La antigüedad del trabajador se establecerá conforme a lo dispuesto en los artículos 18 y 19 de esta ley, pero si hubiera mediado reingreso a las órdenes del mismo empleador se deducirá de las indemnizaciones de los artículos 245, 246, 247, 250, 251, 253 y 254 lo que el trabajador hubiera ya percibido en virtud de los mismos y por igual período.",
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CPCC Misiones — Procesos especiales y ejecución
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    code: "CPCC_MISIONES", jurisdiction: "misiones",
+    article: "319", sectionTitle: "Proceso sumarísimo — Trámite",
+    text: "Cuando se reclamare contra una resolución u orden contraria a la Constitución o a las leyes, el juez o tribunal deberá ordenar que la cuestión se sustancie y resuelva por la vía del proceso sumarísimo. Se aplicará el trámite establecido en el artículo 321, con las siguientes modificaciones: 1) La prueba deberá ofrecerse con los escritos de demanda y contestación y no se admitirá ningún otro escrito ni deberán disponerse otras medidas probatorias que las que el tribunal estime absolutamente necesarias para la decisión; 2) El plazo para contestar la demanda y oponer excepciones será de cinco (5) días.",
+  },
+  {
+    code: "CPCC_MISIONES", jurisdiction: "misiones",
+    article: "321", sectionTitle: "Proceso sumarísimo — Reglas",
+    text: "Será aplicable el procedimiento establecido en el artículo 319, con las siguientes modificaciones: 1) Con la demanda y contestación se ofrecerá la prueba y se agregará la documental; 2) No se admitirán excepciones de previo y especial pronunciamiento, ni reconvención; 3) Todos los plazos serán de tres días, con excepción del de contestación de demanda, y el otorgado para fundar la apelación, si correspondiere, que será de cinco días; 4) Los incidentes y excepciones que se susciten durante el trámite del juicio no suspenderán el procedimiento.",
+  },
+  {
+    code: "CPCC_MISIONES", jurisdiction: "misiones",
+    article: "502", sectionTitle: "Juicio ejecutivo — Intimación de pago",
+    text: "Presentado el título con los recaudos indicados en los artículos anteriores, el juez, sin más trámite, examinará el instrumento con que se deduce la ejecución y, si hallare que es de los comprendidos en los artículos 498 y 499, librará mandamiento de intimación de pago y embargo, en su caso.",
+  },
+  {
+    code: "CPCC_MISIONES", jurisdiction: "misiones",
+    article: "543", sectionTitle: "Medidas cautelares — Inhibición general de bienes",
+    text: "En todos los casos en que habiendo lugar a embargo éste no pudiere hacerse efectivo por no conocerse bienes del deudor, o por no cubrir éstos el importe del crédito reclamado, podrá solicitarse contra aquél la inhibición general de vender o gravar sus bienes, la que se deberá dejar sin efecto siempre que presentase a embargo bienes suficientes o diere caución bastante.",
+  },
+  {
+    code: "CPCC_MISIONES", jurisdiction: "misiones",
+    article: "232 bis", sectionTitle: "Tutela anticipada",
+    text: "Dentro del proceso o con carácter preliminar a él, podrá solicitarse la tutela anticipatoria de los derechos cuando existiere verosimilitud del derecho invocado; peligro en la demora; urgencia que impida esperar la sentencia final; y cuando su rechazo pudiera causar un perjuicio irreparable o de difícil reparación. La medida podrá ser revisada en cualquier estado del proceso.",
+  },
+  {
+    code: "CPCC_MISIONES", jurisdiction: "misiones",
+    article: "360", sectionTitle: "Audiencia preliminar",
+    text: "A los fines del artículo 358, el juez citará a las partes a una audiencia, que presidirá, con carácter indelegable. Si el juez no se hallare presente no se realizará la audiencia, debiéndose dejar constancia en el libro de asistencia. En tal acto: 1) Invitará a las partes a una conciliación o a encontrar otra forma de solución del conflicto, que él mismo propondrá. 2) Recibirá las manifestaciones de las partes sobre los hechos controvertidos, ratificando o rectificando los escritos de constitución del proceso. 3) Recibirá, si hubiera lugar a ella, la prueba confesional que las partes se hubieran pedido recíprocamente.",
+  },
+  {
+    code: "CPCC_MISIONES", jurisdiction: "misiones",
+    article: "163 bis", sectionTitle: "Sentencia — Honorarios profesionales",
+    text: "En la sentencia definitiva, el juez deberá pronunciarse sobre las costas del proceso y regular los honorarios de los profesionales intervinientes, conforme lo establezca la ley arancelaria vigente en la provincia.",
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CPCC Corrientes (ampliación)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    code: "CPCC_CORRIENTES", jurisdiction: "corrientes",
+    article: "330", sectionTitle: "Demanda — Requisitos",
+    text: "La demanda será deducida por escrito y contendrá: 1) El nombre y domicilio del demandante; 2) El nombre y domicilio del demandado; 3) La cosa demandada, designándola con toda exactitud; 4) Los hechos en que se funde, explicados claramente; 5) El derecho expuesto sucintamente, evitando repeticiones innecesarias; 6) La petición en términos claros y positivos. La demanda deberá precisar el monto reclamado, salvo cuando al actor no le fuere posible determinarlo al promoverla, por las circunstancias del caso, o porque la estimación dependiera de elementos aún no definitivamente fijados y la promoción de la demanda fuese imprescindible para evitar la prescripción de la acción.",
+  },
+  {
+    code: "CPCC_CORRIENTES", jurisdiction: "corrientes",
+    article: "375", sectionTitle: "Carga de la prueba",
+    text: "Incumbirá la carga de la prueba a la parte que afirme la existencia de un hecho controvertido o de un precepto jurídico que el juez o el tribunal no tenga el deber de conocer. Cada una de las partes deberá probar el presupuesto de hecho de la norma o normas que invocare como fundamento de su pretensión, defensa o excepción.",
+  },
+  {
+    code: "CPCC_CORRIENTES", jurisdiction: "corrientes",
+    article: "484", sectionTitle: "Juicio ejecutivo — Títulos ejecutivos",
+    text: "Podrá prepararse la vía ejecutiva, pidiendo previamente: 1) Que el deudor reconozca la firma del instrumento privado con que se deduce la ejecución; 2) Que el deudor reconozca el cumplimiento de la condición, si la deuda fuese condicional; 3) Que el juez señale el plazo de la obligación, cuando el acto constitutivo de la obligación no lo indicare o dejare al arbitrio del acreedor. Sólo serán ejecutables los títulos que traigan aparejada ejecución, que son los que establecen una obligación de dar suma de dinero, líquida o fácilmente liquidable, en plazo vencido y exigible.",
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Ley 24.240 — Defensa del Consumidor
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    code: "LDC", jurisdiction: "nacional",
+    article: "1", sectionTitle: "Defensa del Consumidor — Objeto",
+    text: "La presente ley tiene por objeto la defensa del consumidor o usuario. Se consideran consumidores o usuarios las personas físicas o jurídicas que adquieren o utilizan, en forma gratuita u onerosa, bienes o servicios como destinatarios finales, en beneficio propio o de su grupo familiar o social. Queda comprendida la adquisición de derechos en tiempos compartidos, clubes de campo, cementerios privados y figuras afines. Se considera asimismo consumidor o usuario a quien, sin ser parte de una relación de consumo como consecuencia o en ocasión de ella, adquiere o utiliza bienes o servicios, en forma gratuita u onerosa, como destinatario final, en beneficio propio o de su grupo familiar o social.",
+  },
+  {
+    code: "LDC", jurisdiction: "nacional",
+    article: "4", sectionTitle: "Defensa del Consumidor — Información",
+    text: "El proveedor está obligado a suministrar al consumidor en forma cierta, clara y detallada todo lo relacionado con las características esenciales de los bienes y servicios que provee, y las condiciones de su comercialización. La información debe ser siempre gratuita para el consumidor y proporcionada con claridad necesaria que permita su comprensión.",
+  },
+  {
+    code: "LDC", jurisdiction: "nacional",
+    article: "8 bis", sectionTitle: "Defensa del Consumidor — Trato digno",
+    text: "Los proveedores deberán garantizar condiciones de atención y trato digno y equitativo a los consumidores y usuarios. Deberán abstenerse de desplegar conductas que coloquen a los consumidores en situaciones vergonzantes, vejatorias o intimidatorias. No podrán ejercer sobre los consumidores extranjeros diferenciación alguna sobre precios, calidades técnicas o comerciales o cualquier otro aspecto relevante de los bienes y servicios que comercialice. Cualquier excepción a lo señalado deberá ser autorizada por la autoridad de aplicación en razones de interés general debidamente fundadas.",
+  },
+  {
+    code: "LDC", jurisdiction: "nacional",
+    article: "10 bis", sectionTitle: "Defensa del Consumidor — Incumplimiento de la oferta",
+    text: "El incumplimiento de la oferta o del contrato por el proveedor, salvo caso fortuito o fuerza mayor, faculta al consumidor, a su libre elección a: a) Exigir el cumplimiento forzado de la obligación, siempre que ello fuera posible; b) Aceptar otro producto o prestación de servicio equivalente; c) Rescindir el contrato con derecho a la restitución de lo pagado, sin perjuicio de los efectos producidos, considerando la integridad del contrato. Todo ello sin perjuicio de las acciones de daños y perjuicios que correspondan.",
+  },
+  {
+    code: "LDC", jurisdiction: "nacional",
+    article: "37", sectionTitle: "Defensa del Consumidor — Contratos de adhesión",
+    text: "Sin perjuicio de la validez del contrato, se tendrán por no convenidas: a) Las cláusulas que desnaturalicen las obligaciones o limiten la responsabilidad por daños; b) Las cláusulas que importen renuncia o restricción de los derechos del consumidor o amplíen los derechos de la otra parte; c) Las cláusulas que contengan cualquier precepto que imponga la inversión de la carga de la prueba en perjuicio del consumidor. La interpretación del contrato se hará en el sentido más favorable para el consumidor. Cuando existan dudas sobre los alcances de su obligación, se estará a la que sea menos gravosa.",
+  },
+  {
+    code: "LDC", jurisdiction: "nacional",
+    article: "40", sectionTitle: "Defensa del Consumidor — Responsabilidad solidaria",
+    text: "Si el daño al consumidor resulta del vicio o riesgo de la cosa o de la prestación del servicio, responderán el productor, el fabricante, el importador, el distribuidor, el proveedor, el vendedor y quien haya puesto su marca en la cosa o servicio. El transportista responderá por los daños ocasionados a la cosa con motivo o en ocasión del servicio. La responsabilidad es solidaria, sin perjuicio de las acciones de repetición que correspondan. Sólo se liberará total o parcialmente quien demuestre que la causa del daño le ha sido ajena.",
+  },
+  {
+    code: "LDC", jurisdiction: "nacional",
+    article: "52 bis", sectionTitle: "Defensa del Consumidor — Daño punitivo",
+    text: "Al proveedor que no cumpla sus obligaciones legales o contractuales con el consumidor, a instancia del damnificado, el juez podrá aplicar una multa civil a favor del consumidor, la que se graduará en función de la gravedad del hecho y demás circunstancias del caso, independientemente de otras indemnizaciones que correspondan. Cuando más de un proveedor sea responsable del incumplimiento responderán todos solidariamente ante el consumidor, sin perjuicio de las acciones de regreso que les correspondan. La multa civil que se imponga no podrá superar el máximo de la sanción de multa prevista en el artículo 47, inciso b) de esta ley.",
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Código Penal de la Nación Argentina
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    code: "CP", jurisdiction: "nacional",
+    article: "1", sectionTitle: "Código Penal — Ámbito de aplicación",
+    text: "Este código se aplicará: 1º) Por delitos cometidos o cuyos efectos deban producirse en el territorio de la Nación Argentina, o en los lugares sometidos a su jurisdicción; 2º) Por delitos cometidos en el extranjero por agentes o empleados de autoridades argentinas en desempeño de su cargo.",
+  },
+  {
+    code: "CP", jurisdiction: "nacional",
+    article: "45", sectionTitle: "Código Penal — Autoría y participación",
+    text: "Los que tomasen parte en la ejecución del hecho o prestasen al autor o autores un auxilio o cooperación sin los cuales no habría podido cometerse, tendrán la pena establecida para el delito. En la misma pena incurrirán los que hubiesen determinado directamente a otro a cometerlo.",
+  },
+  {
+    code: "CP", jurisdiction: "nacional",
+    article: "54", sectionTitle: "Código Penal — Concurso ideal",
+    text: "Cuando un hecho cayere bajo más de una sanción penal, se aplicará solamente la que fijare pena mayor.",
+  },
+  {
+    code: "CP", jurisdiction: "nacional",
+    article: "55", sectionTitle: "Código Penal — Concurso real",
+    text: "Cuando concurrieren varios hechos independientes reprimidos con una misma especie de pena, la pena aplicable al reo tendrá como mínimo, el mínimo mayor y como máximo, la suma aritmética de las penas máximas correspondientes a los diversos hechos. Sin embargo, esta suma no podrá exceder de (50) cincuenta años de reclusión o prisión.",
+  },
+  {
+    code: "CP", jurisdiction: "nacional",
+    article: "79", sectionTitle: "Código Penal — Homicidio simple",
+    text: "Se aplicará reclusión o prisión de ocho a veinticinco años, al que matare a otro siempre que en este código no se estableciere otra pena.",
+  },
+  {
+    code: "CP", jurisdiction: "nacional",
+    article: "89", sectionTitle: "Código Penal — Lesiones leves",
+    text: "Se impondrá prisión de un mes a un año, al que causare a otro, en el cuerpo o en la salud, un daño que no esté previsto en otra disposición de este código.",
+  },
+  {
+    code: "CP", jurisdiction: "nacional",
+    article: "90", sectionTitle: "Código Penal — Lesiones graves",
+    text: "Se impondrá reclusión o prisión de uno a seis años, si la lesión produjere una debilitación permanente de la salud, de un sentido, de un órgano, de un miembro o una dificultad permanente de la palabra o si hubiere puesto en peligro la vida del ofendido, le hubiere inutilizado para el trabajo por más de un mes o le hubiere causado una deformación permanente del rostro.",
+  },
+  {
+    code: "CP", jurisdiction: "nacional",
+    article: "162", sectionTitle: "Código Penal — Hurto",
+    text: "Será reprimido con prisión de un mes a dos años, el que se apoderare ilegítimamente de una cosa mueble, total o parcialmente ajena.",
+  },
+  {
+    code: "CP", jurisdiction: "nacional",
+    article: "164", sectionTitle: "Código Penal — Robo",
+    text: "Será reprimido con prisión de un mes a seis años, el que se apoderare ilegítimamente de una cosa mueble, total o parcialmente ajena, con fuerza en las cosas o con violencia física en las personas, sea que la violencia tenga lugar antes del robo para facilitarlo, en el acto de cometerlo o después de cometido para procurar su impunidad.",
+  },
+  {
+    code: "CP", jurisdiction: "nacional",
+    article: "172", sectionTitle: "Código Penal — Estafa",
+    text: "Será reprimido con prisión de un mes a seis años, el que defraudare a otro con nombre supuesto, calidad simulada, falsos títulos, influencia mentida, abuso de confianza o aparentando bienes, crédito, comisión, empresa o negociación o valiéndose de cualquier otro ardid o engaño.",
+  },
+  {
+    code: "CP", jurisdiction: "nacional",
+    article: "183", sectionTitle: "Código Penal — Daño",
+    text: "Será reprimido con prisión de quince días a un año, el que destruyere, inutilizare, hiciere desaparecer o de cualquier modo dañare una cosa mueble o inmueble o un animal, total o parcialmente ajeno, siempre que el hecho no constituya otro delito más severamente penado.",
+  },
+  {
+    code: "CP", jurisdiction: "nacional",
+    article: "248", sectionTitle: "Código Penal — Abuso de autoridad",
+    text: "Será reprimido con prisión de un mes a dos años e inhabilitación especial por doble tiempo, el funcionario público que dictare resoluciones u órdenes contrarias a las constituciones o leyes nacionales o provinciales o ejecutare las órdenes o resoluciones de esta clase existentes o no ejecutare las leyes cuyo cumplimiento le incumbiere.",
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CPCCN (ampliación)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    code: "CPCCN", jurisdiction: "nacional",
+    article: "43", sectionTitle: "Acumulación de procesos",
+    text: "Procederá la acumulación de procesos cuando en ellos exista conexidad por razón del objeto o de la causa. Se requerirá, además, que los procesos se encuentren en la misma instancia.",
+  },
+  {
+    code: "CPCCN", jurisdiction: "nacional",
+    article: "77", sectionTitle: "Costas — Principio general",
+    text: "La parte vencida en el juicio deberá pagar todos los gastos de la contraria, aun cuando ésta no lo hubiese solicitado. Sin embargo, el juez podrá eximir total o parcialmente de esta responsabilidad al litigante vencido, siempre que encontrare mérito para ello, expresándolo en su pronunciamiento, bajo pena de nulidad.",
+  },
+  {
+    code: "CPCCN", jurisdiction: "nacional",
+    article: "163", sectionTitle: "Sentencia definitiva — Contenido",
+    text: "La sentencia definitiva de primera instancia deberá contener: 1) La mención del lugar y fecha. 2) El nombre y apellido de las partes. 3) La relación sucinta de las cuestiones que constituyen el objeto del juicio. 4) La consideración, por separado, de las cuestiones a que se refiere el inciso anterior. 5) Los fundamentos y la aplicación de la ley. Las presunciones no establecidas por ley constituirán prueba cuando se funden en hechos reales y probados y cuando por su número, precisión, gravedad y concordancia, produjeren convicción según la naturaleza del juicio, de conformidad con las reglas de la sana crítica. 6) La decisión expresa, positiva y precisa, de conformidad con las pretensiones deducidas en el juicio.",
+  },
+  {
+    code: "CPCCN", jurisdiction: "nacional",
+    article: "198", sectionTitle: "Medidas cautelares — Modificación y sustitución",
+    text: "Las medidas precautorias se dispondrán bajo la responsabilidad de la parte que las pidiere, quien deberá dar caución bastante. Sin embargo, podrán disponerse sin caución si quien las solicitare fuese la Nación, una provincia, una municipalidad o una repartición autárquica, o persona que justificare ser reconocidamente abonada.",
+  },
+  {
+    code: "CPCCN", jurisdiction: "nacional",
+    article: "209", sectionTitle: "Embargo preventivo — Procedencia",
+    text: "Podrá pedir embargo preventivo el acreedor de deuda en dinero o en especie, si justificare o si hubiere motivo para temer que la actuación del deudor pudiere frustrar el resultado de la sentencia.",
+  },
+  {
+    code: "CPCCN", jurisdiction: "nacional",
+    article: "346", sectionTitle: "Excepciones previas — Oportunidad",
+    text: "Las excepciones previas se opondrán conjuntamente, dentro del plazo para contestar la demanda o para comparecer en el juicio, según la naturaleza del proceso. No se admitirán prueba ni alegatos después de que el juez llame autos para dictar resolución.",
+  },
+  {
+    code: "CPCCN", jurisdiction: "nacional",
+    article: "386", sectionTitle: "Apreciación de la prueba",
+    text: "Salvo disposición legal en contrario, los jueces formarán su convicción respecto de la prueba, de conformidad con las reglas de la sana crítica. No tendrán el deber de expresar en la sentencia la valoración de todas las pruebas producidas, sino únicamente de las que fueren esenciales y decisivas para el fallo de la causa.",
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // LCA — Ley 24.522 — Concursos y Quiebras (ampliación)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    code: "LCA", jurisdiction: "nacional",
+    article: "57", sectionTitle: "Concurso preventivo — Homologación",
+    text: "No deducidas las impugnaciones en término, o rechazadas las interpuestas, el juez homologa el acuerdo si ha sido logrado de acuerdo con las mayorías del artículo 45. Sólo puede requerir al acuerdo que se ajuste a la ley. Una vez homologado, el juez regula honorarios e impone las costas.",
+  },
+  {
+    code: "LCA", jurisdiction: "nacional",
+    article: "106", sectionTitle: "Quiebra — Apertura",
+    text: "La declaración de quiebra importa la exigibilidad de todas las obligaciones pendientes del fallido. Si la resolución de apertura de concurso es posterior a la sentencia de quiebra, ésta será declarada sin más trámite y con sus consecuencias sobre los bienes del deudor.",
+  },
+  {
+    code: "LCA", jurisdiction: "nacional",
+    article: "111", sectionTitle: "Quiebra — Desapoderamiento",
+    text: "El fallido queda desapoderado de pleno derecho de sus bienes existentes a la fecha de la declaración de la quiebra y de los que adquiriera hasta su rehabilitación. El desapoderamiento impide al fallido ejercer los derechos de disposición y administración.",
+  },
 ];

@@ -36,6 +36,7 @@ model Tenant {
   clientPortalAccess ClientPortalAccess[] @relation("TenantClientPortalAccess")
   jurisConsultas     JurisConsulta[]
   vencimientos       Vencimiento[]
+  actuaciones        Actuacion[]
 
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -83,6 +84,7 @@ model User {
   clientPortalCreated     ClientPortalAccess[]   @relation("ClientPortalCreatedBy")
   jurisConsultas          JurisConsulta[]
   vencimientos            Vencimiento[]          @relation("VencimientosCreatedBy")
+  actuaciones             Actuacion[]            @relation("ActuacionesCreatedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -276,6 +278,9 @@ model Expediente {
 
   // Vencimientos vinculados al expediente
   vencimientos       Vencimiento[]
+
+  // Registro de actuaciones del expediente
+  actuaciones        Actuacion[]
 
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -932,6 +937,56 @@ model Vencimiento {
   @@index([estado])
   @@index([expedienteId])
   @@index([clientId])
+  @@index([archivedAt])
+}
+
+// ─── Actuaciones / Diario de Causas ──────────────────────────────────────────
+// Registros de actividad de un expediente: audiencias, escritos, notificaciones,
+// reuniones, pericias, resoluciones, etc.
+
+model Actuacion {
+  id           String    @id @default(uuid())
+
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  expedienteId String
+  expediente   Expediente @relation(fields: [expedienteId], references: [id], onDelete: Cascade)
+
+  createdById  String
+  createdBy    User       @relation("ActuacionesCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  // Tipo de actuación
+  tipo         String    @default("otro")
+  // audiencia | escrito | notificacion | resolucion | pericia
+  // reunion_cliente | pago | otro
+
+  // Fecha de la actuación (puede ser pasada o futura)
+  fecha        DateTime
+
+  // Título descriptivo (ej: "Audiencia de Vista de Causa")
+  titulo       String    @db.VarChar(300)
+
+  // Descripción detallada / notas
+  descripcion  String?   @db.Text
+
+  // Monto relacionado (ej: pago de cuota, honorario cobrado)
+  monto        Float?
+  moneda       String?   @db.VarChar(5)
+
+  // Archivo adjunto (referencia a URL del PDF service o storage)
+  adjuntoUrl   String?
+
+  // Soft delete
+  archivedAt   DateTime?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([expedienteId])
+  @@index([fecha])
+  @@index([tipo])
   @@index([archivedAt])
 }
 

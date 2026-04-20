@@ -44,6 +44,7 @@ export const CODE_LABELS: Record<string, string> = {
   CP:              "CP",
   CPPN:            "CPPN",
   LCA:             "Ley 24.522",
+  LDC:             "Ley 24.240",
 };
 
 export function buildCitation(code: string, article: string): string {

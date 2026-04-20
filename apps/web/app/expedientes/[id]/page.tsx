@@ -8,6 +8,7 @@ import {
   User, CalendarClock, Gavel, Scale, FileText,
   Building2, Calendar, AlertCircle,
 } from "lucide-react";
+import { ActuacionesTimeline } from "@/components/expedientes/ActuacionesTimeline";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -276,6 +277,9 @@ export default function ExpedienteDetailPage() {
               </p>
             </div>
           )}
+
+          {/* Actuaciones */}
+          <ActuacionesTimeline expedienteId={expediente.id} />
         </div>
 
         {/* Right — sidebar */}
