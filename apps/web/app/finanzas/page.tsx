@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   DollarSign, Plus, Search, X, Loader2, TrendingUp,
   Clock, AlertTriangle, CheckCircle2, Pencil, Trash2,
-  ChevronLeft, ChevronRight, Briefcase, User as UserIcon,
+  ChevronLeft, ChevronRight, Briefcase, User as UserIcon, Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,8 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/app/lib/utils";
 import {
   listHonorarios, getHonorariosStats, createHonorario, updateHonorario,
-  deleteHonorario, Honorario, HonorarioEstado, HonorarioTipo, HonorariosStats,
+  deleteHonorario, exportHonorariosCSV,
+  Honorario, HonorarioEstado, HonorarioTipo, HonorariosStats,
 } from "@/app/lib/webApi";
 import {
   HonorarioForm, TIPO_LABELS, ESTADO_LABELS, ESTADO_COLORS,
@@ -75,6 +76,7 @@ export default function FinanzasPage() {
   const [formOpen, setFormOpen]   = useState(false);
   const [editing, setEditing]     = useState<Honorario | null>(null);
   const [deleteId, setDeleteId]   = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -140,13 +142,38 @@ export default function FinanzasPage() {
             Honorarios, cobros y facturación del estudio
           </p>
         </div>
-        <Button
-          onClick={() => { setEditing(null); setFormOpen(true); }}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20"
-        >
-          <Plus className="w-4 h-4" />
-          Nuevo honorario
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={exporting}
+            onClick={async () => {
+              setExporting(true);
+              try {
+                await exportHonorariosCSV();
+              } catch {
+                showError("No se pudo exportar");
+              } finally {
+                setExporting(false);
+              }
+            }}
+            className="flex items-center gap-2 h-9 px-3"
+            title="Exportar honorarios como CSV"
+          >
+            {exporting
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <Download className="w-4 h-4" />
+            }
+            <span className="hidden sm:inline">Exportar CSV</span>
+          </Button>
+          <Button
+            onClick={() => { setEditing(null); setFormOpen(true); }}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20"
+          >
+            <Plus className="w-4 h-4" />
+            Nuevo honorario
+          </Button>
+        </div>
       </div>
 
       {/* Dashboard stats */}

@@ -74,6 +74,73 @@ async function getTenantAndUser(request: any, reply: any) {
 
 export async function registerHonorarioRoutes(app: FastifyInstance) {
 
+  // ── GET /honorarios/export ─────────────────────────────────────────────────
+  app.get("/honorarios/export", async (request, reply) => {
+    const user = await getTenantAndUser(request, reply);
+    if (!user) return;
+
+    const tenantId = user.tenantId!;
+
+    const honorarios = await prisma.honorario.findMany({
+      where: { tenantId },
+      orderBy: { fechaEmision: "desc" },
+      include: {
+        expediente: { select: { number: true, title: true } },
+        client:     { select: { name: true } },
+      },
+    });
+
+    const TIPO_ES: Record<string, string> = {
+      consulta: "Consulta", juicio: "Juicio", acuerdo: "Acuerdo",
+      mediacion: "Mediación", otro: "Otro",
+    };
+    const ESTADO_ES: Record<string, string> = {
+      presupuestado: "Presupuestado", facturado: "Facturado",
+      cobrado: "Cobrado", cancelado: "Cancelado",
+    };
+
+    const escapeCSV = (v: unknown): string => {
+      if (v === null || v === undefined) return "";
+      const s = String(v);
+      if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+        return `"${s.replace(/"/g, '""')}"`;
+      }
+      return s;
+    };
+
+    const formatDate = (d: Date | null) =>
+      d ? d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+
+    const headers = [
+      "Concepto", "Tipo", "Estado", "Monto", "Moneda",
+      "Expediente", "Cliente",
+      "Fecha Emisión", "Fecha Vencimiento", "Fecha Cobro",
+      "Notas",
+    ].map(escapeCSV).join(",");
+
+    const rows = honorarios.map((h) => [
+      escapeCSV(h.concepto),
+      escapeCSV(TIPO_ES[h.tipo] ?? h.tipo),
+      escapeCSV(ESTADO_ES[h.estado] ?? h.estado),
+      escapeCSV(h.monto),
+      escapeCSV(h.moneda),
+      escapeCSV(h.expediente ? `${h.expediente.number ? "#" + h.expediente.number + " " : ""}${h.expediente.title}` : ""),
+      escapeCSV(h.client?.name),
+      escapeCSV(formatDate(h.fechaEmision ? new Date(h.fechaEmision) : null)),
+      escapeCSV(formatDate(h.fechaVencimiento ? new Date(h.fechaVencimiento) : null)),
+      escapeCSV(formatDate(h.fechaCobro ? new Date(h.fechaCobro) : null)),
+      escapeCSV(h.notas),
+    ].join(","));
+
+    const csv = [headers, ...rows].join("\r\n");
+    const today = new Date().toISOString().slice(0, 10);
+
+    return reply
+      .header("Content-Type", "text/csv; charset=utf-8")
+      .header("Content-Disposition", `attachment; filename="honorarios-${today}.csv"`)
+      .send("\uFEFF" + csv);
+  });
+
   // ── GET /honorarios/stats ──────────────────────────────────────────────────
   app.get("/honorarios/stats", async (request, reply) => {
     const user = await getTenantAndUser(request, reply);

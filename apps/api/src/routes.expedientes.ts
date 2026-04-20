@@ -87,6 +87,88 @@ async function getTenantAndUser(request: any, reply: any) {
 
 export async function registerExpedienteRoutes(app: FastifyInstance) {
 
+  // ── GET /expedientes/export ─────────────────────────────────────────────────
+  app.get("/expedientes/export", async (request, reply) => {
+    const user = await getTenantAndUser(request, reply);
+    if (!user) return;
+
+    const tenantId = user.tenantId!;
+
+    const expedientes = await prisma.expediente.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: "desc" },
+      select: {
+        number:        true,
+        title:         true,
+        matter:        true,
+        status:        true,
+        court:         true,
+        judge:         true,
+        opposingParty: true,
+        openedAt:      true,
+        closedAt:      true,
+        deadline:      true,
+        notes:         true,
+        createdAt:     true,
+        client:        { select: { name: true } },
+      },
+    });
+
+    const MATTER_ES: Record<string, string> = {
+      civil: "Civil", penal: "Penal", laboral: "Laboral",
+      familia: "Familia", comercial: "Comercial",
+      administrativo: "Administrativo", constitucional: "Constitucional",
+      tributario: "Tributario", otro: "Otro",
+    };
+    const STATUS_ES: Record<string, string> = {
+      activo: "Activo", cerrado: "Cerrado",
+      archivado: "Archivado", suspendido: "Suspendido",
+    };
+
+    const escapeCSV = (v: unknown): string => {
+      if (v === null || v === undefined) return "";
+      const s = String(v);
+      if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+        return `"${s.replace(/"/g, '""')}"`;
+      }
+      return s;
+    };
+
+    const formatDate = (d: Date | null) =>
+      d ? d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+
+    const headers = [
+      "Número", "Título", "Materia", "Estado", "Cliente",
+      "Juzgado", "Juez", "Parte Contraria",
+      "Fecha Apertura", "Fecha Cierre", "Vencimiento",
+      "Notas", "Creado En",
+    ].map(escapeCSV).join(",");
+
+    const rows = expedientes.map((e) => [
+      escapeCSV(e.number),
+      escapeCSV(e.title),
+      escapeCSV(MATTER_ES[e.matter] ?? e.matter),
+      escapeCSV(STATUS_ES[e.status] ?? e.status),
+      escapeCSV(e.client?.name),
+      escapeCSV(e.court),
+      escapeCSV(e.judge),
+      escapeCSV(e.opposingParty),
+      escapeCSV(formatDate(e.openedAt)),
+      escapeCSV(formatDate(e.closedAt)),
+      escapeCSV(formatDate(e.deadline)),
+      escapeCSV(e.notes),
+      escapeCSV(formatDate(e.createdAt)),
+    ].join(","));
+
+    const csv = [headers, ...rows].join("\r\n");
+    const today = new Date().toISOString().slice(0, 10);
+
+    return reply
+      .header("Content-Type", "text/csv; charset=utf-8")
+      .header("Content-Disposition", `attachment; filename="expedientes-${today}.csv"`)
+      .send("\uFEFF" + csv); // BOM for Excel compatibility
+  });
+
   // ── POST /expedientes/calcular-plazo ────────────────────────────────────────
   app.post("/expedientes/calcular-plazo", async (request, reply) => {
     const user = await getTenantAndUser(request, reply);

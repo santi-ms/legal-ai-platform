@@ -4,14 +4,14 @@ import { Suspense, useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Briefcase, Plus, Search, X, Loader2, AlertCircle,
-  CalendarClock, User, ChevronLeft, ChevronRight, AlertTriangle,
+  CalendarClock, User, ChevronLeft, ChevronRight, AlertTriangle, Download,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import {
-  listExpedientes, createExpediente, deleteExpediente,
+  listExpedientes, createExpediente, deleteExpediente, exportExpedientesCSV,
   Expediente, ExpedienteMatter, ExpedienteStatus,
 } from "@/app/lib/webApi";
 import {
@@ -87,6 +87,7 @@ function ExpedientesContent() {
   const [formOpen, setFormOpen]       = useState(false);
   const [deleteQueue, setDeleteQueue] = useState<string[]>([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [exporting, setExporting]     = useState(false);
 
   // Filters from URL
   const query    = searchParams.get("query")    ?? "";
@@ -178,13 +179,38 @@ function ExpedientesContent() {
             {total > 0 ? `${total} caso${total !== 1 ? "s" : ""} registrado${total !== 1 ? "s" : ""}` : "Gestión de casos y expedientes"}
           </p>
         </div>
-        <Button
-          onClick={() => setFormOpen(true)}
-          className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
-        >
-          <Plus className="w-4 h-4" />
-          Nuevo expediente
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={exporting}
+            onClick={async () => {
+              setExporting(true);
+              try {
+                await exportExpedientesCSV();
+              } catch {
+                showError("No se pudo exportar");
+              } finally {
+                setExporting(false);
+              }
+            }}
+            className="flex items-center gap-2 h-9 px-3"
+            title="Exportar expedientes como CSV"
+          >
+            {exporting
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <Download className="w-4 h-4" />
+            }
+            <span className="hidden sm:inline">Exportar CSV</span>
+          </Button>
+          <Button
+            onClick={() => setFormOpen(true)}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
+          >
+            <Plus className="w-4 h-4" />
+            Nuevo expediente
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

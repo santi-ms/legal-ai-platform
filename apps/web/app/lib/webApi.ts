@@ -2478,3 +2478,67 @@ export async function globalSearch(
     total:   data.total   as number,
   };
 }
+
+// ─── Dashboard Activity Feed ──────────────────────────────────────────────────
+
+/** Actuación with embedded expedition info — returned by /dashboard/activity */
+export interface ActivityActuacion extends Actuacion {
+  expediente: {
+    id:     string;
+    title:  string;
+    number: string | null;
+  } | null;
+}
+
+/**
+ * Obtiene las actuaciones más recientes de todos los expedientes del tenant.
+ * Usado por el widget de actividad reciente del dashboard.
+ */
+export async function getDashboardActivity(
+  limit = 10
+): Promise<ActivityActuacion[]> {
+  const { data } = await proxyJson<any>(`/dashboard/activity?limit=${limit}`);
+  return Array.isArray(data?.actuaciones) ? (data.actuaciones as ActivityActuacion[]) : [];
+}
+
+// ─── CSV Exports ──────────────────────────────────────────────────────────────
+
+/**
+ * Descarga todos los expedientes del tenant como CSV.
+ * Dispara la descarga directamente en el navegador.
+ */
+export async function exportExpedientesCSV(): Promise<void> {
+  const resp = await fetch(`${PROXY_BASE}/expedientes/export`, { cache: "no-store" });
+  if (!resp.ok) throw new Error("Error al exportar expedientes");
+  const text = await resp.text();
+  const blob = new Blob([text], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const today = new Date().toISOString().slice(0, 10);
+  a.download = `expedientes-${today}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Descarga todos los honorarios del tenant como CSV.
+ * Dispara la descarga directamente en el navegador.
+ */
+export async function exportHonorariosCSV(): Promise<void> {
+  const resp = await fetch(`${PROXY_BASE}/honorarios/export`, { cache: "no-store" });
+  if (!resp.ok) throw new Error("Error al exportar honorarios");
+  const text = await resp.text();
+  const blob = new Blob([text], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const today = new Date().toISOString().slice(0, 10);
+  a.download = `honorarios-${today}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}

@@ -72,9 +72,48 @@ async function getExpedienteOrFail(
   return exp as { id: string; title: string };
 }
 
+// ─── Dashboard query schema ────────────────────────────────────────────────────
+
+const DashboardActivityQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+});
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 export async function registerActuacionesRoutes(app: FastifyInstance) {
+
+  /**
+   * GET /dashboard/activity
+   * Retorna las N actuaciones más recientes a través de todos los expedientes
+   * del tenant. Usado por el widget "Actividad Reciente" del dashboard.
+   */
+  app.get("/dashboard/activity", async (request, reply) => {
+    const user = getUserFromRequest(request);
+    if (!user) return reply.status(401).send({ ok: false, error: "UNAUTHORIZED" });
+    if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
+
+    const parsed = DashboardActivityQuerySchema.safeParse(request.query);
+    if (!parsed.success) {
+      return reply.status(400).send({ ok: false, error: "INVALID_QUERY" });
+    }
+
+    const { limit } = parsed.data;
+
+    const actuaciones = await prisma.actuacion.findMany({
+      where: {
+        tenantId:  user.tenantId,
+        archivedAt: null,
+      },
+      orderBy: { fecha: "desc" },
+      take:    limit,
+      include: {
+        expediente: { select: { id: true, title: true, number: true } },
+        createdBy:  { select: { id: true, name: true, firstName: true, lastName: true } },
+      },
+    });
+
+    return reply.send({ ok: true, actuaciones });
+  });
 
   /**
    * GET /expedientes/:expId/actuaciones

@@ -21,6 +21,7 @@ import { RecentDocumentsTable } from "@/components/dashboard/RecentDocumentsTabl
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { UpcomingDeadlines } from "@/components/dashboard/UpcomingDeadlines";
 import { VencimientosWidget } from "@/components/dashboard/VencimientosWidget";
+import { RecentActivityWidget } from "@/components/dashboard/RecentActivityWidget";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { PDFPreviewModal } from "@/components/dashboard/PDFPreviewModal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -318,6 +319,7 @@ function DashboardContent() {
         {/* Side Widgets */}
         <div className="space-y-6">
           <QuickActions />
+          <RecentActivityWidget />
           <VencimientosWidget />
           <UpcomingDeadlines />
         </div>
