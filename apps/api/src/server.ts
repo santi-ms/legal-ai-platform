@@ -24,6 +24,7 @@ import { registerPromptRoutes } from "./routes.prompts.js";
 import { registerJurisRoutes } from "./routes.juris.js";
 import { registerVencimientosRoutes } from "./routes.vencimientos.js";
 import { registerActuacionesRoutes } from "./routes.actuaciones.js";
+import { registerSearchRoutes } from "./routes.search.js";
 import { registerSuperAdminRoutes } from "./routes.superadmin.js";
 import { registerPortalRoutes } from "./routes.portal.js";
 import { registerClientPortalRoutes } from "./routes.client-portal.js";
@@ -125,6 +126,7 @@ async function buildServer() {
   await registerJurisRoutes(app);
   await registerVencimientosRoutes(app);
   await registerActuacionesRoutes(app);
+  await registerSearchRoutes(app);
 
   const { registerUserRoutes } = await import("./routes.user.js");
   await registerUserRoutes(app);

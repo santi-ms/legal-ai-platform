@@ -16,11 +16,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Search, X, FileText, Users, Briefcase,
-  ArrowRight, Loader2, LayoutDashboard, Plus,
+  ArrowRight, Loader2, LayoutDashboard, Plus, CalendarClock,
 } from "lucide-react";
 import {
-  listDocuments, listClients, listExpedientes,
-  type Document, type Client, type Expediente,
+  listDocuments, listClients, listExpedientes, listVencimientos,
+  type Document, type Client, type Expediente, type Vencimiento,
 } from "@/app/lib/webApi";
 import { formatDocumentType } from "@/app/lib/format";
 import { cn } from "@/app/lib/utils";
@@ -28,10 +28,11 @@ import { cn } from "@/app/lib/utils";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type ResultItem =
-  | { kind: "doc";    item: Document;   href: string }
-  | { kind: "client"; item: Client;     href: string }
-  | { kind: "exp";    item: Expediente; href: string }
-  | { kind: "quick";  label: string; sub: string; href: string; icon: React.ElementType };
+  | { kind: "doc";       item: Document;   href: string }
+  | { kind: "client";    item: Client;     href: string }
+  | { kind: "exp";       item: Expediente; href: string }
+  | { kind: "venc";      item: Vencimiento; href: string }
+  | { kind: "quick";     label: string; sub: string; href: string; icon: React.ElementType };
 
 // ─── Static data ──────────────────────────────────────────────────────────────
 
@@ -157,14 +158,16 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
   const [docs,         setDocs]         = useState<Document[]>([]);
   const [clients,      setClients]      = useState<Client[]>([]);
   const [expedientes,  setExpedientes]  = useState<Expediente[]>([]);
+  const [vencimientos, setVencimientos] = useState<Vencimiento[]>([]);
   const [selectedIdx,  setSelectedIdx]  = useState(0);
 
   // ── Flat list of all navigable items ──────────────────────────────────────
   const allItems: ResultItem[] = query.trim()
     ? [
-        ...docs.map(d => ({ kind: "doc"    as const, item: d, href: `/documents/${d.id}`    })),
-        ...clients.map(c => ({ kind: "client" as const, item: c, href: `/clients/${c.id}`   })),
-        ...expedientes.map(e => ({ kind: "exp" as const, item: e, href: `/expedientes/${e.id}` })),
+        ...docs.map(d => ({ kind: "doc"    as const, item: d, href: `/documents/${d.id}`       })),
+        ...clients.map(c => ({ kind: "client" as const, item: c, href: `/clients/${c.id}`      })),
+        ...expedientes.map(e => ({ kind: "exp"  as const, item: e, href: `/expedientes/${e.id}` })),
+        ...vencimientos.map(v => ({ kind: "venc" as const, item: v, href: `/vencimientos`       })),
       ]
     : QUICK_LINKS.map(l => ({ kind: "quick" as const, ...l }));
 
@@ -175,6 +178,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
       setDocs([]);
       setClients([]);
       setExpedientes([]);
+      setVencimientos([]);
       setSelectedIdx(0);
       // Small delay so the animation completes before focusing
       const t = setTimeout(() => inputRef.current?.focus(), 60);
@@ -197,14 +201,20 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
     setLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const [docsRes, clientsRes, expsRes] = await Promise.all([
+        const [docsRes, clientsRes, expsRes, vencRes] = await Promise.all([
           listDocuments({ query: q, pageSize: 4 }),
           listClients({ query: q, pageSize: 4 }),
           listExpedientes({ query: q, pageSize: 4 }),
+          listVencimientos({ pageSize: 4 }).then(r => ({
+            items: r.items.filter(v =>
+              v.titulo.toLowerCase().includes(q.toLowerCase())
+            ),
+          })).catch(() => ({ items: [] })),
         ]);
         setDocs(docsRes.documents);
         setClients(clientsRes.clients);
         setExpedientes(expsRes.expedientes);
+        setVencimientos(vencRes.items);
         setSelectedIdx(0);
       } catch {
         // silent — search should never break the UI
@@ -251,7 +261,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
 
   if (!open) return null;
 
-  const hasResults = docs.length > 0 || clients.length > 0 || expedientes.length > 0;
+  const hasResults = docs.length > 0 || clients.length > 0 || expedientes.length > 0 || vencimientos.length > 0;
   const noResults  = query.trim() !== "" && !loading && !hasResults;
 
   // Shared index counter for keyboard navigation across sections
@@ -280,7 +290,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Buscar documentos, clientes, expedientes..."
+            placeholder="Buscar documentos, clientes, expedientes, vencimientos..."
             className="flex-1 bg-transparent text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none text-base"
             autoComplete="off"
             spellCheck={false}
@@ -450,6 +460,40 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
                           exp.client?.name,
                         ].filter(Boolean).join(" · ")}
                         badge={isOverdue ? { label: "Vencido", color: "red" } : undefined}
+                      />
+                    );
+                  })}
+                </Section>
+              )}
+
+              {/* Vencimientos */}
+              {vencimientos.length > 0 && (
+                <Section
+                  title="Vencimientos"
+                  icon={CalendarClock}
+                  viewAllHref="/vencimientos"
+                >
+                  {vencimientos.map(v => {
+                    const i = globalIdx++;
+                    const isOverdue = v.estado === "vencido" ||
+                      new Date(v.fechaVencimiento).getTime() < Date.now();
+                    const fv = new Date(v.fechaVencimiento).toLocaleDateString("es-AR", {
+                      day: "numeric", month: "short", year: "numeric",
+                    });
+                    return (
+                      <ResultRow
+                        key={v.id}
+                        idx={i}
+                        selected={selectedIdx === i}
+                        href="/vencimientos"
+                        onSelect={navigate}
+                        onHover={() => setSelectedIdx(i)}
+                        icon={<CalendarClock className="w-4 h-4 text-amber-500" />}
+                        primary={v.titulo}
+                        secondary={[v.expediente?.title, fv].filter(Boolean).join(" · ")}
+                        badge={isOverdue ? { label: "Vencido", color: "red" }
+                               : v.estado === "completado" ? { label: "Completado", color: "emerald" }
+                               : undefined}
                       />
                     );
                   })}

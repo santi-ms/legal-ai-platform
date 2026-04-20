@@ -2446,3 +2446,35 @@ export async function deleteActuacion(
     method: "DELETE",
   });
 }
+
+// ─── Global Search ─────────────────────────────────────────────────────────────
+
+export type SearchResultType = "expediente" | "client" | "document" | "vencimiento" | "actuacion";
+
+export interface SearchResult {
+  id:       string;
+  type:     SearchResultType;
+  title:    string;
+  subtitle: string | null;
+  href:     string;
+  badge?:   string;
+}
+
+export interface SearchResponse {
+  query:   string;
+  results: SearchResult[];
+  total:   number;
+}
+
+export async function globalSearch(
+  q: string,
+  limit = 5
+): Promise<SearchResponse> {
+  const qs = new URLSearchParams({ q, limit: String(limit) });
+  const { data } = await proxyJson<any>(`/search?${qs}`);
+  return {
+    query:   data.query   as string,
+    results: data.results as SearchResult[],
+    total:   data.total   as number,
+  };
+}
