@@ -73,7 +73,7 @@ async function callClaudeWithRetry(
   let lastError: Error | null = null;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      return await anthropic.messages.create(params);
+      return (await anthropic.messages.create(params)) as Anthropic.Message;
     } catch (error: any) {
       lastError = error;
       // No retry on validation errors (4xx except 429)
