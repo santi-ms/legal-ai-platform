@@ -20,6 +20,7 @@ import { StatsCard } from "@/components/dashboard/StatsCard";
 import { RecentDocumentsTable } from "@/components/dashboard/RecentDocumentsTable";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { UpcomingDeadlines } from "@/components/dashboard/UpcomingDeadlines";
+import { VencimientosWidget } from "@/components/dashboard/VencimientosWidget";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { PDFPreviewModal } from "@/components/dashboard/PDFPreviewModal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -317,6 +318,7 @@ function DashboardContent() {
         {/* Side Widgets */}
         <div className="space-y-6">
           <QuickActions />
+          <VencimientosWidget />
           <UpcomingDeadlines />
         </div>
       </div>

@@ -35,6 +35,7 @@ model Tenant {
   portalSyncLogs     PortalSyncLog[]      @relation("TenantPortalSyncLogs")
   clientPortalAccess ClientPortalAccess[] @relation("TenantClientPortalAccess")
   jurisConsultas     JurisConsulta[]
+  vencimientos       Vencimiento[]
 
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -81,6 +82,7 @@ model User {
   escritosUploaded        EscritoAnalisis[]      @relation("EscritosUploadedBy")
   clientPortalCreated     ClientPortalAccess[]   @relation("ClientPortalCreatedBy")
   jurisConsultas          JurisConsulta[]
+  vencimientos            Vencimiento[]          @relation("VencimientosCreatedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -201,6 +203,9 @@ model Client {
   // Links de portal del cliente
   portalAccess   ClientPortalAccess[]
 
+  // Vencimientos asociados al cliente
+  vencimientos   Vencimiento[]
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -268,6 +273,9 @@ model Expediente {
 
   // Consultas de Doku Juris vinculadas al expediente
   jurisConsultas     JurisConsulta[]
+
+  // Vencimientos vinculados al expediente
+  vencimientos       Vencimiento[]
 
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -871,4 +879,58 @@ model JurisMensaje {
   createdAt   DateTime  @default(now())
 
   @@index([consultaId])
+}
+
+// ─── Vencimientos ────────────────────────────────────────────────────────────
+
+model Vencimiento {
+  id          String    @id @default(uuid())
+
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User      @relation("VencimientosCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  // Datos del vencimiento
+  titulo      String                  // Descripción breve (ej: "Audiencia preliminar")
+  descripcion String?   @db.Text      // Descripción extendida o notas
+
+  // Tipo de vencimiento
+  tipo        String    @default("otro")
+  // audiencia | presentacion | prescripcion | plazo_legal | vencimiento_contrato
+  // notificacion | pericia | traslado | otro
+
+  // Fecha de vencimiento (sin hora → medianoche Buenos Aires)
+  fechaVencimiento DateTime
+
+  // Alertas: cuántos días antes notificar
+  alertaDias  Int       @default(3)   // 1 | 2 | 3 | 5 | 7 | 14 | 30
+
+  // Asociaciones opcionales
+  expedienteId String?
+  expediente   Expediente? @relation(fields: [expedienteId], references: [id], onDelete: SetNull)
+
+  clientId    String?
+  client      Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  // Estado del vencimiento
+  estado      String    @default("pendiente")  // pendiente | completado | vencido
+  completadoAt DateTime?
+  completadoById String?
+
+  // Notificación enviada
+  notificadoAt DateTime?  // Última vez que se envió notificación
+
+  archivedAt  DateTime?  // Soft delete
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([fechaVencimiento])
+  @@index([estado])
+  @@index([expedienteId])
+  @@index([clientId])
+  @@index([archivedAt])
 }

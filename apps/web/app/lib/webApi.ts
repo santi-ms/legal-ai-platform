@@ -2233,3 +2233,105 @@ export async function getJurisConsulta(id: string): Promise<JurisConsulta> {
 export async function deleteJurisConsulta(id: string): Promise<void> {
   await proxyJson(`/juris/consultas/${id}`, { method: "DELETE" });
 }
+
+// ─── Vencimientos ─────────────────────────────────────────────────────────────
+
+export const VENCIMIENTO_TIPOS = [
+  { value: "audiencia",           label: "Audiencia" },
+  { value: "presentacion",        label: "Presentación" },
+  { value: "prescripcion",        label: "Prescripción" },
+  { value: "plazo_legal",         label: "Plazo legal" },
+  { value: "vencimiento_contrato",label: "Vencimiento contrato" },
+  { value: "notificacion",        label: "Notificación" },
+  { value: "pericia",             label: "Pericia" },
+  { value: "traslado",            label: "Traslado" },
+  { value: "otro",                label: "Otro" },
+] as const;
+
+export interface Vencimiento {
+  id:               string;
+  titulo:           string;
+  descripcion:      string | null;
+  tipo:             string;
+  fechaVencimiento: string;
+  alertaDias:       number;
+  estado:           "pendiente" | "completado" | "vencido";
+  completadoAt:     string | null;
+  createdAt:        string;
+  updatedAt:        string;
+  expediente:       { id: string; title: string; number: string | null } | null;
+  client:           { id: string; name: string } | null;
+}
+
+export interface VencimientoStats {
+  totalPendientes: number;
+  vencidos:        number;
+  proximos3d:      number;
+  proximos7d:      number;
+  proximos30d:     number;
+  completadosMes:  number;
+}
+
+export interface CreateVencimientoPayload {
+  titulo:           string;
+  descripcion?:     string | null;
+  tipo?:            string;
+  fechaVencimiento: string;
+  alertaDias?:      number;
+  expedienteId?:    string | null;
+  clientId?:        string | null;
+}
+
+export async function listVencimientos(params?: {
+  page?: number; pageSize?: number;
+  estado?: string; tipo?: string;
+  expedienteId?: string; clientId?: string;
+  upcomingDays?: number;
+}): Promise<{ items: Vencimiento[]; total: number; page: number; pageSize: number }> {
+  const qs = new URLSearchParams();
+  if (params?.page)          qs.set("page",         String(params.page));
+  if (params?.pageSize)      qs.set("pageSize",      String(params.pageSize));
+  if (params?.estado)        qs.set("estado",        params.estado);
+  if (params?.tipo)          qs.set("tipo",          params.tipo);
+  if (params?.expedienteId)  qs.set("expedienteId",  params.expedienteId);
+  if (params?.clientId)      qs.set("clientId",      params.clientId);
+  if (params?.upcomingDays)  qs.set("upcomingDays",  String(params.upcomingDays));
+  const { data } = await proxyJson<any>(`/vencimientos?${qs}`);
+  return { items: data.items ?? [], total: data.total ?? 0, page: data.page ?? 1, pageSize: data.pageSize ?? 50 };
+}
+
+export async function getVencimientoStats(): Promise<VencimientoStats> {
+  const { data } = await proxyJson<any>("/vencimientos/stats");
+  return data.stats as VencimientoStats;
+}
+
+export async function createVencimiento(payload: CreateVencimientoPayload): Promise<Vencimiento> {
+  const { data } = await proxyJson<any>("/vencimientos", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return data.vencimiento as Vencimiento;
+}
+
+export async function updateVencimiento(
+  id: string,
+  payload: Partial<CreateVencimientoPayload>
+): Promise<Vencimiento> {
+  const { data } = await proxyJson<any>(`/vencimientos/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+  return data.vencimiento as Vencimiento;
+}
+
+export async function completeVencimiento(id: string): Promise<void> {
+  await proxyJson(`/vencimientos/${id}/complete`, { method: "PATCH" });
+}
+
+export async function reopenVencimiento(id: string): Promise<void> {
+  await proxyJson(`/vencimientos/${id}/reopen`, { method: "PATCH" });
+}
+
+export async function deleteVencimiento(id: string): Promise<void> {
+  await proxyJson(`/vencimientos/${id}`, { method: "DELETE" });
+}

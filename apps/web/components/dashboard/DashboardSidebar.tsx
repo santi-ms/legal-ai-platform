@@ -23,6 +23,7 @@ import {
   Swords,
   Globe,
   Scale,
+  CalendarClock,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { useDeadlines } from "@/app/lib/contexts/DeadlineContext";
@@ -101,6 +102,13 @@ const navigationItems = [
     label: "Expedientes",
     icon: Briefcase,
     href: "/expedientes",
+    disabled: false,
+  },
+  {
+    id: "vencimientos",
+    label: "Vencimientos",
+    icon: CalendarClock,
+    href: "/vencimientos",
     disabled: false,
   },
   {
