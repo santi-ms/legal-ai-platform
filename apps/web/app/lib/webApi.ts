@@ -1035,6 +1035,70 @@ export async function deleteHonorario(id: string): Promise<void> {
   await proxyJson(`/honorarios/${id}`, { method: "DELETE" });
 }
 
+// ─── Importación masiva ───────────────────────────────────────────────────────
+
+export type ImportType = "clients" | "expedientes" | "honorarios";
+
+export interface ImportValidateResult {
+  type:                string;
+  totalRows:           number;
+  validRows:           number;
+  errorRows:           number;
+  duplicateCandidates: number;
+  willCreate:          number;
+  mapping:             Record<string, string>;
+  errors:              Array<{ row: number; field: string; value: any; message: string }>;
+  preview:             Array<Record<string, any>>;
+}
+
+export interface ImportExecuteResult {
+  type:          string;
+  created:       number;
+  skipped:       number;
+  failed:        number;
+  failedDetails: Array<{ row: number; reason: string }>;
+}
+
+export function getImportTemplateUrl(type: ImportType): string {
+  return `/api/proxy/imports/template?type=${type}`;
+}
+
+export async function validateImport(
+  file: File,
+  type: ImportType,
+): Promise<ImportValidateResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("type", type);
+
+  const resp = await fetch(`/api/proxy/imports/validate`, {
+    method: "POST",
+    body: formData,
+  });
+  const data = await resp.json();
+  if (!resp.ok || data?.ok === false) throw new Error(data?.message || "Error al validar");
+  return data as ImportValidateResult;
+}
+
+export async function executeImport(
+  file: File,
+  type: ImportType,
+  skipDuplicates = true,
+): Promise<ImportExecuteResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("type", type);
+  formData.append("skipDuplicates", String(skipDuplicates));
+
+  const resp = await fetch(`/api/proxy/imports/execute`, {
+    method: "POST",
+    body: formData,
+  });
+  const data = await resp.json();
+  if (!resp.ok || data?.ok === false) throw new Error(data?.message || "Error al importar");
+  return data as ImportExecuteResult;
+}
+
 // ─── Floating Assistant ───────────────────────────────────────────────────────
 
 export interface AssistantMessage {

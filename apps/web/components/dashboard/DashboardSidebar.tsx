@@ -19,6 +19,7 @@ import {
   PenLine,
   MessageSquare,
   DollarSign,
+  FileSpreadsheet,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { useDeadlines } from "@/app/lib/contexts/DeadlineContext";
@@ -102,6 +103,13 @@ const navigationItems = [
     label: "Finanzas",
     icon: DollarSign,
     href: "/finanzas",
+    disabled: false,
+  },
+  {
+    id: "importar",
+    label: "Importar datos",
+    icon: FileSpreadsheet,
+    href: "/importar",
     disabled: false,
   },
   {
