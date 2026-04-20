@@ -27,6 +27,7 @@ model Tenant {
   logs         IAUsageLog[]
   referenceDocuments ReferenceDocument[]
   contractAnalyses   ContractAnalysis[]
+  honorarios         Honorario[]
   subscription       Subscription?
   teamInvitations    TeamInvitation[]
 
@@ -71,6 +72,7 @@ model User {
   sessions                Session[]
   subscriptionUsers       SubscriptionUser[]
   invitationsSent         TeamInvitation[]       @relation("InvitationsSentBy")
+  honorariosCreated       Honorario[]            @relation("HonorariosCreatedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -185,6 +187,9 @@ model Client {
   // Expedientes en los que aparece como cliente
   expedientes    Expediente[]
 
+  // Honorarios facturados al cliente
+  honorarios     Honorario[]
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -232,12 +237,61 @@ model Expediente {
   // Documentos vinculados
   documents      Document[]
 
+  // Honorarios vinculados al expediente
+  honorarios     Honorario[]
+
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
   @@index([tenantId])
   @@index([clientId])
   @@index([deadline])
+}
+
+// ─── Honorarios / Finanzas ──────────────────────────────────────────────────
+model Honorario {
+  id               String    @id @default(uuid())
+
+  // Multi-tenant
+  tenantId         String
+  tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Quién creó el registro
+  createdById      String
+  createdBy        User      @relation("HonorariosCreatedBy", fields: [createdById], references: [id])
+
+  // Vinculación (al menos uno de los dos, pero ambos opcionales para flexibilidad)
+  expedienteId     String?
+  expediente       Expediente? @relation(fields: [expedienteId], references: [id], onDelete: SetNull)
+
+  clientId         String?
+  client           Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  // Clasificación
+  tipo             String    // "consulta" | "juicio" | "acuerdo" | "mediacion" | "otro"
+  concepto         String    // Descripción breve
+  monto            Float     // En ARS
+  moneda           String    @default("ARS")
+
+  // Estado
+  estado           String    @default("presupuestado") // "presupuestado" | "facturado" | "cobrado" | "cancelado"
+
+  // Fechas
+  fechaEmision     DateTime  @default(now())
+  fechaVencimiento DateTime?
+  fechaCobro       DateTime?
+
+  // Notas internas
+  notas            String?
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([expedienteId])
+  @@index([clientId])
+  @@index([estado])
+  @@index([fechaVencimiento])
 }
 
 model DocumentAnnotation {

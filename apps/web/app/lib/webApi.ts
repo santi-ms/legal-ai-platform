@@ -904,6 +904,120 @@ export async function calcularPlazoProcesal(
   return data as PlazoResult;
 }
 
+// ─── Honorarios / Finanzas ────────────────────────────────────────────────────
+
+export type HonorarioTipo   = "consulta" | "juicio" | "acuerdo" | "mediacion" | "otro";
+export type HonorarioEstado = "presupuestado" | "facturado" | "cobrado" | "cancelado";
+
+export interface Honorario {
+  id:               string;
+  expedienteId:     string | null;
+  clientId:         string | null;
+  tipo:             HonorarioTipo;
+  concepto:         string;
+  monto:            number;
+  moneda:           string;
+  estado:           HonorarioEstado;
+  fechaEmision:     string;
+  fechaVencimiento: string | null;
+  fechaCobro:       string | null;
+  notas:            string | null;
+  createdAt:        string;
+  updatedAt:        string;
+  expediente?:      { id: string; number: string | null; title: string } | null;
+  client?:          { id: string; name: string } | null;
+}
+
+export interface HonorarioPayload {
+  expedienteId?:     string | null;
+  clientId?:         string | null;
+  tipo:              HonorarioTipo;
+  concepto:          string;
+  monto:             number;
+  moneda?:           string;
+  estado:            HonorarioEstado;
+  fechaEmision?:     string;
+  fechaVencimiento?: string | null;
+  fechaCobro?:       string | null;
+  notas?:            string | null;
+}
+
+export interface HonorariosParams {
+  query?:        string;
+  tipo?:         HonorarioTipo;
+  estado?:       HonorarioEstado;
+  expedienteId?: string;
+  clientId?:     string;
+  page?:         number;
+  pageSize?:     number;
+  sort?:         string;
+}
+
+export interface ListHonorariosResult {
+  honorarios: Honorario[];
+  total:      number;
+  page:       number;
+  pageSize:   number;
+}
+
+export interface HonorariosStats {
+  total:         { count: number; monto: number };
+  cobrado:       { count: number; monto: number };
+  facturado:     { count: number; monto: number };
+  presupuestado: { count: number; monto: number };
+  vencido:       { count: number; monto: number };
+}
+
+export async function listHonorarios(params?: HonorariosParams): Promise<ListHonorariosResult> {
+  const qs = new URLSearchParams();
+  if (params?.query)        qs.set("query", params.query);
+  if (params?.tipo)         qs.set("tipo", params.tipo);
+  if (params?.estado)       qs.set("estado", params.estado);
+  if (params?.expedienteId) qs.set("expedienteId", params.expedienteId);
+  if (params?.clientId)     qs.set("clientId", params.clientId);
+  if (params?.page)         qs.set("page", String(params.page));
+  if (params?.pageSize)     qs.set("pageSize", String(params.pageSize));
+  if (params?.sort)         qs.set("sort", params.sort);
+  const q = qs.toString();
+  const { data } = await proxyJson<any>(`/honorarios${q ? `?${q}` : ""}`);
+  return {
+    honorarios: data.honorarios ?? [],
+    total:      data.total ?? 0,
+    page:       data.page ?? 1,
+    pageSize:   data.pageSize ?? 20,
+  };
+}
+
+export async function getHonorariosStats(): Promise<HonorariosStats> {
+  const { data } = await proxyJson<any>("/honorarios/stats");
+  return data.stats as HonorariosStats;
+}
+
+export async function getHonorario(id: string): Promise<Honorario> {
+  const { data } = await proxyJson<any>(`/honorarios/${id}`);
+  return data.honorario as Honorario;
+}
+
+export async function createHonorario(payload: HonorarioPayload): Promise<Honorario> {
+  const { data } = await proxyJson<any>("/honorarios", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return data.honorario as Honorario;
+}
+
+export async function updateHonorario(id: string, payload: HonorarioPayload): Promise<Honorario> {
+  const { data } = await proxyJson<any>(`/honorarios/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  return data.honorario as Honorario;
+}
+
+export async function deleteHonorario(id: string): Promise<void> {
+  await proxyJson(`/honorarios/${id}`, { method: "DELETE" });
+}
+
 // ─── Floating Assistant ───────────────────────────────────────────────────────
 
 export interface AssistantMessage {

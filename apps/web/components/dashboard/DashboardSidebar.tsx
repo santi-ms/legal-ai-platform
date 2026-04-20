@@ -18,6 +18,7 @@ import {
   ScanSearch,
   PenLine,
   MessageSquare,
+  DollarSign,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { useDeadlines } from "@/app/lib/contexts/DeadlineContext";
@@ -94,6 +95,13 @@ const navigationItems = [
     label: "Clientes",
     icon: Users,
     href: "/clients",
+    disabled: false,
+  },
+  {
+    id: "finanzas",
+    label: "Finanzas",
+    icon: DollarSign,
+    href: "/finanzas",
     disabled: false,
   },
   {
