@@ -29,6 +29,9 @@ const MATTERS = [
 
 const STATUSES = ["activo", "cerrado", "archivado", "suspendido"] as const;
 
+// Allowlist for runtime status validation (mirrors Zod enum, used as secondary guard)
+export const VALID_STATUSES: readonly string[] = STATUSES;
+
 const ExpedienteBodySchema = z.object({
   number:        z.string().max(100).optional().nullable(),
   title:         z.string().min(3, "El título debe tener al menos 3 caracteres").max(300),
@@ -205,7 +208,9 @@ export async function registerExpedienteRoutes(app: FastifyInstance) {
       return reply.status(400).send({ ok: false, error: "INVALID_QUERY", details: parsed.error.format() });
     }
 
-    const { query, matter, status, clientId, page, pageSize, sort, hasDeadline, deadlineBefore, deadlineAfter } = parsed.data;
+    const { query, matter, clientId, page, pageSize, sort, hasDeadline, deadlineBefore, deadlineAfter } = parsed.data;
+    // Secondary runtime guard: only allow known status values even if Zod passes
+    const status = parsed.data.status && VALID_STATUSES.includes(parsed.data.status) ? parsed.data.status : undefined;
     const [sortField, sortDir] = sort.split(":");
 
     const tenantId = user.tenantId!;
@@ -362,7 +367,7 @@ export async function registerExpedienteRoutes(app: FastifyInstance) {
     }
 
     const expediente = await prisma.expediente.update({
-      where: { id },
+      where: { id, tenantId: user.tenantId! },
       data: {
         number:        data.number?.trim() ?? null,
         title:         data.title.trim(),

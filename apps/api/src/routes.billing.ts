@@ -31,8 +31,8 @@ function verifyMPWebhookSignature(
 ): boolean {
   const secret = process.env.MP_WEBHOOK_SECRET;
   if (!secret) {
-    console.warn("[webhook/mp] MP_WEBHOOK_SECRET no configurado — omitiendo verificación de firma");
-    return true; // dejar pasar hasta que se configure el secret
+    console.error("[webhook/mp] MP_WEBHOOK_SECRET no configurado — rechazando webhook");
+    return false;
   }
 
   const xSignature  = request.headers["x-signature"] as string | undefined;
@@ -661,20 +661,27 @@ export async function registerBillingRoutes(app: FastifyInstance) {
   //      (registrar factura, actualizar renewsAt)
   //   3. payment → pago puntual (legacy / test)
   app.post("/api/webhooks/mercado-pago", async (request, reply) => {
-    // Siempre responder 200 para que MP no reintente indefinidamente
-    reply.send({ ok: true });
+    const webhookSecret = process.env.MP_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      return reply.code(401).send({ error: "Webhook not configured" });
+    }
 
     const body = request.body as any;
     const type = body?.type ?? "";
     const dataId = body?.data?.id;
 
-    if (!dataId) return;
+    if (!dataId) {
+      return reply.code(400).send({ ok: false, error: "Missing data.id" });
+    }
 
     // Verificar firma HMAC-SHA256 de Mercado Pago
     if (!verifyMPWebhookSignature(request, String(dataId))) {
       console.warn(`[webhook/mp] Firma inválida — evento descartado (tipo=${type} id=${dataId})`);
-      return;
+      return reply.code(401).send({ ok: false, error: "Invalid signature" });
     }
+
+    // Responder 200 para que MP no reintente indefinidamente
+    reply.send({ ok: true });
 
     console.log(`[webhook/mp] tipo=${type} id=${dataId}`);
 

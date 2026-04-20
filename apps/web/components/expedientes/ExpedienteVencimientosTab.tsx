@@ -89,7 +89,7 @@ export function ExpedienteVencimientosTab({ expedienteId }: ExpedienteVencimient
         <p className="text-sm text-slate-500 dark:text-slate-400">
           {total > 0 ? `${total} vencimiento${total !== 1 ? "s" : ""}` : "Sin vencimientos"}
         </p>
-        <Link href={`/vencimientos?expedienteId=${expedienteId}`}>
+        <Link href={`/vencimientos?create=1&expedienteId=${expedienteId}`}>
           <Button size="sm" variant="outline" className="gap-1.5 text-xs">
             <Plus className="w-3.5 h-3.5" />
             Agregar vencimiento
@@ -108,7 +108,7 @@ export function ExpedienteVencimientosTab({ expedienteId }: ExpedienteVencimient
               Los vencimientos vinculados a este expediente aparecerán aquí
             </p>
           </div>
-          <Link href={`/vencimientos?expedienteId=${expedienteId}`}>
+          <Link href={`/vencimientos?create=1&expedienteId=${expedienteId}`}>
             <Button size="sm" variant="outline" className="gap-1.5 text-xs mt-1">
               <Plus className="w-3.5 h-3.5" />
               Agregar primer vencimiento

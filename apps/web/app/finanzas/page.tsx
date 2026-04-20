@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   DollarSign, Plus, Search, X, Loader2, TrendingUp,
   Clock, AlertTriangle, CheckCircle2, Pencil, Trash2,
   ChevronLeft, ChevronRight, Briefcase, User as UserIcon, Download,
+  ArrowUpDown, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +23,9 @@ import {
 } from "@/components/finanzas/HonorarioForm";
 
 const PAGE_SIZE = 20;
+
+type SortField = "monto" | "fechaEmision" | "fechaVencimiento";
+type SortDir   = "asc" | "desc";
 
 const ESTADO_OPTIONS: { value: HonorarioEstado | "all"; label: string }[] = [
   { value: "all",           label: "Todos los estados" },
@@ -60,18 +65,148 @@ function isOverdue(h: Honorario): boolean {
   return new Date(h.fechaVencimiento).getTime() < Date.now();
 }
 
-export default function FinanzasPage() {
+// ─── Sortable column header ──────────────────────────────────────────────────
+
+const SortableHeader = React.memo(function SortableHeader({
+  field, label, currentField, currentDir, onSort, className,
+}: {
+  field: SortField; label: string;
+  currentField: SortField | null; currentDir: SortDir;
+  onSort: (field: SortField) => void;
+  className?: string;
+}) {
+  const active = currentField === field;
+  return (
+    <th
+      className={cn(
+        "px-4 py-3 font-semibold cursor-pointer select-none hover:text-slate-700 dark:hover:text-slate-200 transition-colors group",
+        className
+      )}
+      onClick={() => onSort(field)}
+    >
+      <div className="flex items-center gap-1">
+        {label}
+        {active ? (
+          currentDir === "asc"
+            ? <ArrowUp className="w-3 h-3 text-primary" />
+            : <ArrowDown className="w-3 h-3 text-primary" />
+        ) : (
+          <ArrowUpDown className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+        )}
+      </div>
+    </th>
+  );
+});
+
+// ─── Honorario row ───────────────────────────────────────────────────────────
+
+const HonorarioRow = React.memo(function HonorarioRow({
+  honorario: h,
+  onEdit,
+  onDelete,
+  onFilterEstado,
+}: {
+  honorario: Honorario;
+  onEdit: (h: Honorario) => void;
+  onDelete: (id: string) => void;
+  onFilterEstado: (estado: string) => void;
+}) {
+  const overdue = isOverdue(h);
+  return (
+    <tr className={cn(
+      "hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors",
+      overdue && "bg-red-50/30 dark:bg-red-950/10"
+    )}>
+      <td className="px-4 py-3">
+        <div className="font-medium text-slate-900 dark:text-white">
+          {h.concepto}
+        </div>
+        <div className="text-xs text-slate-400">
+          Emitido {formatDate(h.fechaEmision)}
+        </div>
+      </td>
+      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
+        {TIPO_LABELS[h.tipo]}
+      </td>
+      <td className="px-4 py-3 text-slate-600 dark:text-slate-300 hidden md:table-cell">
+        {h.client && (
+          <div className="flex items-center gap-1.5 text-xs">
+            <UserIcon className="w-3 h-3 text-slate-400" />
+            {h.client.name}
+          </div>
+        )}
+        {h.expediente && (
+          <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
+            <Briefcase className="w-3 h-3" />
+            {h.expediente.number ? `[${h.expediente.number}] ` : ""}{h.expediente.title}
+          </div>
+        )}
+        {!h.client && !h.expediente && <span className="text-slate-300">—</span>}
+      </td>
+      <td className="px-4 py-3">
+        <span className={cn(
+          "inline-flex px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer hover:opacity-80",
+          ESTADO_COLORS[h.estado],
+        )}
+          onClick={() => onFilterEstado(h.estado)}
+          title={`Filtrar por ${ESTADO_LABELS[h.estado]}`}
+        >
+          {ESTADO_LABELS[h.estado]}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-right font-semibold text-slate-900 dark:text-white">
+        {formatARS(h.monto, h.moneda)}
+      </td>
+      <td className={cn(
+        "px-4 py-3 text-xs hidden lg:table-cell",
+        overdue ? "text-red-600 dark:text-red-400 font-semibold" : "text-slate-500 dark:text-slate-400",
+      )}>
+        {overdue && <AlertTriangle className="w-3 h-3 inline mr-1" />}
+        {formatDate(h.fechaVencimiento)}
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex items-center justify-end gap-1">
+          <button
+            onClick={() => onEdit(h)}
+            className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            title="Editar"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => onDelete(h.id)}
+            className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-600"
+            title="Eliminar"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+});
+
+// ─── Main content (uses useSearchParams) ─────────────────────────────────────
+
+function FinanzasContent() {
   const { success, error: showError } = useToast();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Read filters from URL
+  const query        = searchParams.get("query")       ?? "";
+  const tipo         = (searchParams.get("tipo")       ?? "all") as HonorarioTipo | "all";
+  const estado       = (searchParams.get("estado")     ?? "all") as HonorarioEstado | "all";
+  const expedienteId = searchParams.get("expedienteId") ?? "";
+  const clientId     = searchParams.get("clientId")    ?? "";
+  const page         = parseInt(searchParams.get("page") ?? "1");
+  const sortBy       = (searchParams.get("sortBy")  ?? null) as SortField | null;
+  const sortDir      = (searchParams.get("sortDir") ?? "desc") as SortDir;
 
   const [items, setItems]         = useState<Honorario[]>([]);
   const [total, setTotal]         = useState(0);
   const [stats, setStats]         = useState<HonorariosStats | null>(null);
   const [loading, setLoading]     = useState(true);
-
-  const [query, setQuery]         = useState("");
-  const [tipo, setTipo]           = useState<HonorarioTipo | "all">("all");
-  const [estado, setEstado]       = useState<HonorarioEstado | "all">("all");
-  const [page, setPage]           = useState(1);
 
   const [formOpen, setFormOpen]   = useState(false);
   const [editing, setEditing]     = useState<Honorario | null>(null);
@@ -80,16 +215,69 @@ export default function FinanzasPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  // Memoized totals derived from current page items
+  const totals = useMemo(() => ({
+    total:       items.reduce((sum, h) => sum + (h.monto || 0), 0),
+    cobrado:     items.filter((h) => h.estado === "cobrado").reduce((sum, h) => sum + (h.monto || 0), 0),
+    facturado:   items.filter((h) => h.estado === "facturado").reduce((sum, h) => sum + (h.monto || 0), 0),
+    presupuestado: items.filter((h) => h.estado === "presupuestado").reduce((sum, h) => sum + (h.monto || 0), 0),
+  }), [items]);
+
+  // Stable handlers for HonorarioRow
+  const handleEditRow = useCallback((h: Honorario) => {
+    setEditing(h);
+    setFormOpen(true);
+  }, []);
+
+  const handleDeleteRow = useCallback((id: string) => {
+    setDeleteId(id);
+  }, []);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- updateUrl is redefined each render from URL params
+  const handleFilterEstado = useCallback((estadoValue: string) => {
+    updateUrl({ estado: estadoValue, page: "1" });
+  }, [query, tipo, estado, expedienteId, clientId, page, sortBy, sortDir]); // same deps as updateUrl
+
+  function updateUrl(overrides: Record<string, string | undefined>) {
+    const merged: Record<string, string | undefined> = {
+      query:        query        || undefined,
+      tipo:         tipo         !== "all" ? tipo   : undefined,
+      estado:       estado       !== "all" ? estado : undefined,
+      expedienteId: expedienteId || undefined,
+      clientId:     clientId     || undefined,
+      page:         String(page),
+      sortBy:       sortBy       ?? undefined,
+      sortDir:      sortDir      !== "desc" ? sortDir : undefined,
+      ...overrides,
+    };
+    const params = new URLSearchParams();
+    Object.entries(merged).forEach(([k, v]) => { if (v) params.set(k, v); });
+    router.push(`/finanzas?${params.toString()}`);
+  }
+
+  function handleSort(field: SortField) {
+    if (sortBy === field) {
+      // Toggle direction
+      updateUrl({ sortDir: sortDir === "asc" ? "desc" : "asc", page: "1" });
+    } else {
+      updateUrl({ sortBy: field, sortDir: "desc", page: "1" });
+    }
+  }
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const sortParam = sortBy ? (`${sortBy}:${sortDir}` as any) : undefined;
       const [listRes, statsRes] = await Promise.all([
         listHonorarios({
-          query:    query || undefined,
-          tipo:     tipo   !== "all" ? tipo   : undefined,
-          estado:   estado !== "all" ? estado : undefined,
+          query:        query        || undefined,
+          tipo:         tipo         !== "all" ? tipo   : undefined,
+          estado:       estado       !== "all" ? estado : undefined,
+          expedienteId: expedienteId || undefined,
+          clientId:     clientId     || undefined,
           page,
           pageSize: PAGE_SIZE,
+          sort:     sortParam,
         }),
         getHonorariosStats(),
       ]);
@@ -101,9 +289,21 @@ export default function FinanzasPage() {
     } finally {
       setLoading(false);
     }
-  }, [query, tipo, estado, page]);
+  }, [query, tipo, estado, expedienteId, clientId, page, sortBy, sortDir]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Auto-open form from URL param
+  useEffect(() => {
+    if (searchParams.get("formOpen") === "1") {
+      setEditing(null);
+      setFormOpen(true);
+      const p = new URLSearchParams(searchParams.toString());
+      p.delete("formOpen");
+      const qs = p.toString();
+      router.replace(`/finanzas${qs ? `?${qs}` : ""}`);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSave(payload: any) {
     if (editing) {
@@ -128,6 +328,17 @@ export default function FinanzasPage() {
       showError("No se pudo eliminar");
     }
   }
+
+  const hasFilters = query || tipo !== "all" || estado !== "all" || expedienteId || clientId;
+
+  // Derive expediente/client labels from loaded items
+  const expedienteLabel = expedienteId
+    ? (items.find((h) => h.expediente?.id === expedienteId)?.expediente?.title ?? "Expediente")
+    : "";
+
+  const clientLabelFinanzas = clientId
+    ? (items.find((h) => h.client?.id === clientId)?.client?.name ?? "Cliente")
+    : "";
 
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
@@ -185,6 +396,8 @@ export default function FinanzasPage() {
             monto={stats.cobrado.monto}
             count={stats.cobrado.count}
             color="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+            onClick={() => updateUrl({ estado: "cobrado", page: "1" })}
+            active={estado === "cobrado"}
           />
           <StatCard
             icon={<Clock className="w-4 h-4" />}
@@ -192,6 +405,8 @@ export default function FinanzasPage() {
             monto={stats.facturado.monto}
             count={stats.facturado.count}
             color="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
+            onClick={() => updateUrl({ estado: "facturado", page: "1" })}
+            active={estado === "facturado"}
           />
           <StatCard
             icon={<TrendingUp className="w-4 h-4" />}
@@ -199,6 +414,8 @@ export default function FinanzasPage() {
             monto={stats.presupuestado.monto}
             count={stats.presupuestado.count}
             color="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+            onClick={() => updateUrl({ estado: "presupuestado", page: "1" })}
+            active={estado === "presupuestado"}
           />
           <StatCard
             icon={<AlertTriangle className="w-4 h-4" />}
@@ -206,6 +423,7 @@ export default function FinanzasPage() {
             monto={stats.vencido.monto}
             count={stats.vencido.count}
             color="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+            active={false}
           />
         </div>
       )}
@@ -217,12 +435,12 @@ export default function FinanzasPage() {
           <Input
             placeholder="Buscar por concepto o notas..."
             value={query}
-            onChange={(e) => { setQuery(e.target.value); setPage(1); }}
+            onChange={(e) => updateUrl({ query: e.target.value || undefined, page: "1" })}
             className="pl-9 bg-white dark:bg-slate-900"
           />
           {query && (
             <button
-              onClick={() => { setQuery(""); setPage(1); }}
+              onClick={() => updateUrl({ query: undefined, page: "1" })}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
             >
               <X className="w-4 h-4" />
@@ -231,19 +449,83 @@ export default function FinanzasPage() {
         </div>
         <select
           value={tipo}
-          onChange={(e) => { setTipo(e.target.value as any); setPage(1); }}
-          className="h-10 rounded-md border border-input bg-white dark:bg-slate-900 px-3 text-sm"
+          onChange={(e) => updateUrl({ tipo: e.target.value === "all" ? undefined : e.target.value, page: "1" })}
+          className="h-10 rounded-md border border-input bg-white dark:bg-slate-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
         >
           {TIPO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
         <select
           value={estado}
-          onChange={(e) => { setEstado(e.target.value as any); setPage(1); }}
-          className="h-10 rounded-md border border-input bg-white dark:bg-slate-900 px-3 text-sm"
+          onChange={(e) => updateUrl({ estado: e.target.value === "all" ? undefined : e.target.value, page: "1" })}
+          className="h-10 rounded-md border border-input bg-white dark:bg-slate-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
         >
           {ESTADO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
+        {hasFilters && (
+          <button
+            onClick={() => updateUrl({ query: undefined, tipo: undefined, estado: undefined, expedienteId: undefined, clientId: undefined, page: "1" })}
+            className="h-10 px-3 rounded-md border border-slate-200 dark:border-slate-700 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1.5 transition-colors whitespace-nowrap"
+          >
+            <X className="w-3.5 h-3.5" />
+            Limpiar filtros
+          </button>
+        )}
       </div>
+
+      {/* Active filter summary */}
+      {(sortBy || hasFilters) && (
+        <div className="flex items-center gap-2 flex-wrap text-xs">
+          {hasFilters && <span className="text-slate-400">Filtrando por:</span>}
+          {expedienteId && (
+            <span className="bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+              <Briefcase className="w-2.5 h-2.5" />
+              {expedienteLabel || "Expediente"}
+              <button
+                onClick={() => updateUrl({ expedienteId: undefined, page: "1" })}
+                aria-label="Quitar filtro de expediente"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </span>
+          )}
+          {clientId && (
+            <span className="bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+              <UserIcon className="w-2.5 h-2.5" />
+              {clientLabelFinanzas || "Cliente"}
+              <button
+                onClick={() => updateUrl({ clientId: undefined, page: "1" })}
+                aria-label="Quitar filtro de cliente"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </span>
+          )}
+          {query && (
+            <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+              "{query}"
+              <button onClick={() => updateUrl({ query: undefined, page: "1" })}><X className="w-2.5 h-2.5" /></button>
+            </span>
+          )}
+          {tipo !== "all" && (
+            <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+              {TIPO_LABELS[tipo as HonorarioTipo]}
+              <button onClick={() => updateUrl({ tipo: undefined, page: "1" })}><X className="w-2.5 h-2.5" /></button>
+            </span>
+          )}
+          {estado !== "all" && (
+            <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+              {ESTADO_LABELS[estado as HonorarioEstado]}
+              <button onClick={() => updateUrl({ estado: undefined, page: "1" })}><X className="w-2.5 h-2.5" /></button>
+            </span>
+          )}
+          {sortBy && (
+            <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+              Ord: {sortBy} {sortDir === "asc" ? "↑" : "↓"}
+              <button onClick={() => updateUrl({ sortBy: undefined, sortDir: undefined })}><X className="w-2.5 h-2.5" /></button>
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
@@ -256,7 +538,7 @@ export default function FinanzasPage() {
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
             <DollarSign className="w-10 h-10 text-slate-200 dark:text-slate-700" />
             <p className="text-sm font-medium">
-              {query || tipo !== "all" || estado !== "all"
+              {hasFilters
                 ? "No hay honorarios con esos filtros"
                 : "Aún no tenés honorarios registrados"}
             </p>
@@ -276,83 +558,33 @@ export default function FinanzasPage() {
                 <tr>
                   <th className="text-left px-4 py-3 font-semibold">Concepto</th>
                   <th className="text-left px-4 py-3 font-semibold">Tipo</th>
-                  <th className="text-left px-4 py-3 font-semibold">Cliente / Expediente</th>
+                  <th className="text-left px-4 py-3 font-semibold hidden md:table-cell">Cliente / Expediente</th>
                   <th className="text-left px-4 py-3 font-semibold">Estado</th>
-                  <th className="text-right px-4 py-3 font-semibold">Monto</th>
-                  <th className="text-left px-4 py-3 font-semibold">Vence</th>
+                  <SortableHeader
+                    field="monto" label="Monto"
+                    currentField={sortBy} currentDir={sortDir}
+                    onSort={handleSort}
+                    className="text-right"
+                  />
+                  <SortableHeader
+                    field="fechaVencimiento" label="Vence"
+                    currentField={sortBy} currentDir={sortDir}
+                    onSort={handleSort}
+                    className="text-left hidden lg:table-cell"
+                  />
                   <th className="text-right px-4 py-3 font-semibold">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {items.map((h) => {
-                  const overdue = isOverdue(h);
-                  return (
-                    <tr key={h.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-slate-900 dark:text-white">
-                          {h.concepto}
-                        </div>
-                        <div className="text-xs text-slate-400">
-                          Emitido {formatDate(h.fechaEmision)}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                        {TIPO_LABELS[h.tipo]}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                        {h.client && (
-                          <div className="flex items-center gap-1.5 text-xs">
-                            <UserIcon className="w-3 h-3 text-slate-400" />
-                            {h.client.name}
-                          </div>
-                        )}
-                        {h.expediente && (
-                          <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
-                            <Briefcase className="w-3 h-3" />
-                            {h.expediente.number ? `[${h.expediente.number}] ` : ""}{h.expediente.title}
-                          </div>
-                        )}
-                        {!h.client && !h.expediente && <span className="text-slate-300">—</span>}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={cn(
-                          "inline-flex px-2 py-0.5 rounded-full text-xs font-semibold",
-                          ESTADO_COLORS[h.estado],
-                        )}>
-                          {ESTADO_LABELS[h.estado]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right font-semibold text-slate-900 dark:text-white">
-                        {formatARS(h.monto, h.moneda)}
-                      </td>
-                      <td className={cn(
-                        "px-4 py-3 text-xs",
-                        overdue ? "text-red-600 dark:text-red-400 font-semibold" : "text-slate-500 dark:text-slate-400",
-                      )}>
-                        {overdue && <AlertTriangle className="w-3 h-3 inline mr-1" />}
-                        {formatDate(h.fechaVencimiento)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => { setEditing(h); setFormOpen(true); }}
-                            className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-                            title="Editar"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteId(h.id)}
-                            className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-600"
-                            title="Eliminar"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {items.map((h) => (
+                  <HonorarioRow
+                    key={h.id}
+                    honorario={h}
+                    onEdit={handleEditRow}
+                    onDelete={handleDeleteRow}
+                    onFilterEstado={handleFilterEstado}
+                  />
+                ))}
               </tbody>
             </table>
           </div>
@@ -366,14 +598,14 @@ export default function FinanzasPage() {
             </span>
             <div className="flex gap-1">
               <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => updateUrl({ page: String(page - 1) })}
                 disabled={page === 1}
                 className="p-1.5 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
               </button>
               <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() => updateUrl({ page: String(page + 1) })}
                 disabled={page === totalPages}
                 className="p-1.5 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800"
               >
@@ -390,6 +622,8 @@ export default function FinanzasPage() {
         onClose={() => { setFormOpen(false); setEditing(null); }}
         onSave={handleSave}
         initial={editing}
+        presetExpedienteId={!editing && expedienteId ? expedienteId : undefined}
+        presetClientId={!editing && clientId ? clientId : undefined}
       />
 
       <ConfirmDialog
@@ -408,16 +642,25 @@ export default function FinanzasPage() {
 // ─── StatCard ────────────────────────────────────────────────────────────────
 
 function StatCard({
-  icon, label, monto, count, color,
+  icon, label, monto, count, color, onClick, active,
 }: {
   icon: React.ReactNode;
   label: string;
   monto: number;
   count: number;
   color: string;
+  onClick?: () => void;
+  active?: boolean;
 }) {
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+    <div
+      className={cn(
+        "bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm transition-all",
+        onClick && "cursor-pointer hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600",
+        active && "ring-2 ring-primary/30 border-primary/30",
+      )}
+      onClick={onClick}
+    >
       <div className="flex items-center gap-2 mb-2">
         <div className={cn("size-7 rounded-lg flex items-center justify-center", color)}>
           {icon}
@@ -433,5 +676,30 @@ function StatCard({
         {count} {count === 1 ? "registro" : "registros"}
       </div>
     </div>
+  );
+}
+
+// ─── Page export ─────────────────────────────────────────────────────────────
+
+export default function FinanzasPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-1/3" />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[1,2,3,4].map((i) => (
+                <div key={i} className="h-24 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+              ))}
+            </div>
+            <div className="h-10 bg-slate-200 dark:bg-slate-800 rounded" />
+            <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+          </div>
+        </div>
+      }
+    >
+      <FinanzasContent />
+    </Suspense>
   );
 }

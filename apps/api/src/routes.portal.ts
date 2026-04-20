@@ -19,11 +19,12 @@
 
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
+import { randomUUID } from "node:crypto";
 import { prisma } from "./db.js";
 import { requireAuth } from "./utils/auth.js";
 import { encrypt } from "./utils/encryption.js";
-import { syncTenant, testPortalCredentials } from "./services/portal-sync-service.js";
-import { logger } from "./utils/logger.js";
+import { testPortalCredentials } from "./services/portal-sync-service.js";
+import { scraperQueue } from "./services/scraper-queue.js";
 
 // ─── Portales válidos ─────────────────────────────────────────────────────────
 
@@ -194,6 +195,7 @@ export async function registerPortalRoutes(app: FastifyInstance) {
 
     const creds = await prisma.portalCredential.findMany({
       where: { tenantId: user.tenantId, isActive: true },
+      select: { portal: true },
     });
     if (creds.length === 0) {
       return reply.status(400).send({
@@ -202,15 +204,30 @@ export async function registerPortalRoutes(app: FastifyInstance) {
       });
     }
 
-    reply.status(202).send({ ok: true, message: `Sincronización iniciada (${creds.length} portal${creds.length !== 1 ? "es" : ""}).` });
+    // Enqueue one job per active portal credential
+    const jobIds: string[] = [];
+    for (const { portal } of creds) {
+      const jobId = randomUUID();
+      const enqueuedId = await scraperQueue.enqueue({ id: jobId, tenantId: user.tenantId!, portal });
+      jobIds.push(enqueuedId);
+    }
 
-    setImmediate(async () => {
-      try {
-        await syncTenant(user.tenantId!, "manual");
-      } catch (err: any) {
-        logger.error("[portal] Error en sync manual", { tenantId: user.tenantId, error: err?.message });
-      }
+    return reply.status(202).send({
+      ok: true,
+      message: `Sincronización iniciada en segundo plano (${creds.length} portal${creds.length !== 1 ? "es" : ""}).`,
+      jobIds,
     });
+  });
+
+  // ── GET /portal/sync/status/:jobId ────────────────────────────────────────
+  app.get("/portal/sync/status/:jobId", async (request, reply) => {
+    const user = requireAuth(request);
+    if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
+
+    const { jobId } = request.params as { jobId: string };
+    const status = scraperQueue.getStatus(jobId);
+    if (!status) return reply.code(404).send({ ok: false, error: "Job no encontrado" });
+    return reply.send({ ok: true, ...status });
   });
 
   // ── GET /portal/logs ──────────────────────────────────────────────────────

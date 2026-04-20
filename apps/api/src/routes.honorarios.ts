@@ -203,7 +203,7 @@ export async function registerHonorarioRoutes(app: FastifyInstance) {
     const [sortField, sortDir] = sort.split(":");
 
     const tenantId = user.tenantId!;
-    const where: any = { tenantId };
+    const where: any = { tenantId, archivedAt: null };
     if (tipo)         where.tipo = tipo;
     if (estado)       where.estado = estado;
     if (expedienteId) where.expedienteId = expedienteId;
@@ -326,7 +326,7 @@ export async function registerHonorarioRoutes(app: FastifyInstance) {
     }
 
     const honorario = await prisma.honorario.update({
-      where: { id },
+      where: { id, tenantId: user.tenantId! },
       data: {
         expedienteId:     data.expedienteId ?? null,
         clientId:         data.clientId ?? null,
@@ -359,7 +359,11 @@ export async function registerHonorarioRoutes(app: FastifyInstance) {
     const existing = await prisma.honorario.findFirst({ where: { id, tenantId: user.tenantId! } });
     if (!existing) return notFound(reply);
 
-    await prisma.honorario.delete({ where: { id } });
+    // TODO (schema): asegurarse de que el modelo Honorario tenga el campo `archivedAt DateTime?` en schema.prisma
+    await prisma.honorario.update({
+      where: { id: id, tenantId: user.tenantId! },
+      data: { archivedAt: new Date() },
+    });
 
     return reply.send({ ok: true, message: "Honorario eliminado correctamente" });
   });

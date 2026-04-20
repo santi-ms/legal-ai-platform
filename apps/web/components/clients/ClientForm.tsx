@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, User, Building2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Client, ClientPayload, ClientType, DocumentIdType } from "@/app/lib/webApi";
@@ -59,6 +59,25 @@ export function ClientForm({ open, onClose, onSave, initialData }: ClientFormPro
   const [form, setForm] = useState<ClientPayload>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap + Escape handler
+  useEffect(() => {
+    if (!open) return;
+
+    const focusable = modalRef.current?.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable && focusable.length > 0) {
+      focusable[0].focus();
+    }
+
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [open, onClose]);
 
   useEffect(() => {
     if (open) {
@@ -117,11 +136,17 @@ export function ClientForm({ open, onClose, onSave, initialData }: ClientFormPro
       />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-lg z-50 bg-white dark:bg-slate-900 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="client-form-title"
+        className="fixed right-0 top-0 h-full w-full max-w-lg z-50 bg-white dark:bg-slate-900 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+            <h2 id="client-form-title" className="text-lg font-bold text-slate-900 dark:text-white">
               {initialData ? "Editar cliente" : "Nuevo cliente"}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">

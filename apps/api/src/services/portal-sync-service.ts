@@ -120,7 +120,7 @@ export async function syncTenantPortal(
     }
 
     // Descifrar contraseña
-    let password: string;
+    let password: string | null = null;
     try {
       password = decrypt(cred.passwordEnc);
     } catch {
@@ -131,7 +131,16 @@ export async function syncTenantPortal(
     const driver = await getPortalDriver(portal);
     logger.info(`[portal-sync] Iniciando scraping ${driver.label}`, { tenantId, portal, expedientes: expedientes.length });
 
-    const { data: portalMap, error: scrapeError } = await driver.scrape(cred.username, password);
+    let portalMap: Map<string, any> = new Map();
+    let scrapeError: string | undefined;
+    try {
+      const result = await driver.scrape(cred.username, password);
+      portalMap = result.data;
+      scrapeError = result.error;
+    } finally {
+      // Limpiar credencial de memoria
+      password = null;
+    }
 
     if (scrapeError && portalMap.size === 0) {
       await prisma.portalCredential.update({

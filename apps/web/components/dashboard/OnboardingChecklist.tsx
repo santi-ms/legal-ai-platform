@@ -58,7 +58,7 @@ export function OnboardingChecklist({
       title:       "Agregá tu primer cliente",
       description: "Los clientes son la base de tu estudio. Cargá datos de contacto, DNI/CUIT y notas internas.",
       cta:         "Crear cliente",
-      href:        "/clients",
+      href:        "/clients?formOpen=1",
       done:        hasClients,
     },
     {
@@ -66,7 +66,7 @@ export function OnboardingChecklist({
       title:       "Creá tu primer expediente",
       description: "Organizá cada causa con tribunal, juez, parte contraria y fecha de vencimiento.",
       cta:         "Crear expediente",
-      href:        "/expedientes",
+      href:        "/expedientes?create=1",
       done:        hasExpedientes,
     },
     {

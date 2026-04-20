@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 /**
  * RecentActivityWidget — Últimas actuaciones de todos los expedientes del tenant.
  * Widget lateral del dashboard que muestra las N actuaciones más recientes
@@ -56,7 +58,7 @@ function relativeTime(isoDate: string): string {
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 
-export function RecentActivityWidget() {
+export const RecentActivityWidget = React.memo(function RecentActivityWidget() {
   const [items, setItems] = useState<ActivityActuacion[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -161,4 +163,4 @@ export function RecentActivityWidget() {
       )}
     </div>
   );
-}
+});

@@ -1,14 +1,17 @@
 "use client";
 
+import React from "react";
+
 /**
  * VencimientosWidget — Muestra los próximos vencimientos del módulo dedicado.
  * Se integra en el dashboard como widget lateral.
+ * Permite marcar items como completados directamente desde el dashboard.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { CalendarClock, ArrowRight, AlertTriangle, CheckCircle2, Plus } from "lucide-react";
-import { listVencimientos, type Vencimiento } from "@/app/lib/webApi";
+import { CalendarClock, ArrowRight, CheckCircle2, Plus, Circle } from "lucide-react";
+import { listVencimientos, completeVencimiento, type Vencimiento } from "@/app/lib/webApi";
 import { cn } from "@/app/lib/utils";
 
 function daysUntil(dateStr: string): number {
@@ -49,31 +52,49 @@ const TIPO_SHORT: Record<string, string> = {
   otro:                  "Otro",
 };
 
-export function VencimientosWidget() {
-  const [items,   setItems]   = useState<Vencimiento[]>([]);
-  const [loading, setLoading] = useState(true);
+export const VencimientosWidget = React.memo(function VencimientosWidget() {
+  const [items,      setItems]      = useState<Vencimiento[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [completing, setCompleting] = useState<Set<string>>(new Set());
+
+  const load = useCallback(async () => {
+    try {
+      const res = await listVencimientos({
+        estado:       "pendiente",
+        upcomingDays: 30,
+        pageSize:     7,
+      });
+      setItems(res.items.slice(0, 7));
+    } catch {
+      // non-critical widget
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-
-    async function load() {
-      try {
-        const res = await listVencimientos({
-          estado:       "pendiente",
-          upcomingDays: 30,
-          pageSize:     7,
-        });
-        if (!cancelled) setItems(res.items.slice(0, 7));
-      } catch {
-        // non-critical widget
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
+    load().then(() => { if (cancelled) return; });
     return () => { cancelled = true; };
-  }, []);
+  }, [load]);
+
+  const handleComplete = useCallback(async (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (completing.has(id)) return;
+    setCompleting(prev => new Set(prev).add(id));
+    // Optimistically remove from list
+    setItems(prev => prev.filter(v => v.id !== id));
+    try {
+      await completeVencimiento(id);
+    } catch {
+      // On error restore by reloading
+      setLoading(true);
+      await load();
+    } finally {
+      setCompleting(prev => { const s = new Set(prev); s.delete(id); return s; });
+    }
+  }, [completing, load]);
 
   const urgentCount = items.filter((v) => daysUntil(v.fechaVencimiento) <= 3).length;
 
@@ -96,7 +117,7 @@ export function VencimientosWidget() {
           </div>
           <div className="flex items-center gap-2">
             <Link
-              href="/vencimientos?modal=create"
+              href="/vencimientos?create=1"
               className="text-slate-400 hover:text-white transition-colors"
               title="Nuevo vencimiento"
             >
@@ -137,38 +158,53 @@ export function VencimientosWidget() {
             </Link>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {items.map((v) => {
               const { badge, label } = labelAndColor(v);
+              const isCompleting = completing.has(v.id);
               return (
-                <Link
-                  key={v.id}
-                  href="/vencimientos"
-                  className="flex items-center gap-3 group min-w-0"
-                >
-                  <div className={cn("size-2 rounded-full flex-shrink-0 mt-0.5", dotColor(v))} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-white truncate group-hover:text-violet-300 transition-colors">
-                      {v.titulo}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-xs text-slate-500">
-                        {TIPO_SHORT[v.tipo] ?? v.tipo}
-                      </span>
-                      {v.expediente && (
-                        <>
-                          <span className="text-slate-700">·</span>
-                          <span className="text-xs text-slate-500 truncate max-w-[80px]">
-                            {v.expediente.title}
-                          </span>
-                        </>
-                      )}
+                <div key={v.id} className="flex items-center gap-2.5 group min-w-0">
+                  {/* Quick-complete checkbox */}
+                  <button
+                    onClick={(e) => handleComplete(v.id, e)}
+                    disabled={isCompleting}
+                    title="Marcar como completado"
+                    className="flex-shrink-0 w-5 h-5 rounded-full border border-white/20 hover:border-emerald-400 hover:bg-emerald-500/20 transition-colors flex items-center justify-center disabled:opacity-50"
+                  >
+                    {isCompleting
+                      ? <Circle className="w-3 h-3 text-white/40 animate-spin" />
+                      : <Circle className="w-3 h-3 text-white/30 group-hover:text-emerald-400 transition-colors" />
+                    }
+                  </button>
+
+                  <Link
+                    href="/vencimientos"
+                    className="flex items-center gap-2 flex-1 min-w-0 group/link"
+                  >
+                    <div className={cn("size-1.5 rounded-full flex-shrink-0", dotColor(v))} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-white truncate group-hover/link:text-violet-300 transition-colors">
+                        {v.titulo}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-xs text-slate-500">
+                          {TIPO_SHORT[v.tipo] ?? v.tipo}
+                        </span>
+                        {v.expediente && (
+                          <>
+                            <span className="text-slate-700">·</span>
+                            <span className="text-xs text-slate-500 truncate max-w-[70px]">
+                              {v.expediente.title}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0", badge)}>
-                    {label}
-                  </span>
-                </Link>
+                    <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0", badge)}>
+                      {label}
+                    </span>
+                  </Link>
+                </div>
               );
             })}
           </div>
@@ -176,4 +212,4 @@ export function VencimientosWidget() {
       </div>
     </div>
   );
-}
+});

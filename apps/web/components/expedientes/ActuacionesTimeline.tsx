@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Clock, Plus, Pencil, Trash2, Loader2, ChevronDown, ChevronUp,
   Gavel, FileText, Bell, BookOpen, FlaskConical,
-  Users, DollarSign, MoreHorizontal, X, Check,
+  Users, DollarSign, MoreHorizontal, X, Check, Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -318,6 +318,7 @@ export function ActuacionesTimeline({ expedienteId }: ActuacionesTimelineProps) 
   const [deleteId, setDeleteId]         = useState<string | null>(null);
   const [deleting, setDeleting]         = useState(false);
   const [filterTipo, setFilterTipo]     = useState<TipoActuacion | "all">("all");
+  const [searchQuery, setSearchQuery]   = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -394,6 +395,22 @@ export function ActuacionesTimeline({ expedienteId }: ActuacionesTimelineProps) 
       setDeleting(false);
     }
   };
+
+  // Client-side text search filter (applied on top of tipo API filter)
+  const filteredActuaciones = searchQuery.trim()
+    ? actuaciones.filter((a) => {
+        const q = searchQuery.toLowerCase();
+        return (
+          a.titulo.toLowerCase().includes(q) ||
+          (a.descripcion ?? "").toLowerCase().includes(q)
+        );
+      })
+    : actuaciones;
+
+  // Financial summary: total monto of pago actuaciones (client-side)
+  const pagoTotal = actuaciones
+    .filter((a) => a.tipo === "pago" && a.monto)
+    .reduce((sum, a) => sum + (a.monto ?? 0), 0);
 
   const editFormData = editTarget
     ? ({
@@ -479,36 +496,70 @@ export function ActuacionesTimeline({ expedienteId }: ActuacionesTimelineProps) 
         </div>
       )}
 
-      {/* Filter tabs */}
+      {/* Search + Filter */}
       {total > 0 && !showForm && !editTarget && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          <button
-            onClick={() => setFilterTipo("all")}
-            className={cn(
-              "text-xs px-2.5 py-1 rounded-full font-medium transition-colors",
-              filterTipo === "all"
-                ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400"
+        <div className="space-y-2.5 mb-4">
+          {/* Text search */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Buscar en actuaciones..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-8 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3 h-3" />
+              </button>
             )}
-          >
-            Todos
-          </button>
-          {TIPO_OPTIONS.filter((t) =>
-            actuaciones.some((a) => a.tipo === t.value)
-          ).map((t) => (
+          </div>
+
+          {/* Type filter pills */}
+          <div className="flex flex-wrap gap-1.5">
             <button
-              key={t.value}
-              onClick={() => setFilterTipo(t.value)}
+              onClick={() => setFilterTipo("all")}
               className={cn(
                 "text-xs px-2.5 py-1 rounded-full font-medium transition-colors",
-                filterTipo === t.value
+                filterTipo === "all"
                   ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400"
               )}
             >
-              {t.label}
+              Todos
             </button>
-          ))}
+            {TIPO_OPTIONS.filter((t) =>
+              actuaciones.some((a) => a.tipo === t.value)
+            ).map((t) => (
+              <button
+                key={t.value}
+                onClick={() => setFilterTipo(t.value)}
+                className={cn(
+                  "text-xs px-2.5 py-1 rounded-full font-medium transition-colors",
+                  filterTipo === t.value
+                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400"
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Financial summary (only if there are pago actuaciones) */}
+          {pagoTotal > 0 && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+              <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+              <span className="text-xs text-emerald-700 dark:text-emerald-300">
+                Total pagos registrados:{" "}
+                <span className="font-bold">{formatARS(pagoTotal)}</span>
+              </span>
+            </div>
+          )}
         </div>
       )}
 
@@ -518,20 +569,22 @@ export function ActuacionesTimeline({ expedienteId }: ActuacionesTimelineProps) 
           <Loader2 className="w-4 h-4 animate-spin" />
           <span className="text-sm">Cargando...</span>
         </div>
-      ) : actuaciones.length === 0 ? (
+      ) : filteredActuaciones.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 text-center gap-2">
           <Clock className="w-8 h-8 text-slate-200 dark:text-slate-700" />
           <p className="text-sm text-slate-400 font-medium">
-            {filterTipo === "all"
+            {searchQuery
+              ? `Sin resultados para "${searchQuery}"`
+              : filterTipo === "all"
               ? "No hay actuaciones registradas"
               : `No hay actuaciones de tipo "${TIPO_ACTUACION_LABELS[filterTipo as TipoActuacion]}"`}
           </p>
-          {filterTipo === "all" && (
+          {!searchQuery && filterTipo === "all" && (
             <p className="text-xs text-slate-400">
               Registrá audiencias, escritos, notificaciones y más
             </p>
           )}
-          {!showForm && filterTipo === "all" && (
+          {!showForm && filterTipo === "all" && !searchQuery && (
             <Button
               size="sm"
               variant="outline"
@@ -542,10 +595,23 @@ export function ActuacionesTimeline({ expedienteId }: ActuacionesTimelineProps) 
               Registrar primera actuación
             </Button>
           )}
+          {(searchQuery || filterTipo !== "all") && (
+            <button
+              onClick={() => { setSearchQuery(""); setFilterTipo("all"); }}
+              className="text-xs text-primary hover:underline"
+            >
+              Limpiar filtros
+            </button>
+          )}
         </div>
       ) : (
         <div>
-          {actuaciones.map((a) => (
+          {searchQuery && filteredActuaciones.length < actuaciones.length && (
+            <p className="text-xs text-slate-400 mb-3">
+              Mostrando {filteredActuaciones.length} de {actuaciones.length} actuaciones
+            </p>
+          )}
+          {filteredActuaciones.map((a) => (
             <TimelineItem
               key={a.id}
               actuacion={a}

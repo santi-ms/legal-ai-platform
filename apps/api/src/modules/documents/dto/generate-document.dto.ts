@@ -186,6 +186,9 @@ export const SupplyContractDTOSchema = LooseDocumentDTOSchema.extend({
  */
 export const FreeFormDocumentDTOSchema = z.object({
   documentType: z.string().min(1).max(100),
+  // Free-form description fields — enforce length limits to prevent prompt injection / abuse
+  descripcion_documento: z.string().max(10000).optional(),
+  observaciones: z.string().max(2000).optional(),
   jurisdiction: z.preprocess(
     (val) => {
       const aliases: Record<string, string> = {

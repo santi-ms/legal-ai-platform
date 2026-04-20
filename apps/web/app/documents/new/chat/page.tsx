@@ -8,8 +8,8 @@
  * existente cuando tiene toda la información necesaria.
  */
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useRef, useEffect, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Send,
@@ -79,8 +79,12 @@ const INITIAL_MESSAGE: Message = {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export default function ChatDocumentCreationPage() {
+function ChatDocumentCreationContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Pre-selected expediente (passed from /expedientes/[id] "New Document" button)
+  const prefilledExpedienteId = searchParams.get("expedienteId") ?? "";
 
   const [step, setStep] = useState<Step>("chat");
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
@@ -95,9 +99,9 @@ export default function ChatDocumentCreationPage() {
   const [referenceDocuments, setReferenceDocuments] = useState<ReferenceDocument[]>([]);
   const [selectedReferenceId, setSelectedReferenceId] = useState<string>("");
   const [loadingReferences, setLoadingReferences] = useState(false);
-  // Expediente step state
+  // Expediente step state — pre-fill from URL param if present
   const [expedienteList, setExpedienteList] = useState<Expediente[]>([]);
-  const [selectedExpedienteId, setSelectedExpedienteId] = useState<string>("");
+  const [selectedExpedienteId, setSelectedExpedienteId] = useState<string>(prefilledExpedienteId);
   const [loadingExpedientes, setLoadingExpedientes] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -836,5 +840,17 @@ function ResultStep({
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ChatDocumentCreationPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    }>
+      <ChatDocumentCreationContent />
+    </Suspense>
   );
 }

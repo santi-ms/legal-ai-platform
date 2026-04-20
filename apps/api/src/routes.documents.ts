@@ -404,6 +404,20 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         });
       }
 
+      // Input length guard — prevent excessively large free-form prompts
+      const rawBodyForLengthCheck = request.body as Record<string, unknown>;
+      const freeformFields: string[] = ["descripcion_documento", "observaciones"];
+      for (const field of freeformFields) {
+        const value = rawBodyForLengthCheck?.[field];
+        if (typeof value === "string" && value.length > 10000) {
+          return reply.code(400).send({
+            ok: false,
+            error: "INPUT_TOO_LONG",
+            message: `El campo '${field}' es demasiado largo (máximo 10.000 caracteres).`,
+          });
+        }
+      }
+
       const { documentType, jurisdiction, tone, structuredData } = normalized;
 
       // 1.5️⃣ Sanitizar inputs para prevenir XSS
@@ -1853,7 +1867,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
       const response = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20241022",
+        model: "claude-sonnet-4-6",
         max_tokens: 1024,
         system: `Sos un asistente jurídico experto en derecho argentino. Te dan el texto de un documento legal y el usuario hace preguntas sobre él. Respondé en español, de forma clara y concisa. Si la pregunta no puede responderse con el contenido del documento, indicalo claramente. No inventes información.`,
         messages: [{

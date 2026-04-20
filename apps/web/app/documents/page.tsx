@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Plus, Download, AlertTriangle, RefreshCcw, Loader2 } from "lucide-react";
+import { Plus, Download, AlertTriangle, RefreshCcw, Loader2, User, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useToast } from "@/components/ui/toast";
@@ -117,10 +117,10 @@ function DocumentsContent() {
   const [exporting, setExporting] = useState(false);
   const pendingDeletes = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-  // Filters state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [documentType, setDocumentType] = useState("all");
-  const [status, setStatus] = useState("all");
+  // Filters state — initialized from URL params for deep-link support
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("query") ?? "");
+  const [documentType, setDocumentType] = useState(searchParams.get("type") ?? "all");
+  const [status, setStatus] = useState(searchParams.get("status") ?? "all");
 
   // Expediente filter — loads once when authenticated
   const [expedientes, setExpedientes] = useState<Array<{ id: string; title: string; number: string | null }>>([]);
@@ -138,6 +138,7 @@ function DocumentsContent() {
       type: searchParams.get("type") || undefined,
       jurisdiccion: searchParams.get("jurisdiccion") || undefined,
       expedienteId: searchParams.get("expedienteId") || undefined,
+      clientId: searchParams.get("clientId") || undefined,
       from: searchParams.get("from") || undefined,
       to: searchParams.get("to") || undefined,
       page: parseInt(searchParams.get("page") || "1"),
@@ -260,22 +261,27 @@ function DocumentsContent() {
     }
   };
 
-  const handleFiltersChange = (newFilters: Partial<DocumentsParams>) => {
+  const handleFiltersChange = (newFilters: Partial<DocumentsParams & { status?: string }>) => {
     const params = new URLSearchParams();
     const currentFilters = getFiltersFromUrl();
+    const currentStatus = searchParams.get("status") ?? "all";
     const mergedFilters = { ...currentFilters, ...newFilters };
+    const mergedStatus = (newFilters as any).status ?? currentStatus;
 
     if (mergedFilters.query) params.set("query", mergedFilters.query);
     if (mergedFilters.type && mergedFilters.type !== "all") params.set("type", mergedFilters.type);
     if (mergedFilters.jurisdiccion) params.set("jurisdiccion", mergedFilters.jurisdiccion);
     if (mergedFilters.expedienteId) params.set("expedienteId", mergedFilters.expedienteId);
+    if (mergedFilters.clientId) params.set("clientId", mergedFilters.clientId);
     if (mergedFilters.from) params.set("from", mergedFilters.from);
     if (mergedFilters.to) params.set("to", mergedFilters.to);
-    if (mergedFilters.page) params.set("page", mergedFilters.page.toString());
+    if (mergedFilters.page && mergedFilters.page > 1) params.set("page", mergedFilters.page.toString());
     if (mergedFilters.pageSize) params.set("pageSize", mergedFilters.pageSize.toString());
-    if (mergedFilters.sort) params.set("sort", mergedFilters.sort);
+    if (mergedFilters.sort && mergedFilters.sort !== "createdAt:desc") params.set("sort", mergedFilters.sort);
+    if (mergedStatus && mergedStatus !== "all") params.set("status", mergedStatus);
 
-    router.replace(`/documents?${params.toString()}`, { scroll: false });
+    const qs = params.toString();
+    router.replace(`/documents${qs ? `?${qs}` : ""}`, { scroll: false });
   };
 
   const handleSearchChange = (query: string) => {
@@ -290,8 +296,8 @@ function DocumentsContent() {
 
   const handleStatusChange = (newStatus: string) => {
     setStatus(newStatus);
-    // El filtro por estado se aplica client-side sobre la página cargada
-    // El backend no expone un filtro de estado en GET /documents todavía
+    // Status filter is client-side; but we persist it in the URL for deep-link support
+    handleFiltersChange({ status: newStatus, page: 1 } as any);
   };
 
   // Client-side status filter (backend doesn't support status param yet)
@@ -304,12 +310,31 @@ function DocumentsContent() {
     handleFiltersChange({ expedienteId: id !== "all" ? id : undefined, page: 1 });
   };
 
+  const handleDateRangeChange = (from: string | undefined, to: string | undefined) => {
+    handleFiltersChange({ from, to, page: 1 });
+  };
+
+  const handleSortChange = (sort: string) => {
+    handleFiltersChange({ sort: sort as "createdAt:asc" | "createdAt:desc", page: 1 });
+  };
+
   const handleClearFilters = () => {
     setSearchQuery("");
     setDocumentType("all");
     setStatus("all");
-    router.replace("/documents", { scroll: false });
+    router.replace("/documents", { scroll: false }); // clears all URL params
   };
+
+  // Sync status from URL when navigating back/forward
+  useEffect(() => {
+    const urlStatus = searchParams.get("status") ?? "all";
+    if (urlStatus !== status) setStatus(urlStatus);
+    const urlQuery = searchParams.get("query") ?? "";
+    if (urlQuery !== searchQuery) setSearchQuery(urlQuery);
+    const urlType = searchParams.get("type") ?? "all";
+    if (urlType !== documentType) setDocumentType(urlType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handlePageChange = (page: number) => {
     handleFiltersChange({ page });
@@ -445,8 +470,34 @@ function DocumentsContent() {
           expedienteId={searchParams.get("expedienteId") ?? "all"}
           onExpedienteChange={handleExpedienteChange}
           expedientes={expedientes}
+          from={searchParams.get("from") ?? undefined}
+          to={searchParams.get("to") ?? undefined}
+          onDateRangeChange={handleDateRangeChange}
+          sort={searchParams.get("sort") ?? "createdAt:desc"}
+          onSortChange={handleSortChange}
           onClearFilters={handleClearFilters}
         />
+
+        {/* Active deep-link filter chips */}
+        {searchParams.get("clientId") && (
+          <div className="flex items-center gap-2 flex-wrap mt-1">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded-full text-xs text-sky-700 dark:text-sky-300 font-medium">
+              <User className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate max-w-[200px]">
+                {documents.find((d) => (d as any).client?.id === searchParams.get("clientId"))
+                  ? (documents.find((d) => (d as any).client?.id === searchParams.get("clientId")) as any).client?.name
+                  : "Cliente"}
+              </span>
+              <button
+                onClick={() => handleFiltersChange({ clientId: undefined, page: 1 })}
+                className="ml-0.5 text-sky-400 hover:text-sky-700 dark:hover:text-sky-200 transition-colors"
+                aria-label="Quitar filtro de cliente"
+              >
+                <XIcon className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Table Container */}
         {loading ? (

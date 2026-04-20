@@ -9,6 +9,17 @@ import { randomUUID } from "node:crypto";
 // Solo validamos que sea un string no vacío con caracteres válidos
 const DOCUMENT_TYPE_REGEX = /^[a-z0-9_]{2,80}$/;
 
+/**
+ * Sanitiza el nombre de archivo para evitar path traversal y caracteres peligrosos.
+ * Preserva letras, números, espacios, guiones, guiones bajos, paréntesis y un punto.
+ */
+function sanitizeFileName(name: string): string {
+  return name
+    .replace(/[^a-zA-Z0-9.\-_() ]/g, "_") // reemplazar caracteres peligrosos
+    .replace(/\.\./g, "_")                  // evitar path traversal
+    .substring(0, 255);                     // límite de longitud
+}
+
 export async function registerReferenceRoutes(app: FastifyInstance) {
   // ==========================================
   // POST /documents/references/upload
@@ -61,7 +72,7 @@ export async function registerReferenceRoutes(app: FastifyInstance) {
       // Leer el buffer del archivo
       const buffer = await data.toBuffer();
       const fileSize = buffer.length;
-      const originalName = data.filename;
+      const originalName = sanitizeFileName(data.filename ?? "archivo.pdf");
 
       const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
       if (fileSize > MAX_FILE_SIZE) {

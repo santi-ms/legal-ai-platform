@@ -93,31 +93,45 @@ export const logger = {
 /**
  * Sanitiza el contexto para remover información sensible
  */
+const SENSITIVE_KEYS = [
+  "password",
+  "passwordHash",
+  "token",
+  "accessToken",
+  "refreshToken",
+  "secret",
+  "apiKey",
+  "api_key",
+  "authorization",
+  "cookie",
+  "session",
+  "otp",
+  "otpCode",
+  "verificationCode",
+  "resetToken",
+  "inviteToken",
+  "privateKey",
+  "encryptedPassword",
+  "passwordEnc",
+];
+
+// Set de claves normalizadas para búsqueda case-insensitive
+const SENSITIVE_KEYS_LOWER = new Set(SENSITIVE_KEYS.map((k) => k.toLowerCase()));
+
 function sanitizeContext(context?: LogContext): LogContext | undefined {
   if (!context) return context;
 
-  const sensitiveKeys = [
-    "password",
-    "passwordHash",
-    "token",
-    "secret",
-    "apiKey",
-    "authorization",
-    "cookie",
-    "session",
-  ];
-
   const sanitized: LogContext = { ...context };
 
-  for (const key of sensitiveKeys) {
-    if (key in sanitized) {
+  for (const key of Object.keys(sanitized)) {
+    if (SENSITIVE_KEYS_LOWER.has(key.toLowerCase())) {
       sanitized[key] = "[REDACTED]";
     }
   }
 
   // Sanitizar objetos anidados
   for (const key in sanitized) {
-    if (typeof sanitized[key] === "object" && sanitized[key] !== null) {
+    if (typeof sanitized[key] === "object" && sanitized[key] !== null && sanitized[key] !== "[REDACTED]") {
       sanitized[key] = sanitizeContext(sanitized[key] as LogContext);
     }
   }

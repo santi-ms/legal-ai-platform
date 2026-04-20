@@ -1,4 +1,5 @@
 ﻿import "dotenv/config";
+import * as Sentry from "@sentry/node";
 import Fastify from "fastify";
 import fastifyCors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
@@ -35,6 +36,36 @@ import { runVencimientoNotifier } from "./services/vencimiento-notifier.js";
 import { runPortalActivityNotifier } from "./services/portal-activity-notifier.js";
 import { syncAllTenants } from "./services/portal-sync-service.js";
 import { logger } from "./utils/logger.js";
+import { prisma } from "./db.js";
+import { AppError } from "./utils/errors.js";
+
+// Initialize Sentry (only in production)
+if (process.env.SENTRY_DSN && process.env.NODE_ENV === 'production') {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    tracesSampleRate: 0.1, // 10% of transactions for performance
+    beforeSend(event) {
+      // Strip sensitive data
+      if (event.request?.headers) {
+        delete event.request.headers['authorization'];
+        delete event.request.headers['cookie'];
+      }
+      return event;
+    },
+  });
+}
+
+// In-memory per-tenant AI rate limit state
+const aiRequestCounts = new Map<string, { count: number; resetAt: number }>();
+
+// Cleanup every 5 minutes to prevent memory leak
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of aiRequestCounts.entries()) {
+    if (now > entry.resetAt) aiRequestCounts.delete(key);
+  }
+}, 5 * 60 * 1000);
 
 async function buildServer() {
   initializeDocumentRegistry();
@@ -64,21 +95,11 @@ async function buildServer() {
   await app.register(fastifyCors, {
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    origin: isDev
-      ? true
-      : (origin, cb) => {
-          if (isOriginAllowed(origin)) {
-            cb(null, true);
-          } else {
-            logger.warn("[CORS] Rejected origin", { origin });
-            cb(new Error("CORS not allowed"), false);
-          }
-        },
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    origin: (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || "http://localhost:3000").split(","),
   });
 
   await app.register(helmet, {
-    contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: "cross-origin" },
   });
 
@@ -92,11 +113,173 @@ async function buildServer() {
     }),
   });
 
+  // API Documentation (only in non-production or with explicit flag)
+  if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
+    await app.register(import('@fastify/swagger'), {
+      openapi: {
+        info: {
+          title: 'Doculex API',
+          description: 'API del sistema de gestión legal Doculex',
+          version: '1.0.0',
+        },
+        servers: [
+          { url: process.env.API_URL || 'http://localhost:4001', description: 'API Server' },
+        ],
+        components: {
+          securitySchemes: {
+            bearerAuth: {
+              type: 'http',
+              scheme: 'bearer',
+              bearerFormat: 'JWT',
+            },
+          },
+        },
+        security: [{ bearerAuth: [] }],
+      },
+    });
+
+    await app.register(import('@fastify/swagger-ui'), {
+      routePrefix: '/docs',
+      uiConfig: {
+        docExpansion: 'list',
+        deepLinking: false,
+      },
+    });
+  }
+
+  // CSRF protection: reject cross-origin form submissions
+  app.addHook('preHandler', async (request, reply) => {
+    const method = request.method.toUpperCase();
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+      const xRequestedWith = request.headers['x-requested-with'];
+      const contentType = request.headers['content-type'] || '';
+      // Solo verificar si no es JSON (JSON APIs son seguras por sí solas)
+      // y no es multipart (file uploads)
+      if (!contentType.includes('application/json') &&
+          !contentType.includes('multipart/form-data') &&
+          !request.url.includes('/webhooks/')) {
+        if (!xRequestedWith) {
+          return reply.code(403).send({ error: 'CSRF check failed' });
+        }
+      }
+    }
+  });
+
+  // Global error handler with Sentry capture
+  app.setErrorHandler((error, request, reply) => {
+    if (process.env.SENTRY_DSN) {
+      Sentry.captureException(error, {
+        extra: {
+          url: request.url,
+          method: request.method,
+          tenantId: (request as any).user?.tenantId,
+        }
+      });
+    }
+
+    // Known application errors
+    if (error instanceof AppError) {
+      return reply.code(error.statusCode).send({
+        ok: false,
+        error: error.message,
+        code: error.code,
+      });
+    }
+
+    // Fastify validation errors (Zod/JSON schema)
+    if ((error as any).validation) {
+      return reply.code(400).send({
+        ok: false,
+        error: 'Datos inválidos',
+        details: (error as any).validation,
+      });
+    }
+
+    // Prisma errors
+    if ((error as any).code === 'P2025') {
+      return reply.code(404).send({ ok: false, error: 'Recurso no encontrado' });
+    }
+    if ((error as any).code === 'P2002') {
+      return reply.code(409).send({ ok: false, error: 'Ya existe un registro con esos datos' });
+    }
+
+    // Unknown errors
+    logger.error('Unhandled error', { error: error.message, stack: error.stack, url: request.url });
+    return reply.code(500).send({
+      ok: false,
+      error: 'Error interno del servidor',
+    });
+  });
+
+  // AI-specific rate limit: 30 requests per minute per tenant (in-memory)
+  app.addHook('preHandler', async (request, reply) => {
+    const aiPaths = ['/documents/generate', '/chat', '/analysis', '/estrategia'];
+    const isAiPath = aiPaths.some(p => request.url.includes(p));
+    if (!isAiPath) return;
+
+    const user = (request as any).user;
+    if (!user?.tenantId) return; // unauthenticated — other middleware handles it
+
+    const key = `ai:${user.tenantId}`;
+    const now = Date.now();
+    const window = 60 * 1000; // 1 minute
+
+    if (!aiRequestCounts.has(key)) {
+      aiRequestCounts.set(key, { count: 1, resetAt: now + window });
+      return;
+    }
+
+    const entry = aiRequestCounts.get(key)!;
+    if (now > entry.resetAt) {
+      entry.count = 1;
+      entry.resetAt = now + window;
+      return;
+    }
+
+    entry.count++;
+    if (entry.count > 30) {
+      return reply.code(429).send({
+        ok: false,
+        error: 'Demasiadas solicitudes al asistente IA. Esperá un momento.',
+        retryAfter: Math.ceil((entry.resetAt - now) / 1000),
+      });
+    }
+  });
+
   app.get("/healthz", async () => ({
     ok: true,
     uptime: process.uptime(),
     ts: Date.now(),
   }));
+
+  // Health check endpoint - used by Railway for uptime monitoring
+  app.get('/health', async (request, reply) => {
+    // Check DB connection
+    let dbStatus = 'ok';
+    let dbLatency = 0;
+    try {
+      const dbStart = Date.now();
+      await prisma.$queryRaw`SELECT 1`;
+      dbLatency = Date.now() - dbStart;
+    } catch (err) {
+      dbStatus = 'error';
+    }
+
+    const status = dbStatus === 'ok' ? 'ok' : 'degraded';
+    const statusCode = status === 'ok' ? 200 : 503;
+
+    return reply.code(statusCode).send({
+      status,
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      version: process.env.npm_package_version || '1.0.0',
+      services: {
+        database: { status: dbStatus, latencyMs: dbLatency },
+        ai: { status: process.env.ANTHROPIC_API_KEY ? 'configured' : 'missing' },
+        email: { status: process.env.POSTMARK_SERVER_TOKEN ? 'configured' : 'fallback' },
+      }
+    });
+  });
 
   app.get("/", async () => ({ ok: true, message: "API up" }));
 

@@ -125,6 +125,11 @@ async function proxyJson<T = any>(
   if (init.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
+  // CSRF protection: mark all state-changing requests as XHR
+  const method = (init.method ?? "GET").toUpperCase();
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+    headers.set("X-Requested-With", "XMLHttpRequest");
+  }
 
   // Construir URL: absoluta en servidor, relativa en cliente
   const url = isServer()
@@ -1359,6 +1364,46 @@ export async function getCalendarDeadlines(year: number, month: number): Promise
   };
 }
 
+/** Vencimiento item augmented for calendar display */
+export interface CalendarVencimientoItem {
+  id:               string;
+  titulo:           string;
+  tipo:             string;
+  fechaVencimiento: string;
+  estado:           "pendiente" | "completado" | "vencido";
+  expedienteId:     string | null;
+  clientId:         string | null;
+}
+
+/**
+ * Returns vencimientos from the dedicated module for the given month,
+ * so the calendar can display them alongside expediente deadlines.
+ */
+export async function getVencimientosForCalendar(
+  year: number,
+  month: number
+): Promise<Map<string, CalendarVencimientoItem[]>> {
+  // First day and last day of the month
+  const from = new Date(year, month - 1, 1).toISOString();
+  const to   = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
+
+  const { data } = await proxyJson<any>(
+    `/vencimientos?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&pageSize=100`
+  );
+
+  const items: CalendarVencimientoItem[] = (data?.items ?? []) as CalendarVencimientoItem[];
+  const map = new Map<string, CalendarVencimientoItem[]>();
+
+  for (const item of items) {
+    const d = new Date(item.fechaVencimiento);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(item);
+  }
+
+  return map;
+}
+
 // ─── Reference Documents ───────────────────────────────────────────────────────
 
 export const REFERENCE_DOCUMENT_TYPES = [
@@ -2570,6 +2615,26 @@ export async function exportHonorariosCSV(): Promise<void> {
   a.href = url;
   const today = new Date().toISOString().slice(0, 10);
   a.download = `honorarios-${today}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Descarga todos los vencimientos del tenant como CSV.
+ * Dispara la descarga directamente en el navegador.
+ */
+export async function exportVencimientosCSV(): Promise<void> {
+  const resp = await fetch(`${PROXY_BASE}/vencimientos/export`, { cache: "no-store" });
+  if (!resp.ok) throw new Error("Error al exportar vencimientos");
+  const text = await resp.text();
+  const blob = new Blob([text], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const today = new Date().toISOString().slice(0, 10);
+  a.download = `vencimientos-${today}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

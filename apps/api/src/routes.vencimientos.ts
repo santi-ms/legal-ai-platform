@@ -60,8 +60,20 @@ export async function registerVencimientosRoutes(app: FastifyInstance) {
 
     if (q.estado)       where.estado       = q.estado;
     if (q.tipo)         where.tipo         = q.tipo;
-    if (q.expedienteId) where.expedienteId = q.expedienteId;
-    if (q.clientId)     where.clientId     = q.clientId;
+    if (q.expedienteId) {
+      const exp = await prisma.expediente.findFirst({
+        where: { id: q.expedienteId, tenantId: user.tenantId! }
+      });
+      if (!exp) return reply.code(400).send({ ok: false, error: "Expediente no encontrado" });
+      where.expedienteId = q.expedienteId;
+    }
+    if (q.clientId) {
+      const cli = await prisma.client.findFirst({
+        where: { id: q.clientId, tenantId: user.tenantId! }
+      });
+      if (!cli) return reply.code(400).send({ ok: false, error: "Cliente no encontrado" });
+      where.clientId = q.clientId;
+    }
 
     if (q.upcomingDays) {
       const days = parseInt(q.upcomingDays);
@@ -136,6 +148,69 @@ export async function registerVencimientosRoutes(app: FastifyInstance) {
       ok: true,
       stats: { totalPendientes, vencidos, proximos3d, proximos7d, proximos30d, completadosMes },
     });
+  });
+
+  // ── GET /vencimientos/export ─────────────────────────────────────────────
+  app.get("/vencimientos/export", async (request, reply) => {
+    const user = requireAuth(request);
+    if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
+
+    const vencimientos = await prisma.vencimiento.findMany({
+      where: { tenantId: user.tenantId, archivedAt: null },
+      orderBy: [{ fechaVencimiento: "asc" }, { createdAt: "desc" }],
+      take: 5000,
+      include: {
+        expediente: { select: { number: true, title: true } },
+        client:     { select: { name: true } },
+      },
+    });
+
+    const TIPO_ES: Record<string, string> = {
+      audiencia: "Audiencia", presentacion: "Presentación",
+      prescripcion: "Prescripción", plazo_legal: "Plazo legal",
+      vencimiento_contrato: "Vto. contrato", notificacion: "Notificación",
+      pericia: "Pericia", traslado: "Traslado", otro: "Otro",
+    };
+
+    const ESTADO_ES: Record<string, string> = {
+      pendiente: "Pendiente", completado: "Completado", vencido: "Vencido",
+    };
+
+    const escapeCSV = (v: unknown): string => {
+      if (v === null || v === undefined) return "";
+      const s = String(v);
+      if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+        return `"${s.replace(/"/g, '""')}"`;
+      }
+      return s;
+    };
+
+    const formatDate = (d: Date | string | null) =>
+      d ? new Date(d).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+
+    const headers = [
+      "Título", "Tipo", "Estado", "Fecha Vencimiento",
+      "Expediente", "Cliente", "Alerta (días)", "Descripción",
+    ].map(escapeCSV).join(",");
+
+    const rows = vencimientos.map((v) => [
+      escapeCSV(v.titulo),
+      escapeCSV(TIPO_ES[v.tipo] ?? v.tipo),
+      escapeCSV(ESTADO_ES[v.estado] ?? v.estado),
+      escapeCSV(formatDate(v.fechaVencimiento)),
+      escapeCSV(v.expediente ? `${v.expediente.number ? "#" + v.expediente.number + " " : ""}${v.expediente.title}` : ""),
+      escapeCSV(v.client?.name ?? ""),
+      escapeCSV(v.alertaDias),
+      escapeCSV(v.descripcion ?? ""),
+    ].join(","));
+
+    const csv = [headers, ...rows].join("\r\n");
+    const today = new Date().toISOString().slice(0, 10);
+
+    return reply
+      .header("Content-Type", "text/csv; charset=utf-8")
+      .header("Content-Disposition", `attachment; filename="vencimientos-${today}.csv"`)
+      .send("\uFEFF" + csv);
   });
 
   // ── POST /vencimientos ────────────────────────────────────────────────────

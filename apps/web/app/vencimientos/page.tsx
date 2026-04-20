@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, Suspense, useMemo, memo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   CalendarClock, Plus, CheckCircle2, AlertTriangle, Clock,
   Loader2, Trash2, X, ChevronDown, RotateCcw, Bell,
-  FileText, User, Filter, Calendar, CheckSquare,
+  FileText, User, Filter, Calendar, CheckSquare, Search, Briefcase, Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/app/lib/utils";
 import {
   listVencimientos, getVencimientoStats, createVencimiento, updateVencimiento,
-  completeVencimiento, reopenVencimiento, deleteVencimiento,
+  completeVencimiento, reopenVencimiento, deleteVencimiento, exportVencimientosCSV,
   Vencimiento, VencimientoStats, CreateVencimientoPayload, VENCIMIENTO_TIPOS,
 } from "@/app/lib/webApi";
 
@@ -55,13 +57,18 @@ function VencimientoModal({
   venc,
   onClose,
   onSaved,
+  defaultExpedienteId = "",
+  defaultClientId = "",
 }: {
   venc:    Vencimiento | null;   // null = crear
   onClose: () => void;
   onSaved: (v: Vencimiento) => void;
+  defaultExpedienteId?: string;
+  defaultClientId?: string;
 }) {
   const { success, error: showError } = useToast();
   const isEdit = Boolean(venc);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   const [titulo,           setTitulo]           = useState(venc?.titulo ?? "");
   const [descripcion,      setDescripcion]      = useState(venc?.descripcion ?? "");
@@ -71,6 +78,22 @@ function VencimientoModal({
   );
   const [alertaDias,       setAlertaDias]       = useState(venc?.alertaDias ?? 3);
   const [saving, setSaving] = useState(false);
+
+  // Focus trap + Escape handler
+  useEffect(() => {
+    const focusable = modalRef.current?.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable && focusable.length > 0) {
+      focusable[0].focus();
+    }
+
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
 
   const today = new Date().toISOString().substring(0, 10);
 
@@ -85,6 +108,8 @@ function VencimientoModal({
       tipo,
       fechaVencimiento: new Date(fecha + "T12:00:00").toISOString(),
       alertaDias,
+      ...(defaultExpedienteId && !isEdit ? { expedienteId: defaultExpedienteId } : {}),
+      ...(defaultClientId && !isEdit ? { clientId: defaultClientId } : {}),
     };
 
     setSaving(true);
@@ -107,11 +132,15 @@ function VencimientoModal({
       onClick={onClose}
     >
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="vencimiento-modal-title"
         className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+          <h2 id="vencimiento-modal-title" className="text-lg font-semibold text-slate-800 dark:text-slate-100">
             {isEdit ? "Editar vencimiento" : "Nuevo vencimiento"}
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
@@ -217,7 +246,7 @@ function VencimientoModal({
 
 // ─── Vencimiento Item ──────────────────────────────────────────────────────────
 
-function VencimientoItem({
+const VencimientoItem = React.memo(function VencimientoItem({
   venc,
   onComplete,
   onReopen,
@@ -331,7 +360,7 @@ function VencimientoItem({
       />
     </div>
   );
-}
+});
 
 // ─── Stats Row ────────────────────────────────────────────────────────────────
 
@@ -364,26 +393,44 @@ function StatsRow({ stats }: { stats: VencimientoStats }) {
 
 type FilterEstado = "todos" | "pendiente" | "completado";
 
-export default function VencimientosPage() {
+function VencimientosContent() {
   const { success, error: showError } = useToast();
+  const searchParams = useSearchParams();
+  const router       = useRouter();
 
   const [items, setItems]     = useState<Vencimiento[]>([]);
   const [stats, setStats]     = useState<VencimientoStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [total, setTotal]     = useState(0);
 
-  const [filterEstado, setFilterEstado] = useState<FilterEstado>("todos");
-  const [filterTipo,   setFilterTipo]   = useState<string>("todos");
+  const [filterEstado,      setFilterEstado]      = useState<FilterEstado>("todos");
+  const [filterTipo,        setFilterTipo]        = useState<string>("todos");
+  const [searchQuery,       setSearchQuery]       = useState("");
+  const [filterExpedienteId, setFilterExpedienteId] = useState(
+    searchParams.get("expedienteId") ?? ""
+  );
+  const [filterClientId, setFilterClientId] = useState(
+    searchParams.get("clientId") ?? ""
+  );
+  const [exporting, setExporting] = useState(false);
 
-  const [modal, setModal]     = useState<"create" | Vencimiento | null>(null);
+  // Auto-open create modal when ?create=1 is in the URL (from expediente detail page)
+  const [modal, setModal]     = useState<"create" | Vencimiento | null>(
+    searchParams.get("create") === "1" ? "create" : null
+  );
+  // Pre-fill expedienteId and clientId from URL params
+  const prefilledExpedienteId = searchParams.get("expedienteId") ?? "";
+  const prefilledClientId     = searchParams.get("clientId") ?? "";
 
   const fetchData = useCallback(async () => {
     try {
       const params: Parameters<typeof listVencimientos>[0] = {
         pageSize: 100,
       };
-      if (filterEstado !== "todos") params.estado = filterEstado;
-      if (filterTipo !== "todos")   params.tipo   = filterTipo;
+      if (filterEstado !== "todos")   params.estado       = filterEstado;
+      if (filterTipo !== "todos")     params.tipo         = filterTipo;
+      if (filterExpedienteId)         params.expedienteId = filterExpedienteId;
+      if (filterClientId)             params.clientId     = filterClientId;
 
       const [res, st] = await Promise.all([
         listVencimientos(params),
@@ -397,7 +444,7 @@ export default function VencimientosPage() {
     } finally {
       setLoading(false);
     }
-  }, [filterEstado, filterTipo]);
+  }, [filterEstado, filterTipo, filterExpedienteId, filterClientId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -444,15 +491,41 @@ export default function VencimientosPage() {
     fetchData();
   }
 
+  // Derived expediente/client labels (populated after items load)
+  const expedienteLabel = filterExpedienteId
+    ? (items.find((v) => v.expediente?.id === filterExpedienteId)?.expediente?.title ?? "Expediente")
+    : "";
+  const clientLabel = filterClientId
+    ? (items.find((v) => v.client?.id === filterClientId)?.client?.name ?? "Cliente")
+    : "";
+
   // Group by week
   const now = new Date(); now.setHours(0, 0, 0, 0);
 
-  const vencidos   = items.filter((v) => v.estado === "pendiente" && daysUntil(v.fechaVencimiento) < 0);
-  const hoy        = items.filter((v) => v.estado === "pendiente" && daysUntil(v.fechaVencimiento) === 0);
-  const semana     = items.filter((v) => v.estado === "pendiente" && daysUntil(v.fechaVencimiento) > 0 && daysUntil(v.fechaVencimiento) <= 7);
-  const mes        = items.filter((v) => v.estado === "pendiente" && daysUntil(v.fechaVencimiento) > 7 && daysUntil(v.fechaVencimiento) <= 30);
-  const futuros    = items.filter((v) => v.estado === "pendiente" && daysUntil(v.fechaVencimiento) > 30);
-  const completados = items.filter((v) => v.estado === "completado");
+  // Client-side text search filter
+  const visibleItems = useMemo(() =>
+    searchQuery.trim()
+      ? items.filter((v) => {
+          const q = searchQuery.toLowerCase();
+          return (
+            v.titulo.toLowerCase().includes(q) ||
+            (v.descripcion ?? "").toLowerCase().includes(q) ||
+            (TIPO_LABELS[v.tipo] ?? v.tipo).toLowerCase().includes(q) ||
+            (v.expediente?.title ?? "").toLowerCase().includes(q) ||
+            (v.expediente?.number ?? "").toLowerCase().includes(q) ||
+            (v.client?.name ?? "").toLowerCase().includes(q)
+          );
+        })
+      : items,
+    [items, searchQuery]
+  );
+
+  const vencidos   = visibleItems.filter((v) => v.estado === "pendiente" && daysUntil(v.fechaVencimiento) < 0);
+  const hoy        = visibleItems.filter((v) => v.estado === "pendiente" && daysUntil(v.fechaVencimiento) === 0);
+  const semana     = visibleItems.filter((v) => v.estado === "pendiente" && daysUntil(v.fechaVencimiento) > 0 && daysUntil(v.fechaVencimiento) <= 7);
+  const mes        = visibleItems.filter((v) => v.estado === "pendiente" && daysUntil(v.fechaVencimiento) > 7 && daysUntil(v.fechaVencimiento) <= 30);
+  const futuros    = visibleItems.filter((v) => v.estado === "pendiente" && daysUntil(v.fechaVencimiento) > 30);
+  const completados = visibleItems.filter((v) => v.estado === "completado");
 
   if (loading) {
     return (
@@ -476,10 +549,33 @@ export default function VencimientosPage() {
             Audiencias, plazos procesales, vencimientos de contratos y cualquier fecha crítica
           </p>
         </div>
-        <Button onClick={() => setModal("create")} className="gap-2">
-          <Plus className="w-4 h-4" />
-          Nuevo vencimiento
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={exporting}
+            title="Exportar como CSV"
+            onClick={async () => {
+              setExporting(true);
+              try {
+                await exportVencimientosCSV();
+                success("CSV exportado exitosamente");
+              } catch {
+                showError("No se pudo exportar el CSV");
+              } finally {
+                setExporting(false);
+              }
+            }}
+            className="h-9 px-3 gap-1.5"
+          >
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            <span className="hidden sm:inline text-xs">CSV</span>
+          </Button>
+          <Button onClick={() => setModal("create")} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Nuevo vencimiento
+          </Button>
+        </div>
       </div>
 
       {/* ── Stats ────────────────────────────────────────────────────────────── */}
@@ -504,56 +600,143 @@ export default function VencimientosPage() {
       )}
 
       {/* ── Filters ──────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 flex-wrap">
-        {/* Estado filter */}
-        <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden text-sm">
-          {(["todos", "pendiente", "completado"] as FilterEstado[]).map((e) => (
-            <button
-              key={e}
-              onClick={() => setFilterEstado(e)}
-              className={cn(
-                "px-3 py-1.5 transition-colors",
-                filterEstado === e
-                  ? "bg-violet-500 text-white"
-                  : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-              )}
-            >
-              {e === "todos" ? "Todos" : e === "pendiente" ? "Pendientes" : "Completados"}
-            </button>
-          ))}
-        </div>
-
-        {/* Tipo filter */}
+      <div className="space-y-3">
+        {/* Search */}
         <div className="relative">
-          <select
-            value={filterTipo}
-            onChange={(e) => setFilterTipo(e.target.value)}
-            className="pl-3 pr-8 py-1.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none"
-          >
-            <option value="todos">Todos los tipos</option>
-            {VENCIMIENTO_TIPOS.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
-            ))}
-          </select>
-          <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar por título, tipo, expediente..."
+            className="pl-9 pr-9 bg-white dark:bg-slate-900"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
-        <span className="text-xs text-slate-400 ml-auto">
-          {total} resultado{total !== 1 ? "s" : ""}
-        </span>
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Estado filter */}
+          <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden text-sm">
+            {(["todos", "pendiente", "completado"] as FilterEstado[]).map((e) => (
+              <button
+                key={e}
+                onClick={() => setFilterEstado(e)}
+                className={cn(
+                  "px-3 py-1.5 transition-colors",
+                  filterEstado === e
+                    ? "bg-violet-500 text-white"
+                    : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                )}
+              >
+                {e === "todos" ? "Todos" : e === "pendiente" ? "Pendientes" : "Completados"}
+              </button>
+            ))}
+          </div>
+
+          {/* Tipo filter */}
+          <div className="relative">
+            <select
+              value={filterTipo}
+              onChange={(e) => setFilterTipo(e.target.value)}
+              className="pl-3 pr-8 py-1.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none"
+            >
+              <option value="todos">Todos los tipos</option>
+              {VENCIMIENTO_TIPOS.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          </div>
+
+          {/* Expediente filter chip */}
+          {filterExpedienteId && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-xl text-xs text-violet-700 dark:text-violet-300 font-medium">
+              <Briefcase className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate max-w-[160px]">{expedienteLabel || "Expediente"}</span>
+              <button
+                onClick={() => {
+                  setFilterExpedienteId("");
+                  // also strip expedienteId from URL
+                  const p = new URLSearchParams(searchParams.toString());
+                  p.delete("expedienteId");
+                  const qs = p.toString();
+                  router.replace(`/vencimientos${qs ? `?${qs}` : ""}`);
+                }}
+                className="ml-0.5 text-violet-400 hover:text-violet-700 dark:hover:text-violet-200 transition-colors"
+                aria-label="Quitar filtro de expediente"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
+          {/* Client filter chip */}
+          {filterClientId && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded-xl text-xs text-sky-700 dark:text-sky-300 font-medium">
+              <User className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate max-w-[160px]">{clientLabel || "Cliente"}</span>
+              <button
+                onClick={() => {
+                  setFilterClientId("");
+                  const p = new URLSearchParams(searchParams.toString());
+                  p.delete("clientId");
+                  const qs = p.toString();
+                  router.replace(`/vencimientos${qs ? `?${qs}` : ""}`);
+                }}
+                className="ml-0.5 text-sky-400 hover:text-sky-700 dark:hover:text-sky-200 transition-colors"
+                aria-label="Quitar filtro de cliente"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
+          {(searchQuery || filterEstado !== "todos" || filterTipo !== "todos" || filterExpedienteId || filterClientId) && (
+            <button
+              onClick={() => {
+                setSearchQuery(""); setFilterEstado("todos"); setFilterTipo("todos");
+                setFilterExpedienteId(""); setFilterClientId("");
+                // strip expedienteId, clientId + create from URL
+                const p = new URLSearchParams(searchParams.toString());
+                p.delete("expedienteId"); p.delete("clientId"); p.delete("create");
+                const qs = p.toString();
+                router.replace(`/vencimientos${qs ? `?${qs}` : ""}`);
+              }}
+              className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 ml-1"
+            >
+              <X className="w-3 h-3" /> Limpiar
+            </button>
+          )}
+
+          <span className="text-xs text-slate-400 ml-auto">
+            {searchQuery.trim() ? `${visibleItems.length} de ${total}` : total} vencimiento{total !== 1 ? "s" : ""}
+            {filterExpedienteId && !searchQuery.trim() && " en este expediente"}
+            {filterClientId && !filterExpedienteId && !searchQuery.trim() && " de este cliente"}
+          </span>
+        </div>
       </div>
 
       {/* ── List ─────────────────────────────────────────────────────────────── */}
-      {items.length === 0 ? (
+      {visibleItems.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
           <CalendarClock className="w-12 h-12 mx-auto mb-4 opacity-30" />
-          <p className="text-base font-medium text-slate-500">Sin vencimientos</p>
-          <p className="text-sm mt-1">
-            {filterEstado !== "todos" || filterTipo !== "todos"
-              ? "No hay resultados para los filtros aplicados."
-              : "Creá tu primer vencimiento para no perder ninguna fecha clave."}
+          <p className="text-base font-medium text-slate-500">
+            {searchQuery.trim() ? "Sin resultados" : "Sin vencimientos"}
           </p>
-          {filterEstado === "todos" && filterTipo === "todos" && (
+          <p className="text-sm mt-1">
+            {searchQuery.trim()
+              ? `No hay vencimientos que coincidan con "${searchQuery}".`
+              : filterEstado !== "todos" || filterTipo !== "todos" || filterExpedienteId || filterClientId
+                ? "No hay resultados para los filtros aplicados."
+                : "Creá tu primer vencimiento para no perder ninguna fecha clave."}
+          </p>
+          {!searchQuery.trim() && filterEstado === "todos" && filterTipo === "todos" && !filterExpedienteId && !filterClientId && (
             <Button onClick={() => setModal("create")} className="mt-4 gap-2">
               <Plus className="w-4 h-4" />
               Nuevo vencimiento
@@ -643,9 +826,23 @@ export default function VencimientosPage() {
           venc={modal === "create" ? null : modal}
           onClose={() => setModal(null)}
           onSaved={handleSaved}
+          defaultExpedienteId={modal === "create" ? prefilledExpedienteId : ""}
+          defaultClientId={modal === "create" ? prefilledClientId : ""}
         />
       )}
     </div>
+  );
+}
+
+export default function VencimientosPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    }>
+      <VencimientosContent />
+    </Suspense>
   );
 }
 

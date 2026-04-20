@@ -17,6 +17,18 @@ import { extractTextFromPdf } from "./modules/documents/services/pdf-extractor.j
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// ─── Retry helper ─────────────────────────────────────────────────────────────
+
+async function callWithRetry(fn: () => Promise<any>, retries = 2): Promise<any> {
+  for (let i = 0; i <= retries; i++) {
+    try { return await fn(); }
+    catch (err: any) {
+      if (i === retries || (err?.status >= 400 && err?.status < 500 && err?.status !== 429)) throw err;
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
+    }
+  }
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface AnalysisResult {
@@ -230,13 +242,13 @@ export async function registerAnalysisRoutes(app: FastifyInstance) {
         let parseError: string | null = null;
 
         try {
-          const response = await anthropic.messages.create({
+          const response = await callWithRetry(() => anthropic.messages.create({
             model: "claude-sonnet-4-6",
             max_tokens: 4000,
             temperature: 0,
             system: ANALYSIS_SYSTEM_PROMPT,
             messages: [{ role: "user", content: buildAnalysisPrompt(pdfText) }],
-          });
+          }));
 
           const rawText = response.content
             .filter((b) => b.type === "text")
@@ -387,12 +399,12 @@ RIESGO GENERAL: ${result?.overallRisk ?? ""}
 TEXTO DEL CONTRATO:
 ${contractText}`;
 
-      const aiResponse = await anthropic.messages.create({
+      const aiResponse = await callWithRetry(() => anthropic.messages.create({
         model: "claude-haiku-4-5",
         max_tokens: 800,
         system: systemPrompt,
         messages: [{ role: "user", content: question.trim() }],
-      });
+      }));
 
       const answer = aiResponse.content
         .filter((b) => b.type === "text")

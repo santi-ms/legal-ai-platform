@@ -40,6 +40,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       if (seq === "gs") router.push("/settings");
       if (seq === "gc") router.push("/clients");
       if (seq === "ge") router.push("/expedientes");
+      if (seq === "gf") router.push("/finanzas");
+      if (seq === "gv") router.push("/vencimientos");
+      if (seq === "ga") router.push("/analytics");
+      if (seq === "gj") router.push("/juris");
+      if (seq === "gk") router.push("/calendario");
     },
     [router]
   );
@@ -80,7 +85,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
          e.key === "l" || e.key === "L" ||
          e.key === "s" || e.key === "S" ||
          e.key === "c" || e.key === "C" ||
-         e.key === "e" || e.key === "E") &&
+         e.key === "e" || e.key === "E" ||
+         e.key === "f" || e.key === "F" ||
+         e.key === "v" || e.key === "V" ||
+         e.key === "a" || e.key === "A" ||
+         e.key === "j" || e.key === "J" ||
+         e.key === "k" || e.key === "K") &&
         !e.metaKey && !e.ctrlKey
       ) {
         checkSequence(e.key);

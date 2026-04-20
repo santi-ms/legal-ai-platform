@@ -1,9 +1,16 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Calendar, AlertCircle, Clock, CheckCircle2, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, AlertCircle, Clock, CheckCircle2, Loader2, Bell } from "lucide-react";
 import Link from "next/link";
-import { getCalendarDeadlines, type CalendarData, type CalendarDeadlineItem, type DeadlineUrgency } from "@/app/lib/webApi";
+import {
+  getCalendarDeadlines,
+  getVencimientosForCalendar,
+  type CalendarData,
+  type CalendarDeadlineItem,
+  type CalendarVencimientoItem,
+  type DeadlineUrgency,
+} from "@/app/lib/webApi";
 import { cn } from "@/app/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -92,6 +99,7 @@ export default function CalendarioPage() {
   const [year, setYear]   = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1); // 1-based
   const [data, setData]   = useState<CalendarData | null>(null);
+  const [vencimientosMap, setVencimientosMap] = useState<Map<string, CalendarVencimientoItem[]>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null); // dateKey of selected day
@@ -103,8 +111,13 @@ export default function CalendarioPage() {
     setError(null);
     setSelected(null);
     try {
-      const result = await getCalendarDeadlines(y, m);
-      setData(result);
+      const [calResult, vencResult] = await Promise.allSettled([
+        getCalendarDeadlines(y, m),
+        getVencimientosForCalendar(y, m),
+      ]);
+      if (calResult.status === "fulfilled") setData(calResult.value);
+      else throw calResult.reason;
+      if (vencResult.status === "fulfilled") setVencimientosMap(vencResult.value);
     } catch (err: any) {
       setError(err.message ?? "Error al cargar el calendario");
     } finally {
@@ -251,16 +264,19 @@ export default function CalendarioPage() {
                 {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
                   const dateKey = buildDateKey(year, month, day);
                   const items = deadlineMap.get(dateKey) ?? [];
+                  const vencItems = vencimientosMap.get(dateKey) ?? [];
                   const isToday = dateKey === todayKey;
                   const isSelected = dateKey === selected;
-                  const hasItems = items.length > 0;
+                  const hasItems = items.length > 0 || vencItems.length > 0;
 
-                  // Determine worst urgency for the cell bg
+                  // Determine worst urgency for the cell bg (expediente deadlines only)
                   const worstUrgency: DeadlineUrgency | null = items.length === 0 ? null
                     : items.some(x => x.urgency === "overdue") ? "overdue"
                     : items.some(x => x.urgency === "urgent")  ? "urgent"
                     : items.some(x => x.urgency === "warning") ? "warning"
                     : "normal";
+
+                  const totalCount = items.length + vencItems.length;
 
                   return (
                     <button
@@ -287,21 +303,29 @@ export default function CalendarioPage() {
                         {day}
                       </span>
 
-                      {/* Deadline dots / count */}
+                      {/* Deadline dots + vencimiento dots */}
                       {hasItems && (
                         <div className="mt-1 flex flex-wrap gap-1">
-                          {items.slice(0, 3).map((item) => (
+                          {/* Expediente deadline dots */}
+                          {items.slice(0, 2).map((item) => (
                             <span
-                              key={item.id}
+                              key={`exp_${item.id}`}
                               className={cn(
                                 "inline-block w-2 h-2 rounded-full",
                                 URGENCY_CONFIG[item.urgency].dot
                               )}
                             />
                           ))}
-                          {items.length > 3 && (
+                          {/* Vencimiento dots — blue */}
+                          {vencItems.slice(0, 2).map((item) => (
+                            <span
+                              key={`venc_${item.id}`}
+                              className="inline-block w-2 h-2 rounded-full bg-blue-500"
+                            />
+                          ))}
+                          {totalCount > 4 && (
                             <span className="text-[10px] text-slate-500 leading-none">
-                              +{items.length - 3}
+                              +{totalCount - 4}
                             </span>
                           )}
                         </div>
@@ -324,6 +348,10 @@ export default function CalendarioPage() {
                 </div>
               );
             })}
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+              <span className="text-xs text-slate-500 dark:text-slate-400">Módulo vencimientos</span>
+            </div>
           </div>
         </div>
 
@@ -333,10 +361,11 @@ export default function CalendarioPage() {
             <DeadlineSidebar
               dateKey={selected}
               items={selectedItems}
+              vencItems={vencimientosMap.get(selected) ?? []}
               onClose={() => setSelected(null)}
             />
           ) : (
-            <UpcomingDeadlinesSidebar data={data} loading={loading} />
+            <UpcomingDeadlinesSidebar data={data} loading={loading} vencimientosMap={vencimientosMap} />
           )}
         </div>
       </div>
@@ -349,10 +378,12 @@ export default function CalendarioPage() {
 function DeadlineSidebar({
   dateKey,
   items,
+  vencItems,
   onClose,
 }: {
   dateKey: string;
   items: CalendarDeadlineItem[];
+  vencItems: CalendarVencimientoItem[];
   onClose: () => void;
 }) {
   const [d, m, y] = dateKey.split("-").map(Number);
@@ -362,6 +393,7 @@ function DeadlineSidebar({
     month: "long",
     year: "numeric",
   });
+  const totalCount = items.length + vencItems.length;
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
@@ -369,7 +401,7 @@ function DeadlineSidebar({
         <div>
           <h3 className="font-bold text-slate-900 dark:text-white capitalize">{displayDate}</h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            {items.length} vencimiento{items.length !== 1 ? "s" : ""}
+            {totalCount} evento{totalCount !== 1 ? "s" : ""}
           </p>
         </div>
         <button
@@ -384,6 +416,9 @@ function DeadlineSidebar({
         {items.map((item) => (
           <DeadlineCard key={item.id} item={item} />
         ))}
+        {vencItems.map((item) => (
+          <VencimientoCard key={item.id} item={item} />
+        ))}
       </div>
     </div>
   );
@@ -394,21 +429,36 @@ function DeadlineSidebar({
 function UpcomingDeadlinesSidebar({
   data,
   loading,
+  vencimientosMap,
 }: {
   data: CalendarData | null;
   loading: boolean;
+  vencimientosMap: Map<string, CalendarVencimientoItem[]>;
 }) {
   // Collect all items, sorted by deadline
   const allItems = data?.days.flatMap(d => d.items) ?? [];
   const urgent = allItems.filter(i => i.urgency === "overdue" || i.urgency === "urgent");
   const upcoming = allItems.filter(i => i.urgency === "warning" || i.urgency === "normal");
+  const totalVencimientos = Array.from(vencimientosMap.values()).reduce((s, arr) => s + arr.length, 0);
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
         <h3 className="font-bold text-slate-900 dark:text-white">
-          Vencimientos del mes
+          Eventos del mes
         </h3>
+        <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+            {allItems.length} exp.
+          </span>
+          {totalVencimientos > 0 && (
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+              {totalVencimientos} venc.
+            </span>
+          )}
+        </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
           Hacé clic en un día para ver el detalle
         </p>
@@ -449,6 +499,72 @@ function UpcomingDeadlinesSidebar({
         </div>
       )}
     </div>
+  );
+}
+
+// ─── VencimientoCard ──────────────────────────────────────────────────────────
+
+const VENC_TIPO_LABEL: Record<string, string> = {
+  audiencia:            "Audiencia",
+  presentacion:         "Presentación",
+  prescripcion:         "Prescripción",
+  plazo_legal:          "Plazo legal",
+  vencimiento_contrato: "Vto. contrato",
+  notificacion:         "Notificación",
+  pericia:              "Pericia",
+  traslado:             "Traslado",
+  otro:                 "Otro",
+};
+
+function VencimientoCard({ item }: { item: CalendarVencimientoItem }) {
+  const isOverdue = item.estado === "vencido";
+  const deadlineDate = new Date(item.fechaVencimiento).toLocaleDateString("es-AR", {
+    day: "numeric",
+    month: "short",
+  });
+
+  return (
+    <Link
+      href="/vencimientos"
+      className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+    >
+      <div className="flex items-start gap-3">
+        <div className={cn(
+          "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 border",
+          isOverdue
+            ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800"
+            : "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800"
+        )}>
+          <Bell className={cn("w-4 h-4", isOverdue ? "text-red-500" : "text-blue-500")} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+            {item.titulo}
+          </p>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <span className={cn(
+              "text-[10px] font-semibold px-1.5 py-0.5 rounded",
+              isOverdue
+                ? "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300"
+                : "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
+            )}>
+              {isOverdue ? "Vencido" : "Pendiente"}
+            </span>
+            <span className="text-[10px] text-slate-400">
+              {VENC_TIPO_LABEL[item.tipo] ?? item.tipo}
+            </span>
+          </div>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <span className={cn(
+            "text-xs font-semibold",
+            isOverdue ? "text-red-600 dark:text-red-400" : "text-blue-600 dark:text-blue-400"
+          )}>
+            {deadlineDate}
+          </span>
+        </div>
+      </div>
+    </Link>
   );
 }
 

@@ -53,6 +53,7 @@ interface Props {
   onClose: () => void;
   onSave: (payload: ExpedientePayload) => Promise<void>;
   initial?: Expediente | null;
+  defaultClientId?: string | null;
 }
 
 const EMPTY: ExpedientePayload = {
@@ -79,7 +80,7 @@ const PLAZOS_COMUNES = [
   { label: "60 días — plazo especial",           value: 60 },
 ];
 
-export function ExpedienteForm({ open, onClose, onSave, initial }: Props) {
+export function ExpedienteForm({ open, onClose, onSave, initial, defaultClientId }: Props) {
   const [form, setForm] = useState<ExpedientePayload>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,10 +143,10 @@ export function ExpedienteForm({ open, onClose, onSave, initial }: Props) {
         notes:         initial.notes ?? "",
       });
     } else {
-      setForm(EMPTY);
+      setForm(defaultClientId ? { ...EMPTY, clientId: defaultClientId } : EMPTY);
     }
     setError(null);
-  }, [initial, open]);
+  }, [initial, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (key: keyof ExpedientePayload, value: any) =>
     setForm((f) => ({ ...f, [key]: value === "" ? null : value }));

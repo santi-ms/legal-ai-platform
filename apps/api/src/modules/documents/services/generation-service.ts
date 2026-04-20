@@ -40,6 +40,57 @@ const anthropic = new Anthropic({
 });
 
 // ---------------------------------------------------------------------------
+// Simple L1 in-memory cache with TTL
+// ---------------------------------------------------------------------------
+
+interface CacheEntry<T> { value: T; expiresAt: number; }
+const l1Cache = new Map<string, CacheEntry<unknown>>();
+
+function cacheGet<T>(key: string): T | null {
+  const entry = l1Cache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) { l1Cache.delete(key); return null; }
+  return entry.value as T;
+}
+
+function cacheSet<T>(key: string, value: T, ttlMs = 15 * 60 * 1000): void {
+  // Limit cache size to prevent memory leak
+  if (l1Cache.size > 200) {
+    const firstKey = l1Cache.keys().next().value;
+    if (firstKey) l1Cache.delete(firstKey);
+  }
+  l1Cache.set(key, { value, expiresAt: Date.now() + ttlMs });
+}
+
+// ---------------------------------------------------------------------------
+// Retry helper with exponential backoff for Claude API calls
+// ---------------------------------------------------------------------------
+
+async function callClaudeWithRetry(
+  params: Parameters<typeof anthropic.messages.create>[0],
+  maxRetries = 3
+): Promise<Awaited<ReturnType<typeof anthropic.messages.create>>> {
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await anthropic.messages.create(params);
+    } catch (error: any) {
+      lastError = error;
+      // No retry on validation errors (4xx except 429)
+      if (error?.status && error.status >= 400 && error.status < 500 && error.status !== 429) {
+        throw error;
+      }
+      if (attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 8000); // 1s, 2s, 4s max 8s
+        logger.warn(`[claude] Attempt ${attempt} failed, retrying in ${delay}ms`, { error: error?.message });
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  throw lastError;
+}
+
+// ---------------------------------------------------------------------------
 // Public entry point
 // ---------------------------------------------------------------------------
 
@@ -61,21 +112,36 @@ export async function generateDocumentWithNewArchitecture(
     return generateFreeFormDocument(documentType, data, tone, referenceText);
   }
 
-  // 1. Get template
-  const template = getTemplate(documentType);
+  // 1. Get template (L1 cache)
+  const templateCacheKey = `template:${documentType}`;
+  let template = cacheGet<TemplateBase>(templateCacheKey);
+  if (!template) {
+    template = getTemplate(documentType) ?? null;
+    if (template) cacheSet(templateCacheKey, template);
+  }
   if (!template) {
     // Fallback to free-form if template is somehow missing
     logger.warn(`[generation-service] Template not found for ${documentType}, falling back to free-form`);
     return generateFreeFormDocument(documentType, data, tone, referenceText);
   }
 
-  // 2. Get clauses
-  const clauses = getClausesForType(documentType);
+  // 2. Get clauses (L1 cache)
+  const clausesCacheKey = `clauses:${documentType}`;
+  let clauses = cacheGet<ReturnType<typeof getClausesForType>>(clausesCacheKey);
+  if (!clauses) {
+    clauses = getClausesForType(documentType);
+    cacheSet(clausesCacheKey, clauses);
+  }
   const requiredClauseIds = getRequiredClauseIds(documentType);
   const optionalClauseIds = getOptionalClauseIds(documentType);
 
-  // 3. Validate data
-  const validationRules = await getValidationRulesForType(documentType);
+  // 3. Validate data — validation rules (L1 cache)
+  const rulesCacheKey = `rules:${documentType}`;
+  let validationRules = cacheGet<Awaited<ReturnType<typeof getValidationRulesForType>>>(rulesCacheKey);
+  if (!validationRules) {
+    validationRules = await getValidationRulesForType(documentType);
+    cacheSet(rulesCacheKey, validationRules);
+  }
   const validationResult = validateDocumentData(
     data,
     validationRules.semantic,
@@ -187,7 +253,7 @@ async function generateFreeFormDocument(
   const referenceSection = referenceText
     ? `\nDOCUMENTO DE REFERENCIA (usarlo como modelo de formato y estilo, completar con los datos reales):
 <reference_document>
-${referenceText.substring(0, 8000)}
+${sanitizeForPrompt(referenceText).substring(0, 8000)}
 </reference_document>\n`
     : "";
 
@@ -234,7 +300,7 @@ obligaciones de las partes, rescisión/resolución, mora, jurisdicción y foro
 
   if (process.env.SKIP_AI_ENHANCEMENT !== "true") {
     try {
-      const message = await anthropic.messages.create({
+      const message = await callClaudeWithRetry({
         model: "claude-sonnet-4-6",
         max_tokens: 4000,
         system: systemMessage,
@@ -245,6 +311,13 @@ obligaciones de las partes, rescisión/resolución, mora, jurisdicción y foro
         prompt: message.usage?.input_tokens ?? 0,
         completion: message.usage?.output_tokens ?? 0,
       };
+      // Log token usage for cost monitoring
+      logger.info('[claude] token usage', {
+        model: 'claude-sonnet-4-6',
+        inputTokens: message.usage?.input_tokens,
+        outputTokens: message.usage?.output_tokens,
+        documentType,
+      });
       generatedText = sanitizeAiOutput(rawText, context);
       aiUsed = true;
     } catch (error) {
@@ -317,7 +390,7 @@ function buildGenericContextForAI(data: StructuredDocumentData, documentType: st
     if (skipKeys.has(key)) continue;
     if (value === null || value === undefined || String(value).trim() === "") continue;
     const label = fieldLabels[key] ?? key.replace(/_/g, " ");
-    lines.push(`${label}: ${value}`);
+    lines.push(`${label}: ${sanitizeForPrompt(value)}`);
   }
 
   return lines.join("\n");
@@ -624,7 +697,7 @@ async function enhanceDraftWithAIWrapper(
   const referenceSection = referenceText
     ? `\nDOCUMENTO DE REFERENCIA (el usuario subió este documento como modelo de formato y estilo — usarlo como guía de estructura y redacción, pero completar con los DATOS REALES del formulario):
 <reference_document>
-${referenceText.substring(0, 8000)}
+${sanitizeForPrompt(referenceText).substring(0, 8000)}
 </reference_document>
 `
     : "";
@@ -667,13 +740,21 @@ ${promptConfig.baseInstructions.map((i) => `- ${i}`).join("\n")}
 - Responde ÚNICAMENTE con el texto final del documento, listo para usar`;
 
   try {
-    const message = await anthropic.messages.create({
+    const message = await callClaudeWithRetry({
       model: "claude-sonnet-4-6",
       max_tokens: 4000,
       system: promptConfig.systemMessage,
       messages: [
         { role: "user", content: userPrompt },
       ],
+    });
+
+    // Log token usage for cost monitoring
+    logger.info('[claude] token usage', {
+      model: 'claude-sonnet-4-6',
+      inputTokens: message.usage?.input_tokens,
+      outputTokens: message.usage?.output_tokens,
+      documentType,
     });
 
     const rawText =
@@ -1086,6 +1167,19 @@ function appendAdditionalClauses(
 
   // Fallback: append at the end
   return `${draft}\n${additionalSection}`;
+}
+
+/**
+ * Sanitizes a user-supplied value before embedding it in an AI prompt.
+ * Prevents prompt injection via repeated newlines or XML instruction tags.
+ */
+function sanitizeForPrompt(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  const str = String(value);
+  return str
+    .replace(/\n{3,}/g, '\n\n')  // colapsar múltiples newlines
+    .replace(/<\/?(?:system|human|assistant|instruction)[^>]*>/gi, '') // XML tags de instrucciones
+    .trim();
 }
 
 function formatJurisdictionText(jurisdiction: string): string {

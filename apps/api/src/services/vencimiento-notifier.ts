@@ -240,7 +240,7 @@ export async function runVencimientoNotifier(): Promise<void> {
       });
     }
 
-    const notifiedIds: string[] = [];
+    const idsToNotify: string[] = [];
 
     for (const [, { user, items }] of byUser) {
       // Check user notification preferences
@@ -249,6 +249,24 @@ export async function runVencimientoNotifier(): Promise<void> {
         logger.info(`[vencimiento-notifier] ${user.email} tiene notificaciones de vencimientos desactivadas — omitiendo`);
         continue;
       }
+
+      idsToNotify.push(...items.map((i) => i.id));
+    }
+
+    // Marcar ANTES de enviar: evita duplicados si hay crash post-envío
+    if (idsToNotify.length > 0) {
+      await prisma.vencimiento.updateMany({
+        where: { id: { in: idsToNotify } },
+        data: { notificadoAt: new Date() },
+      });
+    }
+
+    let sentCount = 0;
+
+    for (const [, { user, items }] of byUser) {
+      // Omitir usuarios sin notificaciones (ya filtrados arriba, pero recheck por consistencia)
+      const prefs = (user.notificationPreferences as Record<string, unknown>) || {};
+      if (prefs.emailNotifications === false || prefs.vencimientoAlerts === false) continue;
 
       // Sort: overdue first, then by ascending fechaVencimiento
       items.sort((a, b) => a.daysLeft - b.daysLeft);
@@ -273,22 +291,15 @@ export async function runVencimientoNotifier(): Promise<void> {
           text: buildEmailText(userName, items, frontendUrl),
         });
 
-        notifiedIds.push(...items.map((i) => i.id));
+        sentCount += items.length;
         logger.info(`[vencimiento-notifier] Email enviado a ${user.email} (${items.length} vencimientos)`);
       } catch (emailErr) {
         logger.error(`[vencimiento-notifier] Error enviando email a ${user.email}`, emailErr);
+        // notificadoAt ya fue marcado — no se reintentará el mismo día (comportamiento intencional)
       }
     }
 
-    // Mark notificadoAt for all sent items
-    if (notifiedIds.length > 0) {
-      await prisma.vencimiento.updateMany({
-        where: { id: { in: notifiedIds } },
-        data: { notificadoAt: new Date() },
-      });
-    }
-
-    logger.info(`[vencimiento-notifier] Completado. Notificados: ${notifiedIds.length} vencimientos.`);
+    logger.info(`[vencimiento-notifier] Completado. Marcados: ${idsToNotify.length} vencimientos, emails enviados para: ${sentCount}.`);
   } catch (err) {
     logger.error("[vencimiento-notifier] Error en el notificador", err);
   }

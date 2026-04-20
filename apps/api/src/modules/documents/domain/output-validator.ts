@@ -84,9 +84,20 @@ const UNIVERSAL_PATTERNS: PatternRule[] = [
   // -------------------------------------------------------------------------
   {
     code: "PLACEHOLDER_WORD_ES",
-    pattern: /\b(indicar|indicá|describir|describí|especificar|especificá|completar|completá|incluir aquí|agregar aquí|insertar aquí|redactar aquí|detallar aquí)\b/gi,
+    pattern: /\b(indicar|indicá|describir|describí|especificar|especificá|completar|completá|incluir aquí|agregar aquí|insertar aquí|redactar aquí|detallar aquí|insertar|colocar|poner|escribir|determinar|definir|aclarar|detallar)\b/gi,
     message: (match) =>
       `Instrucción meta sin resolver en el texto: "${match}". El documento contiene una instrucción que debería haberse completado.`,
+    severity: "error",
+  },
+
+  // -------------------------------------------------------------------------
+  // Empty brackets — corchetes o paréntesis vacíos sin contenido
+  // Examples: [], [ ], (), (  )
+  // -------------------------------------------------------------------------
+  {
+    code: "EMPTY_BRACKETS",
+    pattern: /\[\s*\]|\(\s*\)/g,
+    message: (match) => `Marcador vacío sin completar detectado: "${match}"`,
     severity: "error",
   },
 
@@ -120,7 +131,7 @@ const UNIVERSAL_PATTERNS: PatternRule[] = [
   // -------------------------------------------------------------------------
   {
     code: "PAREN_INSTRUCTION",
-    pattern: /\((indicar|describir|especificar|completar|agregar|insertar|detallar)[^)]{0,80}\)/gi,
+    pattern: /\((indicar|describir|especificar|completar|agregar|insertar|detallar|colocar|poner|escribir|determinar|definir|aclarar)[^)]{0,80}\)/gi,
     message: (match) =>
       `Instrucción entre paréntesis sin completar: "${match}"`,
     severity: "error",

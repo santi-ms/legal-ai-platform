@@ -15,6 +15,8 @@ import { VersionHistoryCard } from "@/components/documents/VersionHistoryCard";
 import { AnnotationsCard } from "@/components/documents/AnnotationsCard";
 import { ShareModal } from "@/components/documents/ShareModal";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { TrackVisit } from "@/components/ui/TrackVisit";
+import { formatDocumentType as fmtDocType } from "@/app/lib/format";
 import { Briefcase } from "lucide-react";
 import type {
   Document as ProxyDocument,
@@ -43,21 +45,22 @@ function DocumentClientCard({
   const [saving, setSaving] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click or Escape key
+  // Close dropdown on outside click or Escape key — consolidated into a single effect
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const handleClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [open]);
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const fetchClients = async () => {
     if (clients.length > 0) return;
@@ -212,20 +215,22 @@ function DocumentExpedienteCard({
   const [saving, setSaving] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  // Close dropdown on outside click or Escape key — consolidated into a single effect
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const handleClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [open]);
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const fetchExpedientes = async () => {
     if (expedientes.length > 0) return;
@@ -595,6 +600,14 @@ export default function DocumentDetailPage() {
 
   return (
     <>
+    {/* Track this page visit for "recently viewed" widget */}
+    <TrackVisit
+      id={doc.id}
+      type="document"
+      label={fmtDocType(doc.type)}
+      sublabel={doc.jurisdiccion ?? undefined}
+      href={`/documents/${doc.id}`}
+    />
     <DocumentWorkspaceShell
       title={`Documento #${doc.id.slice(0, 8)}`}
       description={headerDescription}

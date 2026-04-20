@@ -197,9 +197,8 @@ export async function runPortalActivityNotifier(): Promise<void> {
       // Respect user notification preferences
       const prefs = (user.notificationPreferences as Record<string, unknown>) || {};
       if (prefs.emailNotifications === false || prefs.portalActivityEmails === false) {
-        logger.info(`[portal-activity-notifier] ${user.email} tiene notificaciones de portal desactivadas`);
-        // Still mark as seen so we don't re-queue indefinitely
-        notifiedIds.push(...items.map((i) => i.id));
+        logger.info(`[portal-activity-notifier] ${user.email} tiene notificaciones de portal desactivadas — no se marca como notificado`);
+        // No se envió email → NO marcar portalNewActivity como false
         continue;
       }
 

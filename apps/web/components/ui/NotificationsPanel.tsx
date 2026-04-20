@@ -81,13 +81,13 @@ export function NotificationsPanel() {
           localStorage.setItem(WELCOME_SHOWN_KEY, "1");
         }
 
-        const { listDocuments, listExpedientes } = await import("@/app/lib/webApi");
+        const { listDocuments, listExpedientes, listVencimientos } = await import("@/app/lib/webApi");
 
         // Vencimientos de expedientes — van primero (mayor prioridad)
         const now = new Date();
         const in3Days = new Date(now.getTime() + 3 * 86_400_000);
 
-        const [overdueRes, upcomingRes] = await Promise.allSettled([
+        const [overdueRes, upcomingRes, vencOverdueRes, vencUpcomingRes] = await Promise.allSettled([
           listExpedientes({
             hasDeadline: "true",
             deadlineBefore: now.toISOString(),
@@ -103,6 +103,10 @@ export function NotificationsPanel() {
             pageSize: 5,
             sort: "deadline:asc",
           }),
+          // Módulo Vencimientos — vencidos
+          listVencimientos({ estado: "vencido", pageSize: 5 }),
+          // Módulo Vencimientos — próximos 3 días
+          listVencimientos({ estado: "pendiente", upcomingDays: 3, pageSize: 5 }),
         ]);
 
         if (overdueRes.status === "fulfilled") {
@@ -131,6 +135,38 @@ export function NotificationsPanel() {
               time: timeAgo(exp.deadline!),
               read: false,
               href: `/expedientes/${exp.id}`,
+            });
+          }
+        }
+
+        // Módulo Vencimientos — vencidos
+        if (vencOverdueRes.status === "fulfilled") {
+          for (const v of vencOverdueRes.value.items ?? []) {
+            const daysAgo = Math.floor((now.getTime() - new Date(v.fechaVencimiento).getTime()) / 86_400_000);
+            built.push({
+              id: `venc_overdue_${v.id}`,
+              type: "deadline",
+              title: "Vencimiento vencido",
+              message: `${v.titulo} — venció hace ${daysAgo === 0 ? "hoy" : `${daysAgo} día${daysAgo === 1 ? "" : "s"}`}`,
+              time: timeAgo(v.fechaVencimiento),
+              read: false,
+              href: `/vencimientos`,
+            });
+          }
+        }
+
+        // Módulo Vencimientos — próximos
+        if (vencUpcomingRes.status === "fulfilled") {
+          for (const v of vencUpcomingRes.value.items ?? []) {
+            const daysLeft = Math.ceil((new Date(v.fechaVencimiento).getTime() - now.getTime()) / 86_400_000);
+            built.push({
+              id: `venc_upcoming_${v.id}`,
+              type: "warning",
+              title: daysLeft <= 1 ? "Vencimiento mañana" : `Vence en ${daysLeft} días`,
+              message: v.titulo,
+              time: timeAgo(v.fechaVencimiento),
+              read: false,
+              href: `/vencimientos`,
             });
           }
         }

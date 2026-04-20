@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FileText, Plus, Sparkles } from "lucide-react";
@@ -80,7 +81,7 @@ function formatRelativeDate(date: Date | string): string {
   }
 }
 
-export function RecentDocumentsTable({
+export const RecentDocumentsTable = React.memo(function RecentDocumentsTable({
   documents,
   onViewAll,
 }: RecentDocumentsTableProps) {
@@ -180,5 +181,5 @@ export function RecentDocumentsTable({
       </div>
     </div>
   );
-}
+});
 

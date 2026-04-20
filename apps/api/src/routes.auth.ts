@@ -765,7 +765,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   app.post<{ Body: LoginBody }>("/api/auth/login", async (request, reply) => {
     try {
       const { email, password } = loginSchema.parse(request.body);
-      const normEmail = email.trim().toLowerCase();
+      const normEmail = normalizeEmail(email);
 
       request.log.info({ event: "login:incoming", email: normEmail });
 
@@ -1091,7 +1091,6 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           select: {
             id: true,
             email: true,
-            passwordHash: true,
             emailVerified: true,
           },
         });

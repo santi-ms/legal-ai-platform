@@ -1,10 +1,12 @@
 "use client";
 
-import { Suspense, useEffect, useState, useCallback } from "react";
+import React, { Suspense, useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchDebounce } from "../lib/hooks/useSearchDebounce";
 import {
   Briefcase, Plus, Search, X, Loader2, AlertCircle,
   CalendarClock, User, ChevronLeft, ChevronRight, AlertTriangle, Download,
+  List, LayoutGrid,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -76,6 +78,164 @@ function formatDate(str: string | null | undefined) {
   return new Date(str).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" });
 }
 
+// ─── Board View ───────────────────────────────────────────────────────────────
+
+const BOARD_COLUMNS: { status: ExpedienteStatus; label: string; color: string; bg: string; border: string }[] = [
+  { status: "activo",     label: "Activo",     color: "text-emerald-700 dark:text-emerald-300", bg: "bg-emerald-50 dark:bg-emerald-900/20",  border: "border-emerald-200 dark:border-emerald-800" },
+  { status: "suspendido", label: "Suspendido", color: "text-amber-700 dark:text-amber-300",    bg: "bg-amber-50 dark:bg-amber-900/20",      border: "border-amber-200 dark:border-amber-800"    },
+  { status: "cerrado",    label: "Cerrado",    color: "text-slate-700 dark:text-slate-300",    bg: "bg-slate-100 dark:bg-slate-800",         border: "border-slate-200 dark:border-slate-700"    },
+  { status: "archivado",  label: "Archivado",  color: "text-slate-500 dark:text-slate-400",    bg: "bg-slate-50 dark:bg-slate-900/40",       border: "border-slate-200 dark:border-slate-700"    },
+];
+
+interface ExpedienteBoardProps {
+  expedientes: Expediente[];
+  loading: boolean;
+  updatingStatusId: string | null;
+  onStatusChange: (id: string, status: ExpedienteStatus) => void;
+  onDelete: (id: string) => void;
+  onCreateNew: () => void;
+}
+
+const ExpedienteBoard = React.memo(function ExpedienteBoard({
+  expedientes,
+  loading,
+  updatingStatusId,
+  onStatusChange,
+  onDelete,
+  onCreateNew,
+}: ExpedienteBoardProps) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 gap-3 text-slate-400">
+        <Loader2 className="w-5 h-5 animate-spin" />
+        <span className="text-sm">Cargando expedientes...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      {BOARD_COLUMNS.map((col) => {
+        const colItems = expedientes.filter((e) => e.status === col.status);
+        return (
+          <div key={col.status} className="flex flex-col gap-3">
+            {/* Column header */}
+            <div className={cn(
+              "flex items-center justify-between px-3 py-2 rounded-xl border",
+              col.bg, col.border
+            )}>
+              <div className="flex items-center gap-2">
+                <span className={cn("text-xs font-bold uppercase tracking-wider", col.color)}>
+                  {col.label}
+                </span>
+                <span className={cn(
+                  "inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold",
+                  col.bg, col.color, "border", col.border
+                )}>
+                  {colItems.length}
+                </span>
+              </div>
+              {col.status === "activo" && (
+                <button
+                  onClick={onCreateNew}
+                  className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-200 transition-colors"
+                  title="Nuevo expediente"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Cards */}
+            <div className="space-y-2 min-h-[120px]">
+              {colItems.length === 0 ? (
+                <div className="flex items-center justify-center h-20 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700">
+                  <p className="text-xs text-slate-400">Sin expedientes</p>
+                </div>
+              ) : (
+                colItems.map((exp) => (
+                  <div
+                    key={exp.id}
+                    className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 shadow-sm hover:shadow-md transition-shadow group"
+                  >
+                    {/* Title */}
+                    <Link
+                      href={`/expedientes/${exp.id}`}
+                      className="block font-semibold text-sm text-slate-900 dark:text-white hover:text-primary transition-colors leading-snug line-clamp-2 mb-1.5"
+                    >
+                      {exp.title}
+                    </Link>
+
+                    {/* Number + matter */}
+                    <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                      {exp.number && (
+                        <span className="text-[10px] font-medium text-slate-400">
+                          #{exp.number}
+                        </span>
+                      )}
+                      <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded font-medium capitalize">
+                        {MATTER_LABELS[exp.matter] ?? exp.matter}
+                      </span>
+                    </div>
+
+                    {/* Client */}
+                    {exp.client && (
+                      <Link
+                        href={`/clients/${exp.client.id}`}
+                        className="flex items-center gap-1 mb-1.5 text-xs text-slate-500 hover:text-primary transition-colors"
+                      >
+                        <User className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{exp.client.name}</span>
+                      </Link>
+                    )}
+
+                    {/* Deadline */}
+                    {exp.deadline && (
+                      <div className={cn(
+                        "flex items-center gap-1 text-[10px] mb-2",
+                        new Date(exp.deadline) < new Date()
+                          ? "text-red-500"
+                          : "text-slate-400"
+                      )}>
+                        <CalendarClock className="w-3 h-3" />
+                        {formatDate(exp.deadline)}
+                      </div>
+                    )}
+
+                    {/* Status changer */}
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      {updatingStatusId === exp.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400" />
+                      ) : (
+                        <select
+                          value={exp.status}
+                          onChange={(e) => onStatusChange(exp.id, e.target.value as ExpedienteStatus)}
+                          onClick={(e) => e.preventDefault()}
+                          className="text-[10px] font-semibold rounded-full px-1.5 py-0.5 border-0 outline-none cursor-pointer bg-transparent text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        >
+                          {STATUS_OPTIONS.filter((o) => o.value !== "all").map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      )}
+                      <button
+                        onClick={() => onDelete(exp.id)}
+                        className="opacity-0 group-hover:opacity-100 text-[10px] text-red-400 hover:text-red-600 transition-all px-1.5 py-0.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+});
+
 function ExpedientesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -89,13 +249,19 @@ function ExpedientesContent() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [exporting, setExporting]     = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const [viewMode, setViewMode]       = useState<"list" | "board">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("exp_view") as "list" | "board") ?? "list";
+    }
+    return "list";
+  });
 
   // Filters from URL
   const query    = searchParams.get("query")    ?? "";
   const matter   = (searchParams.get("matter")  ?? "all") as ExpedienteMatter | "all";
   const status   = (searchParams.get("status")  ?? "all") as ExpedienteStatus  | "all";
   const deadline = (searchParams.get("deadline") ?? "all") as DeadlineFilter;
-  const clientId = searchParams.get("clientId") ?? undefined;
+  const clientId = searchParams.get("clientId") ?? "";
   const page     = parseInt(searchParams.get("page") ?? "1");
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -114,17 +280,48 @@ function ExpedientesContent() {
     router.push(`/expedientes?${params.toString()}`);
   }
 
+  // Local controlled input state — debounced before pushing to URL
+  const [searchInput, setSearchInput] = useState(query);
+  const debouncedSearch = useSearchDebounce(searchInput, 300);
+
+  // Sync debounced value to URL (only when it actually differs from current URL query)
+  useEffect(() => {
+    if (debouncedSearch !== query) {
+      updateUrl({ query: debouncedSearch || undefined, page: "1" });
+    }
+  }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keep local input in sync when URL changes externally (e.g. browser back/forward)
+  useEffect(() => {
+    setSearchInput(query);
+  }, [query]);
+
+  // Auto-open create form from ?create=1 (e.g. from client detail quick-action)
+  const createParam = searchParams.get("create");
+  useEffect(() => {
+    if (createParam === "1") {
+      setFormOpen(true);
+      // Clean up the ?create param from the URL so a reload doesn't re-open
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("create");
+      const qs = params.toString();
+      router.replace(`/expedientes${qs ? `?${qs}` : ""}`);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const loadExpedientes = useCallback(async () => {
     setLoading(true);
     try {
       const dp = deadlineParams(deadline);
+      const isBoard = viewMode === "board";
       const res = await listExpedientes({
         query:    query    || undefined,
         matter:   matter   !== "all" ? matter   : undefined,
-        status:   status   !== "all" ? status   : undefined,
+        // In board view, don't filter by status so all columns are populated
+        status:   !isBoard && status !== "all" ? status : undefined,
         clientId: clientId || undefined,
-        page,
-        pageSize: PAGE_SIZE,
+        page:     isBoard ? 1 : page,
+        pageSize: isBoard ? 100 : PAGE_SIZE,
         sort:     dp.sort ?? "createdAt:desc",
         ...dp,
       });
@@ -135,7 +332,7 @@ function ExpedientesContent() {
     } finally {
       setLoading(false);
     }
-  }, [query, matter, status, deadline, clientId, page]);
+  }, [query, matter, status, deadline, clientId, page, viewMode]);
 
   useEffect(() => { loadExpedientes(); }, [loadExpedientes]);
 
@@ -163,9 +360,51 @@ function ExpedientesContent() {
     return () => clearTimeout(timer);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = useCallback((id: string) => {
     setConfirmDeleteId(id);
-  };
+  }, []);
+
+  const handleStatusChange = useCallback(async (expId: string, newStatus: ExpedienteStatus) => {
+    setUpdatingStatusId(expId);
+    try {
+      const full = await getExpediente(expId);
+      await updateExpediente(expId, {
+        title:         full.title,
+        matter:        full.matter,
+        status:        newStatus,
+        clientId:      full.client?.id ?? null,
+        court:         full.court ?? null,
+        judge:         full.judge ?? null,
+        opposingParty: full.opposingParty ?? null,
+        openedAt:      full.openedAt ?? null,
+        closedAt:      full.closedAt ?? null,
+        deadline:      full.deadline ?? null,
+        notes:         full.notes ?? null,
+      });
+      setExpedientes((prev) =>
+        prev.map((x) => x.id === expId ? { ...x, status: newStatus } : x)
+      );
+      success(`Estado actualizado a "${STATUS_LABELS[newStatus]}"`);
+    } catch {
+      showError("No se pudo actualizar el estado");
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  }, [success, showError]);
+
+  // Memoized per-status counts for board view header badges
+  const boardCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const exp of expedientes) {
+      counts[exp.status] = (counts[exp.status] ?? 0) + 1;
+    }
+    return counts;
+  }, [expedientes]);
+
+  // Derive client label from loaded expedientes
+  const clientLabel = clientId
+    ? (expedientes.find((e) => e.client?.id === clientId)?.client?.name ?? "Cliente")
+    : "";
 
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
@@ -181,6 +420,34 @@ function ExpedientesContent() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* View mode toggle */}
+          <div className="flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-0.5">
+            <button
+              onClick={() => { setViewMode("list"); localStorage.setItem("exp_view", "list"); }}
+              title="Vista lista"
+              className={cn(
+                "p-1.5 rounded-md transition-colors",
+                viewMode === "list"
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              )}
+            >
+              <List className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => { setViewMode("board"); localStorage.setItem("exp_view", "board"); }}
+              title="Vista tablero"
+              className={cn(
+                "p-1.5 rounded-md transition-colors",
+                viewMode === "board"
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              )}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+          </div>
+
           <Button
             variant="outline"
             size="sm"
@@ -222,13 +489,13 @@ function ExpedientesContent() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             <Input
               placeholder="Buscar por título, número, tribunal..."
-              value={query}
-              onChange={(e) => updateUrl({ query: e.target.value || undefined, page: "1" })}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="pl-9 bg-white dark:bg-slate-900"
             />
-            {query && (
+            {searchInput && (
               <button
-                onClick={() => updateUrl({ query: undefined, page: "1" })}
+                onClick={() => { setSearchInput(""); updateUrl({ query: undefined, page: "1" }); }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
               >
                 <X className="w-4 h-4" />
@@ -288,10 +555,34 @@ function ExpedientesContent() {
               Limpiar
             </button>
           )}
+          {/* Client filter chip */}
+          {clientId && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded-full text-xs text-sky-700 dark:text-sky-300 font-medium">
+              <User className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate max-w-[160px]">{clientLabel || "Cliente"}</span>
+              <button
+                onClick={() => updateUrl({ clientId: undefined, page: "1" })}
+                className="ml-0.5 text-sky-400 hover:text-sky-700 dark:hover:text-sky-200 transition-colors"
+                aria-label="Quitar filtro de cliente"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Table */}
+      {/* Board OR Table */}
+      {viewMode === "board" ? (
+        <ExpedienteBoard
+          expedientes={expedientes}
+          loading={loading}
+          updatingStatusId={updatingStatusId}
+          onStatusChange={handleStatusChange}
+          onDelete={handleDelete}
+          onCreateNew={() => setFormOpen(true)}
+        />
+      ) : (
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
         {loading ? (
           <div className="flex items-center justify-center py-20 gap-3 text-slate-400">
@@ -396,35 +687,7 @@ function ExpedientesContent() {
                       ) : (
                         <select
                           value={exp.status}
-                          onChange={async (e) => {
-                            const newStatus = e.target.value as ExpedienteStatus;
-                            setUpdatingStatusId(exp.id);
-                            try {
-                              // Fetch full expediente to preserve all fields
-                              const full = await getExpediente(exp.id);
-                              await updateExpediente(exp.id, {
-                                title:         full.title,
-                                matter:        full.matter,
-                                status:        newStatus,
-                                clientId:      full.client?.id ?? null,
-                                court:         full.court ?? null,
-                                judge:         full.judge ?? null,
-                                opposingParty: full.opposingParty ?? null,
-                                openedAt:      full.openedAt ?? null,
-                                closedAt:      full.closedAt ?? null,
-                                deadline:      full.deadline ?? null,
-                                notes:         full.notes ?? null,
-                              });
-                              setExpedientes((prev) =>
-                                prev.map((x) => x.id === exp.id ? { ...x, status: newStatus } : x)
-                              );
-                              success(`Estado actualizado a "${STATUS_LABELS[newStatus]}"`);
-                            } catch {
-                              showError("No se pudo actualizar el estado");
-                            } finally {
-                              setUpdatingStatusId(null);
-                            }
-                          }}
+                          onChange={(e) => handleStatusChange(exp.id, e.target.value as ExpedienteStatus)}
                           onClick={(e) => e.stopPropagation()}
                           className={cn(
                             "cursor-pointer text-xs font-semibold rounded-full px-2 py-0.5 border-0 outline-none",
@@ -459,6 +722,8 @@ function ExpedientesContent() {
         )}
       </div>
 
+      )} {/* end board/list conditional */}
+
       {/* Undo delete snackbar */}
       {deleteQueue.length > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white text-sm px-4 py-3 rounded-xl shadow-xl flex items-center gap-3">
@@ -476,8 +741,8 @@ function ExpedientesContent() {
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
+      {/* Pagination — only in list view */}
+      {viewMode === "list" && totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Página {page} de {totalPages} · {total} expedientes
@@ -508,6 +773,7 @@ function ExpedientesContent() {
         open={formOpen}
         onClose={() => setFormOpen(false)}
         onSave={handleCreate}
+        defaultClientId={clientId}
       />
 
       {/* Confirm delete */}

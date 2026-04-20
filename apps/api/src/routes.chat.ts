@@ -5,6 +5,18 @@ import { requireAuth } from "./utils/auth.js";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// ─── Retry helper ─────────────────────────────────────────────────────────────
+
+async function callWithRetry(fn: () => Promise<any>, retries = 2): Promise<any> {
+  for (let i = 0; i <= retries; i++) {
+    try { return await fn(); }
+    catch (err: any) {
+      if (i === retries || (err?.status >= 400 && err?.status < 500 && err?.status !== 429)) throw err;
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
+    }
+  }
+}
+
 // ─── System prompt ────────────────────────────────────────────────────────────
 
 const CHAT_SYSTEM_PROMPT = `Sos un asistente legal argentino especializado en redacción de documentos legales.
@@ -238,12 +250,12 @@ export async function registerChatRoutes(app: FastifyInstance) {
 
     let rawContent: string;
     try {
-      const completion = await anthropic.messages.create({
+      const completion = await callWithRetry(() => anthropic.messages.create({
         model: "claude-haiku-4-5",
         max_tokens: 1200,
         system: CHAT_SYSTEM_PROMPT + "\n\nIMPORTANTE: Respondé SIEMPRE con un objeto JSON válido, sin texto adicional.",
         messages: messages.map((m: any) => ({ role: m.role, content: m.content })),
-      });
+      }));
 
       rawContent =
         (completion.content[0] as any)?.text ??

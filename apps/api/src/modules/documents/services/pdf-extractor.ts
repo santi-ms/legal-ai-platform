@@ -20,9 +20,20 @@ function getPdfParse(): (buffer: Buffer) => Promise<{ text: string }> {
  * Retorna el texto limpio o null si falla.
  */
 export async function extractTextFromPdf(buffer: Buffer): Promise<string | null> {
+  const MAX_PDF_SIZE = 50 * 1024 * 1024; // 50MB
+  if (buffer.length > MAX_PDF_SIZE) {
+    throw new Error(`PDF too large: ${(buffer.length / 1024 / 1024).toFixed(1)}MB. Maximum allowed: 50MB`);
+  }
+
   try {
     const pdfParse = getPdfParse();
-    const data = await pdfParse(buffer);
+    const extractWithTimeout = Promise.race([
+      pdfParse(buffer),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('PDF extraction timeout')), 30000)
+      ),
+    ]);
+    const data = await extractWithTimeout;
     const text = data.text
       .replace(/\r\n/g, "\n")
       .replace(/\n{3,}/g, "\n\n")

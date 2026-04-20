@@ -22,6 +22,9 @@ import { QuickActions } from "@/components/dashboard/QuickActions";
 import { UpcomingDeadlines } from "@/components/dashboard/UpcomingDeadlines";
 import { VencimientosWidget } from "@/components/dashboard/VencimientosWidget";
 import { RecentActivityWidget } from "@/components/dashboard/RecentActivityWidget";
+import { TodayAgendaWidget } from "@/components/dashboard/TodayAgendaWidget";
+import { RecentlyViewedWidget } from "@/components/dashboard/RecentlyViewedWidget";
+import { FinanceSummaryWidget } from "@/components/dashboard/FinanceSummaryWidget";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { PDFPreviewModal } from "@/components/dashboard/PDFPreviewModal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -185,10 +188,10 @@ function DashboardContent() {
                 : `Tenés ${overdueCount} expedientes con vencimientos vencidos.`}
             </p>
             <Link
-              href="/expedientes"
+              href="/vencimientos"
               className="text-sm font-bold text-red-700 dark:text-red-400 underline underline-offset-2 hover:no-underline flex-shrink-0"
             >
-              Ver expedientes →
+              Ver vencimientos →
             </Link>
           </div>
           <button
@@ -240,6 +243,7 @@ function DashboardContent() {
           value={stats ? totalDocuments : "—"}
           iconBgColor="bg-blue-100 dark:bg-blue-900/30"
           iconColor="text-blue-600 dark:text-blue-400"
+          href="/documents"
         />
         <StatsCard
           icon={Users}
@@ -247,6 +251,7 @@ function DashboardContent() {
           value={stats ? totalClients : "—"}
           iconBgColor="bg-violet-100 dark:bg-violet-900/30"
           iconColor="text-violet-600 dark:text-violet-400"
+          href="/clients"
         />
         <StatsCard
           icon={Briefcase}
@@ -259,6 +264,7 @@ function DashboardContent() {
             : undefined
           }
           subTextColor="text-red-500 dark:text-red-400"
+          href="/expedientes"
         />
         <StatsCard
           icon={Gavel}
@@ -268,6 +274,7 @@ function DashboardContent() {
           iconColor="text-amber-600 dark:text-amber-400"
           subText={needsReview > 0 ? "Documentos a revisar" : undefined}
           subTextColor="text-amber-500 dark:text-amber-400"
+          href="/documents?status=needs_review"
         />
       </div>
 
@@ -319,6 +326,9 @@ function DashboardContent() {
         {/* Side Widgets */}
         <div className="space-y-6">
           <QuickActions />
+          <FinanceSummaryWidget />
+          <RecentlyViewedWidget />
+          <TodayAgendaWidget />
           <RecentActivityWidget />
           <VencimientosWidget />
           <UpcomingDeadlines />

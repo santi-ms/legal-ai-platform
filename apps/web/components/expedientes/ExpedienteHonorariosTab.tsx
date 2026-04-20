@@ -131,7 +131,7 @@ export function ExpedienteHonorariosTab({ expedienteId }: ExpedienteHonorariosTa
         <p className="text-sm text-slate-500 dark:text-slate-400">
           {total > 0 ? `${total} honorario${total !== 1 ? "s" : ""}` : "Sin honorarios"}
         </p>
-        <Link href={`/finanzas?expedienteId=${expedienteId}`}>
+        <Link href={`/finanzas?formOpen=1&expedienteId=${expedienteId}`}>
           <Button size="sm" variant="outline" className="gap-1.5 text-xs">
             <Plus className="w-3.5 h-3.5" />
             Agregar honorario
@@ -151,7 +151,7 @@ export function ExpedienteHonorariosTab({ expedienteId }: ExpedienteHonorariosTa
               Los honorarios vinculados a este expediente aparecerán aquí
             </p>
           </div>
-          <Link href={`/finanzas?expedienteId=${expedienteId}`}>
+          <Link href={`/finanzas?formOpen=1&expedienteId=${expedienteId}`}>
             <Button size="sm" variant="outline" className="gap-1.5 text-xs mt-1">
               <Plus className="w-3.5 h-3.5" />
               Registrar primer honorario

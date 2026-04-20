@@ -293,24 +293,16 @@ export async function registerTeamRoutes(app: FastifyInstance) {
     });
 
     if (!invitation) {
-      return reply.status(404).send({ ok: false, error: "INVALID_TOKEN", message: "Invitación inválida o inexistente." });
+      return reply.status(404).send({ ok: false, error: "INVALID_TOKEN", message: "Invitación no válida" });
     }
 
     if (invitation.status !== "pending") {
-      return reply.status(410).send({
-        ok: false,
-        error: "INVITATION_USED",
-        message:
-          invitation.status === "accepted"
-            ? "Esta invitación ya fue aceptada."
-            : "Esta invitación fue cancelada o expiró.",
-        status: invitation.status,
-      });
+      return reply.status(404).send({ ok: false, error: "INVALID_TOKEN", message: "Invitación no válida" });
     }
 
     if (invitation.expiresAt < new Date()) {
       await prisma.teamInvitation.update({ where: { tokenHash }, data: { status: "expired" } });
-      return reply.status(410).send({ ok: false, error: "EXPIRED", message: "Esta invitación expiró." });
+      return reply.status(404).send({ ok: false, error: "INVALID_TOKEN", message: "Invitación no válida" });
     }
 
     const inviterName =

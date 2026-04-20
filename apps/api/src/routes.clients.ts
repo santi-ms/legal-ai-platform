@@ -33,7 +33,8 @@ const ClientBodySchema = z.object({
 });
 
 const ClientsQuerySchema = z.object({
-  query: z.string().optional(),
+  query: z.string().trim().max(200).optional(),
+  search: z.string().trim().max(200).optional(), // alias for query
   type: z.enum(["persona_fisica", "persona_juridica"]).optional(),
   archived: z.coerce.boolean().optional().default(false), // true = mostrar archivados
   page: z.coerce.number().int().positive().default(1),
@@ -75,20 +76,24 @@ export async function registerClientRoutes(app: FastifyInstance) {
       return reply.status(400).send({ ok: false, error: "INVALID_QUERY", details: parsed.error.format() });
     }
 
-    const { query, type, archived, page, pageSize, sort } = parsed.data;
+    const { type, archived, page, pageSize, sort } = parsed.data;
+    // Accept both ?query= and ?search= — search takes precedence if both provided
+    const search = typeof (request.query as any).search === 'string'
+      ? (parsed.data.search ?? parsed.data.query)
+      : parsed.data.query;
     const [sortField, sortDir] = sort.split(":");
 
     const where: any = { tenantId };
     // Por defecto solo activos; con ?archived=true solo archivados
     where.archivedAt = archived ? { not: null } : null;
     if (type) where.type = type;
-    if (query) {
+    if (search) {
       where.OR = [
-        { name:           { contains: query, mode: "insensitive" } },
-        { email:          { contains: query, mode: "insensitive" } },
-        { documentNumber: { contains: query, mode: "insensitive" } },
-        { phone:          { contains: query, mode: "insensitive" } },
-        { city:           { contains: query, mode: "insensitive" } },
+        { name:           { contains: search, mode: "insensitive" } },
+        { email:          { contains: search, mode: "insensitive" } },
+        { documentNumber: { contains: search, mode: "insensitive" } },
+        { phone:          { contains: search, mode: "insensitive" } },
+        { city:           { contains: search, mode: "insensitive" } },
       ];
     }
 

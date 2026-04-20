@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import {
   Globe, Shield, RefreshCw, CheckCircle2, AlertCircle, Clock,
   Loader2, Eye, EyeOff, Save, Trash2, Wifi, WifiOff, Bell,
@@ -394,9 +395,12 @@ function ExpedienteRow({ exp, onToggle, onDismiss }: {
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+          <Link
+            href={`/expedientes/${exp.id}`}
+            className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate hover:text-primary transition-colors"
+          >
             {exp.title}
-          </span>
+          </Link>
           {exp.number && (
             <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">#{exp.number}</span>
           )}

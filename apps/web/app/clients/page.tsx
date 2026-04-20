@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchDebounce } from "@/app/lib/hooks/useSearchDebounce";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus, Search, Users, Building2, User, Mail, Phone,
@@ -111,7 +112,7 @@ function EmptyState({ hasFilters, onClear, onNew }: { hasFilters: boolean; onCle
 
 // ─── Row ──────────────────────────────────────────────────────────────────────
 
-function ClientRow({
+const ClientRow = React.memo(function ClientRow({
   client,
   archivedMode,
   onEdit,
@@ -253,7 +254,7 @@ function ClientRow({
       </div>
     </div>
   );
-}
+});
 
 // ─── Main Content ─────────────────────────────────────────────────────────────
 
@@ -271,6 +272,7 @@ function ClientsContent() {
   const pageSize = 20;
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "");
+  const debouncedQuery = useSearchDebounce(searchQuery, 300);
   const [typeFilter, setTypeFilter] = useState<ClientType | "all">(
     (searchParams.get("type") as ClientType) || "all"
   );
@@ -308,6 +310,14 @@ function ClientsContent() {
     router.replace(`/clients${p.toString() ? "?" + p.toString() : ""}`, { scroll: false });
   };
 
+  // Push debounced search query to URL (avoids an API call on every keystroke)
+  const currentUrlQuery = searchParams.get("query") || "";
+  useEffect(() => {
+    if (debouncedQuery !== currentUrlQuery) {
+      pushParams({ query: debouncedQuery || undefined, page: "1" });
+    }
+  }, [debouncedQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const loadClients = async () => {
     if (!isAuthenticated) return;
     setLoading(true);
@@ -336,11 +346,23 @@ function ClientsContent() {
     }
   }, [authLoading, isAuthenticated, router]);
 
+  // Auto-open new-client form when ?formOpen=1
+  useEffect(() => {
+    if (searchParams.get("formOpen") === "1") {
+      setEditingClient(null);
+      setFormOpen(true);
+      const p = new URLSearchParams(searchParams.toString());
+      p.delete("formOpen");
+      const qs = p.toString();
+      router.replace(`/clients${qs ? `?${qs}` : ""}`);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Search & filter ──────────────────────────────────────────────────────
 
   const handleSearch = (q: string) => {
     setSearchQuery(q);
-    pushParams({ query: q || undefined, page: "1" });
+    // URL update is handled by the debouncedQuery effect above
   };
 
   const handleTypeFilter = (t: ClientType | "all") => {

@@ -28,6 +28,7 @@ import { ExpedienteHonorariosTab } from "@/components/expedientes/ExpedienteHono
 import { formatDocumentType } from "@/app/lib/format";
 import { cn } from "@/app/lib/utils";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { TrackVisit } from "@/components/ui/TrackVisit";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -222,6 +223,29 @@ function InfoTab({ expediente }: { expediente: Expediente }) {
 function DocumentosTab({ expediente }: { expediente: Expediente }) {
   return (
     <div>
+      {/* Header with create button */}
+      {expediente.documents && expediente.documents.length > 0 && (
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              {expediente.documents.length} documento{expediente.documents.length !== 1 ? "s" : ""}
+            </p>
+            <Link
+              href={`/documents?expedienteId=${expediente.id}`}
+              className="text-xs text-primary hover:underline font-medium"
+            >
+              Ver en módulo de Documentos →
+            </Link>
+          </div>
+          <Link href={`/documents/new?expedienteId=${expediente.id}`}>
+            <Button size="sm" className="text-xs flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5" />
+              Nuevo documento
+            </Button>
+          </Link>
+        </div>
+      )}
+
       {!expediente.documents || expediente.documents.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
           <FileText className="w-10 h-10 text-slate-200 dark:text-slate-700" />
@@ -233,8 +257,9 @@ function DocumentosTab({ expediente }: { expediente: Expediente }) {
               Creá un documento y asocialo a este expediente
             </p>
           </div>
-          <Link href="/documents/new">
-            <Button size="sm" variant="outline" className="text-xs mt-1">
+          <Link href={`/documents/new?expedienteId=${expediente.id}`}>
+            <Button size="sm" variant="outline" className="text-xs mt-1 flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5" />
               Crear documento
             </Button>
           </Link>
@@ -355,6 +380,15 @@ export default function ExpedienteDetailPage() {
 
   return (
     <div className="p-6 md:p-8 space-y-5 max-w-6xl mx-auto w-full">
+      {/* Track this page visit for "recently viewed" widget */}
+      <TrackVisit
+        id={expediente.id}
+        type="expediente"
+        label={expediente.title}
+        sublabel={`${MATTER_LABELS[expediente.matter] ?? expediente.matter}${expediente.number ? ` · #${expediente.number}` : ""}`}
+        href={`/expedientes/${expediente.id}`}
+      />
+
       {/* Breadcrumb + actions */}
       <div className="flex items-center justify-between gap-4">
         <Breadcrumb
@@ -363,7 +397,21 @@ export default function ExpedienteDetailPage() {
             { label: expediente.title },
           ]}
         />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Quick create actions */}
+          <Link href={`/documents/new?expedienteId=${expediente.id}`}>
+            <Button size="sm" className="flex items-center gap-1.5 text-xs">
+              <FileText className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Nuevo</span> Documento
+            </Button>
+          </Link>
+          <Link href={`/vencimientos?expedienteId=${expediente.id}&create=1`}>
+            <Button variant="outline" size="sm" className="flex items-center gap-1.5 text-xs">
+              <CalendarClock className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Nuevo</span> Vencimiento
+            </Button>
+          </Link>
+          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 hidden sm:block" />
           <Button
             variant="outline"
             size="sm"

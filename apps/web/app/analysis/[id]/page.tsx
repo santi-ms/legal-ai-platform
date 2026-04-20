@@ -12,6 +12,7 @@ import { getContractAnalysis, deleteContractAnalysis, askContractAnalysis, type 
 import { cn } from "@/app/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { TrackVisit } from "@/components/ui/TrackVisit";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -199,6 +200,15 @@ export default function AnalysisDetailPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-6 lg:p-8">
+      {/* Track this page visit for "recently viewed" widget */}
+      <TrackVisit
+        id={analysis.id}
+        type="analysis"
+        label={analysis.originalName}
+        sublabel={result.contractType}
+        href={`/analysis/${analysis.id}`}
+      />
+
       {/* Back + header */}
       <div className="mb-6">
         <Link
