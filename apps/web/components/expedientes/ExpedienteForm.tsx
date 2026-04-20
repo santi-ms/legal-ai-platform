@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Loader2, Briefcase } from "lucide-react";
+import { X, Loader2, Briefcase, CalendarClock, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,8 @@ import {
   ExpedienteStatus,
   listClients,
   Client,
+  calcularPlazoProcesal,
+  PlazoResult,
 } from "@/app/lib/webApi";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -65,11 +67,51 @@ const EMPTY: ExpedientePayload = {
   notes: "",
 };
 
+const PLAZOS_COMUNES = [
+  { label: "3 días — traslados breves",          value: 3 },
+  { label: "5 días — traslados comunes",          value: 5 },
+  { label: "10 días — oposiciones",              value: 10 },
+  { label: "15 días — contestación de demanda",  value: 15 },
+  { label: "20 días — contestación ampliada",    value: 20 },
+  { label: "30 días — plazo general",            value: 30 },
+  { label: "60 días — plazo especial",           value: 60 },
+];
+
 export function ExpedienteForm({ open, onClose, onSave, initial }: Props) {
   const [form, setForm] = useState<ExpedientePayload>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
+
+  // ── Calculadora de plazos ──────────────────────────────────────────────────
+  const [showCalc, setShowCalc] = useState(false);
+  const [calcFecha, setCalcFecha] = useState("");
+  const [calcDias, setCalcDias] = useState<number>(5);
+  const [calcResult, setCalcResult] = useState<PlazoResult | null>(null);
+  const [calcLoading, setCalcLoading] = useState(false);
+  const [calcError, setCalcError] = useState<string | null>(null);
+
+  const handleCalcPlazo = async () => {
+    if (!calcFecha) { setCalcError("Ingresá la fecha de notificación"); return; }
+    setCalcLoading(true);
+    setCalcError(null);
+    setCalcResult(null);
+    try {
+      const result = await calcularPlazoProcesal(calcFecha, calcDias);
+      setCalcResult(result);
+      // Rellenar el campo deadline automáticamente
+      setForm((f) => ({ ...f, deadline: result.fechaVencimiento }));
+    } catch {
+      setCalcError("Error al calcular el plazo");
+    } finally {
+      setCalcLoading(false);
+    }
+  };
+
+  const formatDateAR = (iso: string) =>
+    new Date(iso + "T12:00:00").toLocaleDateString("es-AR", {
+      day: "numeric", month: "long", year: "numeric",
+    });
 
   // Cargar clientes para el dropdown
   useEffect(() => {
@@ -266,6 +308,99 @@ export function ExpedienteForm({ open, onClose, onSave, initial }: Props) {
                 className="bg-slate-50 dark:bg-slate-800"
               />
             </div>
+          </div>
+
+          {/* ── Calculadora de plazos ─────────────────────────────────────── */}
+          <div className="rounded-xl border border-primary/20 bg-primary/5 dark:bg-primary/10 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowCalc((v) => !v)}
+              className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-primary hover:bg-primary/10 transition-colors"
+            >
+              <CalendarClock className="w-4 h-4" />
+              <span className="flex-1 text-left">Calcular plazo automáticamente</span>
+              {showCalc ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+
+            {showCalc && (
+              <div className="px-4 pb-4 space-y-3 border-t border-primary/20">
+                <p className="text-xs text-slate-500 dark:text-slate-400 pt-3">
+                  Ingresá la fecha de notificación y el tipo de plazo. El vencimiento se calcula automáticamente respetando feriados nacionales y fines de semana.
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      Fecha de notificación
+                    </Label>
+                    <Input
+                      type="date"
+                      value={calcFecha}
+                      onChange={(e) => { setCalcFecha(e.target.value); setCalcResult(null); }}
+                      className="bg-white dark:bg-slate-800"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      Tipo de plazo
+                    </Label>
+                    <select
+                      value={calcDias}
+                      onChange={(e) => { setCalcDias(Number(e.target.value)); setCalcResult(null); }}
+                      className="w-full h-10 rounded-md border border-input bg-white dark:bg-slate-800 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    >
+                      {PLAZOS_COMUNES.map((p) => (
+                        <option key={p.value} value={p.value}>{p.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={handleCalcPlazo}
+                  disabled={calcLoading || !calcFecha}
+                  className="w-full bg-primary hover:bg-primary/90 text-white text-sm"
+                >
+                  {calcLoading ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Calculando...</>
+                  ) : (
+                    <><CalendarClock className="w-4 h-4 mr-2" />Calcular y usar como vencimiento</>
+                  )}
+                </Button>
+
+                {calcError && (
+                  <p className="text-xs text-red-500 flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5" />{calcError}
+                  </p>
+                )}
+
+                {calcResult && (
+                  <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-3 space-y-2">
+                    <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                      ✅ Vencimiento: {formatDateAR(calcResult.fechaVencimiento)}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {calcDias} días hábiles = {calcResult.diasCalendario} días corridos
+                    </p>
+                    {calcResult.feriadosSaltados.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                          Feriados saltados ({calcResult.feriadosSaltados.length}):
+                        </p>
+                        <ul className="space-y-0.5">
+                          {calcResult.feriadosSaltados.map((f) => (
+                            <li key={f.fecha} className="text-xs text-slate-400 dark:text-slate-500">
+                              • {formatDateAR(f.fecha)} — {f.nombre}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Datos judiciales */}

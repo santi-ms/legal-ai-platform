@@ -885,6 +885,25 @@ export async function deleteExpediente(id: string): Promise<void> {
   await proxyJson(`/expedientes/${id}`, { method: "DELETE" });
 }
 
+// ─── Cálculo de plazos procesales ─────────────────────────────────────────────
+
+export interface PlazoResult {
+  fechaVencimiento: string;
+  diasCalendario: number;
+  feriadosSaltados: Array<{ fecha: string; nombre: string }>;
+}
+
+export async function calcularPlazoProcesal(
+  fechaNotificacion: string, // "YYYY-MM-DD"
+  diasHabiles: number
+): Promise<PlazoResult> {
+  const { data } = await proxyJson<any>("/expedientes/calcular-plazo", {
+    method: "POST",
+    body: JSON.stringify({ fechaNotificacion, diasHabiles }),
+  });
+  return data as PlazoResult;
+}
+
 // ─── Floating Assistant ───────────────────────────────────────────────────────
 
 export interface AssistantMessage {

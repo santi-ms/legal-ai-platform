@@ -11,6 +11,7 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { getUserFromRequest } from "./utils/auth.js";
 import { prisma } from "./db.js";
+import { calculateDeadline } from "./utils/plazo-calculator.js";
 
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 
@@ -85,6 +86,29 @@ async function getTenantAndUser(request: any, reply: any) {
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
 export async function registerExpedienteRoutes(app: FastifyInstance) {
+
+  // ── POST /expedientes/calcular-plazo ────────────────────────────────────────
+  app.post("/expedientes/calcular-plazo", async (request, reply) => {
+    const user = await getTenantAndUser(request, reply);
+    if (!user) return;
+
+    const schema = z.object({
+      fechaNotificacion: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato esperado: YYYY-MM-DD"),
+      diasHabiles:       z.number().int().min(1).max(365),
+    });
+
+    const parsed = schema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ ok: false, error: "INVALID_BODY", details: parsed.error.format() });
+    }
+
+    const { fechaNotificacion, diasHabiles } = parsed.data;
+    const startDate = new Date(fechaNotificacion + "T12:00:00Z");
+
+    const result = calculateDeadline(startDate, diasHabiles);
+
+    return reply.send({ ok: true, ...result });
+  });
 
   // ── GET /expedientes ────────────────────────────────────────────────────────
   app.get("/expedientes", async (request, reply) => {
