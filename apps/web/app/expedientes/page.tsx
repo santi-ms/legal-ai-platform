@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import {
-  listExpedientes, createExpediente, deleteExpediente, exportExpedientesCSV,
+  listExpedientes, createExpediente, deleteExpediente, updateExpediente, getExpediente, exportExpedientesCSV,
   Expediente, ExpedienteMatter, ExpedienteStatus,
 } from "@/app/lib/webApi";
 import {
@@ -88,6 +88,7 @@ function ExpedientesContent() {
   const [deleteQueue, setDeleteQueue] = useState<string[]>([]);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [exporting, setExporting]     = useState(false);
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
 
   // Filters from URL
   const query    = searchParams.get("query")    ?? "";
@@ -390,12 +391,52 @@ function ExpedientesContent() {
                       )}
                     </td>
                     <td className="px-4 py-3.5">
-                      <span className={cn(
-                        "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold",
-                        STATUS_COLORS[exp.status] ?? "bg-slate-100 text-slate-600"
-                      )}>
-                        {STATUS_LABELS[exp.status] ?? exp.status}
-                      </span>
+                      {updatingStatusId === exp.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                      ) : (
+                        <select
+                          value={exp.status}
+                          onChange={async (e) => {
+                            const newStatus = e.target.value as ExpedienteStatus;
+                            setUpdatingStatusId(exp.id);
+                            try {
+                              // Fetch full expediente to preserve all fields
+                              const full = await getExpediente(exp.id);
+                              await updateExpediente(exp.id, {
+                                title:         full.title,
+                                matter:        full.matter,
+                                status:        newStatus,
+                                clientId:      full.client?.id ?? null,
+                                court:         full.court ?? null,
+                                judge:         full.judge ?? null,
+                                opposingParty: full.opposingParty ?? null,
+                                openedAt:      full.openedAt ?? null,
+                                closedAt:      full.closedAt ?? null,
+                                deadline:      full.deadline ?? null,
+                                notes:         full.notes ?? null,
+                              });
+                              setExpedientes((prev) =>
+                                prev.map((x) => x.id === exp.id ? { ...x, status: newStatus } : x)
+                              );
+                              success(`Estado actualizado a "${STATUS_LABELS[newStatus]}"`);
+                            } catch {
+                              showError("No se pudo actualizar el estado");
+                            } finally {
+                              setUpdatingStatusId(null);
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className={cn(
+                            "cursor-pointer text-xs font-semibold rounded-full px-2 py-0.5 border-0 outline-none",
+                            "focus:ring-2 focus:ring-primary/30",
+                            STATUS_COLORS[exp.status] ?? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                          )}
+                        >
+                          {STATUS_OPTIONS.filter((o) => o.value !== "all").map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                     <td className="px-4 py-3.5 text-right">
                       <span className="text-xs font-medium text-slate-400">
