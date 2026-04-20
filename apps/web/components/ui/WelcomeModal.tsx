@@ -19,27 +19,27 @@ const welcomeKey = (userId: string) => `lt_welcome_${userId}`;
 const FEATURES = [
   {
     icon: FileText,
-    title: "Generá documentos con IA",
+    title: "Doku Genera",
     description: "Contratos, cartas documento, poderes y más en segundos.",
     color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400",
+  },
+  {
+    icon: ScanSearch,
+    title: "Doku Analiza",
+    description: "La IA detecta cláusulas riesgosas automáticamente.",
+    color: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400",
+  },
+  {
+    icon: BookMarked,
+    title: "Doku Consulta",
+    description: "Preguntale a la IA sobre cualquier documento generado.",
+    color: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400",
   },
   {
     icon: Briefcase,
     title: "Gestioná expedientes",
     description: "Organizá causas, vencimientos y partes de cada juicio.",
     color: "bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400",
-  },
-  {
-    icon: ScanSearch,
-    title: "Analizá contratos",
-    description: "La IA detecta cláusulas riesgosas automáticamente.",
-    color: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400",
-  },
-  {
-    icon: BookMarked,
-    title: "Documentos de referencia",
-    description: "Subí tus PDFs para que la IA imite tu estilo.",
-    color: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400",
   },
 ];
 
