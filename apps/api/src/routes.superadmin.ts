@@ -464,5 +464,109 @@ export async function registerSuperAdminRoutes(app: FastifyInstance) {
     return reply.send({ ok: true });
   });
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // RAG — Gestión de códigos legales
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // GET /superadmin/legal-codes/stats
+  app.get("/superadmin/legal-codes/stats", async (request, reply) => {
+    const user = requireSuperAdmin(request, reply);
+    if (!user) return;
+    const { getLegalCodeStats } = await import("./services/rag-service.js");
+    const stats = await getLegalCodeStats();
+    return reply.send({ ok: true, stats });
+  });
+
+  // GET /superadmin/legal-codes?code=CCCN&jurisdiction=nacional&limit=20
+  app.get("/superadmin/legal-codes", async (request, reply) => {
+    const user = requireSuperAdmin(request, reply);
+    if (!user) return;
+
+    const q = request.query as { code?: string; jurisdiction?: string; limit?: string };
+    const chunks = await prisma.$queryRaw<any[]>`
+      SELECT id, code, jurisdiction, article, "sectionTitle",
+             left(text, 200) as text_preview,
+             "createdAt"
+      FROM "LegalCodeChunk"
+      WHERE
+        (${q.code ?? null}::text IS NULL OR code = ${q.code ?? ""})
+        AND (${q.jurisdiction ?? null}::text IS NULL OR jurisdiction = ${q.jurisdiction ?? ""})
+      ORDER BY jurisdiction, code, article
+      LIMIT ${parseInt(q.limit ?? "50")}
+    `;
+    return reply.send({ ok: true, chunks, total: chunks.length });
+  });
+
+  // POST /superadmin/legal-codes — Insertar/actualizar un artículo
+  app.post("/superadmin/legal-codes", async (request, reply) => {
+    const user = requireSuperAdmin(request, reply);
+    if (!user) return;
+
+    const BodySchema = z.object({
+      code:         z.string().min(1).max(50),
+      jurisdiction: z.string().min(1).max(50),
+      article:      z.string().min(1).max(30),
+      sectionTitle: z.string().max(200).optional().nullable(),
+      text:         z.string().min(10),
+    });
+    const body = BodySchema.safeParse(request.body);
+    if (!body.success) {
+      return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", issues: body.error.flatten() });
+    }
+
+    const { randomUUID } = await import("node:crypto");
+    const { code, jurisdiction, article, sectionTitle, text } = body.data;
+
+    await prisma.$executeRaw`
+      INSERT INTO "LegalCodeChunk"
+        (id, code, jurisdiction, article, "sectionTitle", text, "updatedAt")
+      VALUES
+        (${randomUUID()}, ${code}, ${jurisdiction}, ${article}, ${sectionTitle ?? null}, ${text}, now())
+      ON CONFLICT (code, article) DO UPDATE
+        SET jurisdiction   = EXCLUDED.jurisdiction,
+            "sectionTitle" = EXCLUDED."sectionTitle",
+            text           = EXCLUDED.text,
+            "updatedAt"    = now()
+    `;
+
+    return reply.status(201).send({ ok: true, message: `Art. ${article} ${code} guardado.` });
+  });
+
+  // DELETE /superadmin/legal-codes/:id
+  app.delete("/superadmin/legal-codes/:id", async (request, reply) => {
+    const user = requireSuperAdmin(request, reply);
+    if (!user) return;
+
+    const { id } = request.params as { id: string };
+    await prisma.legalCodeChunk.delete({ where: { id } });
+    return reply.send({ ok: true });
+  });
+
+  // POST /superadmin/legal-codes/search — Test de búsqueda RAG
+  app.post("/superadmin/legal-codes/search", async (request, reply) => {
+    const user = requireSuperAdmin(request, reply);
+    if (!user) return;
+
+    const BodySchema = z.object({
+      query:        z.string().min(3),
+      jurisdiction: z.string().optional(),
+      code:         z.string().optional(),
+      limit:        z.number().int().min(1).max(20).default(8),
+    });
+    const body = BodySchema.safeParse(request.body);
+    if (!body.success) {
+      return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR" });
+    }
+
+    const { findRelevantArticles } = await import("./services/rag-service.js");
+    const results = await findRelevantArticles(body.data.query, {
+      jurisdiction: body.data.jurisdiction,
+      code:         body.data.code,
+      limit:        body.data.limit,
+    });
+
+    return reply.send({ ok: true, results, count: results.length });
+  });
+
   logger.info("[superadmin] Routes registered");
 }

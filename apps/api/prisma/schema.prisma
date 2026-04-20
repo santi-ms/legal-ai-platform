@@ -934,3 +934,34 @@ model Vencimiento {
   @@index([clientId])
   @@index([archivedAt])
 }
+
+// ─── RAG — Códigos Legales Argentinos ────────────────────────────────────────
+// Almacena artículos individuales de los códigos procesales y sustantivos.
+// Búsqueda dual: full-text search (tsvector, siempre activo) +
+//                vector semántico (embedding, opcional via Voyage AI).
+
+model LegalCodeChunk {
+  id           String   @id @default(uuid())
+
+  // Identificación del código
+  code         String   // "CCCN" | "CPCCN" | "CPCC_MISIONES" | "CPCC_CORRIENTES" | "LCT" | "CP" | etc.
+  jurisdiction String   // "nacional" | "misiones" | "corrientes" | "bsas" | "caba"
+  article      String   // "725" | "330 inc. 1" | "1198"
+  sectionTitle String?  // Título de sección/capítulo para contexto
+
+  // Texto del artículo
+  text         String   @db.Text
+
+  // Full-text search vector — tipo nativo de PG, actualizado por trigger
+  // Marcado como Unsupported: Prisma lo ignora en lecturas/escrituras normales;
+  // la búsqueda FTS usa $queryRaw directamente.
+  tsv          Unsupported("tsvector")?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([code, article])
+  @@index([code])
+  @@index([jurisdiction])
+  @@map("LegalCodeChunk")
+}

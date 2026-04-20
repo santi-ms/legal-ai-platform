@@ -24,6 +24,7 @@ import { prisma } from "./db.js";
 import { requireAuth } from "./utils/auth.js";
 import { logger } from "./utils/logger.js";
 import { randomUUID } from "node:crypto";
+import { findRelevantArticles, formatRagContext } from "./services/rag-service.js";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -183,14 +184,31 @@ export async function registerJurisRoutes(app: FastifyInstance) {
       }
     }
 
-    // Búsqueda web si la consulta lo amerita
+    // Capa 2: Búsqueda web si la consulta lo amerita
     const webResults: string[] = needsWebSearch(mensaje) ? await searchWeb(mensaje) : [];
     const webContext = webResults.length > 0
       ? `\n\n[BÚSQUEDA WEB - resultados recientes relevantes:\n${webResults.map((r, i) => `${i + 1}. ${r}`).join("\n")}]`
       : "";
 
-    // Preparar mensaje con contextos enriquecidos
-    const enrichedMessage = `${mensaje}${expedienteContext}${webContext}`;
+    // Capa 3: RAG — artículos relevantes de los códigos locales
+    // Prioriza el código procesal de la provincia si está especificada
+    const ragJurisdiction = provincia
+      ? (["misiones", "corrientes"].includes(provincia.toLowerCase())
+          ? provincia.toLowerCase()
+          : undefined)
+      : undefined;
+    const ragResults = await findRelevantArticles(mensaje, {
+      jurisdiction: ragJurisdiction,
+      limit: 5,
+    });
+    const ragContext = formatRagContext(ragResults);
+
+    if (ragResults.length > 0) {
+      logger.debug(`[juris] RAG: ${ragResults.length} artículos encontrados para "${mensaje.substring(0, 60)}"`);
+    }
+
+    // Preparar mensaje con todos los contextos enriquecidos
+    const enrichedMessage = `${mensaje}${expedienteContext}${ragContext}${webContext}`;
 
     // Construir system prompt con contexto de provincia
     const systemWithContext = provincia
@@ -306,13 +324,22 @@ export async function registerJurisRoutes(app: FastifyInstance) {
 
     const { mensaje } = body.data;
 
-    // Enriquecer con búsqueda web si aplica
+    // Capa 2: búsqueda web
     const webResults: string[] = needsWebSearch(mensaje) ? await searchWeb(mensaje) : [];
     const webContext = webResults.length > 0
       ? `\n\n[BÚSQUEDA WEB:\n${webResults.map((r, i) => `${i + 1}. ${r}`).join("\n")}]`
       : "";
 
-    const enrichedMessage = `${mensaje}${webContext}`;
+    // Capa 3: RAG
+    const ragJurisdiction2 = consulta.provincia
+      ? (["misiones", "corrientes"].includes(consulta.provincia.toLowerCase())
+          ? consulta.provincia.toLowerCase()
+          : undefined)
+      : undefined;
+    const ragResults2 = await findRelevantArticles(mensaje, { jurisdiction: ragJurisdiction2, limit: 4 });
+    const ragContext2  = formatRagContext(ragResults2);
+
+    const enrichedMessage = `${mensaje}${ragContext2}${webContext}`;
 
     // Construir historial de mensajes para Claude
     const historial: { role: "user" | "assistant"; content: string }[] =
