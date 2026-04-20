@@ -269,7 +269,7 @@ export async function registerEstrategiaRoutes(app: FastifyInstance) {
         take: pageSize,
         select: {
           id: true, originalName: true, tipoEscrito: true, materia: true,
-          provincia: true, status: true, nivelRiesgo: false,
+          provincia: true, status: true,
           createdAt: true, expedienteId: true,
           expediente: { select: { id: true, title: true, number: true } },
           result: true,
