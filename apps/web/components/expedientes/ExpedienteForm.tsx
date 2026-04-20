@@ -14,6 +14,8 @@ import {
   Client,
   calcularPlazoProcesal,
   PlazoResult,
+  Provincia,
+  PROVINCIAS,
 } from "@/app/lib/webApi";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -87,6 +89,7 @@ export function ExpedienteForm({ open, onClose, onSave, initial }: Props) {
   const [showCalc, setShowCalc] = useState(false);
   const [calcFecha, setCalcFecha] = useState("");
   const [calcDias, setCalcDias] = useState<number>(5);
+  const [calcProvincia, setCalcProvincia] = useState<Provincia>("corrientes");
   const [calcResult, setCalcResult] = useState<PlazoResult | null>(null);
   const [calcLoading, setCalcLoading] = useState(false);
   const [calcError, setCalcError] = useState<string | null>(null);
@@ -97,7 +100,7 @@ export function ExpedienteForm({ open, onClose, onSave, initial }: Props) {
     setCalcError(null);
     setCalcResult(null);
     try {
-      const result = await calcularPlazoProcesal(calcFecha, calcDias);
+      const result = await calcularPlazoProcesal(calcFecha, calcDias, calcProvincia);
       setCalcResult(result);
       // Rellenar el campo deadline automáticamente
       setForm((f) => ({ ...f, deadline: result.fechaVencimiento }));
@@ -325,7 +328,7 @@ export function ExpedienteForm({ open, onClose, onSave, initial }: Props) {
             {showCalc && (
               <div className="px-4 pb-4 space-y-3 border-t border-primary/20">
                 <p className="text-xs text-slate-500 dark:text-slate-400 pt-3">
-                  Ingresá la fecha de notificación y el tipo de plazo. El vencimiento se calcula automáticamente respetando feriados nacionales y fines de semana.
+                  Ingresá la fecha de notificación, la provincia y el tipo de plazo. El vencimiento se calcula respetando feriados nacionales, provinciales y fines de semana.
                 </p>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -342,18 +345,33 @@ export function ExpedienteForm({ open, onClose, onSave, initial }: Props) {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                      Tipo de plazo
+                      Provincia / Jurisdicción
                     </Label>
                     <select
-                      value={calcDias}
-                      onChange={(e) => { setCalcDias(Number(e.target.value)); setCalcResult(null); }}
+                      value={calcProvincia}
+                      onChange={(e) => { setCalcProvincia(e.target.value as Provincia); setCalcResult(null); }}
                       className="w-full h-10 rounded-md border border-input bg-white dark:bg-slate-800 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
-                      {PLAZOS_COMUNES.map((p) => (
+                      {PROVINCIAS.map((p) => (
                         <option key={p.value} value={p.value}>{p.label}</option>
                       ))}
                     </select>
                   </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    Tipo de plazo
+                  </Label>
+                  <select
+                    value={calcDias}
+                    onChange={(e) => { setCalcDias(Number(e.target.value)); setCalcResult(null); }}
+                    className="w-full h-10 rounded-md border border-input bg-white dark:bg-slate-800 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  >
+                    {PLAZOS_COMUNES.map((p) => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <Button
@@ -390,8 +408,12 @@ export function ExpedienteForm({ open, onClose, onSave, initial }: Props) {
                         </p>
                         <ul className="space-y-0.5">
                           {calcResult.feriadosSaltados.map((f) => (
-                            <li key={f.fecha} className="text-xs text-slate-400 dark:text-slate-500">
-                              • {formatDateAR(f.fecha)} — {f.nombre}
+                            <li key={f.fecha} className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                              <span className={f.tipo === "provincial" ? "text-violet-400" : ""}>•</span>
+                              {formatDateAR(f.fecha)} — {f.nombre}
+                              {f.tipo === "provincial" && (
+                                <span className="text-[10px] bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 px-1.5 py-0.5 rounded-full">prov.</span>
+                              )}
                             </li>
                           ))}
                         </ul>

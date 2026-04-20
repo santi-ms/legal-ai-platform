@@ -887,19 +887,36 @@ export async function deleteExpediente(id: string): Promise<void> {
 
 // ─── Cálculo de plazos procesales ─────────────────────────────────────────────
 
+export type Provincia =
+  | "nacional"
+  | "corrientes"
+  | "misiones"
+  | "caba"
+  | "buenos_aires";
+
+export const PROVINCIAS: { value: Provincia; label: string }[] = [
+  { value: "nacional",     label: "Solo feriados nacionales" },
+  { value: "corrientes",   label: "Corrientes" },
+  { value: "misiones",     label: "Misiones" },
+  { value: "caba",         label: "CABA" },
+  { value: "buenos_aires", label: "Buenos Aires (Provincia)" },
+];
+
 export interface PlazoResult {
   fechaVencimiento: string;
-  diasCalendario: number;
-  feriadosSaltados: Array<{ fecha: string; nombre: string }>;
+  diasCalendario:   number;
+  feriadosSaltados: Array<{ fecha: string; nombre: string; tipo: "nacional" | "provincial" }>;
+  provincia:        Provincia;
 }
 
 export async function calcularPlazoProcesal(
   fechaNotificacion: string, // "YYYY-MM-DD"
-  diasHabiles: number
+  diasHabiles:       number,
+  provincia:         Provincia = "nacional",
 ): Promise<PlazoResult> {
   const { data } = await proxyJson<any>("/expedientes/calcular-plazo", {
     method: "POST",
-    body: JSON.stringify({ fechaNotificacion, diasHabiles }),
+    body: JSON.stringify({ fechaNotificacion, diasHabiles, provincia }),
   });
   return data as PlazoResult;
 }

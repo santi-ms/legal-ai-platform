@@ -11,7 +11,7 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { getUserFromRequest } from "./utils/auth.js";
 import { prisma } from "./db.js";
-import { calculateDeadline } from "./utils/plazo-calculator.js";
+import { calculateDeadline, PROVINCIAS, type Provincia } from "./utils/plazo-calculator.js";
 
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 
@@ -92,9 +92,12 @@ export async function registerExpedienteRoutes(app: FastifyInstance) {
     const user = await getTenantAndUser(request, reply);
     if (!user) return;
 
+    const provinciaValues = PROVINCIAS.map((p) => p.value) as [string, ...string[]];
+
     const schema = z.object({
       fechaNotificacion: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato esperado: YYYY-MM-DD"),
       diasHabiles:       z.number().int().min(1).max(365),
+      provincia:         z.enum(provinciaValues as [Provincia, ...Provincia[]]).default("nacional"),
     });
 
     const parsed = schema.safeParse(request.body);
@@ -102,10 +105,10 @@ export async function registerExpedienteRoutes(app: FastifyInstance) {
       return reply.status(400).send({ ok: false, error: "INVALID_BODY", details: parsed.error.format() });
     }
 
-    const { fechaNotificacion, diasHabiles } = parsed.data;
+    const { fechaNotificacion, diasHabiles, provincia } = parsed.data;
     const startDate = new Date(fechaNotificacion + "T12:00:00Z");
 
-    const result = calculateDeadline(startDate, diasHabiles);
+    const result = calculateDeadline(startDate, diasHabiles, provincia);
 
     return reply.send({ ok: true, ...result });
   });
