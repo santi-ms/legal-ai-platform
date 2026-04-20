@@ -1,20 +1,24 @@
 /**
- * MEV Misiones — Mesa de Entradas Virtual del Poder Judicial de Misiones
- * URL: https://mev.jusmisiones.gov.ar
+ * JUSTI — Sistema de Tecnología Informática del Poder Judicial de Misiones
+ * URL: https://pwa.jusmisiones.gov.ar/build/
  *
  * Este módulo usa Puppeteer para:
- *   1. Autenticarse en el portal MEV
- *   2. Obtener el listado de expedientes del abogado
+ *   1. Autenticarse en el portal JUSTI con credenciales CADEMIS (@cademis.jusmisiones.gov.ar)
+ *   2. Obtener el listado de expedientes/causas del abogado
  *   3. Extraer último movimiento, estado y datos básicos de cada expediente
  *
- * ⚠️  SELECTORES: si el portal cambia su HTML, actualizar las constantes
- *     del objeto SELECTORS más abajo. Todos los selectores tienen fallbacks.
+ * ⚠️  SELECTORES: El portal es una PWA Angular/Ionic. Los inputs están dentro de
+ *     Shadow DOM de componentes ion-input. Si el portal actualiza su estructura,
+ *     revisar las constantes SELECTORS más abajo.
  *
- * Estructura típica del portal MEV Misiones:
- *   - Login: /index.php?option=com_users&view=login (Joomla-based)
- *   - Dashboard: /index.php?option=com_mev (ruta principal post-login)
- *   - Listado: tabla con expedientes del profesional
- *   - Detalle: modal o página separada con actuaciones
+ * ℹ️  CREDENCIALES: usuario = email institucional @cademis.jusmisiones.gov.ar
+ *     emitido por el Colegio de Abogados de Misiones (CADEMIS).
+ *
+ * Estructura del portal JUSTI:
+ *   - Base URL: /build/ (Angular app con hash routing o History API)
+ *   - Login: pantalla inicial del SPA
+ *   - Dashboard: lista de causas/expedientes del abogado
+ *   - Detalle: modal o ruta separada con actuaciones
  */
 
 import puppeteer, { Browser, Page } from "puppeteer";
@@ -22,66 +26,188 @@ import { logger } from "../utils/logger.js";
 
 // ─── Configuración ────────────────────────────────────────────────────────────
 
-const MEV_BASE_URL  = process.env.MEV_BASE_URL || "https://mev.jusmisiones.gov.ar";
-const PAGE_TIMEOUT  = 30_000;   // 30s por operación
-const NAV_TIMEOUT   = 45_000;   // 45s para navegación completa
-const DELAY_BETWEEN = 1_200;    // ms entre acciones (evitar ban)
+const JUSTI_BASE_URL = process.env.MEV_BASE_URL || "https://pwa.jusmisiones.gov.ar/build/";
+const PAGE_TIMEOUT   = 45_000;   // 45s — SPA necesita más tiempo para hidratar
+const NAV_TIMEOUT    = 60_000;   // 60s para navegación completa en SPA
+const DELAY_BETWEEN  = 1_500;    // ms entre acciones (evitar rate-limit)
+const SPA_BOOT_WAIT  = 3_000;    // espera inicial para que Angular arranque
 
 /**
- * Selectores del portal.
- * Usar arreglos como fallback: se prueba cada uno hasta que un elemento aparezca.
+ * Selectores del portal JUSTI (Angular/Ionic PWA).
+ *
+ * Ionic usa Shadow DOM en sus componentes (ion-input, ion-button, etc.).
+ * Para interactuar con el <input> real dentro de un ion-input hay que usar
+ * el selector compuesto "ion-input input" o "ion-input .native-input".
+ *
+ * Todos los arrays son fallback: se prueba cada uno en orden.
  */
 const SELECTORS = {
+  // ── Bootstrap del SPA ─────────────────────────────────────────────────────
+  appReady: [
+    "ion-app",
+    "app-root",
+    "#app",
+    ".ion-page",
+    "ion-router-outlet",
+  ],
+
   // ── Login ──────────────────────────────────────────────────────────────────
+  // Ion-input expone el <input> nativo en: "ion-input input" o "ion-input .native-input"
   usernameInput: [
-    "#username",
-    "input[name='username']",
-    "input[id*='user']",
-    "input[placeholder*='usuario' i]",
-    "input[placeholder*='email' i]",
+    "ion-input[type='email'] input",
+    "ion-input[name='email'] input",
+    "ion-input[name='usuario'] input",
+    "ion-input[placeholder*='email' i] input",
+    "ion-input[placeholder*='usuario' i] input",
+    "ion-input[placeholder*='correo' i] input",
+    "ion-input .native-input",
+    "ion-input:first-of-type input",
     "input[type='email']",
-    "input[type='text']:first-of-type",
+    "input[name='email']",
+    "input[placeholder*='email' i]",
+    "input[placeholder*='usuario' i]",
   ],
   passwordInput: [
-    "#password",
-    "input[name='password']",
+    "ion-input[type='password'] input",
+    "ion-input[name='password'] input",
+    "ion-input[name='contraseña'] input",
+    "ion-input[placeholder*='contraseña' i] input",
+    "ion-input[placeholder*='password' i] input",
     "input[type='password']",
+    "input[name='password']",
   ],
   loginButton: [
+    "ion-button[type='submit']",
+    "ion-button[expand='block']",
+    "ion-button",
     "button[type='submit']",
     "input[type='submit']",
-    ".login-button",
-    "button:not([type='button'])",
+    ".login-btn",
+    "form button",
   ],
 
   // ── Indicadores post-login ─────────────────────────────────────────────────
+  // En un SPA Ionic, el dashboard suele tener ion-menu, ion-tabs o ion-header con título
   postLoginIndicator: [
+    "ion-menu",
+    "ion-tab-bar",
+    "ion-tabs",
+    "ion-split-pane",
+    "app-tabs",
+    "app-menu",
+    "app-dashboard",
+    "app-expedientes",
+    "app-causas",
+    "ion-avatar",
     ".user-info",
-    ".perfil-usuario",
-    "[class*='bienvenido' i]",
-    "[class*='welcome' i]",
-    ".logout-link",
-    "a[href*='logout']",
-    "a[href*='salir']",
-    "#mev-main",
-    ".mev-dashboard",
+    "[class*='dashboard' i]",
+    "[routerlink*='expediente' i]",
+    "[routerlink*='causa' i]",
+    "a[href*='expediente']",
+    "a[href*='causa']",
   ],
 
-  // ── Expediente list ────────────────────────────────────────────────────────
-  expedientesTable:  ["#expedientes-table", ".expedientes-list", "table.expedientes", ".mev-expedientes"],
-  expedienteRow:     ["tr.expediente", "tr[data-expid]", ".expediente-item", "tbody tr"],
-  expedienteNumber:  [".exp-numero", "td.numero", "[data-campo='numero']", "td:first-child"],
-  expedienteCaratula:["td.caratula", ".exp-caratula", "[data-campo='caratula']", "td:nth-child(2)"],
-  expedienteJuzgado: ["td.juzgado", ".exp-juzgado", "[data-campo='juzgado']", "td:nth-child(3)"],
-  expedienteStatus:  ["td.estado", ".exp-estado", "[data-campo='estado']", "td:nth-child(4)"],
+  // ── Error de login ─────────────────────────────────────────────────────────
+  loginError: [
+    "ion-toast",
+    ".error-msg",
+    ".login-error",
+    "[class*='error' i]:not(input):not(ion-input)",
+    "p[class*='error' i]",
+  ],
 
-  // ── Última actuación (en fila o en detalle) ────────────────────────────────
-  ultimaActuacion:    [".ultima-actuacion", "td.actuacion", "[data-campo='actuacion']", "td:last-child"],
-  actuacionFecha:     [".fecha-actuacion", ".act-fecha", "[data-campo='fecha']"],
-  actuacionDesc:      [".desc-actuacion", ".act-desc", "[data-campo='descripcion']"],
+  // ── Expediente / Causa list ────────────────────────────────────────────────
+  expedientesContainer: [
+    "app-expedientes",
+    "app-causas",
+    "app-mis-causas",
+    "app-listado-causas",
+    "ion-list.expedientes",
+    "ion-list.causas",
+    "ion-list",
+    "table.expedientes",
+    "table",
+    ".expedientes-list",
+    ".causas-list",
+  ],
+  expedienteRow: [
+    "app-expediente-item",
+    "app-causa-item",
+    "ion-item.expediente",
+    "ion-item.causa",
+    "ion-item",
+    "ion-card",
+    "tr:not(:first-child):not(thead tr)",
+    ".expediente-row",
+    ".causa-row",
+  ],
 
-  // ── Notificaciones / Cédulas ───────────────────────────────────────────────
-  notifBadge:         [".notif-count", ".cedulas-count", "[class*='notif' i] .badge"],
+  // ── Campos dentro de cada fila ────────────────────────────────────────────
+  expedienteNumber: [
+    ".numero-expediente",
+    ".numero-causa",
+    ".exp-numero",
+    "[class*='numero' i]",
+    "ion-label.numero",
+    ".nro",
+    "td.numero",
+    "td:first-child",
+  ],
+  expedienteCaratula: [
+    ".caratula",
+    "[class*='caratula' i]",
+    ".titulo-causa",
+    "ion-label.caratula",
+    "h2",
+    "ion-label h2",
+    "td.caratula",
+    "td:nth-child(2)",
+  ],
+  expedienteJuzgado: [
+    ".juzgado",
+    "[class*='juzgado' i]",
+    "[class*='organismo' i]",
+    ".tribunal",
+    "ion-label.juzgado",
+    "td.juzgado",
+    "td:nth-child(3)",
+  ],
+  expedienteStatus: [
+    ".estado",
+    "[class*='estado' i]",
+    ".status",
+    "ion-badge",
+    "td.estado",
+    "td:nth-child(4)",
+  ],
+
+  // ── Última actuación ───────────────────────────────────────────────────────
+  ultimaActuacion: [
+    ".ultima-actuacion",
+    "[class*='ultima-actuacion' i]",
+    "[class*='ultimo-movimiento' i]",
+    ".actuacion",
+    "ion-note",
+    ".nota",
+    "p.actuacion",
+    "td:last-child",
+  ],
+  actuacionFecha: [
+    ".fecha-actuacion",
+    "[class*='fecha' i]",
+    "ion-note.fecha",
+    "small.fecha",
+    ".date",
+  ],
+
+  // ── Notificaciones / Cédulas pendientes ───────────────────────────────────
+  notifBadge: [
+    "ion-badge",
+    ".badge",
+    ".notif-count",
+    "[class*='notif' i] ion-badge",
+    "span.badge",
+  ],
 };
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -113,7 +239,10 @@ export interface ScrapeSession {
 /** Espera ms milisegundos */
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Intenta cada selector hasta encontrar uno que exista en la página */
+/**
+ * Intenta cada selector hasta encontrar uno que exista en la página.
+ * Retorna el selector que funcionó, o null si ninguno matchea.
+ */
 async function findFirst(page: Page, selectors: string[], timeout = 8_000): Promise<string | null> {
   for (const sel of selectors) {
     try {
@@ -126,22 +255,23 @@ async function findFirst(page: Page, selectors: string[], timeout = 8_000): Prom
   return null;
 }
 
-/** Lee el text content de un elemento (sin lanzar si no existe) */
-async function getText(page: Page, selector: string): Promise<string> {
+/** Captura screenshot para debugging cuando falla algo */
+async function debugScreenshot(page: Page, name: string): Promise<void> {
   try {
-    return await page.$eval(selector, (el) => el.textContent?.trim() ?? "");
+    const ts = Date.now();
+    const path = `/tmp/justi-debug-${name}-${ts}.png`;
+    await page.screenshot({ path, fullPage: false });
+    logger.info(`[justi] Screenshot guardado: ${path}`);
   } catch {
-    return "";
+    // no-op
   }
 }
 
 /** Parsea fecha argentina DD/MM/YYYY a Date */
 function parseArDate(text: string): Date | null {
   const clean = text.trim();
-  // DD/MM/YYYY
   const m1 = clean.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if (m1) return new Date(Number(m1[3]), Number(m1[2]) - 1, Number(m1[1]));
-  // YYYY-MM-DD (ISO)
   const m2 = clean.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (m2) return new Date(clean);
   return null;
@@ -150,8 +280,7 @@ function parseArDate(text: string): Date | null {
 // ─── Core ─────────────────────────────────────────────────────────────────────
 
 /**
- * Lanza un browser Puppeteer y abre una página.
- * Retorna la sesión (browser + page) para reutilizar.
+ * Lanza un browser Puppeteer optimizado para PWA Angular/Ionic.
  */
 export async function createBrowser(): Promise<ScrapeSession> {
   const browser = await puppeteer.launch({
@@ -163,26 +292,41 @@ export async function createBrowser(): Promise<ScrapeSession> {
       "--disable-accelerated-2d-canvas",
       "--no-zygote",
       "--single-process",
+      // Necesario para PWA con Service Workers
+      "--disable-extensions",
+      "--disable-background-networking",
+      "--disable-background-timer-throttling",
+      "--disable-backgrounding-occluded-windows",
+      "--disable-renderer-backgrounding",
     ],
   });
+
   const page = await browser.newPage();
   page.setDefaultNavigationTimeout(NAV_TIMEOUT);
   page.setDefaultTimeout(PAGE_TIMEOUT);
 
-  // UA realista
+  // UA de Chrome moderno — PWAs pueden bloquear headless UA
   await page.setUserAgent(
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
     "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
   );
 
+  // Viewport estándar — algunos SPAs tienen comportamiento responsive
+  await page.setViewport({ width: 1280, height: 800 });
+
   return { browser, page, loggedIn: false };
 }
 
 /**
- * Autenticación en el portal MEV Misiones.
- * Retorna true si el login fue exitoso.
+ * Autenticación en el portal JUSTI Misiones.
  *
- * @throws si la página no carga o las credenciales son rechazadas
+ * El portal es un SPA Angular/Ionic. Estrategia:
+ *   1. Navegar a la URL base y esperar que Angular bootee
+ *   2. Detectar el formulario de login
+ *   3. Completar credenciales (usuario = email CADEMIS)
+ *   4. Enviar y esperar indicador de sesión autenticada
+ *
+ * @throws si el portal no carga, el formulario no aparece o las credenciales son rechazadas
  */
 export async function loginMev(
   session: ScrapeSession,
@@ -190,77 +334,125 @@ export async function loginMev(
   password: string
 ): Promise<void> {
   const { page } = session;
-  logger.info("[mev] Navegando a portal MEV Misiones...", { url: MEV_BASE_URL });
+  logger.info("[justi] Navegando al portal JUSTI...", { url: JUSTI_BASE_URL });
 
-  // Intentar login directo en URL raíz; muchos portales Joomla redirigen al login
-  await page.goto(MEV_BASE_URL, { waitUntil: "domcontentloaded" });
-  await sleep(DELAY_BETWEEN);
+  // Navegar al portal
+  await page.goto(JUSTI_BASE_URL, { waitUntil: "networkidle2" });
 
-  // ¿Ya estamos en el dashboard? (sesión previa en caché)
+  // Esperar que el SPA Angular hidrate
+  await sleep(SPA_BOOT_WAIT);
+
+  // Verificar que la app Angular/Ionic cargó
+  const appReady = await findFirst(page, SELECTORS.appReady, 15_000);
+  if (!appReady) {
+    await debugScreenshot(page, "boot-failed");
+    throw new Error("El portal JUSTI no cargó correctamente. ¿URL correcta?");
+  }
+  logger.info("[justi] SPA cargado", { rootSelector: appReady });
+
+  // ¿Ya hay sesión activa?
   const alreadyLogged = await findFirst(page, SELECTORS.postLoginIndicator, 3_000);
   if (alreadyLogged) {
-    logger.info("[mev] Sesión ya activa, skip login");
+    logger.info("[justi] Sesión ya activa, skip login", { indicator: alreadyLogged });
     session.loggedIn = true;
     return;
   }
 
-  // Buscar formulario de login
-  const userSel = await findFirst(page, SELECTORS.usernameInput, 10_000);
+  // Buscar campo de usuario
+  const userSel = await findFirst(page, SELECTORS.usernameInput, 12_000);
   if (!userSel) {
-    // Intentar URL alternativa de login
-    await page.goto(`${MEV_BASE_URL}/index.php?option=com_users&view=login`, {
-      waitUntil: "domcontentloaded",
-    });
-    await sleep(DELAY_BETWEEN);
-    const retry = await findFirst(page, SELECTORS.usernameInput, 10_000);
-    if (!retry) throw new Error("No se encontró el formulario de login en el portal MEV.");
+    await debugScreenshot(page, "no-login-form");
+    throw new Error(
+      "No se encontró el formulario de login en el portal JUSTI. " +
+      "El portal puede haber cambiado su estructura o la URL es incorrecta."
+    );
   }
+  logger.info("[justi] Formulario de login detectado", { userSel });
 
-  const passSel = await findFirst(page, SELECTORS.passwordInput);
-  if (!passSel) throw new Error("No se encontró el campo de contraseña en el portal MEV.");
+  // Completar usuario
+  await page.focus(userSel);
+  await sleep(300);
+  // Limpiar campo primero
+  await page.evaluate((sel) => {
+    const el = document.querySelector(sel) as HTMLInputElement | null;
+    if (el) el.value = "";
+  }, userSel);
+  await page.type(userSel, username, { delay: 70 });
+  await sleep(400);
 
-  // Completar credenciales
-  await page.type(userSel ?? SELECTORS.usernameInput[0], username, { delay: 60 });
-  await sleep(400);
-  await page.type(passSel, password, { delay: 60 });
-  await sleep(400);
+  // Completar contraseña
+  const passSel = await findFirst(page, SELECTORS.passwordInput, 5_000);
+  if (!passSel) {
+    throw new Error("No se encontró el campo de contraseña en el portal JUSTI.");
+  }
+  await page.focus(passSel);
+  await sleep(300);
+  await page.evaluate((sel) => {
+    const el = document.querySelector(sel) as HTMLInputElement | null;
+    if (el) el.value = "";
+  }, passSel);
+  await page.type(passSel, password, { delay: 70 });
+  await sleep(500);
 
   // Enviar formulario
-  const btnSel = await findFirst(page, SELECTORS.loginButton);
+  const btnSel = await findFirst(page, SELECTORS.loginButton, 5_000);
   if (btnSel) {
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: "domcontentloaded" }).catch(() => {}),
+    logger.info("[justi] Haciendo click en botón de login", { btnSel });
+    // Para SPAs, esperar cambio en URL o DOM en vez de navegación completa
+    await Promise.allSettled([
+      page.waitForNavigation({ waitUntil: "networkidle2", timeout: 15_000 }).catch(() => {}),
       page.click(btnSel),
     ]);
   } else {
-    // Fallback: Enter
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: "domcontentloaded" }).catch(() => {}),
+    logger.warn("[justi] Botón de login no encontrado, usando Enter");
+    await Promise.allSettled([
+      page.waitForNavigation({ waitUntil: "networkidle2", timeout: 15_000 }).catch(() => {}),
       page.keyboard.press("Enter"),
     ]);
   }
 
-  await sleep(DELAY_BETWEEN);
+  // Esperar re-render del SPA tras login
+  await sleep(SPA_BOOT_WAIT);
 
   // Verificar login exitoso
-  const loggedIn = await findFirst(page, SELECTORS.postLoginIndicator, 8_000);
+  const loggedIn = await findFirst(page, SELECTORS.postLoginIndicator, 10_000);
   if (!loggedIn) {
-    const bodyText = await page.evaluate(() => document.body.innerText ?? "");
-    if (/contraseña|password|incorrect|inválid|invalid/i.test(bodyText)) {
-      throw new Error("Credenciales inválidas. Verificá usuario y contraseña del portal MEV.");
+    // Verificar si hay mensaje de error
+    const errorEl = await findFirst(page, SELECTORS.loginError, 2_000);
+    if (errorEl) {
+      const errorText = await page.$eval(errorEl, (el) => el.textContent?.trim() ?? "").catch(() => "");
+      if (errorText) {
+        throw new Error(`Credenciales inválidas. Error del portal: "${errorText}"`);
+      }
     }
-    throw new Error("No se pudo verificar el login en el portal MEV. El portal puede haber cambiado.");
+
+    // Sin indicador de éxito ni de error: pedir screenshot para diagnóstico
+    await debugScreenshot(page, "login-result");
+
+    const pageTitle = await page.title().catch(() => "");
+    const bodyPreview = await page.evaluate(
+      () => (document.body?.innerText ?? "").substring(0, 300)
+    ).catch(() => "");
+
+    throw new Error(
+      `No se pudo verificar el login en JUSTI. Título: "${pageTitle}". ` +
+      `Vista previa: "${bodyPreview}". ` +
+      `Verificá credenciales o revisá screenshot en /tmp/`
+    );
   }
 
   session.loggedIn = true;
-  logger.info("[mev] Login exitoso");
+  logger.info("[justi] Login exitoso", { indicator: loggedIn });
 }
 
 /**
- * Obtiene todos los expedientes visibles para el abogado autenticado.
- * Retorna un array de datos scrapeados.
+ * Obtiene todos los expedientes/causas visibles para el abogado autenticado.
  *
- * Esta función navega al listado de expedientes y extrae los datos de cada fila.
+ * En JUSTI/Ionic las causas pueden estar en:
+ *   - Un ion-list con ion-items
+ *   - ion-cards
+ *   - Una tabla HTML clásica
+ * Se prueba cada alternativa en orden.
  */
 export async function scrapeExpedientes(
   session: ScrapeSession
@@ -268,93 +460,129 @@ export async function scrapeExpedientes(
   const { page } = session;
   if (!session.loggedIn) throw new Error("Sesión no autenticada. Llamar loginMev() primero.");
 
-  // Navegar al listado de expedientes
+  // Navegar al listado de expedientes/causas
+  // En Angular/Ionic el routing puede ser hash (#/expedientes) o history (/expedientes)
   const listUrls = [
-    `${MEV_BASE_URL}/index.php?option=com_mev`,
-    `${MEV_BASE_URL}/index.php?option=com_mev&view=expedientes`,
-    `${MEV_BASE_URL}/expedientes`,
-    `${MEV_BASE_URL}/mis-expedientes`,
+    JUSTI_BASE_URL,                                    // homepage puede ser el listado
+    `${JUSTI_BASE_URL}#/expedientes`,
+    `${JUSTI_BASE_URL}#/causas`,
+    `${JUSTI_BASE_URL}#/mis-causas`,
+    `${JUSTI_BASE_URL}#/listado`,
+    `${JUSTI_BASE_URL}expedientes`,
+    `${JUSTI_BASE_URL}causas`,
   ];
 
-  let tableFound = false;
+  let containerFound = false;
   for (const url of listUrls) {
-    await page.goto(url, { waitUntil: "domcontentloaded" });
-    await sleep(DELAY_BETWEEN);
-    const found = await findFirst(page, SELECTORS.expedientesTable, 5_000);
-    if (found) { tableFound = true; break; }
+    try {
+      await page.goto(url, { waitUntil: "networkidle2", timeout: 15_000 });
+      await sleep(SPA_BOOT_WAIT);
+      const found = await findFirst(page, SELECTORS.expedientesContainer, 5_000);
+      if (found) {
+        logger.info("[justi] Listado encontrado", { url, sel: found });
+        containerFound = true;
+        break;
+      }
+    } catch {
+      // probar siguiente URL
+    }
   }
 
-  if (!tableFound) {
-    logger.warn("[mev] No se encontró tabla de expedientes — intentando extracción genérica");
-    // Fallback: buscar cualquier tabla con más de 2 filas
-    const hasTable = await page.$("table tbody tr:nth-child(2)");
-    if (!hasTable) throw new Error("No se encontró el listado de expedientes en el portal MEV.");
+  if (!containerFound) {
+    await debugScreenshot(page, "no-expedientes");
+    logger.warn("[justi] No se encontró contenedor específico — intentando extracción genérica");
+
+    // Fallback: cualquier lista o tabla con ítems
+    const fallback = await findFirst(page, ["ion-list", "ion-card", "table tbody tr:nth-child(2)"], 5_000);
+    if (!fallback) {
+      throw new Error(
+        "No se encontró el listado de expedientes en el portal JUSTI. " +
+        "Es posible que el routing del SPA haya cambiado."
+      );
+    }
   }
 
-  await sleep(500);
+  await sleep(800);
 
-  // Extraer datos de cada fila
+  // Extraer datos via JavaScript (necesario para acceder a Shadow DOM de Ionic)
   const rows = await page.evaluate((sels) => {
-    // Buscar el selector de fila que tenga resultados
+    // ── Helper: buscar texto en el elemento usando múltiples selectores ──────
+    const getField = (parent: Element, selList: string[]): string => {
+      for (const sel of selList) {
+        try {
+          const el = parent.querySelector(sel);
+          if (el) return (el.textContent ?? "").trim();
+        } catch { /* invalid selector */ }
+      }
+      return "";
+    };
+
+    // ── Buscar el selector de fila que tenga resultados ──────────────────────
     let rowEls: Element[] = [];
     for (const sel of sels.expedienteRow) {
-      rowEls = Array.from(document.querySelectorAll(sel));
-      if (rowEls.length > 0) break;
+      try {
+        rowEls = Array.from(document.querySelectorAll(sel));
+        // Filtrar filas vacías o encabezados
+        rowEls = rowEls.filter((r) => (r.textContent ?? "").trim().length > 5);
+        if (rowEls.length > 0) break;
+      } catch { /* invalid selector */ }
     }
 
     return rowEls.map((row, index) => {
-      const getField = (selList: string[]): string => {
-        for (const sel of selList) {
-          const el = row.querySelector(sel);
-          if (el) return (el.textContent ?? "").trim();
-        }
-        // Fallback: columnas por posición
-        const cells = Array.from(row.querySelectorAll("td"));
-        return cells[index % cells.length]?.textContent?.trim() ?? "";
-      };
-
       const cells = Array.from(row.querySelectorAll("td")).map(
-        (td) => td.textContent?.trim() ?? ""
+        (td) => (td.textContent ?? "").trim()
       );
 
-      // Intentar extraer un ID del portal (atributo data o href)
+      // Intentar extraer un ID del portal
       const portalId =
-        row.getAttribute("data-expid") ??
         row.getAttribute("data-id") ??
+        row.getAttribute("data-causa-id") ??
+        row.getAttribute("data-exp-id") ??
         row.querySelector("a[href*='id=']")
           ?.getAttribute("href")
-          ?.match(/id=(\d+)/)?.[1] ??
+          ?.match(/id[=:]([a-zA-Z0-9-]+)/)?.[1] ??
         String(index + 1);
 
-      return {
-        portalId,
-        numero:   getField(sels.expedienteNumber)   || cells[0] || "",
-        caratula: getField(sels.expedienteCaratula) || cells[1] || "",
-        juzgado:  getField(sels.expedienteJuzgado)  || cells[2] || "",
-        estado:   getField(sels.expedienteStatus)   || cells[3] || "",
-        ultimaActuacionText: getField(sels.ultimaActuacion) || cells[cells.length - 1] || "",
-        fechaActuacionText:  getField(sels.actuacionFecha) || "",
-        notifText: (row.querySelector(sels.notifBadge[0])?.textContent ?? "0").replace(/\D/g, ""),
-      };
-    }).filter((r) => r.numero.length > 0); // descartar filas vacías / header
+      const numero   = getField(row, sels.expedienteNumber)   || cells[0] || "";
+      const caratula = getField(row, sels.expedienteCaratula) || cells[1] || "";
+      const juzgado  = getField(row, sels.expedienteJuzgado)  || cells[2] || "";
+      const estado   = getField(row, sels.expedienteStatus)   || cells[3] || "";
+      const ultima   = getField(row, sels.ultimaActuacion)    || cells[cells.length - 1] || "";
+      const fecha    = getField(row, sels.actuacionFecha)     || "";
+
+      // Notificaciones pendientes (badge numérico)
+      const notifText = (() => {
+        for (const sel of sels.notifBadge) {
+          try {
+            const el = row.querySelector(sel);
+            if (el) return (el.textContent ?? "").replace(/\D/g, "");
+          } catch { /* */ }
+        }
+        return "0";
+      })();
+
+      return { portalId, numero, caratula, juzgado, estado, ultimaActuacionText: ultima, fechaActuacionText: fecha, notifText };
+    }).filter((r) => r.numero.length > 2); // descartar filas vacías / header
   }, {
-    expedienteRow:     SELECTORS.expedienteRow,
-    expedienteNumber:  SELECTORS.expedienteNumber,
+    expedienteRow:      SELECTORS.expedienteRow,
+    expedienteNumber:   SELECTORS.expedienteNumber,
     expedienteCaratula: SELECTORS.expedienteCaratula,
-    expedienteJuzgado: SELECTORS.expedienteJuzgado,
-    expedienteStatus:  SELECTORS.expedienteStatus,
-    ultimaActuacion:   SELECTORS.ultimaActuacion,
-    actuacionFecha:    SELECTORS.actuacionFecha,
-    notifBadge:        SELECTORS.notifBadge,
+    expedienteJuzgado:  SELECTORS.expedienteJuzgado,
+    expedienteStatus:   SELECTORS.expedienteStatus,
+    ultimaActuacion:    SELECTORS.ultimaActuacion,
+    actuacionFecha:     SELECTORS.actuacionFecha,
+    notifBadge:         SELECTORS.notifBadge,
   });
+
+  logger.info("[justi] Expedientes extraídos", { total: rows.length });
 
   // Mapear a MevExpedienteData
   return rows.map((r) => ({
-    portalId:   r.portalId,
-    numero:     r.numero,
-    caratula:   r.caratula,
-    juzgado:    r.juzgado,
-    estado:     r.estado,
+    portalId:  r.portalId,
+    numero:    r.numero,
+    caratula:  r.caratula,
+    juzgado:   r.juzgado,
+    estado:    r.estado,
     ultimoMovimiento: (r.ultimaActuacionText || r.fechaActuacionText)
       ? {
           descripcion: r.ultimaActuacionText,
@@ -370,7 +598,7 @@ export async function scrapeExpedientes(
  * Punto de entrada principal: login + scraping en una sola llamada.
  * Cierra el browser al terminar (o si falla).
  *
- * @returns Map de número de expediente → datos del portal
+ * @returns Map de número de expediente normalizado → datos del portal
  */
 export async function runScrape(
   username: string,
@@ -386,10 +614,10 @@ export async function runScrape(
       if (exp.numero) map.set(normalizeNumber(exp.numero), exp);
     }
 
-    logger.info("[mev] Scraping completado", { total: expedientes.length });
+    logger.info("[justi] Scraping completado", { total: expedientes.length });
     return { data: map };
   } catch (err: any) {
-    logger.error("[mev] Error en scraping", { error: err?.message });
+    logger.error("[justi] Error en scraping", { error: err?.message });
     return { data: new Map(), error: err?.message ?? "Error desconocido" };
   } finally {
     await session.browser.close().catch(() => {});
@@ -398,7 +626,7 @@ export async function runScrape(
 
 /**
  * Solo verifica si las credenciales son válidas (no extrae datos).
- * Más rápido que el scraping completo.
+ * Más rápido que el scraping completo — ideal para `POST /portal/config/test`.
  */
 export async function testCredentials(
   username: string,
@@ -426,6 +654,6 @@ export function normalizeNumber(num: string): string {
   return num
     .trim()
     .replace(/\s+/g, "")
-    .replace(/^0+/, "")     // quitar ceros iniciales antes del /
+    .replace(/^0+/, "")   // quitar ceros iniciales antes del /
     .toLowerCase();
 }
