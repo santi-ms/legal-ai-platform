@@ -2479,6 +2479,39 @@ export async function globalSearch(
   };
 }
 
+// ─── Stats / Analytics ────────────────────────────────────────────────────────
+
+export interface StatsOverview {
+  totals: {
+    expedientes:  number;
+    clientes:     number;
+    cobrado:      number;
+    documentos:   number;
+    actuaciones:  number;
+  };
+  ingresosPorMes: Array<{
+    year: number; month: number; label: string; key: string;
+    cobrado: number; facturado: number;
+  }>;
+  clientesPorMes: Array<{
+    year: number; month: number; label: string; key: string; nuevos: number;
+  }>;
+  expedientesPorMateria: Array<{ materia: string; count: number }>;
+  expedientesPorEstado:  Array<{ estado:  string; count: number }>;
+  honorariosPorEstado:   Array<{ estado:  string; monto: number; count: number }>;
+  actuacionesPorTipo:    Array<{ tipo:    string; count: number }>;
+  vencimientos: {
+    pendientes:  number;
+    completados: number;
+    vencidos:    number;
+  };
+}
+
+export async function getStatsOverview(): Promise<StatsOverview> {
+  const { data } = await proxyJson<any>("/stats/overview");
+  return data.data as StatsOverview;
+}
+
 // ─── Dashboard Activity Feed ──────────────────────────────────────────────────
 
 /** Actuación with embedded expedition info — returned by /dashboard/activity */
