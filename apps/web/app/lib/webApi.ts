@@ -800,6 +800,14 @@ export interface Expediente {
   closedAt: string | null;
   deadline: string | null;
   notes: string | null;
+  // Portal fields
+  portalSyncEnabled:    boolean;
+  portalId:             string | null;
+  portalStatus:         string | null;
+  portalLastSync:       string | null;
+  portalLastMovimiento: string | null;
+  portalMovimientoAt:   string | null;
+  portalNewActivity:    boolean;
   createdAt: string;
   updatedAt: string;
   _count?: { documents: number };
