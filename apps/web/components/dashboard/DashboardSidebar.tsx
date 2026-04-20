@@ -20,6 +20,7 @@ import {
   MessageSquare,
   DollarSign,
   FileSpreadsheet,
+  Swords,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { useDeadlines } from "@/app/lib/contexts/DeadlineContext";
@@ -49,6 +50,14 @@ const dokiItems = [
     label: "Doku Consulta",
     icon: MessageSquare,
     href: "/documents",
+    disabled: false,
+    badge: null,
+  },
+  {
+    id: "doku-estratega",
+    label: "Doku Estratega",
+    icon: Swords,
+    href: "/estrategia",
     disabled: false,
     badge: null,
   },

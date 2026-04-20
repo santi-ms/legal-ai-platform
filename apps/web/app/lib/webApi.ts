@@ -1099,6 +1099,76 @@ export async function executeImport(
   return data as ImportExecuteResult;
 }
 
+// ─── DocuLex ESTRATEGA ────────────────────────────────────────────────────────
+
+export type TipoEscrito = "demanda" | "contestacion" | "recurso" | "alegato" | "pericia" | "resolucion" | "otro";
+export type NivelRiesgo = "alto" | "medio" | "bajo";
+
+export interface EstrategiaResult {
+  resumen:              string;
+  tipoEscritoDetectado: string;
+  parteContraria:       string;
+  pretensiones:         Array<{ pretension: string; fundamento: string; fortaleza: "alta" | "media" | "baja" }>;
+  puntosDebiles:        Array<{ punto: string; explicacion: string; severidad: "alta" | "media" | "baja" }>;
+  defensasSugeridas:    Array<{ defensa: string; fundamento: string; normativa: string; riesgo: "alto" | "medio" | "bajo" }>;
+  plazosCriticos:       Array<{ descripcion: string; diasHabiles: number; urgencia: "urgente" | "normal" }>;
+  estrategia:           string;
+  documentosRecomendados: Array<{ tipo: string; justificacion: string }>;
+  nivelRiesgo:          NivelRiesgo;
+}
+
+export interface EscritoAnalisis {
+  id:           string;
+  originalName: string;
+  tipoEscrito:  TipoEscrito;
+  materia:      string | null;
+  provincia:    string | null;
+  status:       "pending" | "processing" | "done" | "error";
+  errorMessage: string | null;
+  result:       EstrategiaResult | null;
+  nivelRiesgo:  NivelRiesgo | null;
+  createdAt:    string;
+  expedienteId: string | null;
+  expediente:   { id: string; title: string; number: string | null; matter?: string } | null;
+}
+
+export async function uploadEscrito(
+  file: File,
+  opts: { tipoEscrito: TipoEscrito; materia?: string; provincia?: string; expedienteId?: string | null },
+): Promise<{ id: string; status: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("tipoEscrito", opts.tipoEscrito);
+  if (opts.materia)      formData.append("materia", opts.materia);
+  if (opts.provincia)    formData.append("provincia", opts.provincia);
+  if (opts.expedienteId) formData.append("expedienteId", opts.expedienteId);
+
+  const resp = await fetch(`/api/proxy/estrategia/upload`, { method: "POST", body: formData });
+  const data = await resp.json();
+  if (!resp.ok || data?.ok === false) throw new Error(data?.message || "Error al subir el escrito");
+  return data;
+}
+
+export async function listEscritos(params?: {
+  page?: number; pageSize?: number; expedienteId?: string;
+}): Promise<{ items: EscritoAnalisis[]; total: number; page: number; pageSize: number }> {
+  const qs = new URLSearchParams();
+  if (params?.page)          qs.set("page", String(params.page));
+  if (params?.pageSize)      qs.set("pageSize", String(params.pageSize));
+  if (params?.expedienteId)  qs.set("expedienteId", params.expedienteId);
+  const { data } = await proxyJson<any>(`/estrategia${qs.toString() ? `?${qs}` : ""}`);
+  return { items: data.items ?? [], total: data.total ?? 0, page: data.page ?? 1, pageSize: data.pageSize ?? 20 };
+}
+
+export async function getEscrito(id: string): Promise<EscritoAnalisis> {
+  const { data } = await proxyJson<any>(`/estrategia/${id}`);
+  return data.item as EscritoAnalisis;
+}
+
+export async function deleteEscrito(id: string): Promise<void> {
+  await proxyJson(`/estrategia/${id}`, { method: "DELETE" });
+}
+
 // ─── Floating Assistant ───────────────────────────────────────────────────────
 
 export interface AssistantMessage {

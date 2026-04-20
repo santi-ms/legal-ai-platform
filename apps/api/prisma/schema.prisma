@@ -28,6 +28,7 @@ model Tenant {
   referenceDocuments ReferenceDocument[]
   contractAnalyses   ContractAnalysis[]
   honorarios         Honorario[]
+  escritosAnalisis   EscritoAnalisis[]
   subscription       Subscription?
   teamInvitations    TeamInvitation[]
 
@@ -73,6 +74,7 @@ model User {
   subscriptionUsers       SubscriptionUser[]
   invitationsSent         TeamInvitation[]       @relation("InvitationsSentBy")
   honorariosCreated       Honorario[]            @relation("HonorariosCreatedBy")
+  escritosUploaded        EscritoAnalisis[]      @relation("EscritosUploadedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -239,6 +241,9 @@ model Expediente {
 
   // Honorarios vinculados al expediente
   honorarios     Honorario[]
+
+  // Escritos analizados vinculados al expediente
+  escritosAnalisis EscritoAnalisis[]
 
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -546,6 +551,48 @@ model ContractAnalysis {
 
   @@index([tenantId])
   @@index([status])
+}
+
+// ─── DocuLex ESTRATEGA ────────────────────────────────────────────────────────
+
+model EscritoAnalisis {
+  id           String    @id @default(uuid())
+
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  uploadedById String
+  uploadedBy   User      @relation("EscritosUploadedBy", fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  // Expediente vinculado (opcional)
+  expedienteId String?
+  expediente   Expediente? @relation(fields: [expedienteId], references: [id], onDelete: SetNull)
+
+  // Archivo
+  originalName String
+  fileName     String
+  fileSize     Int
+  storageUrl   String
+  pdfText      String?  @db.Text
+
+  // Clasificación del escrito
+  tipoEscrito  String   // "demanda"|"contestacion"|"recurso"|"alegato"|"pericia"|"resolucion"|"otro"
+  materia      String?  // "civil"|"penal"|"laboral" — contexto para el análisis
+  provincia    String?  // para contextualizar plazos y jurisprudencia
+
+  // Estado y resultado
+  status       String   @default("pending") // "pending"|"processing"|"done"|"error"
+  errorMessage String?
+  result       Json?    // EstrategiaResult
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  @@index([tenantId])
+  @@index([expedienteId])
+  @@index([status])
+  @@index([deletedAt])
 }
 
 // NextAuth models
