@@ -7,11 +7,12 @@ import {
   ArrowLeft, Pencil, User, Building2, Mail, Phone,
   MapPin, FileText, Hash, Calendar, AlertTriangle, Loader2,
   Briefcase, CalendarClock, Archive, ArchiveRestore, UserCircle,
+  Globe, Plus, Copy, Ban, Check, ExternalLink, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useToast } from "@/components/ui/toast";
-import { getClient, updateClient, deleteClient, unarchiveClient, listDocuments, listExpedientes, Client, ClientPayload, ClientType, Document, Expediente } from "@/app/lib/webApi";
+import { getClient, updateClient, deleteClient, unarchiveClient, listDocuments, listExpedientes, Client, ClientPayload, ClientType, Document, Expediente, createClientPortalLink, listClientPortalLinks, revokeClientPortalLink, deleteClientPortalLink, ClientPortalLink } from "@/app/lib/webApi";
 import { formatDocumentType } from "@/app/lib/format";
 import { ClientForm } from "@/components/clients/ClientForm";
 import { cn } from "@/app/lib/utils";
@@ -89,6 +90,9 @@ export default function ClientDetailPage() {
   const [docsLoading,   setDocsLoading]   = useState(false);
   const [expedientes,   setExpedientes]   = useState<Expediente[]>([]);
   const [expsLoading,   setExpsLoading]   = useState(false);
+  const [portalLinks,   setPortalLinks]   = useState<ClientPortalLink[]>([]);
+  const [portalCreating,setPortalCreating]= useState(false);
+  const [copiedId,      setCopiedId]      = useState<string | null>(null);
 
   const load = async () => {
     if (!id) return;
@@ -131,8 +135,16 @@ export default function ClientDetailPage() {
     }
   };
 
+  const loadPortalLinks = async () => {
+    if (!id) return;
+    try {
+      const links = await listClientPortalLinks(id);
+      setPortalLinks(links);
+    } catch { /* silently ignore */ }
+  };
+
   useEffect(() => {
-    if (!authLoading && isAuthenticated) { load(); loadDocs(); loadExpedientesForClient(); }
+    if (!authLoading && isAuthenticated) { load(); loadDocs(); loadExpedientesForClient(); loadPortalLinks(); }
   }, [id, isAuthenticated, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -586,6 +598,123 @@ export default function ClientDetailPage() {
                         : doc.estado || "Borrador"}
                     </span>
                   </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Portal del Cliente ────────────────────────────────────────────────── */}
+      <div className="max-w-[960px] mx-auto px-4 md:px-10 pb-4">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Globe className="w-4 h-4 text-violet-500" />
+              <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">Portal del Cliente</h2>
+              <span className="text-xs text-slate-400 dark:text-slate-500">— acceso de solo lectura vía link</span>
+            </div>
+            <Button
+              size="sm"
+              disabled={portalCreating}
+              onClick={async () => {
+                setPortalCreating(true);
+                try {
+                  await createClientPortalLink({ clientId: id as string, showDocuments: true, showHonorarios: false, showMovimientos: true });
+                  success("Link generado. Copialo y enviáselo al cliente.");
+                  await loadPortalLinks();
+                } catch (e: any) {
+                  showError(e?.message ?? "Error al generar link");
+                } finally {
+                  setPortalCreating(false);
+                }
+              }}
+              className="gap-1.5"
+            >
+              {portalCreating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+              Generar link
+            </Button>
+          </div>
+
+          <div className="p-5">
+            {portalLinks.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-4">
+                No hay links activos. Generá uno para compartir el portal con {client.name}.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {portalLinks.map((link) => (
+                  <div
+                    key={link.id}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-xl border text-sm",
+                      link.status === "revoked"
+                        ? "border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 opacity-60"
+                        : "border-violet-100 dark:border-violet-900/40 bg-violet-50 dark:bg-violet-900/10"
+                    )}
+                  >
+                    <Globe className={cn("w-4 h-4 flex-shrink-0", link.status === "revoked" ? "text-slate-400" : "text-violet-500")} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-mono text-xs text-slate-600 dark:text-slate-400 truncate">
+                        {link.tokenMasked}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {link.status === "revoked" ? "Revocado" : `Vence ${new Date(link.expiresAt).toLocaleDateString("es-AR")}`}
+                        {link.viewCount > 0 && ` · ${link.viewCount} vista${link.viewCount !== 1 ? "s" : ""}`}
+                      </p>
+                    </div>
+                    {link.status === "active" && (
+                      <>
+                        <button
+                          title="Copiar link"
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(link.portalUrl);
+                            setCopiedId(link.id);
+                            setTimeout(() => setCopiedId(null), 2000);
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-violet-100 dark:hover:bg-violet-900/30 text-violet-600 transition-colors"
+                        >
+                          {copiedId === link.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                        <a
+                          href={link.portalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Ver portal"
+                          className="p-1.5 rounded-lg hover:bg-violet-100 dark:hover:bg-violet-900/30 text-violet-600 transition-colors"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                        <button
+                          title="Revocar link"
+                          onClick={async () => {
+                            try {
+                              await revokeClientPortalLink(link.id);
+                              success("Link revocado");
+                              await loadPortalLinks();
+                            } catch { showError("Error al revocar"); }
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-colors"
+                        >
+                          <Ban className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
+                    {link.status === "revoked" && (
+                      <button
+                        title="Eliminar"
+                        onClick={async () => {
+                          try {
+                            await deleteClientPortalLink(link.id);
+                            await loadPortalLinks();
+                          } catch { showError("Error al eliminar"); }
+                        }}
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             )}

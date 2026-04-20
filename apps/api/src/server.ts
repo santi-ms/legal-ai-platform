@@ -23,6 +23,7 @@ import { registerSharingRoutes } from "./routes.sharing.js";
 import { registerPromptRoutes } from "./routes.prompts.js";
 import { registerSuperAdminRoutes } from "./routes.superadmin.js";
 import { registerPortalRoutes } from "./routes.portal.js";
+import { registerClientPortalRoutes } from "./routes.client-portal.js";
 import { initializeDocumentRegistry } from "./modules/documents/domain/document-registry.js";
 import { runDeadlineNotifier } from "./services/deadline-notifier.js";
 import { syncAllTenants } from "./services/portal-sync-service.js";
@@ -115,6 +116,7 @@ async function buildServer() {
   await registerPromptRoutes(app);
   await registerSuperAdminRoutes(app);
   await registerPortalRoutes(app);
+  await registerClientPortalRoutes(app);
 
   const { registerUserRoutes } = await import("./routes.user.js");
   await registerUserRoutes(app);

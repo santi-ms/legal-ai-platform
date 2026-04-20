@@ -2059,3 +2059,60 @@ export async function toggleExpedienteSync(id: string, enabled: boolean): Promis
 export async function dismissPortalActivity(id: string): Promise<void> {
   await proxyJson(`/portal/expedientes/${id}/dismiss-activity`, { method: "PATCH" });
 }
+
+// ─── Portal del Cliente (magic links) ────────────────────────────────────────
+
+export interface ClientPortalLink {
+  id:             string;
+  token:          string;
+  tokenMasked:    string;
+  portalUrl:      string;
+  clientId:       string;
+  expedienteId:   string | null;
+  showDocuments:  boolean;
+  showHonorarios: boolean;
+  showMovimientos:boolean;
+  message:        string | null;
+  status:         "active" | "revoked";
+  expiresAt:      string;
+  viewCount:      number;
+  lastViewedAt:   string | null;
+  createdAt:      string;
+  client?:        { id: string; name: string; type: string } | null;
+  expediente?:    { id: string; title: string; number: string | null } | null;
+  createdBy?:     { firstName: string | null; lastName: string | null; email: string } | null;
+}
+
+export interface CreateClientPortalLinkPayload {
+  clientId:       string;
+  expedienteId?:  string | null;
+  showDocuments?: boolean;
+  showHonorarios?:boolean;
+  showMovimientos?:boolean;
+  message?:       string | null;
+  expiryDays?:    number;
+}
+
+export async function createClientPortalLink(
+  payload: CreateClientPortalLinkPayload
+): Promise<ClientPortalLink> {
+  const { data } = await proxyJson<any>("/client-portal/links", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return data.link as ClientPortalLink;
+}
+
+export async function listClientPortalLinks(clientId?: string): Promise<ClientPortalLink[]> {
+  const qs = clientId ? `?clientId=${clientId}` : "";
+  const { data } = await proxyJson<any>(`/client-portal/links${qs}`);
+  return data.links ?? [];
+}
+
+export async function revokeClientPortalLink(id: string): Promise<void> {
+  await proxyJson(`/client-portal/links/${id}/revoke`, { method: "PATCH" });
+}
+
+export async function deleteClientPortalLink(id: string): Promise<void> {
+  await proxyJson(`/client-portal/links/${id}`, { method: "DELETE" });
+}

@@ -31,8 +31,9 @@ model Tenant {
   escritosAnalisis   EscritoAnalisis[]
   subscription       Subscription?
   teamInvitations    TeamInvitation[]
-  portalCredentials  PortalCredential[] @relation("TenantPortalCredentials")
-  portalSyncLogs     PortalSyncLog[]    @relation("TenantPortalSyncLogs")
+  portalCredentials  PortalCredential[]   @relation("TenantPortalCredentials")
+  portalSyncLogs     PortalSyncLog[]      @relation("TenantPortalSyncLogs")
+  clientPortalAccess ClientPortalAccess[] @relation("TenantClientPortalAccess")
 
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -77,6 +78,7 @@ model User {
   invitationsSent         TeamInvitation[]       @relation("InvitationsSentBy")
   honorariosCreated       Honorario[]            @relation("HonorariosCreatedBy")
   escritosUploaded        EscritoAnalisis[]      @relation("EscritosUploadedBy")
+  clientPortalCreated     ClientPortalAccess[]   @relation("ClientPortalCreatedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -194,6 +196,9 @@ model Client {
   // Honorarios facturados al cliente
   honorarios     Honorario[]
 
+  // Links de portal del cliente
+  portalAccess   ClientPortalAccess[]
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -255,6 +260,9 @@ model Expediente {
 
   // Escritos analizados vinculados al expediente
   escritosAnalisis EscritoAnalisis[]
+
+  // Links de portal del cliente asociados al expediente
+  clientPortalAccess ClientPortalAccess[] @relation("ExpedienteClientPortalAccess")
 
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -604,6 +612,52 @@ model EscritoAnalisis {
   @@index([expedienteId])
   @@index([status])
   @@index([deletedAt])
+}
+
+// ─── Portal del Cliente (magic-link, read-only) ───────────────────────────────
+
+model ClientPortalAccess {
+  id          String   @id @default(uuid())
+
+  tenantId    String
+  tenant      Tenant   @relation("TenantClientPortalAccess", fields: [tenantId], references: [id], onDelete: Cascade)
+
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User     @relation("ClientPortalCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  // Scope opcional a un expediente específico
+  expedienteId String?
+  expediente   Expediente? @relation("ExpedienteClientPortalAccess", fields: [expedienteId], references: [id], onDelete: SetNull)
+
+  // Token público (32 bytes hex)
+  token       String   @unique
+
+  // Qué mostrar al cliente
+  showDocuments   Boolean @default(true)   // PDFs generados
+  showHonorarios  Boolean @default(false)  // Honorarios pendientes/cobrados
+  showMovimientos Boolean @default(true)   // Últimos movimientos del portal MEV
+
+  // Mensaje personalizado del abogado
+  message     String?   // Ej: "Podés consultar el estado de tu expediente aquí"
+
+  // Estado del link
+  status      String   @default("active")  // "active" | "revoked"
+  expiresAt   DateTime
+
+  // Tracking
+  viewCount   Int      @default(0)
+  lastViewedAt DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([clientId])
+  @@index([token])
+  @@index([status])
 }
 
 // ─── Portal Judicial (MEV Misiones, etc.) ────────────────────────────────────
