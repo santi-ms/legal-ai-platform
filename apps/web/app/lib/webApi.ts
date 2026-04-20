@@ -1952,3 +1952,110 @@ export async function patchPromoCode(id: string, patch: PromoCodePatch): Promise
 export async function deletePromoCode(id: string): Promise<void> {
   await proxyJson(`/superadmin/promos/${id}`, { method: "DELETE" });
 }
+
+// ─── Portal Judicial (MEV Misiones) ──────────────────────────────────────────
+
+export interface PortalCredentialInfo {
+  id:          string;
+  username:    string;
+  portal:      string;
+  isActive:    boolean;
+  lastValidAt: string | null;
+  lastError:   string | null;
+  updatedAt:   string;
+}
+
+export interface PortalSyncLog {
+  id:                 string;
+  status:             "running" | "success" | "error";
+  trigger:            "cron" | "manual";
+  startedAt:          string;
+  finishedAt:         string | null;
+  expedientesChecked: number;
+  expedientesUpdated: number;
+  errorMessage:       string | null;
+}
+
+export interface PortalConfig {
+  credential: PortalCredentialInfo | null;
+  lastSync:   PortalSyncLog | null;
+}
+
+export interface PortalExpediente {
+  id:                string;
+  number:            string | null;
+  title:             string;
+  matter:            string;
+  status:            string;
+  court:             string | null;
+  portalSyncEnabled: boolean;
+  portalId:          string | null;
+  portalStatus:      string | null;
+  portalLastSync:    string | null;
+  portalLastMovimiento: string | null;
+  portalMovimientoAt:   string | null;
+  portalNewActivity:    boolean;
+  client:            { id: string; name: string } | null;
+}
+
+export async function getPortalConfig(): Promise<PortalConfig> {
+  const { data } = await proxyJson<any>("/portal/config");
+  return { credential: data.credential, lastSync: data.lastSync };
+}
+
+export async function savePortalConfig(username: string, password: string): Promise<void> {
+  await proxyJson("/portal/config", {
+    method: "PUT",
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+export async function deletePortalConfig(): Promise<void> {
+  await proxyJson("/portal/config", { method: "DELETE" });
+}
+
+export async function testPortalCredentials(
+  username: string,
+  password: string
+): Promise<{ ok: boolean; message?: string }> {
+  try {
+    const { data } = await proxyJson<any>("/portal/config/test", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    });
+    return { ok: Boolean(data.ok), message: data.message };
+  } catch (e: any) {
+    return { ok: false, message: e?.message };
+  }
+}
+
+export async function triggerPortalSync(): Promise<void> {
+  await proxyJson("/portal/sync", { method: "POST" });
+}
+
+export async function getPortalLogs(): Promise<PortalSyncLog[]> {
+  const { data } = await proxyJson<any>("/portal/logs");
+  return data.logs ?? [];
+}
+
+export async function getPortalExpedientes(params?: {
+  page?: number; pageSize?: number; syncOnly?: boolean;
+}): Promise<{ items: PortalExpediente[]; total: number; page: number; pageSize: number }> {
+  const qs = new URLSearchParams();
+  if (params?.page)      qs.set("page",     String(params.page));
+  if (params?.pageSize)  qs.set("pageSize", String(params.pageSize));
+  if (params?.syncOnly)  qs.set("syncOnly", "true");
+  const { data } = await proxyJson<any>(`/portal/expedientes?${qs}`);
+  return { items: data.items ?? [], total: data.total ?? 0, page: data.page ?? 1, pageSize: data.pageSize ?? 30 };
+}
+
+export async function toggleExpedienteSync(id: string, enabled: boolean): Promise<void> {
+  await proxyJson(`/portal/expedientes/${id}/toggle-sync`, {
+    method: "PATCH",
+    body: JSON.stringify({ enabled }),
+  });
+}
+
+export async function dismissPortalActivity(id: string): Promise<void> {
+  await proxyJson(`/portal/expedientes/${id}/dismiss-activity`, { method: "PATCH" });
+}

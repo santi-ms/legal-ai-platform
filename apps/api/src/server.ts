@@ -22,8 +22,10 @@ import { registerAssistantRoutes } from "./routes.assistant.js";
 import { registerSharingRoutes } from "./routes.sharing.js";
 import { registerPromptRoutes } from "./routes.prompts.js";
 import { registerSuperAdminRoutes } from "./routes.superadmin.js";
+import { registerPortalRoutes } from "./routes.portal.js";
 import { initializeDocumentRegistry } from "./modules/documents/domain/document-registry.js";
 import { runDeadlineNotifier } from "./services/deadline-notifier.js";
+import { syncAllTenants } from "./services/portal-sync-service.js";
 import { logger } from "./utils/logger.js";
 
 async function buildServer() {
@@ -112,6 +114,7 @@ async function buildServer() {
   await registerSharingRoutes(app);
   await registerPromptRoutes(app);
   await registerSuperAdminRoutes(app);
+  await registerPortalRoutes(app);
 
   const { registerUserRoutes } = await import("./routes.user.js");
   await registerUserRoutes(app);
@@ -135,8 +138,8 @@ try {
 }
 
 // ─── Cron jobs ────────────────────────────────────────────────────────────────
+
 // Notificaciones de vencimientos de expedientes — todos los días a las 8:00 AM (hora AR)
-// Timezone: America/Argentina/Buenos_Aires (UTC-3)
 cron.schedule(
   "0 8 * * *",
   async () => {
@@ -146,3 +149,14 @@ cron.schedule(
   { timezone: "America/Argentina/Buenos_Aires" }
 );
 logger.info("[cron] Notificador de vencimientos programado: todos los días a las 8:00 AM (AR)");
+
+// Sincronización portal MEV Misiones — 3 veces por día en horario laboral (7, 13, 19 hs AR)
+cron.schedule(
+  "0 7,13,19 * * 1-5",
+  async () => {
+    logger.info("[cron] Ejecutando sync portal MEV Misiones...");
+    await syncAllTenants("cron");
+  },
+  { timezone: "America/Argentina/Buenos_Aires" }
+);
+logger.info("[cron] Portal sync MEV programado: L-V a las 7:00, 13:00 y 19:00 hs (AR)");

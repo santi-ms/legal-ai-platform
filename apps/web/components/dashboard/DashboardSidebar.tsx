@@ -21,6 +21,7 @@ import {
   DollarSign,
   FileSpreadsheet,
   Swords,
+  Globe,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { useDeadlines } from "@/app/lib/contexts/DeadlineContext";
@@ -119,6 +120,13 @@ const navigationItems = [
     label: "Importar datos",
     icon: FileSpreadsheet,
     href: "/importar",
+    disabled: false,
+  },
+  {
+    id: "portal",
+    label: "Portal Judicial",
+    icon: Globe,
+    href: "/portal",
     disabled: false,
   },
   {

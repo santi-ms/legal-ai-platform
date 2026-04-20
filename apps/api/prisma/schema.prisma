@@ -31,6 +31,8 @@ model Tenant {
   escritosAnalisis   EscritoAnalisis[]
   subscription       Subscription?
   teamInvitations    TeamInvitation[]
+  portalCredentials  PortalCredential[] @relation("TenantPortalCredentials")
+  portalSyncLogs     PortalSyncLog[]    @relation("TenantPortalSyncLogs")
 
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -235,6 +237,15 @@ model Expediente {
 
   // Notificaciones de deadline
   deadlineNotifiedAt DateTime?  // Última vez que se envió notif de vencimiento
+
+  // ── Portal MEV Misiones ──────────────────────────────────────────────────
+  portalSyncEnabled    Boolean   @default(false)  // Abogado activa/desactiva por expediente
+  portalId             String?                    // ID interno en el portal MEV
+  portalStatus         String?                    // Estado en el portal (ej: "En trámite")
+  portalLastSync       DateTime?                  // Última sincronización exitosa
+  portalLastMovimiento String?   @db.Text          // Texto del último movimiento
+  portalMovimientoAt   DateTime?                  // Fecha del último movimiento
+  portalNewActivity    Boolean   @default(false)  // Actividad nueva desde última consulta
 
   // Documentos vinculados
   documents      Document[]
@@ -593,6 +604,54 @@ model EscritoAnalisis {
   @@index([expedienteId])
   @@index([status])
   @@index([deletedAt])
+}
+
+// ─── Portal Judicial (MEV Misiones, etc.) ────────────────────────────────────
+
+model PortalCredential {
+  id          String    @id @default(uuid())
+
+  tenantId    String
+  tenant      Tenant    @relation("TenantPortalCredentials", fields: [tenantId], references: [id], onDelete: Cascade)
+
+  portal      String    @default("mev_misiones")  // "mev_misiones" | "mev_corrientes" (futuro)
+  username    String
+  passwordEnc String    // AES-256-GCM cifrado — nunca se expone en API
+
+  isActive    Boolean   @default(true)
+  lastValidAt DateTime? // Última vez que las credenciales fueron verificadas con éxito
+  lastError   String?   // Mensaje de error del último intento fallido
+
+  syncLogs    PortalSyncLog[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([tenantId, portal])
+  @@index([tenantId])
+}
+
+model PortalSyncLog {
+  id                 String            @id @default(uuid())
+
+  tenantId           String
+  tenant             Tenant            @relation("TenantPortalSyncLogs", fields: [tenantId], references: [id], onDelete: Cascade)
+
+  portal             String            @default("mev_misiones")
+  credentialId       String?
+  credential         PortalCredential? @relation(fields: [credentialId], references: [id], onDelete: SetNull)
+
+  status             String            @default("running")  // "running"|"success"|"error"
+  trigger            String            @default("cron")     // "cron"|"manual"
+  startedAt          DateTime          @default(now())
+  finishedAt         DateTime?
+  expedientesChecked Int               @default(0)
+  expedientesUpdated Int               @default(0)
+  errorMessage       String?
+
+  @@index([tenantId])
+  @@index([credentialId])
+  @@index([startedAt])
 }
 
 // NextAuth models
