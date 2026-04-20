@@ -69,7 +69,7 @@ function cacheSet<T>(key: string, value: T, ttlMs = 15 * 60 * 1000): void {
 async function callClaudeWithRetry(
   params: Parameters<typeof anthropic.messages.create>[0],
   maxRetries = 3
-): Promise<Awaited<ReturnType<typeof anthropic.messages.create>>> {
+): Promise<Anthropic.Message> {
   let lastError: Error | null = null;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {

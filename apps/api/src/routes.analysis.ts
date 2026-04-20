@@ -19,7 +19,7 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ─── Retry helper ─────────────────────────────────────────────────────────────
 
-async function callWithRetry(fn: () => Promise<any>, retries = 2): Promise<any> {
+async function callWithRetry(fn: () => Promise<Anthropic.Message>, retries = 2): Promise<Anthropic.Message> {
   for (let i = 0; i <= retries; i++) {
     try { return await fn(); }
     catch (err: any) {
