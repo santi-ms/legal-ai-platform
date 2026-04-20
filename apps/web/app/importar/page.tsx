@@ -414,10 +414,8 @@ export default function ImportarPage() {
             <Button variant="outline" onClick={reset}>
               Nueva importación
             </Button>
-            <Button asChild>
-              <a href={`/${result.type}`}>
-                Ver {typeInfo?.label} <ArrowRight className="w-4 h-4 ml-1" />
-              </a>
+            <Button onClick={() => { window.location.href = `/${result.type}`; }}>
+              Ver {typeInfo?.label} <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
         </div>

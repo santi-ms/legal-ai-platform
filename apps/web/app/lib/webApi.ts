@@ -1110,11 +1110,22 @@ export interface EstrategiaResult {
   parteContraria:       string;
   pretensiones:         Array<{ pretension: string; fundamento: string; fortaleza: "alta" | "media" | "baja" }>;
   puntosDebiles:        Array<{ punto: string; explicacion: string; severidad: "alta" | "media" | "baja" }>;
-  defensasSugeridas:    Array<{ defensa: string; fundamento: string; normativa: string; riesgo: "alto" | "medio" | "bajo" }>;
+  defensasSugeridas:    Array<{
+    defensa:               string;
+    fundamento:            string;
+    normativa:             string;
+    riesgo:                "alto" | "medio" | "bajo";
+    probabilidadExito:     number;   // 0-100
+    factoresFavorables:    string;
+    factoresDesfavorables: string;
+  }>;
   plazosCriticos:       Array<{ descripcion: string; diasHabiles: number; urgencia: "urgente" | "normal" }>;
   estrategia:           string;
   documentosRecomendados: Array<{ tipo: string; justificacion: string }>;
   nivelRiesgo:          NivelRiesgo;
+  probabilidadGlobal:   number;   // 0-100
+  confianzaAnalisis:    "alta" | "media" | "baja";
+  resumenProbabilidad:  string;
 }
 
 export interface EscritoAnalisis {
@@ -1953,7 +1964,10 @@ export async function deletePromoCode(id: string): Promise<void> {
   await proxyJson(`/superadmin/promos/${id}`, { method: "DELETE" });
 }
 
-// ─── Portal Judicial (MEV Misiones) ──────────────────────────────────────────
+// ─── Portal Judicial (multi-portal) ──────────────────────────────────────────
+
+export const PORTAL_IDS = ["justi_misiones", "iurix_corrientes", "mev_scba", "pjn"] as const;
+export type PortalId = typeof PORTAL_IDS[number];
 
 export interface PortalCredentialInfo {
   id:          string;
@@ -1967,6 +1981,7 @@ export interface PortalCredentialInfo {
 
 export interface PortalSyncLog {
   id:                 string;
+  portal:             string;
   status:             "running" | "success" | "error";
   trigger:            "cron" | "manual";
   startedAt:          string;
@@ -1976,8 +1991,20 @@ export interface PortalSyncLog {
   errorMessage:       string | null;
 }
 
-export interface PortalConfig {
+/** Per-portal info returned by GET /portal/config */
+export interface PortalInfo {
+  portalId:   PortalId;
+  label:      string;
   credential: PortalCredentialInfo | null;
+  lastSync:   PortalSyncLog | null;
+}
+
+/** Full response from GET /portal/config */
+export interface PortalConfig {
+  portals:    PortalInfo[];
+  /** @deprecated use portals[] */
+  credential: PortalCredentialInfo | null;
+  /** @deprecated use portals[] */
   lastSync:   PortalSyncLog | null;
 }
 
@@ -2000,28 +2027,37 @@ export interface PortalExpediente {
 
 export async function getPortalConfig(): Promise<PortalConfig> {
   const { data } = await proxyJson<any>("/portal/config");
-  return { credential: data.credential, lastSync: data.lastSync };
+  return {
+    portals:    data.portals    ?? [],
+    credential: data.credential ?? null,
+    lastSync:   data.lastSync   ?? null,
+  };
 }
 
-export async function savePortalConfig(username: string, password: string): Promise<void> {
+export async function savePortalConfig(
+  portal: string,
+  username: string,
+  password: string
+): Promise<void> {
   await proxyJson("/portal/config", {
     method: "PUT",
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ portal, username, password }),
   });
 }
 
-export async function deletePortalConfig(): Promise<void> {
-  await proxyJson("/portal/config", { method: "DELETE" });
+export async function deletePortalConfig(portal: string): Promise<void> {
+  await proxyJson(`/portal/config?portal=${encodeURIComponent(portal)}`, { method: "DELETE" });
 }
 
 export async function testPortalCredentials(
+  portal: string,
   username: string,
   password: string
 ): Promise<{ ok: boolean; message?: string }> {
   try {
     const { data } = await proxyJson<any>("/portal/config/test", {
       method: "POST",
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ portal, username, password }),
     });
     return { ok: Boolean(data.ok), message: data.message };
   } catch (e: any) {
@@ -2033,8 +2069,9 @@ export async function triggerPortalSync(): Promise<void> {
   await proxyJson("/portal/sync", { method: "POST" });
 }
 
-export async function getPortalLogs(): Promise<PortalSyncLog[]> {
-  const { data } = await proxyJson<any>("/portal/logs");
+export async function getPortalLogs(portal?: string): Promise<PortalSyncLog[]> {
+  const qs = portal ? `?portal=${encodeURIComponent(portal)}` : "";
+  const { data } = await proxyJson<any>(`/portal/logs${qs}`);
   return data.logs ?? [];
 }
 
@@ -2115,4 +2152,84 @@ export async function revokeClientPortalLink(id: string): Promise<void> {
 
 export async function deleteClientPortalLink(id: string): Promise<void> {
   await proxyJson(`/client-portal/links/${id}`, { method: "DELETE" });
+}
+
+// ─── Doku Juris ──────────────────────────────────────────────────────────────
+
+export interface JurisCita {
+  articulo:    string;
+  codigo:      string;
+  descripcion: string;
+}
+
+export interface JurisMensaje {
+  id:          string;
+  consultaId:  string;
+  role:        "user" | "assistant";
+  content:     string;
+  citas:       JurisCita[] | null;
+  webSearches: Array<{ query: string; results: string[] }> | null;
+  tokensUsed:  number;
+  createdAt:   string;
+}
+
+export interface JurisConsulta {
+  id:           string;
+  titulo:       string;
+  provincia:    string | null;
+  materia:      string | null;
+  tokensUsed:   number;
+  createdAt:    string;
+  updatedAt:    string;
+  expediente:   { id: string; title: string; number: string | null } | null;
+  mensajes:     JurisMensaje[];
+  _count?:      { mensajes: number };
+}
+
+export async function createJurisConsulta(payload: {
+  mensaje:      string;
+  provincia?:   string;
+  materia?:     string;
+  expedienteId?: string;
+}): Promise<JurisConsulta> {
+  const { data } = await proxyJson<any>("/juris/consultas", {
+    method: "POST",
+    body:   JSON.stringify(payload),
+  });
+  return data.consulta as JurisConsulta;
+}
+
+export async function sendJurisMensaje(
+  consultaId: string,
+  mensaje:    string
+): Promise<{ mensajes: JurisMensaje[] }> {
+  const { data } = await proxyJson<any>(`/juris/consultas/${consultaId}/mensajes`, {
+    method: "POST",
+    body:   JSON.stringify({ mensaje }),
+  });
+  return { mensajes: data.mensajes ?? [] };
+}
+
+export async function listJurisConsultas(params?: {
+  page?:      number;
+  pageSize?:  number;
+  materia?:   string;
+  provincia?: string;
+}): Promise<{ consultas: JurisConsulta[]; total: number }> {
+  const qs = new URLSearchParams();
+  if (params?.page)      qs.set("page",      String(params.page));
+  if (params?.pageSize)  qs.set("pageSize",  String(params.pageSize));
+  if (params?.materia)   qs.set("materia",   params.materia);
+  if (params?.provincia) qs.set("provincia", params.provincia);
+  const { data } = await proxyJson<any>(`/juris/consultas?${qs.toString()}`);
+  return { consultas: data.consultas ?? [], total: data.total ?? 0 };
+}
+
+export async function getJurisConsulta(id: string): Promise<JurisConsulta> {
+  const { data } = await proxyJson<any>(`/juris/consultas/${id}`);
+  return data.consulta as JurisConsulta;
+}
+
+export async function deleteJurisConsulta(id: string): Promise<void> {
+  await proxyJson(`/juris/consultas/${id}`, { method: "DELETE" });
 }

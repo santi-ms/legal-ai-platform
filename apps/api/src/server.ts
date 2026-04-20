@@ -21,6 +21,7 @@ import { registerAnalysisRoutes } from "./routes.analysis.js";
 import { registerAssistantRoutes } from "./routes.assistant.js";
 import { registerSharingRoutes } from "./routes.sharing.js";
 import { registerPromptRoutes } from "./routes.prompts.js";
+import { registerJurisRoutes } from "./routes.juris.js";
 import { registerSuperAdminRoutes } from "./routes.superadmin.js";
 import { registerPortalRoutes } from "./routes.portal.js";
 import { registerClientPortalRoutes } from "./routes.client-portal.js";
@@ -117,6 +118,7 @@ async function buildServer() {
   await registerSuperAdminRoutes(app);
   await registerPortalRoutes(app);
   await registerClientPortalRoutes(app);
+  await registerJurisRoutes(app);
 
   const { registerUserRoutes } = await import("./routes.user.js");
   await registerUserRoutes(app);

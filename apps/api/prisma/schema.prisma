@@ -34,6 +34,7 @@ model Tenant {
   portalCredentials  PortalCredential[]   @relation("TenantPortalCredentials")
   portalSyncLogs     PortalSyncLog[]      @relation("TenantPortalSyncLogs")
   clientPortalAccess ClientPortalAccess[] @relation("TenantClientPortalAccess")
+  jurisConsultas     JurisConsulta[]
 
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -79,6 +80,7 @@ model User {
   honorariosCreated       Honorario[]            @relation("HonorariosCreatedBy")
   escritosUploaded        EscritoAnalisis[]      @relation("EscritosUploadedBy")
   clientPortalCreated     ClientPortalAccess[]   @relation("ClientPortalCreatedBy")
+  jurisConsultas          JurisConsulta[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -263,6 +265,9 @@ model Expediente {
 
   // Links de portal del cliente asociados al expediente
   clientPortalAccess ClientPortalAccess[] @relation("ExpedienteClientPortalAccess")
+
+  // Consultas de Doku Juris vinculadas al expediente
+  jurisConsultas     JurisConsulta[]
 
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -810,4 +815,60 @@ model PromoCodeUse {
   usedAt      DateTime  @default(now())
 
   @@index([promoCodeId])
+}
+
+// ─── Doku Juris ───────────────────────────────────────────────────────────────
+
+model JurisConsulta {
+  id          String    @id @default(uuid())
+
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Contexto opcional vinculado a un expediente
+  expedienteId String?
+  expediente   Expediente? @relation(fields: [expedienteId], references: [id], onDelete: SetNull)
+
+  // Metadatos de la consulta
+  titulo      String    // Resumen corto del primer mensaje (auto-generado)
+  provincia   String?   // Jurisdicción activa al momento de la consulta
+  materia     String?   // Ej: "civil", "laboral", "penal"
+
+  mensajes    JurisMensaje[]
+
+  // Tokens consumidos en esta consulta (para tracking de costos)
+  tokensUsed  Int       @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([expedienteId])
+  @@index([deletedAt])
+}
+
+model JurisMensaje {
+  id          String    @id @default(uuid())
+
+  consultaId  String
+  consulta    JurisConsulta @relation(fields: [consultaId], references: [id], onDelete: Cascade)
+
+  role        String    // "user" | "assistant"
+  content     String    @db.Text
+
+  // Fuentes citadas en la respuesta (JSON array)
+  citas       Json?     // Array<{ articulo: string; codigo: string; descripcion: string }>
+
+  // Búsquedas web realizadas para esta respuesta
+  webSearches Json?     // Array<{ query: string; results: string[] }>
+
+  tokensUsed  Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([consultaId])
 }

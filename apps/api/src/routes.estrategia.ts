@@ -36,10 +36,13 @@ export interface EstrategiaResult {
   }>;
 
   defensasSugeridas: Array<{
-    defensa:      string;
-    fundamento:   string;
-    normativa:    string;  // art., ley, etc. — sin inventar expedientes
-    riesgo:       "alto" | "medio" | "bajo";
+    defensa:             string;
+    fundamento:          string;
+    normativa:           string;  // art., ley, etc. — sin inventar expedientes
+    riesgo:              "alto" | "medio" | "bajo";
+    probabilidadExito:   number;  // 0-100
+    factoresFavorables:  string;  // qué apoya esta defensa
+    factoresDesfavorables: string; // qué puede dificultar esta defensa
   }>;
 
   plazosCriticos: Array<{
@@ -55,7 +58,10 @@ export interface EstrategiaResult {
     justificacion: string;
   }>;
 
-  nivelRiesgo: "alto" | "medio" | "bajo";
+  nivelRiesgo:         "alto" | "medio" | "bajo";
+  probabilidadGlobal:  number;  // 0-100 — probabilidad de éxito global del caso
+  confianzaAnalisis:   "alta" | "media" | "baja"; // nivel de confianza del análisis
+  resumenProbabilidad: string;  // 1-2 oraciones explicando el % global
 }
 
 // ─── Prompts ──────────────────────────────────────────────────────────────────
@@ -82,6 +88,15 @@ Contexto:
 - Materia: ${materia || "no especificada"}
 - Jurisdicción: ${provincia || "no especificada"}
 
+INSTRUCCIONES PARA PROBABILIDADES:
+Para cada defensa sugerida, estimá probabilidad de éxito (0-100) basándote en:
+  - Solidez jurídica del argumento frente al texto analizado
+  - Debilidades concretas detectadas en el escrito contrario
+  - Complejidad probatoria que requeriría sostener la defensa
+  - Normativa y doctrina aplicable
+La "probabilidadGlobal" es la probabilidad ponderada de obtener un resultado favorable si se adopta la estrategia recomendada.
+Sé honesto: si el escrito contrario es sólido, reflejalo con porcentajes más bajos.
+
 Devolvé EXACTAMENTE este JSON (sin nada más):
 
 {
@@ -107,7 +122,10 @@ Devolvé EXACTAMENTE este JSON (sin nada más):
       "defensa": "Defensa o argumento concreto",
       "fundamento": "Base fáctica y/o jurídica",
       "normativa": "Art. X del CCCN / Ley XXXXX (solo normativa real, sin inventar fallos)",
-      "riesgo": "bajo"
+      "riesgo": "bajo",
+      "probabilidadExito": 75,
+      "factoresFavorables": "Qué elementos del caso apoyan esta defensa",
+      "factoresDesfavorables": "Qué puede dificultar o debilitar esta defensa"
     }
   ],
   "plazosCriticos": [
@@ -124,7 +142,10 @@ Devolvé EXACTAMENTE este JSON (sin nada más):
       "justificacion": "Por qué conviene presentar este escrito"
     }
   ],
-  "nivelRiesgo": "medio"
+  "nivelRiesgo": "medio",
+  "probabilidadGlobal": 65,
+  "confianzaAnalisis": "alta",
+  "resumenProbabilidad": "1-2 oraciones explicando el porcentaje global: qué factores lo elevan o reducen."
 }
 
 ESCRITO A ANALIZAR:

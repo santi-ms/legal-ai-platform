@@ -1,51 +1,94 @@
 /**
- * Portal Judicial — routes
+ * Portal Judicial — routes (multi-portal)
  *
- * GET    /portal/config                          get credential status (no password)
- * PUT    /portal/config                          save/update credentials
- * DELETE /portal/config                          remove credentials
- * POST   /portal/config/test                     test credentials without saving
- * POST   /portal/sync                            trigger manual sync (all enabled expedientes)
- * GET    /portal/logs                            list recent sync logs
- * GET    /portal/expedientes                     list expedientes with portal data
- * PATCH  /portal/expedientes/:id/toggle-sync     enable/disable portal sync
- * PATCH  /portal/expedientes/:id/dismiss-activity dismiss "new activity" flag
+ * Todos los endpoints aceptan ?portal=<id> como query param.
+ * Si se omite, usa el primer portal activo o "justi_misiones" por defecto.
+ *
+ * Portales válidos: justi_misiones, iurix_corrientes, mev_scba, pjn
+ *
+ * GET    /portal/config                          lista todos los portales configurados
+ * PUT    /portal/config                          guarda/actualiza credenciales (body: portal, username, password)
+ * DELETE /portal/config?portal=X                elimina credenciales de un portal
+ * POST   /portal/config/test                     prueba credenciales sin guardar
+ * POST   /portal/sync                            trigger sync manual (todos los portales activos)
+ * GET    /portal/logs                            logs de sync (todos los portales)
+ * GET    /portal/expedientes                     expedientes con datos del portal
+ * PATCH  /portal/expedientes/:id/toggle-sync
+ * PATCH  /portal/expedientes/:id/dismiss-activity
  */
 
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "./db.js";
 import { requireAuth } from "./utils/auth.js";
-import { encrypt, decrypt } from "./utils/encryption.js";
-import { testCredentials } from "./services/mev-scraper.js";
-import { syncTenant } from "./services/portal-sync-service.js";
+import { encrypt } from "./utils/encryption.js";
+import { syncTenant, testPortalCredentials } from "./services/portal-sync-service.js";
 import { logger } from "./utils/logger.js";
+
+// ─── Portales válidos ─────────────────────────────────────────────────────────
+
+export const VALID_PORTALS = ["justi_misiones", "iurix_corrientes", "mev_scba", "pjn"] as const;
+export type PortalId = typeof VALID_PORTALS[number];
+
+const PORTAL_LABELS: Record<string, string> = {
+  justi_misiones:   "JUSTI — Poder Judicial de Misiones",
+  iurix_corrientes: "IURIX — Poder Judicial de Corrientes",
+  mev_scba:         "MEV SCBA — Suprema Corte de Buenos Aires",
+  pjn:              "PJN — Poder Judicial de la Nación",
+};
 
 export async function registerPortalRoutes(app: FastifyInstance) {
 
   // ── GET /portal/config ────────────────────────────────────────────────────
+  // Devuelve todos los portales: los que están configurados + los disponibles
   app.get("/portal/config", async (request, reply) => {
     const user = requireAuth(request);
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
-    const cred = await prisma.portalCredential.findUnique({
-      where: { tenantId_portal: { tenantId: user.tenantId, portal: "mev_misiones" } },
+    const creds = await prisma.portalCredential.findMany({
+      where: { tenantId: user.tenantId },
       select: {
-        id: true, tenantId: true, portal: true, username: true,
+        id: true, portal: true, username: true,
         isActive: true, lastValidAt: true, lastError: true,
         createdAt: true, updatedAt: true,
-        // passwordEnc NOT included
       },
     });
 
-    // Último log de sync
-    const lastLog = await prisma.portalSyncLog.findFirst({
-      where:   { tenantId: user.tenantId, portal: "mev_misiones" },
+    const lastLogs = await prisma.portalSyncLog.findMany({
+      where:   { tenantId: user.tenantId },
       orderBy: { startedAt: "desc" },
-      select:  { status: true, startedAt: true, finishedAt: true, expedientesChecked: true, expedientesUpdated: true, errorMessage: true },
+      take:    20,
+      select:  {
+        id: true, portal: true, status: true, trigger: true,
+        startedAt: true, finishedAt: true,
+        expedientesChecked: true, expedientesUpdated: true, errorMessage: true,
+      },
     });
 
-    return reply.send({ ok: true, credential: cred ?? null, lastSync: lastLog ?? null });
+    // Map last sync per portal
+    const lastSyncByPortal: Record<string, any> = {};
+    for (const log of lastLogs) {
+      if (!lastSyncByPortal[log.portal]) lastSyncByPortal[log.portal] = log;
+    }
+
+    // Build portal list
+    const portals = VALID_PORTALS.map(portalId => ({
+      portalId,
+      label:      PORTAL_LABELS[portalId] ?? portalId,
+      credential: creds.find(c => c.portal === portalId) ?? null,
+      lastSync:   lastSyncByPortal[portalId] ?? null,
+    }));
+
+    // Backward compat: single "credential" + "lastSync" for legacy usage
+    const primaryCred = creds[0] ?? null;
+    const primaryLog  = lastLogs[0] ?? null;
+
+    return reply.send({
+      ok: true,
+      portals,
+      credential: primaryCred,
+      lastSync:   primaryLog,
+    });
   });
 
   // ── PUT /portal/config ────────────────────────────────────────────────────
@@ -54,6 +97,7 @@ export async function registerPortalRoutes(app: FastifyInstance) {
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const schema = z.object({
+      portal:   z.string().default("justi_misiones"),
       username: z.string().min(1, "Usuario requerido"),
       password: z.string().min(1, "Contraseña requerida"),
     });
@@ -61,14 +105,11 @@ export async function registerPortalRoutes(app: FastifyInstance) {
     if (!parsed.success) {
       return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", issues: parsed.error.issues });
     }
-    const { username, password } = parsed.data;
+    const { portal, username, password } = parsed.data;
 
-    // Verificar que PORTAL_ENCRYPTION_KEY está configurada
     if (!process.env.PORTAL_ENCRYPTION_KEY) {
-      logger.warn("[portal] PORTAL_ENCRYPTION_KEY no está configurada");
       return reply.status(500).send({
-        ok: false,
-        error: "CONFIG_ERROR",
+        ok: false, error: "CONFIG_ERROR",
         message: "El servidor no tiene configurada la clave de cifrado. Contactar al soporte.",
       });
     }
@@ -81,7 +122,7 @@ export async function registerPortalRoutes(app: FastifyInstance) {
     }
 
     const existing = await prisma.portalCredential.findUnique({
-      where: { tenantId_portal: { tenantId: user.tenantId, portal: "mev_misiones" } },
+      where: { tenantId_portal: { tenantId: user.tenantId, portal } },
     });
 
     const cred = existing
@@ -90,28 +131,25 @@ export async function registerPortalRoutes(app: FastifyInstance) {
           data:  { username, passwordEnc, isActive: true, lastError: null, updatedAt: new Date() },
         })
       : await prisma.portalCredential.create({
-          data: {
-            tenantId:    user.tenantId,
-            portal:      "mev_misiones",
-            username,
-            passwordEnc,
-            isActive:    true,
-          },
+          data: { tenantId: user.tenantId, portal, username, passwordEnc, isActive: true },
         });
 
     return reply.send({
       ok: true,
-      credential: { id: cred.id, username: cred.username, isActive: cred.isActive },
+      credential: { id: cred.id, portal: cred.portal, username: cred.username, isActive: cred.isActive },
     });
   });
 
-  // ── DELETE /portal/config ─────────────────────────────────────────────────
+  // ── DELETE /portal/config?portal=X ───────────────────────────────────────
   app.delete("/portal/config", async (request, reply) => {
     const user = requireAuth(request);
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
+    const q = request.query as { portal?: string };
+    const portal = q.portal || "justi_misiones";
+
     const cred = await prisma.portalCredential.findUnique({
-      where: { tenantId_portal: { tenantId: user.tenantId, portal: "mev_misiones" } },
+      where: { tenantId_portal: { tenantId: user.tenantId, portal } },
     });
     if (!cred) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
 
@@ -125,6 +163,7 @@ export async function registerPortalRoutes(app: FastifyInstance) {
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const schema = z.object({
+      portal:   z.string().default("justi_misiones"),
       username: z.string().min(1),
       password: z.string().min(1),
     });
@@ -133,15 +172,17 @@ export async function registerPortalRoutes(app: FastifyInstance) {
       return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR" });
     }
 
-    const { valid, error } = await testCredentials(parsed.data.username, parsed.data.password);
+    const { portal, username, password } = parsed.data;
+    const portalLabel = PORTAL_LABELS[portal] ?? portal;
+
+    const { valid, error } = await testPortalCredentials(portal, username, password);
 
     if (valid) {
-      return reply.send({ ok: true, message: "Conexión exitosa con el portal MEV Misiones." });
+      return reply.send({ ok: true, message: `Conexión exitosa con ${portalLabel}.` });
     } else {
       return reply.send({
-        ok: false,
-        error: "INVALID_CREDENTIALS",
-        message: error ?? "Credenciales inválidas o portal no disponible.",
+        ok: false, error: "INVALID_CREDENTIALS",
+        message: error ?? `Credenciales inválidas o portal ${portalLabel} no disponible.`,
       });
     }
   });
@@ -151,15 +192,17 @@ export async function registerPortalRoutes(app: FastifyInstance) {
     const user = requireAuth(request);
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
-    // Verificar que tiene credenciales
-    const cred = await prisma.portalCredential.findUnique({
-      where: { tenantId_portal: { tenantId: user.tenantId, portal: "mev_misiones" } },
+    const creds = await prisma.portalCredential.findMany({
+      where: { tenantId: user.tenantId, isActive: true },
     });
-    if (!cred) return reply.status(400).send({ ok: false, error: "NO_CREDENTIALS", message: "Configurá primero tus credenciales del portal MEV." });
-    if (!cred.isActive) return reply.status(400).send({ ok: false, error: "CREDENTIALS_INACTIVE" });
+    if (creds.length === 0) {
+      return reply.status(400).send({
+        ok: false, error: "NO_CREDENTIALS",
+        message: "Configurá primero las credenciales de al menos un portal judicial.",
+      });
+    }
 
-    // Responder inmediatamente, sync en background
-    reply.status(202).send({ ok: true, message: "Sincronización iniciada en background." });
+    reply.status(202).send({ ok: true, message: `Sincronización iniciada (${creds.length} portal${creds.length !== 1 ? "es" : ""}).` });
 
     setImmediate(async () => {
       try {
@@ -175,18 +218,19 @@ export async function registerPortalRoutes(app: FastifyInstance) {
     const user = requireAuth(request);
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
-    const q = request.query as { limit?: string };
+    const q = request.query as { limit?: string; portal?: string };
     const limit = Math.min(50, parseInt(q.limit ?? "20"));
+    const where: any = { tenantId: user.tenantId };
+    if (q.portal) where.portal = q.portal;
 
     const logs = await prisma.portalSyncLog.findMany({
-      where:   { tenantId: user.tenantId, portal: "mev_misiones" },
+      where,
       orderBy: { startedAt: "desc" },
       take:    limit,
       select:  {
-        id: true, status: true, trigger: true,
+        id: true, portal: true, status: true, trigger: true,
         startedAt: true, finishedAt: true,
-        expedientesChecked: true, expedientesUpdated: true,
-        errorMessage: true,
+        expedientesChecked: true, expedientesUpdated: true, errorMessage: true,
       },
     });
 
@@ -211,11 +255,10 @@ export async function registerPortalRoutes(app: FastifyInstance) {
       prisma.expediente.findMany({
         where,
         orderBy: [{ portalNewActivity: "desc" }, { updatedAt: "desc" }],
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip:    (page - 1) * pageSize,
+        take:    pageSize,
         select: {
-          id: true, number: true, title: true, matter: true, status: true,
-          court: true,
+          id: true, number: true, title: true, matter: true, status: true, court: true,
           portalSyncEnabled: true, portalId: true, portalStatus: true,
           portalLastSync: true, portalLastMovimiento: true,
           portalMovimientoAt: true, portalNewActivity: true,
@@ -232,17 +275,13 @@ export async function registerPortalRoutes(app: FastifyInstance) {
     const user = requireAuth(request);
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
-    const { id } = request.params as { id: string };
+    const { id }     = request.params as { id: string };
     const { enabled } = request.body as { enabled: boolean };
 
     const exp = await prisma.expediente.findFirst({ where: { id, tenantId: user.tenantId } });
     if (!exp) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
 
-    await prisma.expediente.update({
-      where: { id },
-      data:  { portalSyncEnabled: Boolean(enabled) },
-    });
-
+    await prisma.expediente.update({ where: { id }, data: { portalSyncEnabled: Boolean(enabled) } });
     return reply.send({ ok: true, portalSyncEnabled: Boolean(enabled) });
   });
 

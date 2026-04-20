@@ -22,6 +22,7 @@ import {
   FileSpreadsheet,
   Swords,
   Globe,
+  Scale,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { useDeadlines } from "@/app/lib/contexts/DeadlineContext";
@@ -59,6 +60,14 @@ const dokiItems = [
     label: "Doku Estratega",
     icon: Swords,
     href: "/estrategia",
+    disabled: false,
+    badge: null,
+  },
+  {
+    id: "doku-juris",
+    label: "Doku Juris",
+    icon: Scale,
+    href: "/juris",
     disabled: false,
     badge: null,
   },
