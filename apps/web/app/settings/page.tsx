@@ -49,6 +49,8 @@ interface NotificationPreferencesData {
   emailNotifications: boolean;
   securityAlerts: boolean;
   productUpdates: boolean;
+  vencimientoAlerts: boolean;
+  portalActivityEmails: boolean;
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -75,6 +77,8 @@ export default function SettingsPage() {
     emailNotifications: true,
     securityAlerts: true,
     productUpdates: false,
+    vencimientoAlerts: true,
+    portalActivityEmails: true,
   });
 
   const [hasChanges, setHasChanges] = useState(false);
@@ -120,9 +124,11 @@ export default function SettingsPage() {
       };
 
       const initialNotifications: NotificationPreferencesData = {
-        emailNotifications: profile.notificationPreferences.emailNotifications ?? true,
-        securityAlerts: profile.notificationPreferences.securityAlerts ?? true,
-        productUpdates: profile.notificationPreferences.productUpdates ?? false,
+        emailNotifications:  profile.notificationPreferences.emailNotifications  ?? true,
+        securityAlerts:      profile.notificationPreferences.securityAlerts      ?? true,
+        productUpdates:      profile.notificationPreferences.productUpdates      ?? false,
+        vencimientoAlerts:   profile.notificationPreferences.vencimientoAlerts   ?? true,
+        portalActivityEmails: profile.notificationPreferences.portalActivityEmails ?? true,
       };
 
       setProfileData(initialProfile);
@@ -168,7 +174,7 @@ export default function SettingsPage() {
         setProfileData(fallbackProfile);
         setInitialData({
           profile: fallbackProfile,
-          notifications: { emailNotifications: true, securityAlerts: true, productUpdates: false },
+          notifications: { emailNotifications: true, securityAlerts: true, productUpdates: false, vencimientoAlerts: true, portalActivityEmails: true },
         });
         setLoadError("No pudimos cargar tu perfil completo. Algunos datos pueden estar desactualizados.");
       } else {
@@ -200,9 +206,11 @@ export default function SettingsPage() {
         profileData.professionalRole !== initialData.profile.professionalRole;
 
       const notificationsChanged =
-        notificationPreferences.emailNotifications !== initialData.notifications.emailNotifications ||
-        notificationPreferences.securityAlerts !== initialData.notifications.securityAlerts ||
-        notificationPreferences.productUpdates !== initialData.notifications.productUpdates;
+        notificationPreferences.emailNotifications   !== initialData.notifications.emailNotifications   ||
+        notificationPreferences.securityAlerts       !== initialData.notifications.securityAlerts       ||
+        notificationPreferences.productUpdates       !== initialData.notifications.productUpdates       ||
+        notificationPreferences.vencimientoAlerts    !== initialData.notifications.vencimientoAlerts    ||
+        notificationPreferences.portalActivityEmails !== initialData.notifications.portalActivityEmails;
 
       setHasChanges(profileChanged || notificationsChanged);
     }
@@ -273,9 +281,11 @@ export default function SettingsPage() {
           professionalRole: profileData.professionalRole || null,
         },
         notificationPreferences: {
-          emailNotifications: notificationPreferences.emailNotifications,
-          securityAlerts: notificationPreferences.securityAlerts,
-          productUpdates: notificationPreferences.productUpdates,
+          emailNotifications:  notificationPreferences.emailNotifications,
+          securityAlerts:      notificationPreferences.securityAlerts,
+          productUpdates:      notificationPreferences.productUpdates,
+          vencimientoAlerts:   notificationPreferences.vencimientoAlerts,
+          portalActivityEmails: notificationPreferences.portalActivityEmails,
         },
       });
 
@@ -290,9 +300,11 @@ export default function SettingsPage() {
         professionalRole: updatedProfile.professionalRole || "",
       };
       const updatedNotifications: NotificationPreferencesData = {
-        emailNotifications: updatedProfile.notificationPreferences.emailNotifications,
-        securityAlerts: updatedProfile.notificationPreferences.securityAlerts,
-        productUpdates: updatedProfile.notificationPreferences.productUpdates,
+        emailNotifications:  updatedProfile.notificationPreferences.emailNotifications  ?? true,
+        securityAlerts:      updatedProfile.notificationPreferences.securityAlerts      ?? true,
+        productUpdates:      updatedProfile.notificationPreferences.productUpdates      ?? false,
+        vencimientoAlerts:   updatedProfile.notificationPreferences.vencimientoAlerts   ?? true,
+        portalActivityEmails: updatedProfile.notificationPreferences.portalActivityEmails ?? true,
       };
 
       setProfileData(updatedProfileData);

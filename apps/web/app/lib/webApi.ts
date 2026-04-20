@@ -451,6 +451,8 @@ export interface UserProfile {
     emailNotifications: boolean;
     securityAlerts: boolean;
     productUpdates: boolean;
+    vencimientoAlerts?: boolean;
+    portalActivityEmails?: boolean;
   };
 }
 
@@ -478,6 +480,8 @@ export interface UpdateProfileData {
     emailNotifications?: boolean;
     securityAlerts?: boolean;
     productUpdates?: boolean;
+    vencimientoAlerts?: boolean;
+    portalActivityEmails?: boolean;
   };
 }
 

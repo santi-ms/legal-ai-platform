@@ -28,6 +28,8 @@ import { registerPortalRoutes } from "./routes.portal.js";
 import { registerClientPortalRoutes } from "./routes.client-portal.js";
 import { initializeDocumentRegistry } from "./modules/documents/domain/document-registry.js";
 import { runDeadlineNotifier } from "./services/deadline-notifier.js";
+import { runVencimientoNotifier } from "./services/vencimiento-notifier.js";
+import { runPortalActivityNotifier } from "./services/portal-activity-notifier.js";
 import { syncAllTenants } from "./services/portal-sync-service.js";
 import { logger } from "./utils/logger.js";
 
@@ -156,6 +158,18 @@ cron.schedule(
 );
 logger.info("[cron] Notificador de vencimientos programado: todos los días a las 8:00 AM (AR)");
 
+// Notificaciones del módulo Vencimientos — diariamente a las 8:15 AM (AR)
+// (ligeramente después del de expedientes para no saturar el servidor)
+cron.schedule(
+  "15 8 * * *",
+  async () => {
+    logger.info("[cron] Ejecutando notificador de vencimientos (módulo Vencimientos)...");
+    await runVencimientoNotifier();
+  },
+  { timezone: "America/Argentina/Buenos_Aires" }
+);
+logger.info("[cron] Notificador Vencimientos programado: todos los días a las 8:15 AM (AR)");
+
 // Sincronización portal MEV Misiones — 3 veces por día en horario laboral (7, 13, 19 hs AR)
 cron.schedule(
   "0 7,13,19 * * 1-5",
@@ -166,3 +180,14 @@ cron.schedule(
   { timezone: "America/Argentina/Buenos_Aires" }
 );
 logger.info("[cron] Portal sync MEV programado: L-V a las 7:00, 13:00 y 19:00 hs (AR)");
+
+// Notificaciones de actividad del portal — 30 min después de cada sync (7:30, 13:30, 19:30 AR)
+cron.schedule(
+  "30 7,13,19 * * 1-5",
+  async () => {
+    logger.info("[cron] Ejecutando notificador de actividad de portal...");
+    await runPortalActivityNotifier();
+  },
+  { timezone: "America/Argentina/Buenos_Aires" }
+);
+logger.info("[cron] Notificador portal programado: L-V a las 7:30, 13:30 y 19:30 hs (AR)");
