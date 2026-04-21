@@ -335,7 +335,7 @@ const AgendaRow = React.memo(function AgendaRow({
   onComplete: (vencimientoId: string, itemId: string) => void;
 }) {
   const Icon = item.icon;
-  const isVenc = item.kind === "vencimiento" && item.vencimientoId;
+  const isVenc = item.kind === "vencimiento" && !!item.vencimientoId;
   const isCompleting = isVenc && completing.has(item.vencimientoId!);
 
   return (
