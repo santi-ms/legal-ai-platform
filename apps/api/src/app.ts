@@ -11,6 +11,7 @@ import fastifyCors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import helmet from "@fastify/helmet";
 import multipart from "@fastify/multipart";
+import crypto from "node:crypto";
 
 import { registerDocumentRoutes } from "./routes.documents.js";
 import { registerAuthRoutes } from "./routes.auth.js";
@@ -59,7 +60,25 @@ export async function buildServer(opts: BuildServerOptions = {}): Promise<Fastif
   initializeDocumentRegistry();
   logger.info("[server] Document registry initialized");
 
-  const app = Fastify({ logger: opts.logger ?? true });
+  const app = Fastify({
+    logger: opts.logger ?? true,
+    genReqId: (req) => (req.headers["x-request-id"] as string) || crypto.randomUUID(),
+    disableRequestLogging: false,
+  });
+
+  // ── Structured log context (tenantId/userId/requestId) ────────────────────
+  app.addHook("onRequest", async (request, reply) => {
+    reply.header("x-request-id", request.id);
+  });
+  app.addHook("preHandler", async (request) => {
+    const user = (request as any).user;
+    if (user?.tenantId || user?.userId) {
+      (request as any).log = request.log.child({
+        tenantId: user.tenantId ?? null,
+        userId:   user.userId ?? null,
+      });
+    }
+  });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await app.register(multipart as any, { limits: { fileSize: 10 * 1024 * 1024 } });
@@ -73,6 +92,31 @@ export async function buildServer(opts: BuildServerOptions = {}): Promise<Fastif
 
   await app.register(helmet, {
     crossOriginResourcePolicy: { policy: "cross-origin" },
+    // HSTS: 1y + subdomains + preload. Solo aplica sobre https (helmet lo maneja).
+    strictTransportSecurity: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
+    // CSP endurecido — API-only, no debería servir HTML/scripts inline.
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'none'"],
+        baseUri: ["'none'"],
+        frameAncestors: ["'none'"],
+        formAction: ["'none'"],
+        connectSrc: ["'self'"],
+        imgSrc: ["'self'", "data:"],
+        // Swagger UI necesita unsafe-inline para su loader — condicionado al flag
+        scriptSrc: process.env.ENABLE_SWAGGER === "true"
+          ? ["'self'", "'unsafe-inline'"]
+          : ["'none'"],
+        styleSrc: process.env.ENABLE_SWAGGER === "true"
+          ? ["'self'", "'unsafe-inline'"]
+          : ["'none'"],
+      },
+    },
+    referrerPolicy: { policy: "no-referrer" },
   });
 
   await app.register(rateLimit, {
@@ -135,78 +179,130 @@ export async function buildServer(opts: BuildServerOptions = {}): Promise<Fastif
   });
 
   app.setErrorHandler(async (error, request, reply) => {
+    const requestId = request.id;
+    const user = (request as any).user;
+    const logCtx = {
+      requestId,
+      url: request.url,
+      method: request.method,
+      tenantId: user?.tenantId ?? null,
+      userId: user?.userId ?? null,
+    };
+
     if (process.env.SENTRY_DSN) {
       try {
         const Sentry = await import("@sentry/node");
-        Sentry.captureException(error, {
-          extra: {
-            url: request.url,
-            method: request.method,
-            tenantId: (request as any).user?.tenantId,
-          },
-        });
+        Sentry.captureException(error, { extra: logCtx });
       } catch {
         // Sentry no instalado / import falló — ignorar.
       }
     }
 
+    // Errores de negocio controlados — respuesta completa.
     if (error instanceof AppError) {
       return reply.code(error.statusCode).send({
         ok: false,
         error: error.message,
         code: error.code,
+        requestId,
       });
     }
 
+    // Validación (Fastify/ajv o zod via schemaErrorFormatter).
     if ((error as any).validation) {
       return reply.code(400).send({
         ok: false,
         error: "Datos inválidos",
+        code: "VALIDATION_ERROR",
         details: (error as any).validation,
+        requestId,
       });
     }
 
-    if ((error as any).code === "P2025") {
-      return reply.code(404).send({ ok: false, error: "Recurso no encontrado" });
+    // Prisma — traducción a HTTP sin exponer el código ni el mensaje interno.
+    const prismaCode = (error as any).code;
+    if (prismaCode === "P2025") {
+      return reply.code(404).send({
+        ok: false, error: "Recurso no encontrado", code: "NOT_FOUND", requestId,
+      });
     }
-    if ((error as any).code === "P2002") {
-      return reply.code(409).send({ ok: false, error: "Ya existe un registro con esos datos" });
+    if (prismaCode === "P2002") {
+      return reply.code(409).send({
+        ok: false, error: "Ya existe un registro con esos datos", code: "CONFLICT", requestId,
+      });
+    }
+    if (prismaCode === "P2003") {
+      return reply.code(409).send({
+        ok: false, error: "Referencia inválida", code: "FK_CONSTRAINT", requestId,
+      });
     }
 
-    logger.error("Unhandled error", { error: error.message, stack: error.stack, url: request.url });
-    return reply.code(500).send({ ok: false, error: "Error interno del servidor" });
+    // Errores HTTP nativos de Fastify (statusCode setted) — usar su statusCode.
+    const status = (error as any).statusCode;
+    if (typeof status === "number" && status >= 400 && status < 500) {
+      return reply.code(status).send({
+        ok: false,
+        error: (error as any).message || "Solicitud inválida",
+        code: (error as any).code || "CLIENT_ERROR",
+        requestId,
+      });
+    }
+
+    // 500: loggear con contexto estructurado, NO devolver stack ni mensaje crudo.
+    request.log.error({ ...logCtx, err: { message: error.message, stack: error.stack } },
+      "Unhandled error");
+    return reply.code(500).send({
+      ok: false,
+      error: "Error interno del servidor",
+      code: "INTERNAL_ERROR",
+      requestId,
+    });
   });
 
+  // Rate limits por tenant, granulares por endpoint de IA.
+  // Niveles: generación full-document es la operación más costosa,
+  // chat y análisis son intermedios, el resto de IA (resumen, preguntas) es barato.
+  const aiBuckets: Array<{ match: (url: string) => boolean; limit: number; bucket: string }> = [
+    { match: (u) => u.includes("/documents/generate"), limit: 10, bucket: "ai:gen" },
+    { match: (u) => u.includes("/documents/chat"),     limit: 30, bucket: "ai:chat" },
+    { match: (u) => u.includes("/analysis"),           limit: 20, bucket: "ai:ana" },
+    { match: (u) => u.includes("/estrategia"),         limit: 20, bucket: "ai:est" },
+  ];
+
   app.addHook("preHandler", async (request, reply) => {
-    const aiPaths = ["/documents/generate", "/chat", "/analysis", "/estrategia"];
-    const isAiPath = aiPaths.some((p) => request.url.includes(p));
-    if (!isAiPath) return;
+    const bucketDef = aiBuckets.find((b) => b.match(request.url));
+    if (!bucketDef) return;
 
     const user = (request as any).user;
     if (!user?.tenantId) return;
 
-    const key = `ai:${user.tenantId}`;
+    const key = `${bucketDef.bucket}:${user.tenantId}`;
     const now = Date.now();
     const window = 60 * 1000;
 
-    if (!aiRequestCounts.has(key)) {
+    const entry = aiRequestCounts.get(key);
+    if (!entry || now > entry.resetAt) {
       aiRequestCounts.set(key, { count: 1, resetAt: now + window });
       return;
     }
 
-    const entry = aiRequestCounts.get(key)!;
-    if (now > entry.resetAt) {
-      entry.count = 1;
-      entry.resetAt = now + window;
-      return;
-    }
-
     entry.count++;
-    if (entry.count > 30) {
+    if (entry.count > bucketDef.limit) {
+      const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+      reply.header("retry-after", String(retryAfter));
+      request.log.warn({
+        bucket: bucketDef.bucket,
+        tenantId: user.tenantId,
+        userId: user.userId,
+        count: entry.count,
+        limit: bucketDef.limit,
+      }, "AI rate limit exceeded");
       return reply.code(429).send({
         ok: false,
         error: "Demasiadas solicitudes al asistente IA. Esperá un momento.",
-        retryAfter: Math.ceil((entry.resetAt - now) / 1000),
+        code: "AI_RATE_LIMIT",
+        retryAfter,
+        requestId: request.id,
       });
     }
   });
