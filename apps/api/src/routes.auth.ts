@@ -165,13 +165,11 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       return request.ip;
     },
     skipOnError: false,
-    errorResponseBuilder: (request, context) => {
-      return sendError(
-        request,
-        429,
-        "Demasiados intentos. Por favor espera 5 minutos.",
-      );
-    },
+    errorResponseBuilder: (_request, _context) => ({
+      ok: false,
+      message: "Demasiados intentos. Por favor espera 5 minutos.",
+      error: "too_many_attempts",
+    }),
   });
 
   // POST /api/register - Registro pendiente hasta verificar OTP por email
