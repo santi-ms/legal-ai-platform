@@ -1864,7 +1864,11 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       if (!content) return reply.status(400).send({ ok: false, error: "NO_CONTENT" });
 
       const Anthropic = (await import("@anthropic-ai/sdk")).default;
-      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+      const anthropic = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+        timeout: 30_000,
+        maxRetries: 2,
+      });
 
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-6",
@@ -1941,7 +1945,11 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       if (!content) return reply.status(400).send({ ok: false, error: "NO_CONTENT" });
 
       const Anthropic = (await import("@anthropic-ai/sdk")).default;
-      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+      const anthropic = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+        timeout: 30_000,
+        maxRetries: 2,
+      });
 
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-6",

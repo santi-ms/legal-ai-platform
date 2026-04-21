@@ -37,6 +37,8 @@ import { prisma } from "../../../db.js";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
+  timeout: 45_000,
+  maxRetries: 2,
 });
 
 // ---------------------------------------------------------------------------

@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { createPrismaAuthAdapter } from "@/lib/auth/prisma-adapter";
 import { loadCanonicalUser, reconcileGoogleAccount } from "@/lib/auth/google-auth";
+import { getAuthSecret } from "@/app/lib/auth-secret";
 
 function getBaseUrl() {
   if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
@@ -236,5 +237,5 @@ export const authOptions: NextAuthOptions = {
       },
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || "dev-secret-change-in-production",
+  secret: getAuthSecret(),
 };

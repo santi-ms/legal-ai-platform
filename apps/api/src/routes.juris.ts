@@ -26,7 +26,11 @@ import { logger } from "./utils/logger.js";
 import { randomUUID } from "node:crypto";
 import { findRelevantArticles, formatRagContext } from "./services/rag-service.js";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  timeout: 30_000,
+  maxRetries: 2,
+});
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 

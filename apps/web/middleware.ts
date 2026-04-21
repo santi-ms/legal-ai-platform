@@ -56,9 +56,23 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // Resolver NEXTAUTH_SECRET con fail-fast en producción.
+  // No se importa el helper (edge runtime no acepta imports arbitrarios
+  // desde paths alias en algunos builds) — replicamos la lógica acá.
+  const rawSecret = process.env.NEXTAUTH_SECRET;
+  const isDevSecret = !rawSecret || rawSecret.startsWith("dev-");
+  if (isDevSecret && process.env.NODE_ENV === "production") {
+    // En prod sin secret → denegar acceso en vez de forjar tokens con fallback público.
+    const url = req.nextUrl.clone();
+    url.pathname = "/auth/login";
+    url.searchParams.set("error", "auth_misconfigured");
+    return NextResponse.redirect(url);
+  }
+  const secret = isDevSecret ? "dev-secret-change-in-production" : rawSecret!;
+
   const token = await getToken({
     req,
-    secret: process.env.NEXTAUTH_SECRET || "dev-secret-change-in-production",
+    secret,
   });
 
   if (!token?.sub) {

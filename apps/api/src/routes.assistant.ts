@@ -18,7 +18,11 @@ import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "./db.js";
 import { requireAuth } from "./utils/auth.js";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  timeout: 30_000,
+  maxRetries: 2,
+});
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 

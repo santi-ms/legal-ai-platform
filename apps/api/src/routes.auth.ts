@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { createHash, randomInt } from "crypto";
+import { createHash, randomInt, timingSafeEqual } from "crypto";
 import { sanitizeInput } from "./utils/sanitize.js";
 import { prisma } from "./db.js";
 import { z } from "zod";
@@ -47,12 +47,20 @@ function safeLog(obj: any) {
 }
 
 function getEmailVerificationPepper() {
-  return (
+  const pepper =
     process.env.EMAIL_VERIFICATION_PEPPER ||
     process.env.JWT_SECRET ||
-    process.env.NEXTAUTH_SECRET ||
-    "dev-email-verification-pepper"
-  );
+    process.env.NEXTAUTH_SECRET;
+
+  if (!pepper || pepper.startsWith("dev-")) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "EMAIL_VERIFICATION_PEPPER / JWT_SECRET / NEXTAUTH_SECRET must be set to a non-dev value in production",
+      );
+    }
+    return "dev-email-verification-pepper";
+  }
+  return pepper;
 }
 
 function normalizeEmail(email: string) {
@@ -611,7 +619,15 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       }
 
       const incomingHash = hashVerificationCode(user.id, code);
-      if (incomingHash !== user.emailVerificationCodeHash) {
+      const storedHash = user.emailVerificationCodeHash ?? "";
+      const a = Buffer.from(incomingHash, "hex");
+      const b = Buffer.from(storedHash, "hex");
+      const hashMismatch =
+        a.length === 0 ||
+        b.length === 0 ||
+        a.length !== b.length ||
+        !timingSafeEqual(a, b);
+      if (hashMismatch) {
         const nextAttempts = user.emailVerificationAttempts + 1;
         const lockVerification = nextAttempts >= EMAIL_VERIFICATION_MAX_ATTEMPTS;
 
@@ -962,7 +978,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 
   // POST /api/auth/reset/confirm - Confirmar reset de contraseña
   type ResetConfBody = z.infer<typeof resetConfirmSchema>;
-  app.post<{ Body: ResetConfBody }>("/api/auth/reset/confirm", async (request, reply) => {
+  app.post<{ Body: ResetConfBody }>("/api/auth/reset/confirm", { config: sensitiveRateLimit }, async (request, reply) => {
     try {
       const { token, password } = resetConfirmSchema.parse(request.body);
 
@@ -1037,8 +1053,33 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     }
   });
 
-  // GET /api/_diagnostics/auth - Endpoint de diagnóstico para auth
+  // ──────────────────────────────────────────────────────────────────────────
+  // Endpoints de diagnóstico — SÓLO development
+  // ──────────────────────────────────────────────────────────────────────────
+  // En producción se devuelve 404 para no revelar su existencia.
+  // En dev requieren también un header `x-diag-token` que coincida con DIAG_TOKEN
+  // (si está seteado) para evitar que un navegante accidental lo golpee.
+  const IS_PRODUCTION = process.env.NODE_ENV === "production";
+  const DIAG_TOKEN = process.env.DIAG_TOKEN;
+
+  function diagGate(request: FastifyRequest, reply: FastifyReply): boolean {
+    if (IS_PRODUCTION) {
+      reply.status(404).send({ ok: false });
+      return false;
+    }
+    if (DIAG_TOKEN) {
+      const provided = request.headers["x-diag-token"];
+      if (provided !== DIAG_TOKEN) {
+        reply.status(404).send({ ok: false });
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // GET /api/_diagnostics/auth - Endpoint de diagnóstico para auth (dev-only)
   app.get("/api/_diagnostics/auth", async (request, reply) => {
+    if (!diagGate(request, reply)) return;
     try {
       const one = await prisma.user.findFirst({
         select: {
@@ -1047,7 +1088,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           role: true,
           tenantId: true,
           emailVerified: true,
-          passwordHash: true,
+          // ⚠ NO seleccionar passwordHash — evita leak incluso en dev
         },
       });
       return reply.send({
@@ -1060,7 +1101,6 @@ export async function registerAuthRoutes(app: FastifyInstance) {
               role: one.role,
               tenantId: one.tenantId,
               emailVerified: !!one.emailVerified,
-              hasPasswordHash: !!one.passwordHash,
             }
           : null,
       });
@@ -1074,13 +1114,14 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     }
   });
 
-  // GET /api/_diagnostics/prisma-user - Endpoint de diagnóstico de Prisma User
+  // GET /api/_diagnostics/prisma-user - Endpoint de diagnóstico de Prisma User (dev-only)
   app.get("/api/_diagnostics/prisma-user", async (request, reply) => {
+    if (!diagGate(request, reply)) return;
     try {
       const columnsUsers = await prisma.$queryRawUnsafe<any[]>(
-        `SELECT column_name, data_type 
-         FROM information_schema.columns 
-         WHERE table_schema = 'public' AND table_name IN ('users','User') 
+        `SELECT column_name, data_type
+         FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name IN ('users','User')
          ORDER BY column_name`
       );
       let sample: any = null;
