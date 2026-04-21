@@ -225,7 +225,7 @@ export function DashboardSidebar({ isOpen = false, onClose }: DashboardSidebarPr
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 space-y-1 overflow-y-auto sidebar-scroll">
+      <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
 
         {/* ── Asistentes IA ─────────────────────────────────── */}
         <div className="pt-2 pb-1 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">

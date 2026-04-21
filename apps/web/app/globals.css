@@ -7,6 +7,50 @@
     --primary: #2b3bee;
     --background-light: #f6f6f8;
     --background-dark: #101222;
+
+    /* Scrollbar tokens — light mode */
+    --scrollbar-thumb: rgba(148, 163, 184, 0.35);   /* slate-400/35 */
+    --scrollbar-thumb-hover: rgba(148, 163, 184, 0.6);
+    --scrollbar-track: transparent;
+  }
+
+  .dark {
+    /* Scrollbar tokens — dark mode */
+    --scrollbar-thumb: rgba(255, 255, 255, 0.12);
+    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+    --scrollbar-track: transparent;
+  }
+
+  /* ── Global slim scrollbar ───────────────────────────
+     Applies to every scrollable element automatically.
+     Firefox: scrollbar-width + scrollbar-color.
+     Webkit: ::-webkit-scrollbar-* pseudo-elements.
+  ──────────────────────────────────────────────────── */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  *::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 99px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
   }
 
   /* Color de texto base — evita texto negro sobre fondo oscuro en dark mode */
@@ -188,41 +232,6 @@
     background: rgba(16, 185, 129, 0.5);
   }
 
-  /* Sidebar scrollbar — thin, subtle, theme-aware */
-  .sidebar-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(148, 163, 184, 0.25) transparent; /* light mode */
-  }
-
-  .sidebar-scroll::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .sidebar-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .sidebar-scroll::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.25); /* slate-400/25 — light mode */
-    border-radius: 99px;
-  }
-
-  .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(148, 163, 184, 0.45);
-  }
-
-  /* Dark mode overrides */
-  .dark .sidebar-scroll {
-    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
-  }
-
-  .dark .sidebar-scroll::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.12);
-  }
-
-  .dark .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.22);
-  }
 }
 
 /* Efectos para modales y overlays */
