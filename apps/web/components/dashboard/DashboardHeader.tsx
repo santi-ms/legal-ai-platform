@@ -20,7 +20,7 @@ export function DashboardHeader({ onMenuToggle, onSearchOpen }: DashboardHeaderP
 
   // ── Header ────────────────────────────────────────────────────────────────
   return (
-    <header className="h-[72px] border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10 px-4 md:px-8 flex items-center justify-between gap-3">
+    <header className="h-20 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10 px-4 md:px-8 flex items-center justify-between gap-3">
       {/* Hamburger — solo mobile */}
       <button
         className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex-shrink-0"
