@@ -20,7 +20,11 @@
     "test:job-queue": "tsx scripts/test-job-queue.ts",
     "test:webhook-mp": "tsx scripts/test-webhook-mp.ts",
     "dev:test": "SKIP_AI_ENHANCEMENT=true tsx src/server.ts",
-    "fix:user-profile": "tsx scripts/apply-user-profile-migration.ts"
+    "fix:user-profile": "tsx scripts/apply-user-profile-migration.ts",
+    "test:db:bootstrap": "node --import tsx test/helpers/bootstrap-schema.ts",
+    "test:db:migrate": "node --import tsx test/helpers/run-migrations.ts",
+    "test:e2e": "node --import tsx --test test/suites/*.test.ts",
+    "e2e:api": "npm run test:db:bootstrap && npm run prisma:generate && npm run test:db:migrate && npm run test:e2e"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
