@@ -17,7 +17,6 @@ import {
   BookMarked,
   ScanSearch,
   PenLine,
-  MessageSquare,
   DollarSign,
   FileSpreadsheet,
   Swords,
@@ -45,14 +44,6 @@ const dokiItems = [
     label: "Doku Analiza",
     icon: ScanSearch,
     href: "/analysis",
-    disabled: false,
-    badge: null,
-  },
-  {
-    id: "doku-consulta",
-    label: "Doku Consulta",
-    icon: MessageSquare,
-    href: "/documents",
     disabled: false,
     badge: null,
   },
@@ -236,8 +227,6 @@ export function DashboardSidebar({ isOpen = false, onClose }: DashboardSidebarPr
           const isActive =
             item.href === "/documents/new"
               ? pathname?.startsWith("/documents/new")
-              : item.href === "/documents"
-              ? false // Doku Consulta no se marca activo (comparte ruta con Mis Documentos)
               : pathname === item.href || pathname?.startsWith(item.href + "/");
 
           return (

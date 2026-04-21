@@ -381,14 +381,14 @@ function ExpedienteRow({ exp, onToggle, onDismiss }: {
         onClick={handleToggle}
         disabled={toggling}
         className={cn(
-          "flex-shrink-0 mt-0.5 w-9 h-5 rounded-full transition-colors relative",
+          "flex-shrink-0 mt-0.5 w-9 h-5 rounded-full transition-colors relative overflow-hidden",
           exp.portalSyncEnabled ? "bg-violet-500" : "bg-slate-300 dark:bg-slate-600"
         )}
         title={exp.portalSyncEnabled ? "Desactivar sync" : "Activar sync"}
       >
         <span className={cn(
-          "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform",
-          exp.portalSyncEnabled ? "translate-x-4" : "translate-x-0.5"
+          "absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform",
+          exp.portalSyncEnabled ? "translate-x-4" : "translate-x-0"
         )} />
       </button>
 
