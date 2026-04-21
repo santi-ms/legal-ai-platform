@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { LandingPage } from "@/components/landing/LandingPage";
+import { SITE, absoluteUrl } from "@/app/lib/site";
 
 // ─── FAQ Schema (rich results en Google) ─────────────────────────────────────
+// Las mismas preguntas se renderizan visibles en <FAQ /> para que el contenido
+// exista en el DOM y Google no lo considere solo structured data huérfano.
 
 const faqSchema = {
   "@context": "https://schema.org",
@@ -44,7 +47,7 @@ const faqSchema = {
       name: "¿Mis datos están seguros?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Sí. Toda la información está encriptada y almacenada de forma segura. No compartimos ni usamos tus datos para entrenar modelos de inteligencia artificial.",
+        text: "Sí. Toda la información está encriptada en tránsito (TLS) y en reposo. Los documentos que subís a DocuLex no se usan para entrenar modelos de IA. Operamos bajo la Ley 25.326 de Protección de Datos Personales de Argentina.",
       },
     },
     {
@@ -52,7 +55,7 @@ const faqSchema = {
       name: "¿Tiene algún costo usar DocuLex?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "DocuLex tiene un plan gratuito para explorar la plataforma. Para uso profesional ilimitado, los planes de pago arrancan desde USD 29/mes para abogados independientes y USD 89/mes para estudios jurídicos.",
+        text: "DocuLex tiene un plan gratuito para explorar la plataforma (5 documentos/mes). Los planes pagos arrancan desde $24.999/mes para abogados independientes y tenemos un plan Estudio para equipos jurídicos.",
       },
     },
   ],
@@ -60,10 +63,13 @@ const faqSchema = {
 
 // ─── Home-specific metadata (overrides root default) ─────────────────────────
 
+const pageTitle = "Generá Documentos Legales con IA | DocuLex";
+const pageDesc =
+  "Creá contratos, NDAs, cartas documento y escrituras con validez jurídica en Argentina usando IA. Para abogados, estudios jurídicos y pymes. Empezá gratis.";
+
 export const metadata: Metadata = {
-  title: "Generá Documentos Legales con IA | DocuLex",
-  description:
-    "Creá contratos, NDAs, cartas documento y escrituras con validez jurídica en Argentina usando IA. Para abogados, estudios jurídicos y pymes. Empezá gratis.",
+  title: pageTitle,
+  description: pageDesc,
   keywords: [
     "generador de contratos Argentina",
     "documentos legales con IA",
@@ -79,25 +85,25 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     type: "website",
-    locale: "es_AR",
-    url: "https://doculex.com.ar",
-    title: "Generá Documentos Legales con IA | DocuLex",
-    description:
-      "Creá contratos, NDAs, cartas documento y más en minutos. Plataforma legal SaaS para abogados y estudios jurídicos en Argentina.",
-    siteName: "DocuLex",
+    locale: SITE.locale,
+    url: absoluteUrl("/"),
+    title: pageTitle,
+    description: pageDesc,
+    siteName: SITE.name,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Generá Documentos Legales con IA | DocuLex",
-    description:
-      "Creá contratos, NDAs, cartas documento y más en minutos. Para abogados, estudios y pymes en Argentina.",
+    title: pageTitle,
+    description: pageDesc,
   },
   alternates: {
-    canonical: "https://doculex.vercel.app",
+    canonical: absoluteUrl("/"),
   },
 };
 
-// Server Component — puede renderizar Client Components hijos sin problema.
+// Server Component — renderiza el shell estático completo. Solo los bits
+// interactivos (Navbar mobile menu, Hero demo modal, FAQ accordion,
+// ContactForm) se cargan como Client Components anidados.
 export default function HomePage() {
   return (
     <>

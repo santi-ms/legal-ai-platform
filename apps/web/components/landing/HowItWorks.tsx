@@ -1,5 +1,3 @@
-"use client";
-
 import { BookOpen, Brain, Download } from "lucide-react";
 
 const steps = [

@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { PenLine, ScanSearch, MessageSquare, ArrowRight, Check } from "lucide-react";
 import { cn } from "@/app/lib/utils";
@@ -126,7 +124,7 @@ export function Features() {
 
                   <Link
                     href="/auth/register"
-                    className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:text-primary/80 transition-colors"
+                    className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:text-primary/80 transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                   >
                     Probarlo gratis
                     <ArrowRight className="w-4 h-4" />

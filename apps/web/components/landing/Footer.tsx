@@ -1,27 +1,23 @@
-"use client";
-
 import Link from "next/link";
 import { Mail, Globe, MapPin } from "lucide-react";
 import { BrandLogo } from "@/components/ui/BrandLogo";
-
-// Helper para crear mailto links con encoding correcto
-const createMailtoLink = (subject: string) => {
-  const encodedSubject = encodeURIComponent(subject);
-  return `mailto:soporte@legaltech.ar?subject=${encodedSubject}`;
-};
+import { CONTACT, SITE, mailto } from "@/app/lib/site";
 
 const footerLinks = {
   producto: [
-    { name: "Funciones", href: "#funciones", isAnchor: true },
-    { name: "Precios",   href: "#precios",   isAnchor: true },
+    { name: "Funciones", href: "#funciones" },
+    { name: "Precios", href: "#precios" },
+    { name: "Seguridad", href: "#seguridad" },
+    { name: "Preguntas frecuentes", href: "#faq" },
   ],
   compañía: [
-    { name: "Contacto", href: createMailtoLink("Contacto"), isAnchor: false },
+    { name: "Contacto", href: mailto(CONTACT.support, "Contacto — DocuLex") },
+    { name: "Ventas / Estudios", href: "#contacto" },
   ],
   legal: [
-    { name: "Privacidad", href: "/privacidad",        isAnchor: false },
-    { name: "Términos",   href: "/terminos",           isAnchor: false },
-    { name: "Cookies",    href: "/privacidad#cookies", isAnchor: false },
+    { name: "Privacidad", href: "/privacidad" },
+    { name: "Términos", href: "/terminos" },
+    { name: "Cookies", href: "/privacidad#cookies" },
   ],
 };
 
@@ -35,22 +31,23 @@ export function Footer() {
             <BrandLogo size={60} />
           </div>
           <p className="text-slate-500 dark:text-slate-400 max-w-xs mb-8">
-            La nueva era de la abogacía en Argentina. Eficiencia, seguridad y validez jurídica en un solo lugar.
+            La nueva era de la abogacía en Argentina. Eficiencia, seguridad y
+            validez jurídica en un solo lugar.
           </p>
           <div className="flex gap-4">
             <a
-              href="mailto:soporte@legaltech.ar"
-              className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-primary hover:text-white transition-all text-slate-600 dark:text-slate-400"
-              aria-label="Email"
+              href={`mailto:${CONTACT.support}`}
+              className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-primary hover:text-white transition-all text-slate-600 dark:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              aria-label={`Email — ${CONTACT.support}`}
             >
               <Mail className="w-5 h-5" />
             </a>
             <a
-              href="https://legaltech.ar"
+              href={SITE.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-primary hover:text-white transition-all text-slate-600 dark:text-slate-400"
-              aria-label="Website"
+              className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-primary hover:text-white transition-all text-slate-600 dark:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              aria-label="Sitio web"
             >
               <Globe className="w-5 h-5" />
             </a>
@@ -59,32 +56,18 @@ export function Footer() {
 
         {/* Producto */}
         <div>
-          <h4 className="font-bold mb-6 text-slate-900 dark:text-slate-100">Producto</h4>
+          <h4 className="font-bold mb-6 text-slate-900 dark:text-slate-100">
+            Producto
+          </h4>
           <ul className="space-y-4 text-sm text-slate-500 dark:text-slate-400">
             {footerLinks.producto.map((link) => (
               <li key={link.name}>
-                {link.isAnchor ? (
-                  <Link
-                    href={link.href}
-                    className="hover:text-primary transition-colors"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const element = document.querySelector(link.href);
-                      if (element) {
-                        element.scrollIntoView({ behavior: "smooth", block: "start" });
-                      }
-                    }}
-                  >
-                    {link.name}
-                  </Link>
-                ) : (
-                  <a
-                    href={link.href}
-                    className="hover:text-primary transition-colors"
-                  >
-                    {link.name}
-                  </a>
-                )}
+                <a
+                  href={link.href}
+                  className="hover:text-primary transition-colors focus-visible:outline-none focus-visible:text-primary rounded-sm"
+                >
+                  {link.name}
+                </a>
               </li>
             ))}
           </ul>
@@ -92,13 +75,15 @@ export function Footer() {
 
         {/* Compañía */}
         <div>
-          <h4 className="font-bold mb-6 text-slate-900 dark:text-slate-100">Compañía</h4>
+          <h4 className="font-bold mb-6 text-slate-900 dark:text-slate-100">
+            Compañía
+          </h4>
           <ul className="space-y-4 text-sm text-slate-500 dark:text-slate-400">
             {footerLinks.compañía.map((link) => (
               <li key={link.name}>
                 <a
                   href={link.href}
-                  className="hover:text-primary transition-colors"
+                  className="hover:text-primary transition-colors focus-visible:outline-none focus-visible:text-primary rounded-sm"
                 >
                   {link.name}
                 </a>
@@ -109,13 +94,15 @@ export function Footer() {
 
         {/* Legal */}
         <div>
-          <h4 className="font-bold mb-6 text-slate-900 dark:text-slate-100">Legal</h4>
+          <h4 className="font-bold mb-6 text-slate-900 dark:text-slate-100">
+            Legal
+          </h4>
           <ul className="space-y-4 text-sm text-slate-500 dark:text-slate-400">
             {footerLinks.legal.map((link) => (
               <li key={link.name}>
                 <Link
                   href={link.href}
-                  className="hover:text-primary transition-colors"
+                  className="hover:text-primary transition-colors focus-visible:outline-none focus-visible:text-primary rounded-sm"
                 >
                   {link.name}
                 </Link>
@@ -127,13 +114,16 @@ export function Footer() {
 
       {/* Bottom Bar */}
       <div className="max-w-7xl mx-auto mt-20 pt-8 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-400">
-        <p>© 2024 DocuLex. Todos los derechos reservados.</p>
+        <p>
+          © {SITE.launchYear} {SITE.name}. Todos los derechos reservados.
+        </p>
         <div className="flex items-center gap-2">
-          <MapPin className="w-4 h-4" />
-          <span>Buenos Aires, Argentina</span>
+          <MapPin className="w-4 h-4" aria-hidden="true" />
+          <span>
+            {SITE.city}, {SITE.country}
+          </span>
         </div>
       </div>
     </footer>
   );
 }
-

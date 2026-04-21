@@ -1,8 +1,7 @@
-"use client";
-
 import Link from "next/link";
 import { Check, Zap } from "lucide-react";
 import { cn } from "@/app/lib/utils";
+import { CONTACT, mailto } from "@/app/lib/site";
 
 const PLANS = [
   {
@@ -172,12 +171,12 @@ export function Pricing() {
 
               {/* CTA */}
               <Link
-                href={plan.name === "Estudio" ? `mailto:soporte@legaltech.ar?subject=${encodeURIComponent("Consulta Plan Estudio")}` : "/auth/register"}
+                href={plan.name === "Estudio" ? "#contacto" : "/auth/register"}
                 className={cn(
-                  "w-full text-center text-sm font-bold py-2.5 rounded-xl mb-6 transition-all",
+                  "w-full text-center text-sm font-bold py-2.5 rounded-xl mb-6 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
                   plan.highlight
-                    ? "bg-white text-primary hover:bg-white/90"
-                    : "bg-primary text-white hover:bg-primary/90"
+                    ? "bg-white text-primary hover:bg-white/90 focus-visible:ring-white focus-visible:ring-offset-primary"
+                    : "bg-primary text-white hover:bg-primary/90 focus-visible:ring-primary"
                 )}
               >
                 {plan.cta}
@@ -211,7 +210,7 @@ export function Pricing() {
         <p className="text-center text-sm text-slate-400 dark:text-slate-500 mt-10">
           ¿Dudas sobre qué plan elegir?{" "}
           <a
-            href="mailto:soporte@legaltech.ar?subject=Consulta%20sobre%20planes"
+            href={mailto(CONTACT.support, "Consulta sobre planes")}
             className="text-primary hover:underline font-medium"
           >
             Escribinos

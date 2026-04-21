@@ -5,25 +5,29 @@ import { ToastProvider } from "@/components/ui/toast";
 import { SessionProvider } from "@/components/ui/session-provider";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { SITE, CONTACT, absoluteUrl } from "@/app/lib/site";
 
 // ─── JSON-LD Structured Data ──────────────────────────────────────────────────
 
 const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "DocuLex",
-  url: "https://doculex.com.ar",
-  logo: "https://doculex.com.ar/favicon.ico",
+  name: SITE.name,
+  url: SITE.url,
+  logo: absoluteUrl("/favicon.svg"),
   description:
     "Plataforma SaaS para la generación automática de documentos legales con IA, orientada a abogados, estudios jurídicos y pymes en Argentina.",
   address: {
     "@type": "PostalAddress",
     addressCountry: "AR",
+    addressLocality: SITE.city,
   },
   contactPoint: {
     "@type": "ContactPoint",
     contactType: "customer support",
-    email: "soporte@doculex.ar",
+    email: CONTACT.support,
+    areaServed: "AR",
+    availableLanguage: ["Spanish"],
   },
   sameAs: [],
 };
@@ -31,17 +35,18 @@ const organizationSchema = {
 const softwareSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "DocuLex",
+  name: SITE.name,
   applicationCategory: "LegalApplication",
   operatingSystem: "Web",
   description:
     "Generá contratos, NDAs, cartas documento y documentos legales con IA en minutos. Para abogados y estudios jurídicos en Argentina.",
-  url: "https://doculex.com.ar",
+  url: SITE.url,
   offers: {
     "@type": "Offer",
     price: "0",
-    priceCurrency: "USD",
-    description: "Plan gratuito disponible. Planes Pro y Estudio desde USD 29/mes.",
+    priceCurrency: "ARS",
+    description:
+      "Plan gratuito disponible. Planes pagos desde $24.999 ARS/mes.",
   },
   featureList: [
     "Generación de contratos con IA",
@@ -50,14 +55,15 @@ const softwareSchema = {
     "Contratos de locación",
     "Gestión de expedientes",
     "Chat con IA legal",
+    "Análisis de riesgos contractuales",
   ],
   inLanguage: "es-AR",
 };
 
 export const metadata: Metadata = {
   title: {
-    default: "DocuLex — Documentos Legales con IA",
-    template: "%s | DocuLex",
+    default: `${SITE.name} — Documentos Legales con IA`,
+    template: `%s | ${SITE.name}`,
   },
   description:
     "Generá contratos, poderes y escrituras con validez jurídica en Argentina usando Inteligencia Artificial. Rápido, seguro y preciso.",
@@ -72,30 +78,28 @@ export const metadata: Metadata = {
     "legal tech Argentina",
     "automatización legal",
     "plantillas legales",
-    "DocuLex",
+    SITE.name,
   ],
-  authors: [{ name: "DocuLex" }],
-  creator: "DocuLex",
-  applicationName: "DocuLex",
+  authors: [{ name: SITE.name }],
+  creator: SITE.name,
+  applicationName: SITE.name,
   icons: {
     icon: "/favicon.svg",
     apple: "/apple-touch-icon.png",
   },
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://doculex.com.ar"
-  ),
+  metadataBase: new URL(SITE.url),
   openGraph: {
     type: "website",
-    locale: "es_AR",
-    title: "DocuLex — Documentos Legales con IA",
+    locale: SITE.locale,
+    title: `${SITE.name} — Documentos Legales con IA`,
     description:
       "Generá contratos, poderes y escrituras con validez jurídica en Argentina usando Inteligencia Artificial.",
-    siteName: "DocuLex",
-    url: "https://doculex.com.ar",
+    siteName: SITE.name,
+    url: SITE.url,
   },
   twitter: {
     card: "summary_large_image",
-    title: "DocuLex — Documentos Legales con IA",
+    title: `${SITE.name} — Documentos Legales con IA`,
     description:
       "Generá contratos, poderes y escrituras con validez jurídica en Argentina usando Inteligencia Artificial.",
   },
@@ -104,7 +108,7 @@ export const metadata: Metadata = {
     follow: true,
   },
   alternates: {
-    canonical: "https://doculex.com.ar",
+    canonical: SITE.url,
   },
 };
 

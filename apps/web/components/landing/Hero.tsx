@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -13,6 +13,7 @@ import {
   X,
   Bot,
   User,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -29,7 +30,7 @@ const DEMO_SCENARIOS: Record<string, DemoMessage[]> = {
     {
       role: "assistant",
       content:
-        '¡Genial! Para armar tu contrato de locación necesito algunos datos. Empecemos:\n\n• ¿Cuál es el nombre completo del propietario (locador)?\n• ¿Y el nombre del inquilino (locatario)?',
+        "¡Genial! Para armar tu contrato de locación necesito algunos datos. Empecemos:\n\n• ¿Cuál es el nombre completo del propietario (locador)?\n• ¿Y el nombre del inquilino (locatario)?",
     },
     { role: "user", content: "Propietario María García, inquilino Juan Pérez" },
     {
@@ -148,7 +149,7 @@ function DemoChat({ onClose }: { onClose: () => void }) {
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Sparkles className="w-4.5 h-4.5 text-primary" />
+            <Sparkles className="w-4 h-4 text-primary" />
           </div>
           <div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">
@@ -159,7 +160,7 @@ function DemoChat({ onClose }: { onClose: () => void }) {
         </div>
         <button
           onClick={onClose}
-          className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           aria-label="Cerrar demo"
         >
           <X className="w-5 h-5 text-slate-400" />
@@ -188,7 +189,7 @@ function DemoChat({ onClose }: { onClose: () => void }) {
                 <button
                   key={s.id}
                   onClick={() => setSelectedScenario(s.id)}
-                  className="w-full text-left px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                  className="w-full text-left px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:bg-primary/5 transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                   <span className="text-sm font-medium text-slate-800 dark:text-slate-200 group-hover:text-primary transition-colors">
                     {s.label}
@@ -257,7 +258,7 @@ function DemoChat({ onClose }: { onClose: () => void }) {
           </p>
           <div className="flex gap-3 justify-center">
             <Link href="/auth/register">
-              <Button className="bg-primary text-white font-bold px-6 hover:bg-primary/90 shadow-lg shadow-primary/20">
+              <Button className="bg-primary text-white font-bold px-6 hover:bg-primary/90 shadow-lg shadow-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
                 Crear cuenta gratis
                 <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
@@ -295,107 +296,125 @@ function DemoChat({ onClose }: { onClose: () => void }) {
 export function Hero() {
   const [showDemoModal, setShowDemoModal] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
-  // Cerrar con ESC
+  const closeModal = useCallback(() => {
+    setShowDemoModal(false);
+    // Devolver foco al botón que abrió el modal.
+    setTimeout(() => triggerRef.current?.focus(), 0);
+  }, []);
+
+  // Cerrar con ESC + bloqueo del scroll de body mientras está abierto.
   useEffect(() => {
-    if (showDemoModal) {
-      const handleEscape = (e: KeyboardEvent) => {
-        if (e.key === "Escape") setShowDemoModal(false);
-      };
-      document.addEventListener("keydown", handleEscape);
-      return () => document.removeEventListener("keydown", handleEscape);
-    }
-  }, [showDemoModal]);
+    if (!showDemoModal) return;
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) setShowDemoModal(false);
-  };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeModal();
+    };
+    document.addEventListener("keydown", handleEscape);
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [showDemoModal, closeModal]);
 
   return (
-    <header className="relative pt-20 pb-16 px-6 md:px-20 overflow-hidden" id="inicio">
+    <header
+      className="relative pt-20 pb-20 px-6 md:px-20 overflow-hidden"
+      id="inicio"
+    >
       {/* Abstract background elements */}
-      <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/4"></div>
-      <div className="absolute bottom-0 left-0 -z-10 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/4"></div>
+      <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/4" aria-hidden="true" />
+      <div className="absolute bottom-0 left-0 -z-10 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/4" aria-hidden="true" />
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         {/* Left Content */}
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-7">
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full w-fit border border-primary/20">
             <Sparkles className="w-4 h-4" />
             <span className="text-xs font-bold uppercase tracking-wider">
-              Nueva generación legal
+              IA entrenada en normativa argentina
             </span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-black leading-[1.1] tracking-tighter text-slate-900 dark:text-slate-100">
-            Generá contratos y documentos <span className="text-primary">legales</span> con IA en minutos
+          <h1 className="text-5xl md:text-6xl xl:text-7xl font-black leading-[1.05] tracking-tight text-slate-900 dark:text-slate-100">
+            Redactá una{" "}
+            <span className="text-primary">carta documento</span> en 2 minutos.
+            <br className="hidden md:block" />
+            No en 3 horas.
           </h1>
 
-          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-lg leading-relaxed">
-            La plataforma de legal tech líder en Argentina para abogados, estudios jurídicos
-            y pymes. Generá contratos, NDAs, cartas documento y más con validez jurídica,
-            usando IA adaptada a la normativa argentina.
+          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-xl leading-relaxed">
+            DocuLex genera contratos, NDAs, cartas documento y escritos con{" "}
+            <strong className="text-slate-800 dark:text-slate-200">
+              validez jurídica en Argentina
+            </strong>
+            . Pensado para abogados y estudios jurídicos que cobran por hora, no
+            por tipear.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Link href="/auth/register">
               <Button
                 size="lg"
-                className="bg-primary text-white text-lg font-bold h-14 px-8 rounded-xl hover:shadow-xl hover:shadow-primary/40 transition-all flex items-center justify-center gap-2"
+                className="bg-primary text-white text-base font-bold h-14 px-8 rounded-xl hover:shadow-xl hover:shadow-primary/40 transition-all flex items-center justify-center gap-2 w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
-                Comenzar Ahora
+                Empezá gratis — sin tarjeta
                 <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
             <Button
+              ref={triggerRef}
               variant="outline"
               size="lg"
               onClick={() => setShowDemoModal(true)}
-              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-lg font-semibold h-14 px-8 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
+              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-base font-semibold h-14 px-8 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               <Play className="w-5 h-5" />
-              Ver Demo
+              Ver demo de 60 segundos
             </Button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-emerald-500" />
-              <span>Datos encriptados</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <span>5 documentos gratis</span>
             </div>
-            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700" />
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-primary" />
-              <span>Normativa argentina</span>
+              <Clock className="w-4 h-4 text-primary" />
+              <span>Listo en menos de 2 minutos</span>
             </div>
-            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700" />
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Para abogados y pymes</span>
+              <Shield className="w-4 h-4 text-amber-500" />
+              <span>Tus docs no entrenan IA</span>
             </div>
           </div>
         </div>
 
         {/* Right Preview Card */}
         <div className="relative group">
-          <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-75 group-hover:scale-90 transition-transform duration-700"></div>
+          <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-75 group-hover:scale-90 transition-transform duration-700" aria-hidden="true" />
           <div className="relative bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/40 dark:border-slate-800 p-6 rounded-3xl shadow-2xl">
             <div className="flex items-center justify-between mb-8 border-b border-white/20 dark:border-slate-700 pb-4">
               <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
+                <div className="w-3 h-3 rounded-full bg-red-400" aria-hidden="true" />
+                <div className="w-3 h-3 rounded-full bg-amber-400" aria-hidden="true" />
+                <div className="w-3 h-3 rounded-full bg-emerald-400" aria-hidden="true" />
               </div>
               <div className="text-xs font-mono opacity-50 uppercase tracking-widest text-slate-600 dark:text-slate-400">
-                Editor Inteligente v2.0
+                Editor Inteligente
               </div>
             </div>
 
             <div className="space-y-4">
-              <div className="h-4 bg-primary/20 rounded w-3/4"></div>
-              <div className="h-4 bg-primary/10 rounded w-1/2"></div>
+              <div className="h-4 bg-primary/20 rounded w-3/4" aria-hidden="true" />
+              <div className="h-4 bg-primary/10 rounded w-1/2" aria-hidden="true" />
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-3" aria-hidden="true">
                 <div className="h-20 bg-primary/5 border border-primary/10 rounded-xl flex items-center justify-center">
                   <FileText className="w-6 h-6 text-primary/40" />
                 </div>
@@ -427,18 +446,24 @@ export function Hero() {
       {/* Demo Modal */}
       {showDemoModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-          onClick={handleBackdropClick}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
           role="dialog"
           aria-modal="true"
-          aria-label="Demo interactiva"
+          aria-label="Demo interactiva de DocuLex"
         >
+          {/* Backdrop como botón invisible para cerrar al clickear fuera */}
+          <button
+            type="button"
+            className="absolute inset-0 w-full h-full cursor-default"
+            onClick={closeModal}
+            aria-label="Cerrar demo"
+            tabIndex={-1}
+          />
           <div
             ref={modalRef}
             className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden max-h-[85vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
           >
-            <DemoChat onClose={() => setShowDemoModal(false)} />
+            <DemoChat onClose={closeModal} />
           </div>
         </div>
       )}
