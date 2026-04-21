@@ -33,21 +33,21 @@ export const EmptyState = React.memo(function EmptyState({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900",
-        isCompact ? "p-8" : "p-10 sm:p-14",
+        "relative overflow-hidden w-full flex flex-col items-center justify-center",
+        isCompact ? "min-h-[320px] p-8" : "min-h-[60vh] p-10 sm:p-14",
         className
       )}
     >
       {/* Soft background glow */}
       <div
         className={cn(
-          "absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-10 dark:opacity-20 blur-3xl bg-gradient-to-br pointer-events-none",
+          "absolute -top-16 -right-16 w-96 h-96 rounded-full opacity-5 dark:opacity-10 blur-3xl bg-gradient-to-br pointer-events-none",
           TOKENS.gradients[iconGradient]
         )}
         aria-hidden
       />
 
-      <div className="relative flex flex-col items-center text-center max-w-md mx-auto">
+      <div className="relative flex flex-col items-center text-center max-w-lg mx-auto w-full">
         {Icon && (
           <div
             className={cn(
@@ -83,7 +83,7 @@ export const EmptyState = React.memo(function EmptyState({
         )}
 
         {tips && tips.length > 0 && (
-          <div className="mt-6 w-full text-left rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 p-4">
+          <div className="mt-6 w-full text-left rounded-xl bg-white/60 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 p-4 backdrop-blur-sm">
             <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 mb-2">
               Sugerencias para empezar
             </p>
