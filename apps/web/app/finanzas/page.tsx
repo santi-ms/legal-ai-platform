@@ -12,6 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import { StatsGrid, type StatItem } from "@/components/ui/StatsGrid";
 import { cn } from "@/app/lib/utils";
 import {
   listHonorarios, getHonorariosStats, createHonorario, updateHonorario,
@@ -343,89 +347,89 @@ function FinanzasContent() {
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <DollarSign className="w-6 h-6 text-emerald-600" />
-            Finanzas
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
-            Honorarios, cobros y facturación del estudio
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={exporting}
-            onClick={async () => {
-              setExporting(true);
-              try {
-                await exportHonorariosCSV();
-              } catch {
-                showError("No se pudo exportar");
-              } finally {
-                setExporting(false);
+      <PageHeader
+        icon={DollarSign}
+        iconGradient="emerald"
+        title="Finanzas"
+        description="Honorarios, cobros y facturación del estudio"
+        badge={
+          stats && stats.vencido.count > 0
+            ? { label: `${stats.vencido.count} vencido${stats.vencido.count !== 1 ? "s" : ""}`, tone: "danger" }
+            : undefined
+        }
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={exporting}
+              onClick={async () => {
+                setExporting(true);
+                try {
+                  await exportHonorariosCSV();
+                } catch {
+                  showError("No se pudo exportar");
+                } finally {
+                  setExporting(false);
+                }
+              }}
+              className="flex items-center gap-2 h-9 px-3"
+              title="Exportar honorarios como CSV"
+            >
+              {exporting
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Download className="w-4 h-4" />
               }
-            }}
-            className="flex items-center gap-2 h-9 px-3"
-            title="Exportar honorarios como CSV"
-          >
-            {exporting
-              ? <Loader2 className="w-4 h-4 animate-spin" />
-              : <Download className="w-4 h-4" />
-            }
-            <span className="hidden sm:inline">Exportar CSV</span>
-          </Button>
-          <Button
-            onClick={() => { setEditing(null); setFormOpen(true); }}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20"
-          >
-            <Plus className="w-4 h-4" />
-            Nuevo honorario
-          </Button>
-        </div>
-      </div>
+              <span className="hidden sm:inline">Exportar CSV</span>
+            </Button>
+            <Button
+              onClick={() => { setEditing(null); setFormOpen(true); }}
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20"
+            >
+              <Plus className="w-4 h-4" />
+              Nuevo honorario
+            </Button>
+          </>
+        }
+      />
 
       {/* Dashboard stats */}
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            icon={<CheckCircle2 className="w-4 h-4" />}
-            label="Cobrado"
-            monto={stats.cobrado.monto}
-            count={stats.cobrado.count}
-            color="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
-            onClick={() => updateUrl({ estado: "cobrado", page: "1" })}
-            active={estado === "cobrado"}
-          />
-          <StatCard
-            icon={<Clock className="w-4 h-4" />}
-            label="Facturado"
-            monto={stats.facturado.monto}
-            count={stats.facturado.count}
-            color="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
-            onClick={() => updateUrl({ estado: "facturado", page: "1" })}
-            active={estado === "facturado"}
-          />
-          <StatCard
-            icon={<TrendingUp className="w-4 h-4" />}
-            label="Presupuestado"
-            monto={stats.presupuestado.monto}
-            count={stats.presupuestado.count}
-            color="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
-            onClick={() => updateUrl({ estado: "presupuestado", page: "1" })}
-            active={estado === "presupuestado"}
-          />
-          <StatCard
-            icon={<AlertTriangle className="w-4 h-4" />}
-            label="Vencido"
-            monto={stats.vencido.monto}
-            count={stats.vencido.count}
-            color="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
-            active={false}
-          />
-        </div>
+        <StatsGrid
+          columns={4}
+          items={[
+            {
+              icon: CheckCircle2,
+              label: "Cobrado",
+              value: formatARS(stats.cobrado.monto),
+              tone: "emerald",
+              subText: `${stats.cobrado.count} ${stats.cobrado.count === 1 ? "registro" : "registros"}`,
+            },
+            {
+              icon: Clock,
+              label: "Facturado",
+              value: formatARS(stats.facturado.monto),
+              tone: "amber",
+              subText: `${stats.facturado.count} ${stats.facturado.count === 1 ? "registro" : "registros"}`,
+            },
+            {
+              icon: TrendingUp,
+              label: "Presupuestado",
+              value: formatARS(stats.presupuestado.monto),
+              tone: "slate",
+              subText: `${stats.presupuestado.count} ${stats.presupuestado.count === 1 ? "registro" : "registros"}`,
+            },
+            {
+              icon: AlertTriangle,
+              label: "Vencido",
+              value: formatARS(stats.vencido.monto),
+              tone: "rose",
+              urgent: stats.vencido.count > 0,
+              subText: `${stats.vencido.count} ${stats.vencido.count === 1 ? "registro" : "registros"}`,
+              subTone: stats.vencido.count > 0 ? "danger" : undefined,
+            },
+          ]}
+        />
       )}
 
       {/* Filters */}
@@ -528,30 +532,45 @@ function FinanzasContent() {
       )}
 
       {/* Table */}
+      {loading ? (
+        <PageSkeleton variant="list" count={6} />
+      ) : items.length === 0 ? (
+        <EmptyState
+          icon={DollarSign}
+          iconGradient="emerald"
+          title={hasFilters ? "No hay honorarios con esos filtros" : "Aún no registraste honorarios"}
+          description={
+            hasFilters
+              ? "Probá limpiar los filtros o ajustar la búsqueda para ver más resultados."
+              : "Llevá un control claro de consultas, juicios y cobros. Registrá tu primer honorario y seguí tu facturación mes a mes."
+          }
+          primaryAction={
+            !hasFilters ? (
+              <Button
+                onClick={() => { setEditing(null); setFormOpen(true); }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                <Plus className="w-4 h-4 mr-1.5" />
+                Crear primer honorario
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={() => updateUrl({ query: undefined, tipo: undefined, estado: undefined, expedienteId: undefined, clientId: undefined, page: "1" })}>
+                Limpiar filtros
+              </Button>
+            )
+          }
+          tips={
+            !hasFilters
+              ? [
+                  "Podés asociar honorarios a expedientes y clientes",
+                  "Exportá a CSV para integrar con tu contador",
+                  "Ves el estado de cobros de un vistazo en el dashboard",
+                ]
+              : undefined
+          }
+        />
+      ) : (
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-        {loading ? (
-          <div className="flex items-center justify-center py-20 gap-3 text-slate-400">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span className="text-sm">Cargando honorarios...</span>
-          </div>
-        ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
-            <DollarSign className="w-10 h-10 text-slate-200 dark:text-slate-700" />
-            <p className="text-sm font-medium">
-              {hasFilters
-                ? "No hay honorarios con esos filtros"
-                : "Aún no tenés honorarios registrados"}
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => { setEditing(null); setFormOpen(true); }}
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Crear el primero
-            </Button>
-          </div>
-        ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
@@ -588,7 +607,6 @@ function FinanzasContent() {
               </tbody>
             </table>
           </div>
-        )}
 
         {/* Pagination */}
         {!loading && totalPages > 1 && (
@@ -615,6 +633,7 @@ function FinanzasContent() {
           </div>
         )}
       </div>
+      )}
 
       {/* Modal */}
       <HonorarioForm
@@ -639,63 +658,14 @@ function FinanzasContent() {
   );
 }
 
-// ─── StatCard ────────────────────────────────────────────────────────────────
-
-function StatCard({
-  icon, label, monto, count, color, onClick, active,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  monto: number;
-  count: number;
-  color: string;
-  onClick?: () => void;
-  active?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm transition-all",
-        onClick && "cursor-pointer hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600",
-        active && "ring-2 ring-primary/30 border-primary/30",
-      )}
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-2 mb-2">
-        <div className={cn("size-7 rounded-lg flex items-center justify-center", color)}>
-          {icon}
-        </div>
-        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-          {label}
-        </span>
-      </div>
-      <div className="text-xl font-black text-slate-900 dark:text-white">
-        {new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(monto || 0)}
-      </div>
-      <div className="text-xs text-slate-400 mt-0.5">
-        {count} {count === 1 ? "registro" : "registros"}
-      </div>
-    </div>
-  );
-}
-
 // ─── Page export ─────────────────────────────────────────────────────────────
 
 export default function FinanzasPage() {
   return (
     <Suspense
       fallback={
-        <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-1/3" />
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {[1,2,3,4].map((i) => (
-                <div key={i} className="h-24 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
-              ))}
-            </div>
-            <div className="h-10 bg-slate-200 dark:bg-slate-800 rounded" />
-            <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
-          </div>
+        <div className="p-6 md:p-8 max-w-7xl mx-auto w-full">
+          <PageSkeleton variant="dashboard" />
         </div>
       }
     >

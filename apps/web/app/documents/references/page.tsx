@@ -24,7 +24,12 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import { StatsGrid } from "@/components/ui/StatsGrid";
 import { cn } from "@/app/lib/utils";
+import { FolderKanban, Sparkles, HardDrive } from "lucide-react";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -340,14 +345,44 @@ export default function ReferencesPage() {
     <div className="flex flex-col flex-1 text-slate-900 dark:text-slate-100">
       <main className="max-w-[1280px] mx-auto w-full px-4 md:px-6 py-8 flex-1">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Documentos de Referencia
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-base mt-1">
-            Subí tus propios documentos para que la IA los use como modelo de formato y estilo al generar nuevos documentos.
-          </p>
-        </div>
+        <PageHeader
+          icon={FolderKanban}
+          iconGradient="sky"
+          title="Documentos de Referencia"
+          description="Subí tus propios documentos para que la IA los use como modelo de formato y estilo al generar nuevos documentos."
+          badge={references.length > 0 ? { label: `${references.length} referencia${references.length !== 1 ? "s" : ""}`, tone: "info" } : undefined}
+        />
+
+        {/* Stats */}
+        {!loading && references.length > 0 && (
+          <div className="mb-6">
+            <StatsGrid
+              columns={3}
+              items={[
+                {
+                  icon: FileText,
+                  label: "Total subidos",
+                  value: references.length,
+                  tone: "sky",
+                  subText: `${Math.max(0, REFERENCE_DOCUMENT_TYPES.filter(t => references.some(r => r.documentType === t.value)).length)} tipos distintos`,
+                },
+                {
+                  icon: Sparkles,
+                  label: "Con texto extraído",
+                  value: references.filter(r => r.hasText !== false).length,
+                  tone: "emerald",
+                  subText: "Usables por la IA",
+                },
+                {
+                  icon: HardDrive,
+                  label: "Espacio usado",
+                  value: formatFileSize(references.reduce((sum, r) => sum + (r.fileSize ?? 0), 0)),
+                  tone: "violet",
+                },
+              ]}
+            />
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {/* Upload Panel */}
@@ -355,53 +390,52 @@ export default function ReferencesPage() {
             <UploadZone onUpload={handleUpload} uploading={uploading} />
 
             {/* Info box */}
-            <div className="mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-              <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-1">
-                ¿Cómo funciona?
-              </p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 leading-relaxed">
-                Cuando creés un documento nuevo, la IA detectará si tenés algún documento similar subido aquí y podrás elegir usarlo como referencia. La IA copiará el formato, estilo y estructura de tu documento.
-              </p>
+            <div className="mt-4 rounded-xl p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-950/40 dark:to-blue-950/30 border border-sky-200 dark:border-sky-800/60">
+              <div className="flex items-start gap-2.5">
+                <div className="flex-shrink-0 size-7 rounded-lg bg-sky-500 dark:bg-sky-600 flex items-center justify-center shadow-sm">
+                  <Sparkles className="w-3.5 h-3.5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-sky-900 dark:text-sky-200 mb-1">
+                    ¿Cómo funciona?
+                  </p>
+                  <p className="text-xs text-sky-800 dark:text-sky-300 leading-relaxed">
+                    Cuando creés un documento nuevo, la IA detectará si tenés algún documento similar subido aquí y podrás elegir usarlo como referencia. La IA copiará el formato, estilo y estructura de tu documento.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* List Panel */}
           <div className="lg:col-span-2">
             {loading ? (
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 flex flex-col items-center gap-3">
-                <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
-                <p className="text-sm text-slate-500">Cargando documentos...</p>
-              </div>
+              <PageSkeleton variant="list" count={4} />
             ) : loadError ? (
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 flex flex-col items-center gap-4">
-                <div className="size-12 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
-                  <AlertTriangle className="w-6 h-6 text-red-500" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                    Error al cargar documentos
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">{loadError}</p>
-                </div>
-                <Button variant="outline" size="sm" onClick={load} className="flex items-center gap-2">
-                  <RefreshCcw className="w-3.5 h-3.5" />
-                  Reintentar
-                </Button>
-              </div>
+              <EmptyState
+                icon={AlertTriangle}
+                iconGradient="rose"
+                title="Error al cargar documentos"
+                description={loadError}
+                primaryAction={
+                  <Button variant="outline" size="sm" onClick={load} className="flex items-center gap-2">
+                    <RefreshCcw className="w-3.5 h-3.5" />
+                    Reintentar
+                  </Button>
+                }
+              />
             ) : references.length === 0 ? (
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 flex flex-col items-center gap-3 text-center">
-                <div className="size-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                  <FolderOpen className="w-7 h-7 text-slate-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                    Todavía no hay documentos de referencia
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Subí tu primer documento usando el panel de la izquierda
-                  </p>
-                </div>
-              </div>
+              <EmptyState
+                icon={FolderOpen}
+                iconGradient="sky"
+                title="Todavía no hay documentos de referencia"
+                description="Subí tu primer PDF usando el panel de la izquierda. La IA lo usará como plantilla para mantener tu estilo y formato en los documentos que generes."
+                tips={[
+                  "Funciona mejor con cartas documento, contratos y escritos tipo",
+                  "Extraemos el texto automáticamente para que la IA lo entienda",
+                  "Podés tener varios documentos por tipo — elegís cuál usar en cada generación",
+                ]}
+              />
             ) : (
               <div className="space-y-6">
                 {grouped.map((group) => (

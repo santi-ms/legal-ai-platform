@@ -229,29 +229,37 @@ function ConsultaSidebar({
 
 function WelcomeState({ onSuggestion }: { onSuggestion: (s: string) => void }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8 gap-8">
-      <div className="text-center space-y-3">
-        <div className="w-16 h-16 mx-auto rounded-2xl bg-violet-100 dark:bg-violet-900/20 flex items-center justify-center">
-          <Scale className="w-8 h-8 text-violet-600 dark:text-violet-400" />
+    <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 gap-10 overflow-y-auto">
+      <div className="text-center space-y-4 max-w-xl">
+        <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
+          <Scale className="w-8 h-8 text-white" strokeWidth={2} />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Doku Juris</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-sm">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-50 tracking-tight">Doku Juris</h2>
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">
             Research jurisprudencial conversacional. Hacé consultas sobre legislación y jurisprudencia argentina y recibí respuestas con citas normativas precisas.
           </p>
         </div>
       </div>
 
-      <div className="w-full max-w-lg space-y-2">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide text-center">Preguntas frecuentes</p>
-        <div className="grid gap-2">
+      <div className="w-full max-w-2xl space-y-3">
+        <div className="flex items-center gap-2 justify-center">
+          <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+          <p className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+            Preguntas frecuentes
+          </p>
+        </div>
+        <div className="grid gap-2.5 sm:grid-cols-2">
           {SUGERENCIAS.map((s, i) => (
             <button
               key={i}
               onClick={() => onSuggestion(s)}
-              className="text-left px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-600 dark:text-slate-300 hover:border-violet-300 hover:bg-violet-50 dark:hover:border-violet-800 dark:hover:bg-violet-900/10 transition-colors"
+              className="group text-left px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-200 hover:border-violet-400 hover:bg-violet-50 dark:hover:border-violet-700 dark:hover:bg-violet-950/30 hover:shadow-sm transition-all duration-150 shadow-sm"
             >
-              {s}
+              <div className="flex items-start gap-2.5">
+                <MessageSquare className="w-4 h-4 text-violet-500 dark:text-violet-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                <span className="flex-1 leading-snug">{s}</span>
+              </div>
             </button>
           ))}
         </div>

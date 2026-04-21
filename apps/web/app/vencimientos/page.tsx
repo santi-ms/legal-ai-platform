@@ -11,6 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import { StatsGrid, type StatItem } from "@/components/ui/StatsGrid";
 import { cn } from "@/app/lib/utils";
 import {
   listVencimientos, getVencimientoStats, createVencimiento, updateVencimiento,
@@ -365,28 +369,15 @@ const VencimientoItem = React.memo(function VencimientoItem({
 // ─── Stats Row ────────────────────────────────────────────────────────────────
 
 function StatsRow({ stats }: { stats: VencimientoStats }) {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-      {[
-        { label: "Pendientes",       value: stats.totalPendientes, color: "text-slate-700 dark:text-slate-200",  iconColor: "text-slate-400" },
-        { label: "Vencidos",         value: stats.vencidos,        color: "text-red-600 dark:text-red-400",      iconColor: "text-red-400",   urgent: stats.vencidos > 0 },
-        { label: "Próximos 3 días",  value: stats.proximos3d,      color: "text-orange-600 dark:text-orange-400",iconColor: "text-orange-400",urgent: stats.proximos3d > 0 },
-        { label: "Esta semana",      value: stats.proximos7d,      color: "text-amber-600 dark:text-amber-400",  iconColor: "text-amber-400" },
-        { label: "Este mes",         value: stats.proximos30d,     color: "text-blue-600 dark:text-blue-400",    iconColor: "text-blue-400"  },
-        { label: "Completados/mes",  value: stats.completadosMes,  color: "text-emerald-600 dark:text-emerald-400",iconColor: "text-emerald-400" },
-      ].map((s) => (
-        <div key={s.label} className={cn(
-          "bg-white dark:bg-slate-900 rounded-xl border p-3 text-center",
-          s.urgent
-            ? "border-red-200 dark:border-red-800 shadow-sm shadow-red-100 dark:shadow-none"
-            : "border-slate-200 dark:border-slate-800"
-        )}>
-          <p className={cn("text-2xl font-bold", s.color)}>{s.value}</p>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">{s.label}</p>
-        </div>
-      ))}
-    </div>
-  );
+  const items: StatItem[] = [
+    { label: "Pendientes",      value: stats.totalPendientes, icon: Clock,          tone: "slate"   },
+    { label: "Vencidos",        value: stats.vencidos,        icon: AlertTriangle,  tone: "rose",    urgent: stats.vencidos > 0 },
+    { label: "Próximos 3 días", value: stats.proximos3d,      icon: Bell,           tone: "amber",   urgent: stats.proximos3d > 0 },
+    { label: "Esta semana",     value: stats.proximos7d,      icon: CalendarClock,  tone: "amber"   },
+    { label: "Este mes",        value: stats.proximos30d,     icon: Calendar,       tone: "sky"     },
+    { label: "Completados/mes", value: stats.completadosMes,  icon: CheckCircle2,   tone: "emerald" },
+  ];
+  return <StatsGrid items={items} columns={6} />;
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -529,8 +520,8 @@ function VencimientosContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <PageSkeleton variant="list" count={6} />
       </div>
     );
   }
@@ -539,44 +530,46 @@ function VencimientosContent() {
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
-            <CalendarClock className="w-6 h-6 text-violet-500" />
-            Vencimientos
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Audiencias, plazos procesales, vencimientos de contratos y cualquier fecha crítica
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={exporting}
-            title="Exportar como CSV"
-            onClick={async () => {
-              setExporting(true);
-              try {
-                await exportVencimientosCSV();
-                success("CSV exportado exitosamente");
-              } catch {
-                showError("No se pudo exportar el CSV");
-              } finally {
-                setExporting(false);
-              }
-            }}
-            className="h-9 px-3 gap-1.5"
-          >
-            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            <span className="hidden sm:inline text-xs">CSV</span>
-          </Button>
-          <Button onClick={() => setModal("create")} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Nuevo vencimiento
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        icon={CalendarClock}
+        iconGradient="violet"
+        title="Vencimientos"
+        description="Audiencias, plazos procesales, vencimientos de contratos y cualquier fecha crítica"
+        badge={
+          stats && stats.vencidos > 0
+            ? { label: `${stats.vencidos} vencido${stats.vencidos !== 1 ? "s" : ""}`, tone: "danger" }
+            : undefined
+        }
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={exporting}
+              title="Exportar como CSV"
+              onClick={async () => {
+                setExporting(true);
+                try {
+                  await exportVencimientosCSV();
+                  success("CSV exportado exitosamente");
+                } catch {
+                  showError("No se pudo exportar el CSV");
+                } finally {
+                  setExporting(false);
+                }
+              }}
+              className="h-9 px-3 gap-1.5"
+            >
+              {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              <span className="hidden sm:inline text-xs">CSV</span>
+            </Button>
+            <Button onClick={() => setModal("create")} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Nuevo vencimiento
+            </Button>
+          </>
+        }
+      />
 
       {/* ── Stats ────────────────────────────────────────────────────────────── */}
       {stats && <StatsRow stats={stats} />}
@@ -724,25 +717,35 @@ function VencimientosContent() {
 
       {/* ── List ─────────────────────────────────────────────────────────────── */}
       {visibleItems.length === 0 ? (
-        <div className="text-center py-16 text-slate-400">
-          <CalendarClock className="w-12 h-12 mx-auto mb-4 opacity-30" />
-          <p className="text-base font-medium text-slate-500">
-            {searchQuery.trim() ? "Sin resultados" : "Sin vencimientos"}
-          </p>
-          <p className="text-sm mt-1">
-            {searchQuery.trim()
+        <EmptyState
+          icon={CalendarClock}
+          iconGradient="violet"
+          title={searchQuery.trim() ? "Sin resultados" : "Todavía no tenés vencimientos"}
+          description={
+            searchQuery.trim()
               ? `No hay vencimientos que coincidan con "${searchQuery}".`
               : filterEstado !== "todos" || filterTipo !== "todos" || filterExpedienteId || filterClientId
-                ? "No hay resultados para los filtros aplicados."
-                : "Creá tu primer vencimiento para no perder ninguna fecha clave."}
-          </p>
-          {!searchQuery.trim() && filterEstado === "todos" && filterTipo === "todos" && !filterExpedienteId && !filterClientId && (
-            <Button onClick={() => setModal("create")} className="mt-4 gap-2">
-              <Plus className="w-4 h-4" />
-              Nuevo vencimiento
-            </Button>
-          )}
-        </div>
+                ? "Probá ajustar los filtros para ver más resultados."
+                : "Agregá tu primera fecha clave — audiencias, plazos procesales o vencimientos de contratos — y recibí alertas antes de que lleguen."
+          }
+          primaryAction={
+            !searchQuery.trim() && filterEstado === "todos" && filterTipo === "todos" && !filterExpedienteId && !filterClientId ? (
+              <Button onClick={() => setModal("create")} className="gap-2">
+                <Plus className="w-4 h-4" />
+                Crear primer vencimiento
+              </Button>
+            ) : undefined
+          }
+          tips={
+            !searchQuery.trim() && filterEstado === "todos" && filterTipo === "todos" && !filterExpedienteId && !filterClientId
+              ? [
+                  "Podés crear vencimientos automáticamente desde un expediente",
+                  "Las alertas se disparan X días antes de cada fecha (configurable)",
+                  "Exportá todo a CSV para usar en Excel o compartir con tu equipo",
+                ]
+              : undefined
+          }
+        />
       ) : (
         <div className="space-y-6">
 
@@ -837,8 +840,8 @@ function VencimientosContent() {
 export default function VencimientosPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <PageSkeleton variant="list" count={6} />
       </div>
     }>
       <VencimientosContent />

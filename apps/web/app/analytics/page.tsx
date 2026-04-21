@@ -15,6 +15,10 @@ import {
 import { getStatsOverview, type StatsOverview } from "@/app/lib/webApi";
 import { cn } from "@/app/lib/utils";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import { StatsGrid } from "@/components/ui/StatsGrid";
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
@@ -317,31 +321,27 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full animate-pulse">
-        <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-48" />
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          {[1,2,3,4,5].map((i) => <div key={i} className="h-28 bg-slate-200 dark:bg-slate-800 rounded-2xl" />)}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {[1,2,3,4].map((i) => <div key={i} className="h-52 bg-slate-200 dark:bg-slate-800 rounded-2xl" />)}
-        </div>
+      <div className="p-6 md:p-8 max-w-7xl mx-auto w-full">
+        <PageSkeleton variant="dashboard" count={5} />
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="p-6 md:p-8 flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
-          <AlertTriangle className="w-6 h-6 text-red-500" />
-        </div>
-        <p className="text-sm text-slate-600 dark:text-slate-400 text-center">
-          {error ?? "No se pudieron cargar las estadísticas"}
-        </p>
-        <Button variant="outline" size="sm" onClick={load}>
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Reintentar
-        </Button>
+      <div className="p-6 md:p-8 max-w-7xl mx-auto w-full">
+        <EmptyState
+          icon={AlertTriangle}
+          iconGradient="rose"
+          title="No se pudieron cargar las estadísticas"
+          description={error ?? "Hubo un problema al obtener los datos del estudio."}
+          primaryAction={
+            <Button variant="outline" size="sm" onClick={load}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Reintentar
+            </Button>
+          }
+        />
       </div>
     );
   }
@@ -372,56 +372,32 @@ export default function AnalyticsPage() {
     <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <BarChart2 className="w-6 h-6 text-primary" />
-            Analytics
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
-            Estadísticas y métricas del estudio
-            {lastUpdated && (
-              <span className="ml-2 text-xs opacity-60">
-                · actualizado {lastUpdated.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
-              </span>
-            )}
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-          <RefreshCw className={cn("w-4 h-4 mr-2", loading && "animate-spin")} />
-          Actualizar
-        </Button>
-      </div>
+      <PageHeader
+        icon={BarChart2}
+        iconGradient="primary"
+        title="Analytics"
+        description={`Estadísticas y métricas del estudio${lastUpdated ? ` · actualizado ${lastUpdated.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}` : ""}`}
+        actions={
+          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+            <RefreshCw className={cn("w-4 h-4 mr-2", loading && "animate-spin")} />
+            Actualizar
+          </Button>
+        }
+      />
 
       {/* KPI Cards — with trends and drill-down links */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <KpiCard
-          icon={Briefcase} label="Expedientes" value={totals.expedientes}
-          iconBg="bg-blue-100 dark:bg-blue-900/30" iconColor="text-blue-600 dark:text-blue-400"
-          href="/expedientes"
-        />
-        <KpiCard
-          icon={Users} label="Clientes" value={totals.clientes}
-          iconBg="bg-violet-100 dark:bg-violet-900/30" iconColor="text-violet-600 dark:text-violet-400"
-          trend={clientTrend} trendLabel="vs mes anterior"
-          href="/clients"
-        />
-        <KpiCard
-          icon={DollarSign} label="Total cobrado" value={fmtARS(totals.cobrado)}
-          iconBg="bg-emerald-100 dark:bg-emerald-900/30" iconColor="text-emerald-600 dark:text-emerald-400"
-          trend={revTrend} trendLabel="vs mes anterior"
-          href="/finanzas?estado=cobrado"
-        />
-        <KpiCard
-          icon={FileText} label="Documentos" value={totals.documentos}
-          iconBg="bg-amber-100 dark:bg-amber-900/30" iconColor="text-amber-600 dark:text-amber-400"
-          href="/documents"
-        />
-        <KpiCard
-          icon={Gavel} label="Actuaciones" value={totals.actuaciones}
-          iconBg="bg-rose-100 dark:bg-rose-900/30" iconColor="text-rose-600 dark:text-rose-400"
-        />
-      </div>
+      <StatsGrid
+        columns={5}
+        items={[
+          { icon: Briefcase,  label: "Expedientes",    value: totals.expedientes,          tone: "sky",     href: "/expedientes" },
+          { icon: Users,      label: "Clientes",       value: totals.clientes,             tone: "violet",  href: "/clients",
+            change: clientTrend != null ? { value: `${clientTrend > 0 ? "+" : ""}${clientTrend}%`, isPositive: clientTrend >= 0 } : undefined },
+          { icon: DollarSign, label: "Total cobrado",  value: fmtARS(totals.cobrado),      tone: "emerald", href: "/finanzas?estado=cobrado",
+            change: revTrend != null ? { value: `${revTrend > 0 ? "+" : ""}${revTrend}%`, isPositive: revTrend >= 0 } : undefined },
+          { icon: FileText,   label: "Documentos",     value: totals.documentos,           tone: "amber",   href: "/documents" },
+          { icon: Gavel,      label: "Actuaciones",    value: totals.actuaciones,          tone: "rose"  },
+        ]}
+      />
 
       {/* Row 1: Revenue + Clients charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

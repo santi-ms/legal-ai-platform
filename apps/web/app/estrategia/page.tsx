@@ -8,6 +8,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import { StatsGrid } from "@/components/ui/StatsGrid";
 import { cn } from "@/app/lib/utils";
 import {
   listEscritos, uploadEscrito, deleteEscrito,
@@ -234,39 +238,59 @@ export default function EstrategiaPage() {
   return (
     <div className="p-6 md:p-8 max-w-6xl mx-auto w-full space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <Swords className="w-6 h-6 text-violet-600" />
-            Doku Estratega
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
-            Subí un escrito de la parte contraria y la IA te da la estrategia de defensa.
-          </p>
-        </div>
-        <Button onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20">
-          <Plus className="w-4 h-4" />
-          Analizar escrito
-        </Button>
-      </div>
+      <PageHeader
+        icon={Swords}
+        iconGradient="violet"
+        title="Doku Estratega"
+        description="Subí un escrito de la parte contraria y la IA te da la estrategia de defensa."
+        actions={
+          <Button
+            onClick={() => setModalOpen(true)}
+            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20"
+          >
+            <Plus className="w-4 h-4" />
+            Analizar escrito
+          </Button>
+        }
+      />
+
+      {/* Stats */}
+      {items.length > 0 && (
+        <StatsGrid
+          columns={4}
+          items={[
+            { icon: FileText,      label: "Total",         value: total,                                                         tone: "violet" },
+            { icon: CheckCircle2,  label: "Completados",   value: items.filter(i => i.status === "done").length,                  tone: "emerald" },
+            { icon: Loader2,       label: "En proceso",    value: items.filter(i => i.status === "processing" || i.status === "pending").length, tone: "amber" },
+            { icon: AlertTriangle, label: "Riesgo alto",   value: items.filter(i => i.nivelRiesgo === "alto").length,             tone: "rose" },
+          ]}
+        />
+      )}
 
       {/* List */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-20 gap-3 text-slate-400">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span className="text-sm">Cargando análisis...</span>
-          </div>
-        ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
-            <Swords className="w-12 h-12 text-slate-200 dark:text-slate-700" />
-            <p className="font-medium text-sm">Todavía no analizaste ningún escrito</p>
-            <Button variant="outline" size="sm" onClick={() => setModalOpen(true)}>
-              <Plus className="w-4 h-4 mr-1" /> Analizar el primero
+      {loading ? (
+        <PageSkeleton variant="list" count={5} />
+      ) : items.length === 0 ? (
+        <EmptyState
+          icon={Swords}
+          iconGradient="violet"
+          title="Todavía no analizaste ningún escrito"
+          description="Subí un PDF de la parte contraria y Doku Estratega identifica puntos débiles, sugiere defensas y detecta riesgos procesales."
+          primaryAction={
+            <Button onClick={() => setModalOpen(true)} className="bg-violet-600 hover:bg-violet-700 text-white gap-2">
+              <Plus className="w-4 h-4" />
+              Analizar primer escrito
             </Button>
-          </div>
-        ) : (
+          }
+          tips={[
+            "Subí el escrito en PDF — la IA extrae el texto automáticamente",
+            "Indicá el tipo de escrito y la materia para mejorar el análisis",
+            "Recibís puntos débiles, defensas sugeridas y nivel de riesgo",
+          ]}
+        />
+      ) : (
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        {(
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {items.map((item) => {
               const isProcessing = item.status === "processing" || item.status === "pending";
@@ -348,6 +372,7 @@ export default function EstrategiaPage() {
           </div>
         )}
       </div>
+      )}
 
       {modalOpen && (
         <UploadModal

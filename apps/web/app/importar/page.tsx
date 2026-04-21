@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { cn } from "@/app/lib/utils";
 import {
   ImportType, ImportValidateResult, ImportExecuteResult,
@@ -127,15 +128,12 @@ export default function ImportarPage() {
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto w-full space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-          <FileSpreadsheet className="w-6 h-6 text-primary" />
-          Importar datos
-        </h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
-          Subí tu planilla de Excel o CSV para migrar clientes, expedientes u honorarios en bloque.
-        </p>
-      </div>
+      <PageHeader
+        icon={FileSpreadsheet}
+        iconGradient="primary"
+        title="Importar datos"
+        description="Subí tu planilla de Excel o CSV para migrar clientes, expedientes u honorarios en bloque. Revisamos los datos y te mostramos los errores antes de importar."
+      />
 
       {/* Step indicator */}
       <StepBar current={step} />
@@ -434,31 +432,37 @@ function StepBar({ current }: { current: Step }) {
     { n: 4, label: "Listo" },
   ];
   return (
-    <div className="flex items-center gap-0">
-      {steps.map((s, i) => (
-        <div key={s.n} className="flex items-center flex-1">
-          <div className={cn(
-            "flex items-center gap-2 text-sm font-semibold",
-            current === s.n ? "text-primary" : current > s.n ? "text-emerald-600" : "text-slate-400",
-          )}>
-            <div className={cn(
-              "size-7 rounded-full flex items-center justify-center text-xs font-bold border-2",
-              current === s.n ? "border-primary bg-primary text-white" :
-              current > s.n ? "border-emerald-500 bg-emerald-500 text-white" :
-              "border-slate-300 dark:border-slate-700 text-slate-400",
-            )}>
-              {current > s.n ? <CheckCircle2 className="w-3.5 h-3.5" /> : s.n}
+    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+      <div className="flex items-center gap-0">
+        {steps.map((s, i) => {
+          const isActive = current === s.n;
+          const isDone = current > s.n;
+          return (
+            <div key={s.n} className="flex items-center flex-1">
+              <div className={cn(
+                "flex items-center gap-2.5 text-sm font-semibold",
+                isActive ? "text-slate-900 dark:text-slate-50" : isDone ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-slate-500",
+              )}>
+                <div className={cn(
+                  "size-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all",
+                  isActive ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30 scale-110" :
+                  isDone ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm" :
+                  "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700",
+                )}>
+                  {isDone ? <CheckCircle2 className="w-4 h-4" /> : s.n}
+                </div>
+                <span className="hidden sm:inline">{s.label}</span>
+              </div>
+              {i < steps.length - 1 && (
+                <div className={cn(
+                  "flex-1 h-1 mx-2 rounded-full transition-colors",
+                  isDone ? "bg-emerald-400 dark:bg-emerald-500" : "bg-slate-200 dark:bg-slate-800",
+                )} />
+              )}
             </div>
-            <span className="hidden sm:inline">{s.label}</span>
-          </div>
-          {i < steps.length - 1 && (
-            <div className={cn(
-              "flex-1 h-0.5 mx-2",
-              current > s.n ? "bg-emerald-400" : "bg-slate-200 dark:bg-slate-700",
-            )} />
-          )}
-        </div>
-      ))}
+          );
+        })}
+      </div>
     </div>
   );
 }

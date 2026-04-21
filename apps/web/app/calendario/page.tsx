@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Calendar, AlertCircle, Clock, CheckCircle2, Loader2, Bell } from "lucide-react";
+import { ChevronLeft, ChevronRight, AlertCircle, Clock, CheckCircle2, Loader2, Bell, CalendarDays } from "lucide-react";
 import Link from "next/link";
 import {
   getCalendarDeadlines,
@@ -12,6 +12,9 @@ import {
   type DeadlineUrgency,
 } from "@/app/lib/webApi";
 import { cn } from "@/app/lib/utils";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -157,22 +160,13 @@ export default function CalendarioPage() {
 
   return (
     <div className="p-6 md:p-8 max-w-[1280px] mx-auto w-full">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Calendar className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              Calendario de Vencimientos
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Visualizá los vencimientos de tus expedientes por mes
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        icon={CalendarDays}
+        iconGradient="sky"
+        title="Calendario de Vencimientos"
+        description="Visualizá los vencimientos de tus expedientes por mes"
+        badge={data && data.summary.overdue > 0 ? { label: `${data.summary.overdue} vencidos`, tone: "danger" } : undefined}
+      />
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* ── Calendar panel ─────────────────────────────────────────────── */}
@@ -243,16 +237,21 @@ export default function CalendarioPage() {
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
             ) : error ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-                <AlertCircle className="w-10 h-10 text-red-400 mb-3" />
-                <p className="text-slate-600 dark:text-slate-400 text-sm">{error}</p>
-                <button
-                  onClick={() => load(year, month)}
-                  className="mt-4 text-sm font-semibold text-primary hover:underline"
-                >
-                  Reintentar
-                </button>
-              </div>
+              <EmptyState
+                icon={AlertCircle}
+                iconGradient="rose"
+                title="Error al cargar"
+                description={error}
+                primaryAction={
+                  <button
+                    onClick={() => load(year, month)}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-br from-rose-500 to-red-600 text-white text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity"
+                  >
+                    Reintentar
+                  </button>
+                }
+                size="compact"
+              />
             ) : (
               <div className="grid grid-cols-7">
                 {/* Empty cells before first day */}
