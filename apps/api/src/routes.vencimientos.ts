@@ -270,11 +270,6 @@ export async function registerVencimientosRoutes(app: FastifyInstance) {
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const { id } = request.params as { id: string };
-    const venc = await prisma.vencimiento.findFirst({
-      where: { id, tenantId: user.tenantId, archivedAt: null },
-    });
-    if (!venc) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
-
     const parsed = updateSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", issues: parsed.error.issues });
@@ -289,9 +284,14 @@ export async function registerVencimientosRoutes(app: FastifyInstance) {
     if (parsed.data.expedienteId     !== undefined) data.expedienteId     = parsed.data.expedienteId;
     if (parsed.data.clientId         !== undefined) data.clientId         = parsed.data.clientId;
 
-    const updated = await prisma.vencimiento.update({
-      where: { id },
+    const result = await prisma.vencimiento.updateMany({
+      where: { id, tenantId: user.tenantId, archivedAt: null },
       data,
+    });
+    if (result.count === 0) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
+
+    const updated = await prisma.vencimiento.findFirst({
+      where: { id, tenantId: user.tenantId },
       select: {
         id: true, titulo: true, descripcion: true, tipo: true,
         fechaVencimiento: true, alertaDias: true, estado: true,
@@ -310,16 +310,12 @@ export async function registerVencimientosRoutes(app: FastifyInstance) {
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const { id } = request.params as { id: string };
-    const venc = await prisma.vencimiento.findFirst({
-      where: { id, tenantId: user.tenantId, archivedAt: null },
-    });
-    if (!venc) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
-
     const now = new Date();
-    await prisma.vencimiento.update({
-      where: { id },
-      data: { estado: "completado", completadoAt: now, completadoById: user.userId, updatedAt: now },
+    const result = await prisma.vencimiento.updateMany({
+      where: { id, tenantId: user.tenantId, archivedAt: null },
+      data:  { estado: "completado", completadoAt: now, completadoById: user.userId, updatedAt: now },
     });
+    if (result.count === 0) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
 
     return reply.send({ ok: true });
   });
@@ -330,15 +326,11 @@ export async function registerVencimientosRoutes(app: FastifyInstance) {
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const { id } = request.params as { id: string };
-    const venc = await prisma.vencimiento.findFirst({
+    const result = await prisma.vencimiento.updateMany({
       where: { id, tenantId: user.tenantId, archivedAt: null },
+      data:  { estado: "pendiente", completadoAt: null, completadoById: null, updatedAt: new Date() },
     });
-    if (!venc) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
-
-    await prisma.vencimiento.update({
-      where: { id },
-      data: { estado: "pendiente", completadoAt: null, completadoById: null, updatedAt: new Date() },
-    });
+    if (result.count === 0) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
 
     return reply.send({ ok: true });
   });
@@ -349,15 +341,11 @@ export async function registerVencimientosRoutes(app: FastifyInstance) {
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const { id } = request.params as { id: string };
-    const venc = await prisma.vencimiento.findFirst({
+    const result = await prisma.vencimiento.updateMany({
       where: { id, tenantId: user.tenantId, archivedAt: null },
+      data:  { archivedAt: new Date(), updatedAt: new Date() },
     });
-    if (!venc) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
-
-    await prisma.vencimiento.update({
-      where: { id },
-      data: { archivedAt: new Date(), updatedAt: new Date() },
-    });
+    if (result.count === 0) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
 
     return reply.send({ ok: true });
   });

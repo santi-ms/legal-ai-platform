@@ -1031,10 +1031,14 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         });
       }
 
-      // Eliminar (cascade elimina versiones)
-      await prisma.document.delete({
-        where: { id },
+      // Eliminar (cascade elimina versiones). Defense in depth: deleteMany
+      // con filtro por tenantId aunque ya chequeamos arriba.
+      const deleteResult = await prisma.document.deleteMany({
+        where: { id, tenantId: user.tenantId! },
       });
+      if (deleteResult.count === 0) {
+        return reply.status(404).send({ ok: false, error: "DOCUMENT_NOT_FOUND" });
+      }
 
       return reply.status(200).send({
         ok: true,
@@ -1125,15 +1129,24 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         }
       }
 
-      // Actualizar
-      const updated = await prisma.document.update({
-        where: { id },
+      // Actualizar. Defense in depth: updateMany con filtro por tenantId.
+      const updateResult = await prisma.document.updateMany({
+        where: { id, tenantId: user.tenantId! },
         data: updateData,
+      });
+      if (updateResult.count === 0) {
+        return reply.status(404).send({ ok: false, error: "DOCUMENT_NOT_FOUND" });
+      }
+      const updated = await prisma.document.findFirst({
+        where: { id, tenantId: user.tenantId! },
         include: {
           client: { select: { id: true, name: true, type: true } },
           expediente: { select: { id: true, title: true, number: true, matter: true, status: true } },
         },
       });
+      if (!updated) {
+        return reply.status(404).send({ ok: false, error: "DOCUMENT_NOT_FOUND" });
+      }
 
       return reply.status(200).send({
         ok: true,
@@ -1387,14 +1400,19 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
     if (!body.success) return reply.status(400).send({ ok: false, error: "INVALID_BODY" });
 
     try {
-      const existing = await (prisma as any).documentAnnotation.findFirst({
-        where: { id: parsed.data.annotationId, documentId: parsed.data.id, tenantId: user.tenantId },
+      // Defense in depth: updateMany filtra por tenantId + documentId para
+      // que ningún tenant ajeno pueda tocar este recurso aunque conozca el UUID.
+      const result = await (prisma as any).documentAnnotation.updateMany({
+        where: {
+          id: parsed.data.annotationId,
+          documentId: parsed.data.id,
+          tenantId: user.tenantId,
+        },
+        data: body.data,
       });
-      if (!existing) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
-
-      const updated = await (prisma as any).documentAnnotation.update({
-        where: { id: parsed.data.annotationId },
-        data:  body.data,
+      if (result.count === 0) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
+      const updated = await (prisma as any).documentAnnotation.findFirst({
+        where: { id: parsed.data.annotationId, tenantId: user.tenantId },
         include: { author: { select: { id: true, name: true, email: true } } },
       });
       return reply.send({ ok: true, annotation: updated });
@@ -1415,12 +1433,17 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
     if (!parsed.success) return reply.status(400).send({ ok: false, error: "INVALID_PARAMS" });
 
     try {
-      const existing = await (prisma as any).documentAnnotation.findFirst({
-        where: { id: parsed.data.annotationId, documentId: parsed.data.id, tenantId: user.tenantId },
+      // Defense in depth: el deleteMany filtra por tenantId + documentId
+      // directamente, garantizando que ningún tenant ajeno pueda borrar este
+      // recurso aunque conozca el UUID.
+      const result = await (prisma as any).documentAnnotation.deleteMany({
+        where: {
+          id: parsed.data.annotationId,
+          documentId: parsed.data.id,
+          tenantId: user.tenantId,
+        },
       });
-      if (!existing) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
-
-      await (prisma as any).documentAnnotation.delete({ where: { id: parsed.data.annotationId } });
+      if (result.count === 0) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
       return reply.send({ ok: true });
     } catch (err) {
       request.log?.error({ err }, "DELETE /documents/:id/annotations/:id error");

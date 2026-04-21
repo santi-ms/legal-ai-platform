@@ -200,19 +200,15 @@ export async function registerTeamRoutes(app: FastifyInstance) {
       return reply.status(400).send({ ok: false, error: "CANT_REMOVE_SELF", message: "No podés eliminarte a vos mismo." });
     }
 
-    const target = await prisma.user.findFirst({
+    // Defense in depth: updateMany con filtro por tenantId, evita desvincular
+    // miembros de otro tenant aun si cambia la guarda anterior.
+    const result = await prisma.user.updateMany({
       where: { id: targetId, tenantId: user.tenantId },
+      data:  { tenantId: null },
     });
-
-    if (!target) {
+    if (result.count === 0) {
       return reply.status(404).send({ ok: false, error: "NOT_FOUND", message: "Usuario no encontrado en tu equipo." });
     }
-
-    // Desvincularlo del tenant (sin borrar la cuenta)
-    await prisma.user.update({
-      where: { id: targetId },
-      data: { tenantId: null },
-    });
 
     return reply.send({ ok: true, message: "Miembro eliminado del equipo." });
   });
@@ -265,16 +261,11 @@ export async function registerTeamRoutes(app: FastifyInstance) {
 
     const { id } = request.params as { id: string };
 
-    const inv = await prisma.teamInvitation.findFirst({
+    const result = await prisma.teamInvitation.updateMany({
       where: { id, tenantId: user.tenantId },
+      data:  { status: "canceled" },
     });
-
-    if (!inv) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
-
-    await prisma.teamInvitation.update({
-      where: { id },
-      data: { status: "canceled" },
-    });
+    if (result.count === 0) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
 
     return reply.send({ ok: true, message: "Invitación cancelada." });
   });

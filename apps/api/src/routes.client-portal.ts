@@ -163,10 +163,11 @@ export async function registerClientPortalRoutes(app: FastifyInstance) {
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const { id } = request.params as { id: string };
-    const link = await prisma.clientPortalAccess.findFirst({ where: { id, tenantId: user.tenantId } });
-    if (!link) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
-
-    await prisma.clientPortalAccess.update({ where: { id }, data: { status: "revoked", updatedAt: new Date() } });
+    const result = await prisma.clientPortalAccess.updateMany({
+      where: { id, tenantId: user.tenantId },
+      data:  { status: "revoked", updatedAt: new Date() },
+    });
+    if (result.count === 0) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
     return reply.send({ ok: true });
   });
 
@@ -176,10 +177,10 @@ export async function registerClientPortalRoutes(app: FastifyInstance) {
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const { id } = request.params as { id: string };
-    const link = await prisma.clientPortalAccess.findFirst({ where: { id, tenantId: user.tenantId } });
-    if (!link) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
-
-    await prisma.clientPortalAccess.delete({ where: { id } });
+    const result = await prisma.clientPortalAccess.deleteMany({
+      where: { id, tenantId: user.tenantId },
+    });
+    if (result.count === 0) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
     return reply.send({ ok: true });
   });
 

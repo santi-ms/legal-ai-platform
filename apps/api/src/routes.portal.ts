@@ -149,12 +149,11 @@ export async function registerPortalRoutes(app: FastifyInstance) {
     const q = request.query as { portal?: string };
     const portal = q.portal || "justi_misiones";
 
-    const cred = await prisma.portalCredential.findUnique({
-      where: { tenantId_portal: { tenantId: user.tenantId, portal } },
+    // Defense in depth: deleteMany con filtro por tenantId + portal.
+    const result = await prisma.portalCredential.deleteMany({
+      where: { tenantId: user.tenantId, portal },
     });
-    if (!cred) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
-
-    await prisma.portalCredential.delete({ where: { id: cred.id } });
+    if (result.count === 0) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
     return reply.send({ ok: true });
   });
 

@@ -211,17 +211,21 @@ export async function registerReferenceRoutes(app: FastifyInstance) {
 
       const reference = await prisma.referenceDocument.findFirst({
         where: { id, tenantId: user.tenantId, deletedAt: null },
+        select: { fileName: true },
       });
 
       if (!reference) {
         return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
       }
 
-      // Borrado suave
-      await prisma.referenceDocument.update({
-        where: { id },
-        data: { deletedAt: new Date() },
+      // Borrado suave — defense in depth: updateMany filtra por tenantId en el write.
+      const result = await prisma.referenceDocument.updateMany({
+        where: { id, tenantId: user.tenantId, deletedAt: null },
+        data:  { deletedAt: new Date() },
       });
+      if (result.count === 0) {
+        return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
+      }
 
       // Intentar eliminar el archivo del PDF service (no crítico si falla)
       const pdfServiceUrl = process.env.PDF_SERVICE_URL || "http://localhost:4100";

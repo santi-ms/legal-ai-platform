@@ -186,9 +186,6 @@ export async function registerClientRoutes(app: FastifyInstance) {
 
     const { id } = request.params as { id: string };
 
-    const existing = await prisma.client.findFirst({ where: { id, tenantId } });
-    if (!existing) return notFound(reply);
-
     const parsed = ClientBodySchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.format() });
@@ -196,8 +193,9 @@ export async function registerClientRoutes(app: FastifyInstance) {
 
     const data = parsed.data;
 
-    const client = await prisma.client.update({
-      where: { id },
+    // Defense in depth: updateMany filtra por tenantId en el propio write.
+    const result = await prisma.client.updateMany({
+      where: { id, tenantId },
       data: {
         type: data.type,
         name: data.name.trim(),
@@ -215,7 +213,9 @@ export async function registerClientRoutes(app: FastifyInstance) {
         notes: data.notes?.trim() ?? null,
       },
     });
+    if (result.count === 0) return notFound(reply);
 
+    const client = await prisma.client.findFirst({ where: { id, tenantId } });
     return reply.send({ ok: true, client });
   });
 
@@ -226,13 +226,11 @@ export async function registerClientRoutes(app: FastifyInstance) {
 
     const { id } = request.params as { id: string };
 
-    const existing = await prisma.client.findFirst({ where: { id, tenantId } });
-    if (!existing) return notFound(reply);
-
-    await prisma.client.update({
-      where: { id },
-      data: { archivedAt: new Date() },
+    const result = await prisma.client.updateMany({
+      where: { id, tenantId, archivedAt: null },
+      data:  { archivedAt: new Date() },
     });
+    if (result.count === 0) return notFound(reply);
 
     return reply.send({ ok: true, message: "Cliente archivado correctamente" });
   });
@@ -244,13 +242,11 @@ export async function registerClientRoutes(app: FastifyInstance) {
 
     const { id } = request.params as { id: string };
 
-    const existing = await prisma.client.findFirst({ where: { id, tenantId } });
-    if (!existing) return notFound(reply);
-
-    await prisma.client.update({
-      where: { id },
-      data: { archivedAt: null },
+    const result = await prisma.client.updateMany({
+      where: { id, tenantId, archivedAt: { not: null } },
+      data:  { archivedAt: null },
     });
+    if (result.count === 0) return notFound(reply);
 
     return reply.send({ ok: true, message: "Cliente restaurado correctamente" });
   });
@@ -262,10 +258,12 @@ export async function registerClientRoutes(app: FastifyInstance) {
 
     const { id } = request.params as { id: string };
 
-    const existing = await prisma.client.findFirst({ where: { id, tenantId, archivedAt: { not: null } } });
-    if (!existing) return reply.status(404).send({ ok: false, error: "NOT_FOUND", message: "Cliente archivado no encontrado" });
-
-    await prisma.client.delete({ where: { id } });
+    const result = await prisma.client.deleteMany({
+      where: { id, tenantId, archivedAt: { not: null } },
+    });
+    if (result.count === 0) {
+      return reply.status(404).send({ ok: false, error: "NOT_FOUND", message: "Cliente archivado no encontrado" });
+    }
 
     return reply.send({ ok: true, message: "Cliente eliminado definitivamente" });
   });

@@ -263,15 +263,14 @@ export async function registerActuacionesRoutes(app: FastifyInstance) {
     const exp = await getExpedienteOrFail(expId, user.tenantId);
     if (!exp) return reply.status(404).send({ ok: false, error: "EXPEDIENTE_NOT_FOUND" });
 
-    const existing = await prisma.actuacion.findFirst({
+    // Defense in depth: updateMany con filtro por tenantId + expedienteId.
+    const result = await prisma.actuacion.updateMany({
       where: { id, expedienteId: expId, tenantId: user.tenantId, archivedAt: null },
-    });
-    if (!existing) return reply.status(404).send({ ok: false, error: "ACTUACION_NOT_FOUND" });
-
-    await prisma.actuacion.update({
-      where: { id },
       data:  { archivedAt: new Date() },
     });
+    if (result.count === 0) {
+      return reply.status(404).send({ ok: false, error: "ACTUACION_NOT_FOUND" });
+    }
 
     return reply.send({ ok: true });
   });

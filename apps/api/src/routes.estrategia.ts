@@ -335,10 +335,13 @@ export async function registerEstrategiaRoutes(app: FastifyInstance) {
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const { id } = request.params as { id: string };
-    const item = await prisma.escritoAnalisis.findFirst({ where: { id, tenantId: user.tenantId } });
-    if (!item) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
-
-    await prisma.escritoAnalisis.update({ where: { id }, data: { deletedAt: new Date() } });
+    // Defense in depth: updateMany con filtro por tenantId evita que un UUID
+    // de otro tenant sea soft-deleted aunque se conozca.
+    const result = await prisma.escritoAnalisis.updateMany({
+      where: { id, tenantId: user.tenantId, deletedAt: null },
+      data:  { deletedAt: new Date() },
+    });
+    if (result.count === 0) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
     return reply.send({ ok: true });
   });
 }

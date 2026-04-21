@@ -139,15 +139,12 @@ export async function registerSharingRoutes(app: FastifyInstance) {
 
       const { shareId } = request.params as { shareId: string };
 
-      const share = await prisma.documentShare.findFirst({
+      // Defense in depth: updateMany filtra por tenantId en el propio write.
+      const result = await prisma.documentShare.updateMany({
         where: { id: shareId, tenantId: user.tenantId },
+        data:  { status: "revoked", updatedAt: new Date() },
       });
-      if (!share) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
-
-      await prisma.documentShare.update({
-        where: { id: shareId },
-        data: { status: "revoked", updatedAt: new Date() },
-      });
+      if (result.count === 0) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
 
       return reply.send({ ok: true });
     } catch (err: any) {

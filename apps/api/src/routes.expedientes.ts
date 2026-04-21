@@ -397,10 +397,10 @@ export async function registerExpedienteRoutes(app: FastifyInstance) {
 
     const { id } = request.params as { id: string };
 
-    const existing = await prisma.expediente.findFirst({ where: { id, tenantId: user.tenantId! } });
-    if (!existing) return notFound(reply);
-
-    await prisma.expediente.delete({ where: { id } });
+    const result = await prisma.expediente.deleteMany({
+      where: { id, tenantId: user.tenantId! },
+    });
+    if (result.count === 0) return notFound(reply);
 
     return reply.send({ ok: true, message: "Expediente eliminado correctamente" });
   });

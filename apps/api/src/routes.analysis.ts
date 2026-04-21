@@ -435,6 +435,7 @@ ${contractText}`;
 
       const { id } = request.params as { id: string };
 
+      // Se necesita el fileName antes del delete para limpiar el PDF service.
       const analysis = await prisma.contractAnalysis.findFirst({
         where: { id, tenantId: user.tenantId },
       });
@@ -443,7 +444,11 @@ ${contractText}`;
         return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
       }
 
-      await prisma.contractAnalysis.delete({ where: { id } });
+      // Defense in depth: deleteMany con filtro tenantId.
+      const result = await prisma.contractAnalysis.deleteMany({
+        where: { id, tenantId: user.tenantId },
+      });
+      if (result.count === 0) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
 
       // Intentar eliminar el archivo del PDF service (no crítico)
       const pdfServiceUrl = process.env.PDF_SERVICE_URL || "http://localhost:4100";
