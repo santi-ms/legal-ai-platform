@@ -4,7 +4,6 @@ import bcrypt from "bcryptjs";
 import { createHash, randomInt } from "crypto";
 import { sanitizeInput } from "./utils/sanitize.js";
 import { prisma } from "./db.js";
-import rateLimit from "@fastify/rate-limit";
 import { z } from "zod";
 import {
   registerSchema,
@@ -157,20 +156,21 @@ function sendError(
 }
 
 export async function registerAuthRoutes(app: FastifyInstance) {
-  // Rate limiting para endpoints sensibles: 5 req / 5 min por IP
-  await app.register(rateLimit, {
-    max: 5,
-    timeWindow: 5 * 60 * 1000, // 5 minutos
-    keyGenerator: (request) => {
-      return request.ip;
+  // Config de rate-limit por-ruta para endpoints sensibles (5 req / 5 min por IP).
+  // IMPORTANT: no registramos @fastify/rate-limit aquí (ya está registrado
+  // globalmente en server.ts). Registrarlo de nuevo sobrescribe los límites
+  // globales para TODAS las rutas, causando bloqueos en navegación normal.
+  const sensitiveRateLimit = {
+    rateLimit: {
+      max: 5,
+      timeWindow: 5 * 60 * 1000, // 5 minutos
+      errorResponseBuilder: () => ({
+        ok: false,
+        message: "Demasiados intentos. Por favor espera 5 minutos.",
+        error: "too_many_attempts",
+      }),
     },
-    skipOnError: false,
-    errorResponseBuilder: (_request, _context) => ({
-      ok: false,
-      message: "Demasiados intentos. Por favor espera 5 minutos.",
-      error: "too_many_attempts",
-    }),
-  });
+  };
 
   // POST /api/register - Registro pendiente hasta verificar OTP por email
   const RegisterSchema = z.object({
@@ -184,7 +184,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   });
 
   type RegisterBody = z.infer<typeof RegisterSchema>;
-  app.post<{ Body: RegisterBody }>("/api/register", async (request, reply) => {
+  app.post<{ Body: RegisterBody }>("/api/register", { config: sensitiveRateLimit }, async (request, reply) => {
     try {
       const { name, firstName, lastName, email, password, company, professionalRole } = RegisterSchema.parse(request.body);
       
@@ -679,7 +679,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 
   // POST /api/auth/verify-email/resend - Reenviar OTP de verificación
   type ResendVerificationCodeBody = z.infer<typeof resendVerificationCodeSchema>;
-  app.post<{ Body: ResendVerificationCodeBody }>("/api/auth/verify-email/resend", async (request, reply) => {
+  app.post<{ Body: ResendVerificationCodeBody }>("/api/auth/verify-email/resend", { config: sensitiveRateLimit }, async (request, reply) => {
     try {
       const { email } = resendVerificationCodeSchema.parse(request.body);
       const normEmail = normalizeEmail(email);
@@ -760,7 +760,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 
   // POST /api/auth/login - Login con validación de email verificado
   type LoginBody = z.infer<typeof loginSchema>;
-  app.post<{ Body: LoginBody }>("/api/auth/login", async (request, reply) => {
+  app.post<{ Body: LoginBody }>("/api/auth/login", { config: sensitiveRateLimit }, async (request, reply) => {
     try {
       const { email, password } = loginSchema.parse(request.body);
       const normEmail = normalizeEmail(email);
@@ -882,7 +882,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 
   // POST /api/auth/reset/request - Solicitar reset de contraseña
   type ResetReqBody = z.infer<typeof resetRequestSchema>;
-  app.post<{ Body: ResetReqBody }>("/api/auth/reset/request", async (request, reply) => {
+  app.post<{ Body: ResetReqBody }>("/api/auth/reset/request", { config: sensitiveRateLimit }, async (request, reply) => {
     try {
       const { email } = resetRequestSchema.parse(request.body);
 
