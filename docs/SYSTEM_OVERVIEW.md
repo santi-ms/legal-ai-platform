@@ -28,10 +28,30 @@
 
 ## 🤖 Los Asistentes de IA (Core del Producto)
 
-1. **Doku Genera** (`/documents/new`) — Genera contratos/documentos legales desde cero usando Claude API (`claude-3-5-sonnet`). Flujos: Chat conversacional o Formulario guiado.
-2. **Doku Analiza** (`/analysis`) — Analiza contratos existentes, detecta cláusulas problemáticas, riesgos.
+Todos los asistentes usan **Claude API** de Anthropic (`@anthropic-ai/sdk`).
+Se combinan dos modelos según la complejidad de la tarea:
+
+- **Claude Sonnet 4.6** (`claude-sonnet-4-6`) — tareas pesadas/complejas: generación de documentos, análisis profundo, estrategia, jurisprudencia.
+- **Claude Haiku 4.5** (`claude-haiku-4-5`) — tareas ligeras/rápidas: chat conversacional, asistente flotante, Q&A sobre documentos.
+
+### Asistentes
+
+1. **Doku Genera** (`/documents/new`) — Genera contratos/documentos legales desde cero.
+   - Chat conversacional → `claude-haiku-4-5` (recolección de datos)
+   - Generación final del documento → `claude-sonnet-4-6`
+   - Flujos: Chat conversacional o Formulario guiado.
+
+2. **Doku Analiza** (`/analysis`) — Analiza contratos existentes, detecta cláusulas problemáticas y riesgos.
+   - Análisis principal → `claude-sonnet-4-6`
+   - Q&A sobre documento → `claude-haiku-4-5`
+
 3. **Doku Estratega** (`/estrategia`) — Asesor estratégico para casos complejos.
+   - `claude-sonnet-4-6`
+
 4. **Doku Juris** (`/juris`) — Búsqueda jurisprudencial y normativa argentina.
+   - `claude-sonnet-4-6`
+
+5. **FloatingAssistant** (widget flotante en toda la app) — `claude-haiku-4-5`
 
 **Plantillas soportadas** en `modules/documents/templates/`:
 - Contrato de locación (lease)
