@@ -21,7 +21,7 @@ export default function TerminosPage() {
 
       <main className="min-h-screen bg-white dark:bg-background-dark">
         {/* Hero */}
-        <section className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-16 px-6">
+        <section className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 pt-32 pb-16 px-6">
           <div className="max-w-3xl mx-auto">
             <p className="text-sm text-primary font-semibold uppercase tracking-wide mb-3">
               DocuLex · Documento Legal

@@ -5,6 +5,11 @@ interface BrandLogoProps {
    */
   size?: number;
   className?: string;
+  /**
+   * Si es true, fuerza la versión blanca del logo sin importar el tema
+   * (útil cuando el logo va sobre un chip/pill oscuro en modo claro).
+   */
+  invert?: boolean;
 }
 
 /**
@@ -15,7 +20,19 @@ interface BrandLogoProps {
  * El ancho se ajusta automáticamente al aspect ratio del logo.
  * Usa <img> en lugar de next/image para permitir tamaños reales sin compresión.
  */
-export function BrandLogo({ size = 40, className = "" }: BrandLogoProps) {
+export function BrandLogo({ size = 40, className = "", invert = false }: BrandLogoProps) {
+  if (invert) {
+    return (
+      <img
+        src="/logo-blanco.png"
+        alt="DocuLex"
+        height={size}
+        style={{ height: size, width: "auto" }}
+        className={`block ${className}`}
+      />
+    );
+  }
+
   return (
     <>
       {/* Modo claro — logo negro sobre fondo blanco */}
