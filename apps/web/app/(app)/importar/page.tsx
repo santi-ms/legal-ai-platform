@@ -126,7 +126,7 @@ export default function ImportarPage() {
   const typeInfo = IMPORT_TYPES.find((t) => t.value === selectedType);
 
   return (
-    <div className="p-6 md:p-8 max-w-4xl mx-auto w-full space-y-6">
+    <div className="p-3 sm:p-6 md:p-8 max-w-4xl mx-auto w-full space-y-6">
       {/* Header */}
       <PageHeader
         icon={FileSpreadsheet}

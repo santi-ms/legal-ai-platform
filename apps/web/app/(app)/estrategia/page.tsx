@@ -102,9 +102,9 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-lg">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-lg max-h-[92dvh] overflow-y-auto">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
             <div className="size-9 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center">
               <Swords className="w-4 h-4 text-violet-600 dark:text-violet-400" strokeWidth={1.75} />
@@ -116,7 +116,7 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
           </button>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           {/* Drop zone */}
           <div
             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
@@ -244,7 +244,7 @@ export default function EstrategiaPage() {
   const totalPages = Math.max(1, Math.ceil(total / 20));
 
   return (
-    <div className="px-4 sm:px-6 lg:px-10 py-6 md:py-10 max-w-6xl mx-auto w-full space-y-8">
+    <div className="px-4 sm:px-6 lg:px-10 py-6 md:py-10 max-w-6xl mx-auto w-full space-y-5 sm:space-y-8">
       {/* Header editorial */}
       <PageHeader
         icon={Swords}

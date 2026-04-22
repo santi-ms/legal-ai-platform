@@ -9,7 +9,7 @@ import {
 } from "@/app/lib/webApi";
 import {
   Scale, Send, Plus, Trash2, Loader2, BookOpen, ChevronDown,
-  MessageSquare, Clock, Sparkles, AlertCircle, Search, X,
+  MessageSquare, Clock, Sparkles, AlertCircle, Search, X, Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/app/lib/utils";
@@ -152,6 +152,8 @@ function ConsultaSidebar({
   onNew,
   onDelete,
   loading,
+  open,
+  onClose,
 }: {
   consultas: JurisConsulta[];
   activeId: string | null;
@@ -159,9 +161,25 @@ function ConsultaSidebar({
   onNew: () => void;
   onDelete: (id: string) => void;
   loading: boolean;
+  open?: boolean;
+  onClose?: () => void;
 }) {
   return (
-    <aside className="w-72 flex-shrink-0 flex flex-col border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 overflow-hidden">
+    <>
+      {/* Mobile overlay */}
+      {open && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
+          onClick={onClose}
+          aria-hidden
+        />
+      )}
+      <aside
+        className={cn(
+          "fixed md:static inset-y-0 left-0 z-50 w-[78%] max-w-xs md:w-72 flex-shrink-0 flex flex-col border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 overflow-hidden transition-transform duration-200",
+          open ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+        )}
+      >
       {/* Header */}
       <div className="p-4 border-b border-slate-200 dark:border-slate-800">
         <Button onClick={onNew} className="w-full gap-2 bg-violet-600 hover:bg-violet-700 text-white" size="sm">
@@ -222,6 +240,7 @@ function ConsultaSidebar({
         )}
       </div>
     </aside>
+    </>
   );
 }
 
@@ -288,6 +307,7 @@ export default function JurisPage() {
   const [provincia, setProvincia]          = useState("");
   const [materia, setMateria]              = useState("");
   const [error, setError]                  = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen]      = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
@@ -428,16 +448,18 @@ export default function JurisPage() {
   const mensajes = activeConsulta?.mensajes ?? [];
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-[calc(100dvh-4rem)] overflow-hidden bg-slate-50 dark:bg-slate-950">
 
       {/* ── Sidebar ──────────────────────────────────────────────────────────── */}
       <ConsultaSidebar
         consultas={consultas}
         activeId={activeConsulta?.id ?? null}
-        onSelect={selectConsulta}
-        onNew={handleNew}
+        onSelect={(id) => { selectConsulta(id); setSidebarOpen(false); }}
+        onNew={() => { handleNew(); setSidebarOpen(false); }}
         onDelete={handleDelete}
         loading={loadingList}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       {/* ── Main chat area ──────────────────────────────────────��────────────── */}
@@ -445,7 +467,14 @@ export default function JurisPage() {
 
         {/* Topbar con filtros */}
         {!activeConsulta && (
-          <div className="flex-shrink-0 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 flex items-center gap-3 flex-wrap">
+          <div className="flex-shrink-0 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3 flex-wrap">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="md:hidden p-2 -ml-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
+              aria-label="Abrir historial de consultas"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
             <div className="flex items-center gap-2">
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Jurisdicción:</label>
               <select
@@ -480,7 +509,14 @@ export default function JurisPage() {
 
         {/* Active consulta header */}
         {activeConsulta && (
-          <div className="flex-shrink-0 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 flex items-center gap-3">
+          <div className="flex-shrink-0 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="md:hidden p-2 -ml-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
+              aria-label="Abrir historial de consultas"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
             <Scale className="w-5 h-5 text-violet-500 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm text-slate-800 dark:text-slate-200 truncate">{activeConsulta.titulo}</p>
@@ -504,7 +540,7 @@ export default function JurisPage() {
         )}
 
         {/* Messages area */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-5">
+        <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6 space-y-5">
           {loadingChat ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
@@ -543,7 +579,7 @@ export default function JurisPage() {
         </div>
 
         {/* Input area */}
-        <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+        <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 sm:p-4">
           <div className="flex gap-3 items-end">
             <div className="flex-1 relative">
               <textarea

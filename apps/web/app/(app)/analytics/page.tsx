@@ -321,7 +321,7 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="p-6 md:p-8 max-w-7xl mx-auto w-full">
+      <div className="p-3 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
         <PageSkeleton variant="dashboard" count={5} />
       </div>
     );
@@ -329,7 +329,7 @@ export default function AnalyticsPage() {
 
   if (error || !data) {
     return (
-      <div className="p-6 md:p-8 max-w-7xl mx-auto w-full">
+      <div className="p-3 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
         <EmptyState
           icon={AlertTriangle}
           iconGradient="rose"
@@ -369,7 +369,7 @@ export default function AnalyticsPage() {
   const compliancePct  = Math.round((vencimientos.completados / totalVenc) * 100);
 
   return (
-    <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
+    <div className="p-3 sm:p-6 md:p-8 space-y-5 sm:space-y-8 max-w-7xl mx-auto w-full">
 
       {/* Header */}
       <PageHeader

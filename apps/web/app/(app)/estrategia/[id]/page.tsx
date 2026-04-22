@@ -351,7 +351,7 @@ export default function EstrategiaDetailPage() {
   // ── Processing ───────────────────────────────────────────────────────────
   if (item.status === "pending" || item.status === "processing") {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <div className="mb-6">
           <Link href="/estrategia" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
             <ArrowLeft className="w-4 h-4" />
@@ -366,7 +366,7 @@ export default function EstrategiaDetailPage() {
   // ── Error (from analysis) ─────────────────────────────────────────────────
   if (item.status === "error") {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <div className="mb-6">
           <Link href="/estrategia" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
             <ArrowLeft className="w-4 h-4" />
@@ -383,7 +383,7 @@ export default function EstrategiaDetailPage() {
   const RiskIcon = riskCfg.icon;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+    <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-6">
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-4">
