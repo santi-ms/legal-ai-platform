@@ -473,7 +473,8 @@ function ExpedientesContent() {
               className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
             >
               <Plus className="w-4 h-4" />
-              Nuevo expediente
+              <span className="hidden sm:inline">Nuevo expediente</span>
+              <span className="sm:hidden">Nuevo</span>
             </Button>
           </>
         }
@@ -605,7 +606,67 @@ function ExpedientesContent() {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            {/* Mobile: card list */}
+            <ul className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+              {expedientes.map((exp) => (
+                <li key={exp.id} className="group">
+                  <Link
+                    href={`/expedientes/${exp.id}`}
+                    className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">
+                          {exp.title}
+                        </p>
+                        {exp.number && (
+                          <p className="text-[11px] text-slate-400 mt-0.5">#{exp.number}</p>
+                        )}
+                      </div>
+                      <span
+                        className={cn(
+                          "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0",
+                          STATUS_COLORS[exp.status] ?? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                        )}
+                      >
+                        {STATUS_LABELS[exp.status] ?? exp.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded font-medium capitalize">
+                        {MATTER_LABELS[exp.matter] ?? exp.matter}
+                      </span>
+                      {exp.client && (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 min-w-0">
+                          <User className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate max-w-[140px]">{exp.client.name}</span>
+                        </span>
+                      )}
+                      {exp.deadline && (
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1 text-[11px]",
+                            new Date(exp.deadline) < new Date()
+                              ? "text-red-500"
+                              : "text-slate-500 dark:text-slate-400"
+                          )}
+                        >
+                          <CalendarClock className="w-3 h-3" />
+                          {formatDate(exp.deadline)}
+                        </span>
+                      )}
+                      <span className="text-[11px] text-slate-400 ml-auto">
+                        {exp._count?.documents ?? 0} doc{(exp._count?.documents ?? 0) !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
+            {/* Desktop: tabla */}
+            <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
@@ -716,7 +777,8 @@ function ExpedientesContent() {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </div>
 

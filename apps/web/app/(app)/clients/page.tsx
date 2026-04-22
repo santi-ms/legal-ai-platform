@@ -132,7 +132,7 @@ const ClientRow = React.memo(function ClientRow({
 
   return (
     <div
-      className="group flex items-center gap-4 px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
+      className="group flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
       onClick={() => router.push(`/clients/${client.id}`)}
     >
       {/* Avatar */}
@@ -221,16 +221,17 @@ const ClientRow = React.memo(function ClientRow({
         {formatDate(client.createdAt)}
       </div>
 
-      {/* Actions */}
+      {/* Actions — visibles siempre en mobile, hover en desktop */}
       <div
-        className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="flex items-center gap-0.5 sm:gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0"
         onClick={(e) => e.stopPropagation()}
       >
         {archivedMode ? (
           <button
             onClick={() => onRestore(client.id)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+            className="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
             title="Restaurar cliente"
+            aria-label="Restaurar cliente"
           >
             <ArchiveRestore className="w-4 h-4" />
           </button>
@@ -238,15 +239,17 @@ const ClientRow = React.memo(function ClientRow({
           <>
             <button
               onClick={() => onEdit(client)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
+              className="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
               title="Editar cliente"
+              aria-label="Editar cliente"
             >
               <Pencil className="w-4 h-4" />
             </button>
             <button
               onClick={() => onDelete(client.id)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+              className="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
               title="Archivar cliente"
+              aria-label="Archivar cliente"
             >
               <Archive className="w-4 h-4" />
             </button>
@@ -516,13 +519,13 @@ function ClientsContent() {
           </div>
 
           {/* Type filter */}
-          <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden text-sm flex-shrink-0">
+          <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden text-sm flex-shrink-0 w-full sm:w-auto">
             {(["all", "persona_fisica", "persona_juridica"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => handleTypeFilter(v)}
                 className={cn(
-                  "px-3 py-2.5 font-medium transition-colors border-r last:border-r-0 border-slate-200 dark:border-slate-700",
+                  "flex-1 sm:flex-initial px-3 py-2.5 font-medium transition-colors border-r last:border-r-0 border-slate-200 dark:border-slate-700 whitespace-nowrap",
                   typeFilter === v
                     ? "bg-primary text-white"
                     : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
