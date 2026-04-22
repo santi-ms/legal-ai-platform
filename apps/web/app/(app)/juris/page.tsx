@@ -348,8 +348,45 @@ export default function JurisPage() {
     setError(null);
     setInput("");
 
+    // Mensaje optimista del usuario — se muestra inmediatamente
+    const optimisticId = `optimistic-${Date.now()}`;
+    const nowIso = new Date().toISOString();
+    const optimisticUserMsg: JurisMensaje = {
+      id:          optimisticId,
+      consultaId:  activeConsulta?.id ?? "pending",
+      role:        "user",
+      content:     text,
+      citas:       null,
+      webSearches: null,
+      tokensUsed:  0,
+      createdAt:   nowIso,
+    };
+
+    const wasNewConsulta = !activeConsulta;
+
+    if (wasNewConsulta) {
+      // Crear una consulta temporal para mostrar el mensaje del usuario mientras el backend responde
+      setActiveConsulta({
+        id:         "pending",
+        titulo:     text.length > 60 ? `${text.slice(0, 60)}…` : text,
+        provincia:  provincia || null,
+        materia:    materia || null,
+        tokensUsed: 0,
+        createdAt:  nowIso,
+        updatedAt:  nowIso,
+        expediente: null,
+        mensajes:   [optimisticUserMsg],
+      });
+    } else {
+      // Agregar el mensaje optimista a la consulta existente
+      setActiveConsulta(prev => prev ? {
+        ...prev,
+        mensajes: [...(prev.mensajes ?? []), optimisticUserMsg],
+      } : prev);
+    }
+
     try {
-      if (!activeConsulta) {
+      if (wasNewConsulta) {
         // Nueva consulta
         const c = await createJurisConsulta({ mensaje: text, provincia: provincia || undefined, materia: materia || undefined });
         setActiveConsulta(c);
@@ -357,13 +394,24 @@ export default function JurisPage() {
         setConsultas(prev => [c, ...prev]);
       } else {
         // Continuar consulta existente
-        const { mensajes: newMsgs } = await sendJurisMensaje(activeConsulta.id, text);
+        const { mensajes: newMsgs } = await sendJurisMensaje(activeConsulta!.id, text);
         setActiveConsulta(prev => prev ? {
           ...prev,
-          mensajes: [...(prev.mensajes ?? []), ...newMsgs],
+          // Filtrar el optimista y reemplazar con los mensajes reales del backend
+          mensajes: [...(prev.mensajes ?? []).filter(m => m.id !== optimisticId), ...newMsgs],
         } : prev);
       }
     } catch (err: any) {
+      // Rollback: quitar el mensaje optimista y restaurar el input
+      if (wasNewConsulta) {
+        setActiveConsulta(null);
+      } else {
+        setActiveConsulta(prev => prev ? {
+          ...prev,
+          mensajes: (prev.mensajes ?? []).filter(m => m.id !== optimisticId),
+        } : prev);
+      }
+      setInput(text);
       setError(err?.message ?? "Error al enviar la consulta.");
     } finally {
       setSending(false);
