@@ -225,15 +225,27 @@ export async function registerBillingRoutes(app: FastifyInstance) {
       return reply.status(400).send({ ok: false, error: "INVALID_PLAN", message: "Plan inválido" });
     }
 
-    // Guardia: evitar checkout si el usuario ya tiene una suscripción vigente.
-    // De lo contrario, el upsert posterior pondría la suscripción activa en
-    // "pending_payment", desactivándola mientras MP sigue cobrando el plan anterior.
+    // Guardia: evitar checkout si el usuario ya tiene una suscripción vigente
+    // a un plan PAGADO. De lo contrario, el upsert posterior pondría la
+    // suscripción activa en "pending_payment", desactivándola mientras MP
+    // sigue cobrando el plan anterior.
+    //
+    // Excepción: si el status figura activo pero el plan efectivo es Free
+    // (puede pasar por drift de datos — webhook que degradó plan pero dejó
+    // status activo, o suscripción vieja mal limpiada), dejamos pasar:
+    // el usuario realmente no tiene nada pago y necesita poder suscribirse.
     const existingSub = await prisma.subscription.findUnique({
       where: { tenantId: user.tenantId },
       include: { plan: true },
     });
-    if (existingSub && (existingSub.status === "active" || existingSub.status === "trialing" || existingSub.status === "canceling")) {
-      const existingPlanCode = (existingSub.plan as any)?.code ?? "";
+    const existingPlanCode = (existingSub?.plan as any)?.code ?? "";
+    const isOnPaidPlan = existingSub && existingPlanCode && existingPlanCode !== "free";
+
+    if (
+      existingSub &&
+      isOnPaidPlan &&
+      (existingSub.status === "active" || existingSub.status === "trialing" || existingSub.status === "canceling")
+    ) {
       if (existingPlanCode === planCode) {
         return reply.status(409).send({
           ok: false,
