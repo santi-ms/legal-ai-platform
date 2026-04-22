@@ -4,9 +4,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { SettingsHeader } from "@/components/settings/SettingsHeader";
-import { SettingsTabs } from "@/components/settings/SettingsTabs";
-import { SupportBanner } from "@/components/settings/SupportBanner";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useRouter } from "next/navigation";
@@ -320,30 +317,9 @@ export default function SecuritySettingsPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden bg-parchment dark:bg-ink font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
-      <div className="flex h-full grow flex-col">
-        <div className="flex flex-1 justify-center pb-16">
-          <div className="flex flex-col max-w-[1040px] w-full px-4 sm:px-6 lg:px-10">
-            <SettingsHeader />
-
-            <div className="mt-2">
-              <SettingsTabs activeTab="security" />
-            </div>
-
-            <div className="mt-6 space-y-5">
-              {/* Cambio de contraseña */}
-              <ChangePasswordSection />
-
-              {/* 2FA — próximamente */}
-              <TwoFactorSection />
-            </div>
-
-            <div className="mt-10">
-              <SupportBanner />
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="mt-6 space-y-5">
+      <ChangePasswordSection />
+      <TwoFactorSection />
     </div>
   );
 }

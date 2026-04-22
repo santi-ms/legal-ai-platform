@@ -10,8 +10,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { SettingsHeader } from "@/components/settings/SettingsHeader";
-import { SettingsTabs } from "@/components/settings/SettingsTabs";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import {
@@ -220,18 +218,9 @@ export default function PromptsSettingsPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-parchment dark:bg-ink font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
-      <div className="flex h-full grow flex-col">
-        <div className="flex flex-1 justify-center pb-16">
-          <div className="flex flex-col max-w-[1040px] w-full px-4 sm:px-6 lg:px-10">
-            <SettingsHeader />
-
-            <div className="mt-2">
-              <SettingsTabs activeTab="prompts" />
-            </div>
-
-            {/* Subtítulo prompts + acción */}
-            <div className="mt-6 flex items-start justify-between gap-4 flex-wrap">
+    <>
+      {/* Subtítulo prompts + acción */}
+      <div className="mt-6 flex items-start justify-between gap-4 flex-wrap">
               <div className="flex items-start gap-3 min-w-0 flex-1">
                 <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white flex items-center justify-center shadow-soft">
                   <Sparkles className="w-5 h-5" />
@@ -429,11 +418,8 @@ export default function PromptsSettingsPage() {
               </div>
             )}
 
-            <div className="h-10" />
-          </div>
-        </div>
-      </div>
-    </div>
+      <div className="h-10" />
+    </>
   );
 }
 

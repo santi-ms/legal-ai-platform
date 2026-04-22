@@ -3,9 +3,6 @@
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { SettingsHeader } from "@/components/settings/SettingsHeader";
-import { SettingsTabs } from "@/components/settings/SettingsTabs";
-import { SupportBanner } from "@/components/settings/SupportBanner";
 import {
   getTeamMembers,
   getTeamInvitations,
@@ -235,7 +232,7 @@ export default function TeamSettingsPage() {
   const isEstudioPlan = maxUsers !== 1;
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-parchment dark:bg-ink font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
+    <div className="mt-6 flex flex-col gap-5">
       {showInviteModal && (
         <InviteModal
           onClose={() => setShowInviteModal(false)}
@@ -243,14 +240,6 @@ export default function TeamSettingsPage() {
           loading={inviteLoading}
         />
       )}
-
-      <div className="flex flex-1 justify-center pb-16">
-        <div className="flex flex-col max-w-[1040px] w-full px-4 sm:px-6 lg:px-10 gap-5">
-          <SettingsHeader />
-
-          <div className="mt-2">
-            <SettingsTabs activeTab="team" />
-          </div>
 
           {/* Status message */}
           {statusMsg && (
@@ -436,10 +425,6 @@ export default function TeamSettingsPage() {
               </div>
             </div>
           )}
-
-          <SupportBanner />
-        </div>
-      </div>
     </div>
   );
 }

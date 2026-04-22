@@ -16,7 +16,8 @@ interface TabConfig {
 }
 
 interface SettingsTabsProps {
-  activeTab: SettingsTab;
+  /** Opcional — si no se pasa, se deriva del pathname. */
+  activeTab?: SettingsTab;
   className?: string;
 }
 
@@ -36,12 +37,23 @@ const tabs: TabConfig[] = [
 export function SettingsTabs({ activeTab, className }: SettingsTabsProps) {
   const pathname = usePathname();
 
+  // Si no nos pasaron activeTab, lo derivamos del pathname.
+  const derivedActive: SettingsTab | undefined =
+    activeTab ??
+    (pathname === "/settings"              ? "profile"      :
+     pathname?.startsWith("/settings/billing")      ? "billing"      :
+     pathname?.startsWith("/settings/security")     ? "security"     :
+     pathname?.startsWith("/settings/team")         ? "team"         :
+     pathname?.startsWith("/settings/prompts")      ? "prompts"      :
+     pathname?.startsWith("/settings/integrations") ? "integrations" :
+     undefined);
+
   return (
     <div className={cn("overflow-x-auto", className)}>
       <div className="flex items-end gap-1 border-b border-slate-200 dark:border-slate-800 min-w-max">
         {tabs.map((tab) => {
           const Icon = tab.icon;
-          const isActive = !tab.disabled && (activeTab === tab.id || pathname === tab.href);
+          const isActive = !tab.disabled && (derivedActive === tab.id || pathname === tab.href);
 
           if (tab.disabled) {
             return (

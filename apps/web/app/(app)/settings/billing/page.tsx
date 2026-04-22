@@ -3,9 +3,6 @@
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, Suspense } from "react";
-import { SettingsHeader } from "@/components/settings/SettingsHeader";
-import { SettingsTabs } from "@/components/settings/SettingsTabs";
-import { SupportBanner } from "@/components/settings/SupportBanner";
 import {
   getBillingSubscription,
   getBillingPlans,
@@ -681,8 +678,7 @@ function BillingPageContent() {
   const estudioTotal = (estudioPlan?.priceArs ?? 45000) * estudioUsers;
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-parchment dark:bg-ink font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
-
+    <>
       {/* Modal de confirmación de cambio de plan */}
       {showChangePlanModal && pendingChange && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -845,13 +841,7 @@ function BillingPageContent() {
         </div>
       )}
 
-      <div className="flex flex-1 justify-center pb-16">
-        <div className="flex flex-col max-w-[1040px] w-full px-4 sm:px-6 lg:px-10 gap-5">
-          <SettingsHeader />
-
-          <div className="mt-2">
-            <SettingsTabs activeTab="billing" />
-          </div>
+      <div className="mt-6 flex flex-col gap-5">
 
           {/* Verificando suscripción con MP */}
           {verifying && (
@@ -1008,11 +998,8 @@ function BillingPageContent() {
               </div>
             </div>
           )}
-
-          <SupportBanner />
-        </div>
       </div>
-    </div>
+    </>
   );
 }
 
