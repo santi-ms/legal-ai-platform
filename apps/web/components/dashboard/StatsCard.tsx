@@ -40,18 +40,18 @@ export const StatsCard = React.memo(function StatsCard({
   const inner = (
     <div
       className={cn(
-        "relative bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-soft transition-all duration-200",
+        "relative bg-white dark:bg-slate-900 p-3 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-soft transition-all duration-200",
         href && "hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-hover cursor-pointer group",
       )}
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", iconBgColor, iconColor)}>
-          <Icon className="w-5 h-5" strokeWidth={2} />
+      <div className="flex items-start justify-between mb-2 sm:mb-4">
+        <div className={cn("w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center", iconBgColor, iconColor)}>
+          <Icon className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
         </div>
         {change && (
           <span
             className={cn(
-              "text-[11px] font-bold px-2 py-0.5 rounded-full",
+              "text-[10px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full",
               change.isPositive
                 ? "text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10"
                 : "text-rose-600 bg-rose-50 dark:text-rose-400 dark:bg-rose-500/10",
@@ -61,19 +61,19 @@ export const StatsCard = React.memo(function StatsCard({
           </span>
         )}
       </div>
-      <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.12em]">
+      <p className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.1em] sm:tracking-[0.12em] line-clamp-1">
         {label}
       </p>
       <p
         className={cn(
-          "text-3xl font-extrabold mt-1 text-ink dark:text-white tracking-tight leading-none",
+          "text-2xl sm:text-3xl font-extrabold mt-1 text-ink dark:text-white tracking-tight leading-none",
           href && "group-hover:text-primary transition-colors duration-200",
         )}
       >
         {value}
       </p>
       {subText && (
-        <p className={cn("text-[11px] font-medium mt-1.5", subTextColor)}>{subText}</p>
+        <p className={cn("text-[10px] sm:text-[11px] font-medium mt-1 sm:mt-1.5 line-clamp-2", subTextColor)}>{subText}</p>
       )}
     </div>
   );

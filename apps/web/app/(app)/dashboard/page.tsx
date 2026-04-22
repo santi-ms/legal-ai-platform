@@ -181,9 +181,9 @@ function DashboardContent() {
     <div className="px-4 sm:px-6 lg:px-10 py-6 md:py-10 max-w-7xl mx-auto w-full">
       {/* ── Banner overdue ─────────────────────────────────────────────── */}
       {overdueCount > 0 && !bannerDismissed && (
-        <div className="mb-6 flex items-center justify-between gap-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-2xl px-4 py-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0" />
+        <div className="mb-6 flex items-start sm:items-center justify-between gap-2 sm:gap-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-2xl px-3 sm:px-4 py-3">
+          <div className="flex items-start sm:items-center gap-2 sm:gap-3 min-w-0 flex-1 flex-wrap">
+            <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5 sm:mt-0" />
             <p className="text-sm font-semibold text-rose-800 dark:text-rose-300">
               {overdueCount === 1
                 ? "Tenés 1 expediente con vencimiento vencido."
@@ -191,7 +191,7 @@ function DashboardContent() {
             </p>
             <Link
               href="/vencimientos"
-              className="text-sm font-bold text-rose-700 dark:text-rose-400 underline underline-offset-2 hover:no-underline flex-shrink-0"
+              className="text-xs sm:text-sm font-bold text-rose-700 dark:text-rose-400 underline underline-offset-2 hover:no-underline flex-shrink-0"
             >
               Ver vencimientos →
             </Link>
@@ -199,7 +199,7 @@ function DashboardContent() {
           <button
             onClick={() => setBannerDismissed(true)}
             aria-label="Cerrar alerta"
-            className="p-1 rounded-md text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors flex-shrink-0"
+            className="p-2 sm:p-1 rounded-md text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors flex-shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
@@ -207,28 +207,28 @@ function DashboardContent() {
       )}
 
       {/* ── Hero editorial ─────────────────────────────────────────────── */}
-      <section className="mb-10">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+      <section className="mb-8 md:mb-10">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5 md:gap-6">
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700 dark:text-gold-400 mb-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700 dark:text-gold-400 mb-2 md:mb-3">
               Panel de control · {currentDate}
             </p>
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-ink dark:text-white leading-[1.05]">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-ink dark:text-white leading-[1.05]">
               {greeting}, <span className="text-primary">{firstName}</span>.
             </h1>
-            <p className="mt-3 text-base text-slate-600 dark:text-slate-400 max-w-xl leading-relaxed">
+            <p className="mt-2 md:mt-3 text-sm md:text-base text-slate-600 dark:text-slate-400 max-w-xl leading-relaxed">
               Acá tenés el resumen de tu actividad. Seguí donde quedaste o creá algo nuevo.
             </p>
           </div>
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <Link href="/documents/new/chat">
-              <Button variant="outline" size="lg" className="gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 md:flex-shrink-0">
+            <Link href="/documents/new/chat" className="sm:w-auto">
+              <Button variant="outline" size="lg" className="gap-2 w-full sm:w-auto">
                 <Sparkles className="w-4 h-4 text-gold-500" />
                 Chat con IA
               </Button>
             </Link>
-            <Link href="/documents/new">
-              <Button variant="ink" size="lg" className="gap-2 group">
+            <Link href="/documents/new" className="sm:w-auto">
+              <Button variant="ink" size="lg" className="gap-2 group w-full sm:w-auto">
                 <Plus className="w-4 h-4" />
                 Nuevo documento
                 <ArrowRight className="w-4 h-4 opacity-70 group-hover:translate-x-0.5 transition-transform" />
@@ -344,7 +344,7 @@ function DashboardContent() {
           </div>
 
           {/* Actividad + Agenda combinadas en fila */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <TodayAgendaWidget />
             <RecentActivityWidget />
           </div>
