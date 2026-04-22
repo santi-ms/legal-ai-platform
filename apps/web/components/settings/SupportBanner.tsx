@@ -1,7 +1,6 @@
 "use client";
 
 import { LifeBuoy, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/app/lib/utils";
 
 interface SupportBannerProps {
@@ -45,13 +44,14 @@ export function SupportBanner({ onContactSupport, className }: SupportBannerProp
               </p>
             </div>
           </div>
-          <Button
+          <button
+            type="button"
             onClick={handleContactSupport}
-            className="inline-flex items-center gap-2 bg-white text-ink px-5 py-2.5 rounded-xl font-semibold text-sm whitespace-nowrap hover:bg-slate-100 transition-colors shadow-soft"
+            className="inline-flex items-center gap-2 bg-white !text-ink px-5 py-2.5 rounded-xl font-semibold text-sm whitespace-nowrap hover:bg-slate-100 transition-colors shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
           >
             Contactar soporte
             <ArrowRight className="w-4 h-4" />
-          </Button>
+          </button>
         </div>
       </div>
     </div>
