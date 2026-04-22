@@ -2,7 +2,7 @@
 
 import React, { Suspense, useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSearchDebounce } from "../lib/hooks/useSearchDebounce";
+import { useSearchDebounce } from "@/app/lib/hooks/useSearchDebounce";
 import {
   Briefcase, Plus, Search, X, Loader2, AlertCircle,
   CalendarClock, User, ChevronLeft, ChevronRight, AlertTriangle, Download,

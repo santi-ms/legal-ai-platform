@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import InactivityLogout from "@/app/components/InactivityLogout";
-import { AppShell } from "@/components/dashboard/AppShell";
 
 export const metadata: Metadata = {
   title: "Importar datos | DocuLex",
@@ -8,10 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function ImportarLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <AppShell>
-      <InactivityLogout />
-      {children}
-    </AppShell>
-  );
+  return <>{children}</>;
 }
