@@ -95,8 +95,8 @@ export const PageHeader = React.memo(function PageHeader({
         </nav>
       )}
 
-      <div className="flex items-start justify-between gap-3 sm:gap-6 flex-wrap">
-        <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-6">
+        <div className="flex items-start gap-3 sm:gap-4 min-w-0 w-full sm:flex-1">
           {Icon && iconTreatment !== "none" && (
             iconTreatment === "outline" ? (
               <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center">
