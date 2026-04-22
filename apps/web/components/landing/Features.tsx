@@ -37,12 +37,25 @@ const FEATURE_GENERA = {
     "Descarga en PDF y Word",
     "Revisiones con sugerencias",
   ],
-  example: {
-    input:
-      "Necesito un contrato de locación para un depto en Corrientes capital, $300.000 por mes, 2 años.",
-    output:
-      "CONTRATO DE LOCACIÓN — Entre el Sr. [LOCADOR], DNI...",
-  },
+  conversation: [
+    {
+      role: "user" as const,
+      text: "Necesito un contrato de locación para un depto en Corrientes capital, $300.000 por mes, 2 años.",
+    },
+    {
+      role: "ai" as const,
+      text: "Perfecto. ¿Cómo se instrumenta la garantía: propietaria, seguro de caución o fiador solidario?",
+    },
+    {
+      role: "user" as const,
+      text: "Garantía propietaria. Y sumá cláusula de ajuste semestral por ICL.",
+    },
+    {
+      role: "ai" as const,
+      text: "CONTRATO DE LOCACIÓN — Entre el Sr. [LOCADOR], DNI...",
+      mono: true,
+    },
+  ],
 };
 
 const FEATURE_ANALIZA = {
@@ -139,20 +152,35 @@ export function Features() {
 
               {/* Chat bubble preview — el corazón de la card */}
               <div className="mt-auto space-y-3 bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-                <div className="flex justify-end">
-                  <div className="max-w-[85%] bg-white text-primary text-sm rounded-2xl rounded-tr-sm px-4 py-2.5 shadow-lg">
-                    {FEATURE_GENERA.example.input}
-                  </div>
-                </div>
-                <div className="flex items-start gap-2.5">
-                  <div className="size-7 rounded-lg bg-gold/20 border border-gold/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <PenLine className="w-3.5 h-3.5 text-gold-300" />
-                  </div>
-                  <div className="max-w-[85%] bg-ink/60 text-white/90 text-sm rounded-2xl rounded-tl-sm px-4 py-2.5 border border-white/10 font-mono">
-                    {FEATURE_GENERA.example.output}
-                    <span className="inline-block w-0.5 h-3.5 bg-white/60 ml-0.5 animate-pulse align-middle" />
-                  </div>
-                </div>
+                {FEATURE_GENERA.conversation.map((msg, idx) => {
+                  const isLast = idx === FEATURE_GENERA.conversation.length - 1;
+                  if (msg.role === "user") {
+                    return (
+                      <div key={idx} className="flex justify-end">
+                        <div className="max-w-[85%] bg-white text-primary text-sm rounded-2xl rounded-tr-sm px-4 py-2.5 shadow-lg">
+                          {msg.text}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={idx} className="flex items-start gap-2.5">
+                      <div className="size-7 rounded-lg bg-gold/20 border border-gold/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <PenLine className="w-3.5 h-3.5 text-gold-300" />
+                      </div>
+                      <div
+                        className={`max-w-[85%] bg-ink/60 text-white/90 text-sm rounded-2xl rounded-tl-sm px-4 py-2.5 border border-white/10 ${
+                          msg.mono ? "font-mono" : ""
+                        }`}
+                      >
+                        {msg.text}
+                        {isLast && msg.mono ? (
+                          <span className="inline-block w-0.5 h-3.5 bg-white/60 ml-0.5 animate-pulse align-middle" />
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               <Link
