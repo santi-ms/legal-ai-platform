@@ -217,7 +217,7 @@
   height: 1px;
   background: transparent;
   box-shadow: var(--sf-stars-1);
-  animation: sfStarScroll 18s linear infinite;
+  animation: sfStarScroll 40s linear infinite;
 }
 
 .sf-stars-1::after {
@@ -289,7 +289,7 @@
   height: 2px;
   background: transparent;
   box-shadow: var(--sf-stars-2);
-  animation: sfStarScroll 36s linear infinite;
+  animation: sfStarScroll 75s linear infinite;
 }
 
 .sf-stars-2::after {
@@ -336,7 +336,7 @@
   height: 3px;
   background: transparent;
   box-shadow: var(--sf-stars-3);
-  animation: sfStarScroll 60s linear infinite;
+  animation: sfStarScroll 120s linear infinite;
 }
 
 .sf-stars-3::after {
