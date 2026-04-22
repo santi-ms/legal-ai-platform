@@ -335,17 +335,6 @@ export function Hero() {
       <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
         {/* ── Left Content — 7 cols ─────────────────────────────── */}
         <div className="lg:col-span-7 flex flex-col gap-8 animate-fade-up">
-          {/* Eyebrow con dot pulsante */}
-          <div className="inline-flex items-center gap-2.5 bg-white/60 dark:bg-white/5 backdrop-blur-sm text-slate-700 dark:text-slate-300 px-4 py-2 rounded-full w-fit border border-slate-200/60 dark:border-white/10 shadow-soft">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
-              Disponible para abogados en Argentina
-            </span>
-          </div>
-
           {/* Headline */}
           <h1 className="text-5xl md:text-6xl xl:text-7xl font-extrabold leading-[1.02] tracking-tight text-slate-900 dark:text-white text-balance">
             Redactá una{" "}
