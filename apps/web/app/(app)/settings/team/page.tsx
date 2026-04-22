@@ -235,7 +235,7 @@ export default function TeamSettingsPage() {
   const isEstudioPlan = maxUsers !== 1;
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
+    <div className="relative flex h-auto min-h-screen w-full flex-col bg-parchment dark:bg-ink font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {showInviteModal && (
         <InviteModal
           onClose={() => setShowInviteModal(false)}
@@ -244,20 +244,13 @@ export default function TeamSettingsPage() {
         />
       )}
 
-      <div className="px-4 md:px-20 lg:px-40 flex flex-1 justify-center py-5">
-        <div className="flex flex-col max-w-[960px] flex-1 gap-6">
+      <div className="flex flex-1 justify-center pb-16">
+        <div className="flex flex-col max-w-[1040px] w-full px-4 sm:px-6 lg:px-10 gap-5">
           <SettingsHeader />
 
-          <div className="flex flex-wrap justify-between gap-3 p-4 mt-2">
-            <div>
-              <p className="text-4xl font-black leading-tight tracking-[-0.033em]">Ajustes del Sistema</p>
-              <p className="text-slate-500 dark:text-slate-400 text-base mt-1">
-                Administrá tu cuenta, suscripciones y preferencias de seguridad.
-              </p>
-            </div>
+          <div className="mt-2">
+            <SettingsTabs activeTab="team" />
           </div>
-
-          <SettingsTabs activeTab="team" />
 
           {/* Status message */}
           {statusMsg && (

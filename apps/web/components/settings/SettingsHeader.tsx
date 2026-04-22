@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
  */
 export function SettingsHeader() {
   return (
-    <div className="px-4 sm:px-6 lg:px-10 pt-6 md:pt-10">
+    <div className="pt-6 md:pt-10">
       <PageHeader
         icon={Settings2}
         iconGradient="slate"

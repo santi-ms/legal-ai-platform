@@ -11,6 +11,7 @@ import { NotificationPreferences } from "@/components/settings/NotificationPrefe
 import { AppearanceSection } from "@/components/settings/AppearanceSection";
 import { SettingsActions } from "@/components/settings/SettingsActions";
 import { SupportBanner } from "@/components/settings/SupportBanner";
+import { SectionCard } from "@/components/ui/SectionCard";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import {
@@ -21,7 +22,7 @@ import {
   type UserProfile,
   type TenantProfile,
 } from "@/app/lib/webApi";
-import { AlertTriangle, ArrowLeft, Loader2, AlertCircle, LogOut } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, AlertCircle, LogOut, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -382,8 +383,8 @@ export default function SettingsPage() {
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden bg-parchment dark:bg-ink font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
       <div className="flex h-full grow flex-col">
-        <div className="flex flex-1 justify-center pb-10">
-          <div className="flex flex-col max-w-[1040px] w-full">
+        <div className="flex flex-1 justify-center pb-16">
+          <div className="flex flex-col max-w-[1040px] w-full px-4 sm:px-6 lg:px-10">
             <SettingsHeader />
 
             {/* Tabs editoriales */}
@@ -393,7 +394,7 @@ export default function SettingsPage() {
 
             {/* Error de carga */}
             {loadError && (
-              <div className="mx-4 mt-4 flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+              <div className="mt-6 flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl shadow-soft">
                 <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-amber-800 dark:text-amber-200">{loadError}</p>
@@ -407,71 +408,80 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {/* ── Perfil personal ─────────────────────────────────────── */}
-            <ProfileSection
-              formData={profileData}
-              onFieldChange={handleProfileFieldChange}
-            />
+            {/* Secciones editoriales — cada una es un SectionCard */}
+            <div className="mt-6 space-y-5">
+              {/* ── Perfil personal ─────────────────────────────────────── */}
+              <ProfileSection
+                formData={profileData}
+                onFieldChange={handleProfileFieldChange}
+              />
 
-            {/* ── Datos del estudio ────────────────────────────────────── */}
-            <EstudioSection
-              formData={estudioData}
-              onFieldChange={handleEstudioFieldChange}
-              onSave={handleEstudioSave}
-              isSaving={estudioSaving}
-              hasChanges={estudioHasChanges}
-              hasNoTenant={hasNoTenant}
-              logoUrl={tenantLogoUrl}
-              onLogoChange={setTenantLogoUrl}
-            />
+              {/* ── Datos del estudio ────────────────────────────────────── */}
+              <EstudioSection
+                formData={estudioData}
+                onFieldChange={handleEstudioFieldChange}
+                onSave={handleEstudioSave}
+                isSaving={estudioSaving}
+                hasChanges={estudioHasChanges}
+                hasNoTenant={hasNoTenant}
+                logoUrl={tenantLogoUrl}
+                onLogoChange={setTenantLogoUrl}
+              />
 
-            {/* ── Apariencia ───────────────────────────────────────────── */}
-            <AppearanceSection />
+              {/* ── Apariencia ───────────────────────────────────────────── */}
+              <AppearanceSection />
 
-            {/* ── Notificaciones ───────────────────────────────────────── */}
-            <NotificationPreferences
-              preferences={notificationPreferences}
-              onPreferenceChange={handlePreferenceChange}
-            />
+              {/* ── Notificaciones ───────────────────────────────────────── */}
+              <NotificationPreferences
+                preferences={notificationPreferences}
+                onPreferenceChange={handlePreferenceChange}
+              />
+            </div>
 
             {/* Error de formulario */}
             {formError && (
-              <div className="mx-4 flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div className="mt-6 flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
                 <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-red-700 dark:text-red-300 leading-snug">{formError}</p>
               </div>
             )}
 
             {/* Botones guardar perfil */}
-            <SettingsActions
-              onDiscard={handleDiscard}
-              onSave={handleSave}
-              hasChanges={hasChanges}
-              isLoading={isLoading}
-            />
+            <div className="mt-8">
+              <SettingsActions
+                onDiscard={handleDiscard}
+                onSave={handleSave}
+                hasChanges={hasChanges}
+                isLoading={isLoading}
+              />
+            </div>
 
-            {/* Sesión */}
-            <section className="mx-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-1">
-                  <h3 className="text-base font-semibold text-slate-900 dark:text-white">Sesión actual</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Cerrá la sesión de este dispositivo si terminaste de usar tu cuenta.
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleSignOut}
-                  className="inline-flex items-center gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Cerrar sesión
-                </Button>
-              </div>
-            </section>
+            {/* Sesión actual */}
+            <div className="mt-10">
+              <SectionCard
+                icon={ShieldCheck}
+                iconGradient="slate"
+                eyebrow="Seguridad"
+                title="Sesión actual"
+                description="Cerrá la sesión de este dispositivo si terminaste de usar tu cuenta."
+                actions={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleSignOut}
+                    className="inline-flex items-center gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Cerrar sesión
+                  </Button>
+                }
+              />
+            </div>
 
-            <SupportBanner onContactSupport={handleContactSupport} />
+            {/* Banner soporte */}
+            <div className="mt-10">
+              <SupportBanner onContactSupport={handleContactSupport} />
+            </div>
           </div>
         </div>
       </div>

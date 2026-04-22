@@ -5,6 +5,7 @@ import { Building2, Phone, Globe, MapPin, Hash, Loader2, Upload, X, ImageIcon } 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { SectionCard } from "@/components/ui/SectionCard";
 import { uploadTenantLogo, deleteTenantLogo } from "@/app/lib/webApi";
 
 interface EstudioFormData {
@@ -37,7 +38,7 @@ export function EstudioSection({
   onLogoChange,
 }: EstudioSectionProps) {
   const inputClass =
-    "rounded-lg border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-primary focus:border-primary transition-all p-3 text-sm";
+    "rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-primary focus:border-primary transition-all p-3 text-sm";
 
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isDeletingLogo, setIsDeletingLogo] = useState(false);
@@ -76,20 +77,13 @@ export function EstudioSection({
   }
 
   return (
-    <div className="px-4 py-8 border-t border-slate-200 dark:border-slate-800 mt-4">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-          <Building2 className="w-6 h-6" />
-        </div>
-        <div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Datos del Estudio</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Información de tu estudio jurídico. Se usa en los encabezados de documentos.
-          </p>
-        </div>
-      </div>
-
+    <SectionCard
+      icon={Building2}
+      iconGradient="primary"
+      eyebrow="Estudio"
+      title="Datos del estudio"
+      description="Información de tu estudio jurídico. Se usa en los encabezados de documentos."
+    >
       {hasNoTenant ? (
         <div className="max-w-2xl rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4">
           <p className="text-sm text-amber-800 dark:text-amber-200">
@@ -97,7 +91,7 @@ export function EstudioSection({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl">
           {/* Nombre del estudio */}
           <div className="flex flex-col gap-2 md:col-span-2">
             <Label htmlFor="estudio-name" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -279,7 +273,7 @@ export function EstudioSection({
               type="button"
               onClick={onSave}
               disabled={!hasChanges || isSaving}
-              className="bg-primary text-white hover:bg-primary/90 font-semibold disabled:opacity-50"
+              className="bg-ink text-white hover:bg-slate-900 font-semibold disabled:opacity-50 shadow-soft hover:shadow-hover"
             >
               {isSaving ? (
                 <>
@@ -293,6 +287,6 @@ export function EstudioSection({
           </div>
         </div>
       )}
-    </div>
+    </SectionCard>
   );
 }

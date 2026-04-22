@@ -3,6 +3,7 @@
 import { User, Phone, Award, Scale } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SectionCard } from "@/components/ui/SectionCard";
 import { useSession } from "next-auth/react";
 
 const ESPECIALIDADES = [
@@ -55,26 +56,19 @@ export function ProfileSection({ formData, onFieldChange }: ProfileSectionProps)
   const email = formData.email ?? user?.email ?? "";
 
   const inputClass =
-    "rounded-lg border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-primary focus:border-primary transition-all p-3 text-sm";
+    "rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-primary focus:border-primary transition-all p-3 text-sm";
   const selectClass =
-    "w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-primary focus:border-primary transition-all px-3 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer";
+    "w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-primary focus:border-primary transition-all px-3 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer";
 
   return (
-    <div className="px-4 py-6">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="size-12 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20">
-          <User className="w-6 h-6" />
-        </div>
-        <div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Información Personal</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Tus datos personales y profesionales como abogado.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
+    <SectionCard
+      icon={User}
+      iconGradient="sky"
+      eyebrow="Identidad"
+      title="Información personal"
+      description="Tus datos personales y profesionales como abogado."
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl">
         {/* Nombre */}
         <div className="flex flex-col gap-2">
           <Label htmlFor="firstName" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -108,7 +102,7 @@ export function ProfileSection({ formData, onFieldChange }: ProfileSectionProps)
         {/* Email */}
         <div className="flex flex-col gap-2 md:col-span-2">
           <Label htmlFor="email" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-            Correo Electrónico <span className="text-red-500">*</span>
+            Correo electrónico <span className="text-red-500">*</span>
           </Label>
           <Input
             id="email"
@@ -143,7 +137,7 @@ export function ProfileSection({ formData, onFieldChange }: ProfileSectionProps)
           <Label htmlFor="matricula" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
             <span className="flex items-center gap-1.5">
               <Award className="w-3.5 h-3.5" />
-              Matrícula Profesional
+              Matrícula profesional
             </span>
           </Label>
           <Input
@@ -164,7 +158,7 @@ export function ProfileSection({ formData, onFieldChange }: ProfileSectionProps)
           <Label htmlFor="especialidad" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
             <span className="flex items-center gap-1.5">
               <Scale className="w-3.5 h-3.5" />
-              Especialidad Principal
+              Especialidad principal
             </span>
           </Label>
           <select
@@ -184,7 +178,7 @@ export function ProfileSection({ formData, onFieldChange }: ProfileSectionProps)
         {/* Rol profesional */}
         <div className="flex flex-col gap-2">
           <Label htmlFor="professionalRole" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-            Rol Profesional
+            Rol profesional
           </Label>
           <select
             id="professionalRole"
@@ -203,13 +197,13 @@ export function ProfileSection({ formData, onFieldChange }: ProfileSectionProps)
         {/* Biografía */}
         <div className="flex flex-col gap-2 md:col-span-2">
           <Label htmlFor="bio" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-            Biografía Profesional
+            Biografía profesional
           </Label>
           <textarea
             id="bio"
             value={formData.bio ?? ""}
             onChange={(e) => onFieldChange("bio", e.target.value)}
-            className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-primary focus:border-primary transition-all p-3 text-sm resize-none text-slate-900 dark:text-slate-100"
+            className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-primary focus:border-primary transition-all p-3 text-sm resize-none text-slate-900 dark:text-slate-100"
             placeholder="Contanos brevemente tu trayectoria y áreas de práctica..."
             rows={3}
           />
@@ -218,6 +212,6 @@ export function ProfileSection({ formData, onFieldChange }: ProfileSectionProps)
           </p>
         </div>
       </div>
-    </div>
+    </SectionCard>
   );
 }

@@ -3,22 +3,24 @@
 import React from "react";
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/app/lib/utils";
-import { TOKENS } from "@/app/lib/design-tokens";
+import { TOKENS, type GradientKey } from "@/app/lib/design-tokens";
 
 interface SectionCardProps {
-  icon?:       LucideIcon;
-  eyebrow?:    string;
-  title?:      string;
-  description?: string;
-  actions?:    React.ReactNode;
-  children?:   React.ReactNode;
-  className?:  string;
+  icon?:         LucideIcon;
+  /** Si se provee, el icono usa gradient editorial con texto blanco. */
+  iconGradient?: GradientKey;
+  eyebrow?:      string;
+  title?:        string;
+  description?:  string;
+  actions?:      React.ReactNode;
+  children?:     React.ReactNode;
+  className?:    string;
   /** Padding del body. Default: md. */
-  padding?:    "none" | "sm" | "md" | "lg";
+  padding?:      "none" | "sm" | "md" | "lg";
   /** Variante visual. default=card con shadow, subtle=sin shadow, tinted=fondo suave */
-  variant?:    "default" | "subtle" | "tinted";
+  variant?:      "default" | "subtle" | "tinted";
   /** Si true, remueve el padding del header */
-  headless?:   boolean;
+  headless?:     boolean;
 }
 
 /**
@@ -28,6 +30,7 @@ interface SectionCardProps {
  */
 export const SectionCard = React.memo(function SectionCard({
   icon: Icon,
+  iconGradient,
   eyebrow,
   title,
   description,
@@ -62,7 +65,14 @@ export const SectionCard = React.memo(function SectionCard({
         >
           <div className="flex items-start gap-3 min-w-0 flex-1">
             {Icon && (
-              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+              <div
+                className={cn(
+                  "flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center",
+                  iconGradient
+                    ? `bg-gradient-to-br ${TOKENS.gradients[iconGradient]} text-white shadow-soft`
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300",
+                )}
+              >
                 <Icon className="w-5 h-5" strokeWidth={2} />
               </div>
             )}

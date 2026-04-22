@@ -37,7 +37,7 @@ export function SettingsTabs({ activeTab, className }: SettingsTabsProps) {
   const pathname = usePathname();
 
   return (
-    <div className={cn("overflow-x-auto px-4 sm:px-6 lg:px-10", className)}>
+    <div className={cn("overflow-x-auto", className)}>
       <div className="flex items-end gap-1 border-b border-slate-200 dark:border-slate-800 min-w-max">
         {tabs.map((tab) => {
           const Icon = tab.icon;

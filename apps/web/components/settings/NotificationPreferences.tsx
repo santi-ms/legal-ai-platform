@@ -1,6 +1,7 @@
 "use client";
 
-import { Settings } from "lucide-react";
+import { Bell } from "lucide-react";
+import { SectionCard } from "@/components/ui/SectionCard";
 import { NotificationToggle } from "./NotificationToggle";
 
 interface NotificationPreferencesProps {
@@ -21,25 +22,18 @@ export function NotificationPreferences({
   const masterOff = !preferences.emailNotifications;
 
   return (
-    <div className="px-4 py-8 border-t border-slate-200 dark:border-slate-800 mt-4">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="size-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
-          <Settings className="w-6 h-6" />
-        </div>
-        <div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-            Preferencias de Notificación
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Elegí qué avisos querés recibir por email.
-          </p>
-        </div>
-      </div>
-      <div className="space-y-6 max-w-2xl">
+    <SectionCard
+      icon={Bell}
+      iconGradient="amber"
+      eyebrow="Avisos"
+      title="Preferencias de notificación"
+      description="Elegí qué avisos querés recibir por email."
+    >
+      <div className="space-y-6 max-w-3xl">
         {/* Master toggle */}
         <NotificationToggle
           id="email-notifications"
-          title="Notificaciones por Email"
+          title="Notificaciones por email"
           description="Habilitar todos los recordatorios y alertas automáticas por email."
           checked={preferences.emailNotifications}
           onChange={(checked) => onPreferenceChange("emailNotifications", checked)}
@@ -49,40 +43,40 @@ export function NotificationPreferences({
         <div
           className={
             masterOff
-              ? "opacity-50 pointer-events-none space-y-6 pl-4 border-l-2 border-slate-200 dark:border-slate-700"
-              : "space-y-6 pl-4 border-l-2 border-primary/20"
+              ? "opacity-50 pointer-events-none space-y-6 pl-5 border-l-2 border-slate-200 dark:border-slate-700"
+              : "space-y-6 pl-5 border-l-2 border-gradient-to-b from-amber-400 to-orange-500 border-amber-300 dark:border-amber-600/40"
           }
         >
           <NotificationToggle
             id="vencimiento-alerts"
-            title="Recordatorios de Vencimientos"
+            title="Recordatorios de vencimientos"
             description="Recibir email diario (8:15 hs) cuando un vencimiento se acerca según su alerta configurada."
             checked={preferences.vencimientoAlerts !== false}
             onChange={(checked) => onPreferenceChange("vencimientoAlerts", checked)}
           />
           <NotificationToggle
             id="portal-activity-emails"
-            title="Actividad del Portal Judicial"
+            title="Actividad del portal judicial"
             description="Recibir alertas cuando hay movimientos nuevos en tus expedientes del portal."
             checked={preferences.portalActivityEmails !== false}
             onChange={(checked) => onPreferenceChange("portalActivityEmails", checked)}
           />
           <NotificationToggle
             id="security-alerts"
-            title="Alertas de Seguridad"
+            title="Alertas de seguridad"
             description="Avisar sobre nuevos inicios de sesión en tu cuenta."
             checked={preferences.securityAlerts}
             onChange={(checked) => onPreferenceChange("securityAlerts", checked)}
           />
           <NotificationToggle
             id="product-updates"
-            title="Actualizaciones de Producto"
+            title="Actualizaciones de producto"
             description="Nuevas funcionalidades y mejoras de DocuLex."
             checked={preferences.productUpdates}
             onChange={(checked) => onPreferenceChange("productUpdates", checked)}
           />
         </div>
       </div>
-    </div>
+    </SectionCard>
   );
 }

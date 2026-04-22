@@ -33,6 +33,7 @@ import {
   ChevronUp,
   Save,
   X,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -219,49 +220,46 @@ export default function PromptsSettingsPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
-      <div className="layout-container flex h-full grow flex-col">
-        <div className="px-4 md:px-20 lg:px-40 flex flex-1 justify-center py-5">
-          <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
+    <div className="relative flex h-auto min-h-screen w-full flex-col bg-parchment dark:bg-ink font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
+      <div className="flex h-full grow flex-col">
+        <div className="flex flex-1 justify-center pb-16">
+          <div className="flex flex-col max-w-[1040px] w-full px-4 sm:px-6 lg:px-10">
             <SettingsHeader />
 
-            {/* Hero */}
-            <div className="flex flex-col gap-4 p-4 mt-6">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => router.push("/settings")}
-                className="self-start inline-flex items-center gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Volver a ajustes
-              </Button>
+            <div className="mt-2">
+              <SettingsTabs activeTab="prompts" />
+            </div>
 
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <p className="text-4xl font-black leading-tight tracking-[-0.033em] text-slate-900 dark:text-white">
-                    Prompts IA
+            {/* Subtítulo prompts + acción */}
+            <div className="mt-6 flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex items-start gap-3 min-w-0 flex-1">
+                <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white flex items-center justify-center shadow-soft">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700 dark:text-gold-400">
+                    Inteligencia artificial
                   </p>
-                  <p className="text-slate-500 dark:text-slate-400 text-base font-normal leading-normal">
+                  <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-ink dark:text-white leading-tight">
+                    Prompts personalizados
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
                     Personalizá el sistema de IA para cada tipo de documento. Los prompts aquí definidos tienen prioridad sobre los valores por defecto del sistema.
                   </p>
                 </div>
-                {isAdmin && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => { setShowNewForm(true); setExpanded(null); setEditing(null); }}
-                    className="shrink-0 inline-flex items-center gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Nuevo prompt
-                  </Button>
-                )}
               </div>
+              {isAdmin && (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => { setShowNewForm(true); setExpanded(null); setEditing(null); }}
+                  className="shrink-0 inline-flex items-center gap-2 bg-ink text-white hover:bg-slate-900 shadow-soft"
+                >
+                  <Plus className="h-4 w-4" />
+                  Nuevo prompt
+                </Button>
+              )}
             </div>
-
-            <SettingsTabs activeTab="prompts" />
 
             {/* New form */}
             {showNewForm && (

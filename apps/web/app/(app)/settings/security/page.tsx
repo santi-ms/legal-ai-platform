@@ -7,6 +7,7 @@ import { z } from "zod";
 import { SettingsHeader } from "@/components/settings/SettingsHeader";
 import { SettingsTabs } from "@/components/settings/SettingsTabs";
 import { SupportBanner } from "@/components/settings/SupportBanner";
+import { SectionCard } from "@/components/ui/SectionCard";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -149,19 +150,13 @@ function ChangePasswordSection() {
   };
 
   return (
-    <div className="px-4 py-6">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center">
-          <KeyRound className="w-6 h-6 text-primary" />
-        </div>
-        <div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Cambiar contraseña</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Usá una contraseña segura que no uses en otros sitios.
-          </p>
-        </div>
-      </div>
-
+    <SectionCard
+      icon={KeyRound}
+      iconGradient="rose"
+      eyebrow="Seguridad"
+      title="Cambiar contraseña"
+      description="Usá una contraseña segura que no uses en otros sitios."
+    >
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-md space-y-5">
         {/* Contraseña actual */}
         <div className="space-y-2">
@@ -263,7 +258,7 @@ function ChangePasswordSection() {
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="bg-primary text-white hover:bg-primary/90 font-semibold"
+          className="bg-ink text-white hover:bg-slate-900 font-semibold shadow-soft hover:shadow-hover"
         >
           {isSubmitting ? (
             <>
@@ -275,7 +270,7 @@ function ChangePasswordSection() {
           )}
         </Button>
       </form>
-    </div>
+    </SectionCard>
   );
 }
 
@@ -283,29 +278,22 @@ function ChangePasswordSection() {
 
 function TwoFactorSection() {
   return (
-    <div className="mx-4 mb-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
-      <div className="flex items-center gap-4 mb-4">
-        <div className="size-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-          <ShieldCheck className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Autenticación de dos factores
-            </h3>
-            <span className="text-xs font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full">
-              Próximamente
-            </span>
-          </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Agregá una capa extra de seguridad a tu cuenta con 2FA por app o SMS.
-          </p>
-        </div>
-      </div>
+    <SectionCard
+      icon={ShieldCheck}
+      iconGradient="amber"
+      eyebrow="Pronto"
+      title="Autenticación de dos factores"
+      description="Agregá una capa extra de seguridad a tu cuenta con 2FA por app o SMS."
+      actions={
+        <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-1 rounded-full">
+          Próximamente
+        </span>
+      }
+    >
       <Button disabled variant="outline" className="opacity-50 cursor-not-allowed">
         Configurar 2FA
       </Button>
-    </div>
+    </SectionCard>
   );
 }
 
@@ -332,34 +320,27 @@ export default function SecuritySettingsPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
-      <div className="layout-container flex h-full grow flex-col">
-        <div className="px-4 md:px-20 lg:px-40 flex flex-1 justify-center py-5">
-          <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
+    <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden bg-parchment dark:bg-ink font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
+      <div className="flex h-full grow flex-col">
+        <div className="flex flex-1 justify-center pb-16">
+          <div className="flex flex-col max-w-[1040px] w-full px-4 sm:px-6 lg:px-10">
             <SettingsHeader />
 
-            <div className="flex flex-wrap justify-between gap-3 p-4 mt-6">
-              <div className="flex min-w-72 flex-col gap-3">
-                <p className="text-4xl font-black leading-tight tracking-[-0.033em] text-slate-900 dark:text-white">
-                  Ajustes del Sistema
-                </p>
-                <p className="text-slate-500 dark:text-slate-400 text-base">
-                  Administrá tu cuenta, suscripciones y preferencias de seguridad.
-                </p>
-              </div>
+            <div className="mt-2">
+              <SettingsTabs activeTab="security" />
             </div>
 
-            <SettingsTabs activeTab="security" />
-
-            {/* Cambio de contraseña */}
-            <div className="mx-4 mb-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+            <div className="mt-6 space-y-5">
+              {/* Cambio de contraseña */}
               <ChangePasswordSection />
+
+              {/* 2FA — próximamente */}
+              <TwoFactorSection />
             </div>
 
-            {/* 2FA — próximamente */}
-            <TwoFactorSection />
-
-            <SupportBanner />
+            <div className="mt-10">
+              <SupportBanner />
+            </div>
           </div>
         </div>
       </div>
