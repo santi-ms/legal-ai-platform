@@ -8,6 +8,11 @@
     --background-light: #f6f6f8;
     --background-dark: #101222;
 
+    /* ── Tokens editoriales ───────────────────────────── */
+    --ink: #0B1220;
+    --parchment: #FAF7F2;
+    --gold: #C9A961;
+
     /* Scrollbar tokens — light mode */
     --scrollbar-thumb: rgba(148, 163, 184, 0.35);   /* slate-400/35 */
     --scrollbar-thumb-hover: rgba(148, 163, 184, 0.6);
@@ -284,4 +289,123 @@
     border: 1px solid rgba(255, 255, 255, 0.05);
   }
 }
+
+/* ============================================
+   TEXTURA Y FONDOS EDITORIALES
+   ============================================ */
+
+@layer utilities {
+  /* Textura de ruido SVG sutil — rompe la planitud del render plano */
+  .texture-noise::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
+
+  .dark .texture-noise::before {
+    opacity: 0.06;
+  }
+
+  /* Mesh gradient blobs decorativos — absolute, pointer-events: none */
+  .mesh-blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Gradient animado editorial — cambio continuo para CTA final */
+  @keyframes mesh-drift {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(30px, -20px) scale(1.05);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.95);
+    }
+  }
+
+  .animate-mesh-drift {
+    animation: mesh-drift 18s ease-in-out infinite;
+  }
+
+  /* Conic gradient rotativo — para el borde del plan Pro destacado */
+  @keyframes conic-spin {
+    from {
+      --angle: 0deg;
+    }
+    to {
+      --angle: 360deg;
+    }
+  }
+
+  @property --angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+  }
+
+  .conic-border {
+    position: relative;
+    background: conic-gradient(
+      from var(--angle),
+      transparent 0deg,
+      rgba(43, 59, 238, 0.6) 60deg,
+      rgba(201, 169, 97, 0.6) 180deg,
+      rgba(43, 59, 238, 0.6) 300deg,
+      transparent 360deg
+    );
+    animation: conic-spin 6s linear infinite;
+  }
+
+  /* Magnetic target — base para effect magnético en botones (JS ajusta translate) */
+  .magnetic {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+  }
+
+  /* Stagger helper para listas — usar con [style] inline delays */
+  .stagger > * {
+    opacity: 0;
+    animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Scroll-margin para el navbar fijo */
+  section[id] {
+    scroll-margin-top: 5rem;
+  }
+
+  /* Números tabulares — usar en Pricing + Counters */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Balance de texto en H1/H2 — evita líneas huérfanas */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}
+
 

@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Fraunces } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
 import { SessionProvider } from "@/components/ui/session-provider";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
@@ -112,10 +112,20 @@ export const metadata: Metadata = {
   },
 };
 
-// Tipografía moderna y seria
+// Tipografía UI — sans moderna
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
+  variable: "--font-sans",
+});
+
+// Tipografía editorial para H1/H2 — serif contemporánea
+// Nota: `axes` requiere que weight sea "variable" o esté omitido
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-display",
+  axes: ["opsz", "SOFT"],
 });
 
 export default function RootLayout({
@@ -124,7 +134,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className="h-full" suppressHydrationWarning>
+    <html lang="es" className={`h-full ${inter.variable} ${fraunces.variable}`} suppressHydrationWarning>
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&display=swap"
@@ -149,7 +159,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
         />
       </head>
-      <body className={`${inter.className} h-full antialiased`}>
+      <body className="font-sans h-full antialiased">
         <SessionProvider>
           <ThemeProvider>
             <ToastProvider>

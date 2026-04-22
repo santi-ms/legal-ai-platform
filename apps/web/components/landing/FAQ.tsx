@@ -1,5 +1,6 @@
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, ChevronDown } from "lucide-react";
 import { CONTACT, mailto } from "@/app/lib/site";
+import { Reveal, RevealStagger, StaggerItem } from "./motion";
 
 // Mismo contenido que el JSON-LD de page.tsx para que Google detecte
 // correspondencia entre structured data y contenido visible.
@@ -34,48 +35,51 @@ export function FAQ() {
   return (
     <section
       id="faq"
-      className="py-24 px-6 md:px-20 bg-white dark:bg-background-dark"
+      className="relative py-28 px-6 md:px-20 bg-white dark:bg-background-dark"
     >
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-4 py-1.5 rounded-full mb-5">
+        {/* Header editorial */}
+        <Reveal className="text-center mb-16 max-w-2xl mx-auto space-y-5">
+          <div className="inline-flex items-center gap-2 text-gold-600 dark:text-gold-400 text-[11px] font-semibold uppercase tracking-[0.14em]">
             <HelpCircle className="w-3.5 h-3.5" />
-            PREGUNTAS FRECUENTES
+            Preguntas frecuentes
           </div>
-          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-4">
-            Lo que más nos preguntan
+          <h2 className="font-display text-4xl md:text-5xl xl:text-6xl font-light tracking-tight text-slate-900 dark:text-white text-balance leading-[1.05]">
+            Lo que más{" "}
+            <span className="italic font-medium text-primary">nos preguntan</span>
+            .
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto text-lg">
+          <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed">
             Si no encontrás tu respuesta acá, escribinos.
           </p>
-        </div>
+        </Reveal>
 
-        {/* Accordion — <details>/<summary> nativo, accesible y sin JS */}
-        <div className="space-y-3">
+        {/* Accordion como lista editorial — separadores inferiores en vez de cards */}
+        <RevealStagger className="border-t border-slate-200 dark:border-slate-800" stagger={0.05}>
           {QUESTIONS.map((item) => (
-            <details
-              key={item.q}
-              className="group rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 overflow-hidden transition-colors open:border-primary/30 open:bg-white dark:open:bg-slate-900"
-            >
-              <summary className="flex items-center justify-between gap-4 cursor-pointer list-none px-6 py-5 text-base font-semibold text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl">
-                <span>{item.q}</span>
-                <span
-                  className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-lg font-bold transition-transform group-open:rotate-45"
-                  aria-hidden="true"
-                >
-                  +
-                </span>
-              </summary>
-              <div className="px-6 pb-5 -mt-1 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                {item.a}
-              </div>
-            </details>
+            <StaggerItem key={item.q}>
+              <details className="group border-b border-slate-200 dark:border-slate-800 transition-colors">
+                <summary className="flex items-start justify-between gap-6 cursor-pointer list-none py-6 md:py-7 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-sm">
+                  <span className="font-display text-lg md:text-xl font-medium text-slate-900 dark:text-white leading-snug text-pretty pr-4 group-hover:text-primary transition-colors">
+                    {item.q}
+                  </span>
+                  <span
+                    className="flex-shrink-0 w-9 h-9 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 group-open:border-primary group-open:text-primary group-open:bg-primary/5 transition-all"
+                    aria-hidden="true"
+                  >
+                    <ChevronDown className="w-4 h-4 transition-transform duration-300 group-open:rotate-180" />
+                  </span>
+                </summary>
+                <div className="pb-6 md:pb-7 pr-12 text-[15px] text-slate-600 dark:text-slate-400 leading-relaxed text-pretty -mt-1">
+                  {item.a}
+                </div>
+              </details>
+            </StaggerItem>
           ))}
-        </div>
+        </RevealStagger>
 
         {/* Contact fallback */}
-        <div className="mt-12 text-center">
+        <Reveal delay={0.2} className="mt-16 text-center">
           <p className="text-sm text-slate-500 dark:text-slate-400">
             ¿Otra pregunta?{" "}
             <a
@@ -85,7 +89,7 @@ export function FAQ() {
               Escribinos a {CONTACT.support}
             </a>
           </p>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

@@ -42,7 +42,7 @@ const DEMO_SCENARIOS: Record<string, DemoMessage[]> = {
     {
       role: "assistant",
       content:
-        "¡Listo! Tengo todo lo necesario. Voy a generar tu contrato de locación ahora mismo. 📄✨",
+        "¡Listo! Tengo todo lo necesario. Voy a generar tu contrato de locación ahora mismo.",
     },
   ],
   carta: [
@@ -65,7 +65,7 @@ const DEMO_SCENARIOS: Record<string, DemoMessage[]> = {
     {
       role: "assistant",
       content:
-        "Tengo toda la información. Voy a generar tu carta documento con la intimación de pago correspondiente. 📄✨",
+        "Tengo toda la información. Voy a generar tu carta documento con la intimación de pago correspondiente.",
     },
   ],
   nda: [
@@ -91,7 +91,7 @@ const DEMO_SCENARIOS: Record<string, DemoMessage[]> = {
     {
       role: "assistant",
       content:
-        "¡Listo! Voy a generar tu Acuerdo de Confidencialidad con todos los datos. 📄✨",
+        "¡Listo! Voy a generar tu Acuerdo de Confidencialidad con todos los datos.",
     },
   ],
 };
@@ -103,7 +103,6 @@ function DemoChat({ onClose }: { onClose: () => void }) {
   const [demoFinished, setDemoFinished] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Reproducir conversación mensaje a mensaje
   useEffect(() => {
     if (!selectedScenario) return;
 
@@ -136,7 +135,6 @@ function DemoChat({ onClose }: { onClose: () => void }) {
     showNext();
   }, [selectedScenario]);
 
-  // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -145,7 +143,6 @@ function DemoChat({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -167,8 +164,10 @@ function DemoChat({ onClose }: { onClose: () => void }) {
         </button>
       </div>
 
-      {/* Chat area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-3 min-h-[300px] max-h-[400px]">
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto px-5 py-4 space-y-3 min-h-[300px] max-h-[400px]"
+      >
         {!selectedScenario ? (
           <div className="space-y-4">
             <div className="flex gap-2">
@@ -182,9 +181,9 @@ function DemoChat({ onClose }: { onClose: () => void }) {
 
             <div className="space-y-2 pl-9">
               {[
-                { id: "alquiler", label: "🏠 Contrato de alquiler", desc: "Locación residencial" },
-                { id: "carta", label: "📨 Carta documento", desc: "Intimación de pago" },
-                { id: "nda", label: "🔒 Acuerdo de confidencialidad", desc: "NDA empresarial" },
+                { id: "alquiler", label: "Contrato de alquiler", desc: "Locación residencial" },
+                { id: "carta", label: "Carta documento", desc: "Intimación de pago" },
+                { id: "nda", label: "Acuerdo de confidencialidad", desc: "NDA empresarial" },
               ].map((s) => (
                 <button
                   key={s.id}
@@ -231,7 +230,6 @@ function DemoChat({ onClose }: { onClose: () => void }) {
               </div>
             ))}
 
-            {/* Typing indicator */}
             {isTyping && (
               <div className="flex gap-2">
                 <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -250,7 +248,6 @@ function DemoChat({ onClose }: { onClose: () => void }) {
         )}
       </div>
 
-      {/* CTA footer */}
       {demoFinished && (
         <div className="px-5 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 text-center space-y-3 animate-fade-in">
           <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -277,7 +274,6 @@ function DemoChat({ onClose }: { onClose: () => void }) {
         </div>
       )}
 
-      {/* Simulated input (disabled) */}
       {selectedScenario && !demoFinished && (
         <div className="px-5 py-3 border-t border-slate-200 dark:border-slate-700">
           <div className="flex gap-2 items-center opacity-40">
@@ -291,7 +287,7 @@ function DemoChat({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ─── Hero principal ───────────────────────────────────────────────────────────
+// ─── Hero principal — editorial rediseñado ────────────────────────────────────
 
 export function Hero() {
   const [showDemoModal, setShowDemoModal] = useState(false);
@@ -300,11 +296,9 @@ export function Hero() {
 
   const closeModal = useCallback(() => {
     setShowDemoModal(false);
-    // Devolver foco al botón que abrió el modal.
     setTimeout(() => triggerRef.current?.focus(), 0);
   }, []);
 
-  // Cerrar con ESC + bloqueo del scroll de body mientras está abierto.
   useEffect(() => {
     if (!showDemoModal) return;
 
@@ -324,44 +318,58 @@ export function Hero() {
 
   return (
     <header
-      className="relative pt-20 pb-20 px-6 md:px-20 overflow-hidden"
+      className="relative isolate overflow-hidden pt-28 pb-24 px-6 md:px-20 bg-parchment dark:bg-ink texture-noise"
       id="inicio"
     >
-      {/* Abstract background elements */}
-      <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/4" aria-hidden="true" />
-      <div className="absolute bottom-0 left-0 -z-10 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/4" aria-hidden="true" />
+      {/* Mesh blobs decorativos — grandes, difusos, editoriales */}
+      <div
+        aria-hidden="true"
+        className="absolute top-[-200px] right-[-100px] w-[600px] h-[600px] bg-primary/20 dark:bg-primary/30 rounded-full blur-[140px] animate-mesh-drift"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute bottom-[-150px] left-[-150px] w-[500px] h-[500px] bg-gold/20 dark:bg-gold/15 rounded-full blur-[120px] animate-mesh-drift"
+        style={{ animationDelay: "-9s" }}
+      />
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        {/* Left Content */}
-        <div className="flex flex-col gap-7">
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full w-fit border border-primary/20">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase tracking-wider">
-              IA entrenada en normativa argentina
+      <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+        {/* ── Left Content — 7 cols ─────────────────────────────── */}
+        <div className="lg:col-span-7 flex flex-col gap-8 animate-fade-up">
+          {/* Eyebrow con dot pulsante */}
+          <div className="inline-flex items-center gap-2.5 bg-white/60 dark:bg-white/5 backdrop-blur-sm text-slate-700 dark:text-slate-300 px-4 py-2 rounded-full w-fit border border-slate-200/60 dark:border-white/10 shadow-soft">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
+              Disponible para abogados en Argentina
             </span>
           </div>
 
-          <h1 className="text-5xl md:text-6xl xl:text-7xl font-black leading-[1.05] tracking-tight text-slate-900 dark:text-slate-100">
+          {/* Headline — serif editorial con itálica enfática */}
+          <h1 className="font-display text-5xl md:text-6xl xl:text-7xl font-light leading-[1.02] tracking-tight text-slate-900 dark:text-white text-balance">
             Redactá una{" "}
-            <span className="text-primary">carta documento</span> en 2 minutos.
+            <span className="italic font-medium text-primary">
+              carta documento
+            </span>
+            <br className="hidden md:block" /> en 2 minutos.
             <br className="hidden md:block" />
-            No en 3 horas.
+            <span className="text-slate-500 dark:text-slate-400">No en 3 horas.</span>
           </h1>
 
-          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-xl leading-relaxed">
+          <p className="text-lg text-slate-600 dark:text-slate-300 max-w-xl leading-relaxed text-pretty">
             DocuLex genera contratos, NDAs, cartas documento y escritos con{" "}
-            <strong className="text-slate-800 dark:text-slate-200">
+            <strong className="text-slate-900 dark:text-white font-semibold">
               validez jurídica en Argentina
             </strong>
-            . Pensado para abogados y estudios jurídicos que cobran por hora, no
-            por tipear.
+            . Pensado para abogados y estudios jurídicos que cobran por hora, no por tipear.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3">
             <Link href="/auth/register">
               <Button
                 size="lg"
-                className="bg-primary text-white text-base font-bold h-14 px-8 rounded-xl hover:shadow-xl hover:shadow-primary/40 transition-all flex items-center justify-center gap-2 w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                className="bg-primary text-white text-base font-bold h-14 px-8 rounded-brand hover:shadow-glow transition-all flex items-center justify-center gap-2 w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 Empezá gratis — sin tarjeta
                 <ArrowRight className="w-5 h-5" />
@@ -372,71 +380,117 @@ export function Hero() {
               variant="outline"
               size="lg"
               onClick={() => setShowDemoModal(true)}
-              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-base font-semibold h-14 px-8 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="bg-white/80 dark:bg-white/5 backdrop-blur-sm border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-base font-semibold h-14 px-8 rounded-brand hover:bg-white dark:hover:bg-white/10 transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               <Play className="w-5 h-5" />
               Ver demo de 60 segundos
             </Button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
+          {/* Proof strip */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-slate-600 dark:text-slate-400 pt-2">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
               <span>5 documentos gratis</span>
             </div>
+            <div className="h-4 w-px bg-slate-300/60 dark:bg-white/10 hidden sm:block" />
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-primary" />
               <span>Listo en menos de 2 minutos</span>
             </div>
+            <div className="h-4 w-px bg-slate-300/60 dark:bg-white/10 hidden sm:block" />
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-amber-500" />
+              <Shield className="w-4 h-4 text-gold-600" />
               <span>Tus docs no entrenan IA</span>
             </div>
           </div>
         </div>
 
-        {/* Right Preview Card */}
-        <div className="relative group">
-          <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-75 group-hover:scale-90 transition-transform duration-700" aria-hidden="true" />
-          <div className="relative bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/40 dark:border-slate-800 p-6 rounded-3xl shadow-2xl">
-            <div className="flex items-center justify-between mb-8 border-b border-white/20 dark:border-slate-700 pb-4">
+        {/* ── Right Preview Card — mockup editorial ────────────── */}
+        <div className="lg:col-span-5 relative group animate-fade-up" style={{ animationDelay: "0.15s" }}>
+          {/* Glow decorativo */}
+          <div
+            className="absolute inset-0 bg-primary/30 blur-3xl rounded-full scale-75 group-hover:scale-95 transition-transform duration-700"
+            aria-hidden="true"
+          />
+
+          {/* Card principal — elevated, tilted sutil */}
+          <div className="relative bg-white dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/70 dark:border-white/10 p-6 rounded-3xl shadow-hover group-hover:-rotate-0 -rotate-[1.5deg] transition-transform duration-500">
+            {/* Browser chrome */}
+            <div className="flex items-center justify-between mb-6 border-b border-slate-200 dark:border-white/10 pb-3">
               <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-red-400" aria-hidden="true" />
-                <div className="w-3 h-3 rounded-full bg-amber-400" aria-hidden="true" />
-                <div className="w-3 h-3 rounded-full bg-emerald-400" aria-hidden="true" />
+                <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700" aria-hidden="true" />
+                <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700" aria-hidden="true" />
+                <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700" aria-hidden="true" />
               </div>
-              <div className="text-xs font-mono opacity-50 uppercase tracking-widest text-slate-600 dark:text-slate-400">
-                Editor Inteligente
+              <div className="text-[10px] font-mono opacity-60 uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                doculex · editor
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="h-4 bg-primary/20 rounded w-3/4" aria-hidden="true" />
-              <div className="h-4 bg-primary/10 rounded w-1/2" aria-hidden="true" />
-
-              <div className="grid grid-cols-3 gap-3" aria-hidden="true">
-                <div className="h-20 bg-primary/5 border border-primary/10 rounded-xl flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-primary/40" />
+            {/* Documento simulado — estilo papel */}
+            <div className="space-y-5">
+              {/* Título documento */}
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-gold-600 mb-1">
+                  Carta Documento — Buenos Aires
                 </div>
-                <div className="h-20 bg-primary/5 border border-primary/10 rounded-xl flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-primary/40" />
-                </div>
-                <div className="h-20 bg-primary/30 border border-primary/20 rounded-xl flex items-center justify-center">
-                  <CheckCircle2 className="w-6 h-6 text-primary" />
-                </div>
+                <div className="h-5 bg-gradient-to-r from-slate-200 to-transparent dark:from-slate-700 rounded w-4/5" aria-hidden="true" />
               </div>
 
-              <div className="p-4 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-white/20 dark:border-slate-700 shadow-sm">
-                <div className="flex items-center gap-3 mb-2">
-                  <MessageSquare className="w-4 h-4 text-primary" />
-                  <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+              {/* Líneas de texto simulando párrafo */}
+              <div className="space-y-2" aria-hidden="true">
+                <div className="h-2 bg-slate-200/80 dark:bg-slate-700/60 rounded w-full" />
+                <div className="h-2 bg-slate-200/80 dark:bg-slate-700/60 rounded w-[95%]" />
+                <div className="h-2 bg-slate-200/80 dark:bg-slate-700/60 rounded w-[88%]" />
+                <div className="h-2 bg-slate-200/80 dark:bg-slate-700/60 rounded w-[70%]" />
+              </div>
+
+              {/* Callout IA */}
+              <div className="relative p-4 bg-gradient-to-br from-primary/5 to-gold/5 dark:from-primary/10 dark:to-gold/10 rounded-2xl border border-primary/15 dark:border-primary/25">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
                     Asistente IA
                   </span>
                 </div>
-                <p className="text-xs italic leading-relaxed text-slate-600 dark:text-slate-400">
-                  &quot;He analizado el Código Civil y Comercial. Se recomienda añadir una
-                  cláusula de jurisdicción en CABA para este contrato de locación.&quot;
+                <p className="text-xs italic leading-relaxed text-slate-700 dark:text-slate-300">
+                  He analizado el Código Civil y Comercial. Se recomienda añadir una
+                  cláusula de jurisdicción en CABA para este contrato.
                 </p>
+              </div>
+
+              {/* Chips de acciones */}
+              <div className="grid grid-cols-3 gap-2" aria-hidden="true">
+                <div className="h-14 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center gap-1">
+                  <FileText className="w-4 h-4 text-slate-500" />
+                  <span className="text-[9px] uppercase tracking-wider text-slate-500">PDF</span>
+                </div>
+                <div className="h-14 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center gap-1">
+                  <MessageSquare className="w-4 h-4 text-slate-500" />
+                  <span className="text-[9px] uppercase tracking-wider text-slate-500">Chat</span>
+                </div>
+                <div className="h-14 bg-primary/10 border border-primary/30 rounded-xl flex flex-col items-center justify-center gap-1">
+                  <CheckCircle2 className="w-4 h-4 text-primary" />
+                  <span className="text-[9px] uppercase tracking-wider text-primary font-bold">Listo</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Badge flotante de tiempo */}
+          <div className="absolute -top-4 -right-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-2xl shadow-hover animate-float-slow">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-emerald-500" />
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-slate-500 leading-none">
+                  Generado en
+                </div>
+                <div className="text-sm font-bold text-slate-900 dark:text-white tabular-nums leading-tight">
+                  1 min 47 s
+                </div>
               </div>
             </div>
           </div>
@@ -446,12 +500,11 @@ export function Hero() {
       {/* Demo Modal */}
       {showDemoModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
           role="dialog"
           aria-modal="true"
           aria-label="Demo interactiva de DocuLex"
         >
-          {/* Backdrop como botón invisible para cerrar al clickear fuera */}
           <button
             type="button"
             className="absolute inset-0 w-full h-full cursor-default"

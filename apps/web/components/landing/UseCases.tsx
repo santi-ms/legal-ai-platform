@@ -1,4 +1,6 @@
 import { Briefcase, Scale, User as UserIcon, Building2 } from "lucide-react";
+import { cn } from "@/app/lib/utils";
+import { Reveal, RevealStagger, StaggerItem } from "./motion";
 
 const CASES = [
   {
@@ -6,10 +8,14 @@ const CASES = [
     tag: "Laboralistas",
     title: "Más cartas documento, menos horas de tipeo",
     bullets: [
-      "Carta documento por despido, intimación de pago, reclamo de horas extra.",
+      "Cartas documento por despido, intimación de pago, reclamo de horas extra.",
       "Demanda laboral con datos del expediente precargados.",
-      "Liquidación final con cálculos automáticos y fundamentos del Código Civil y LCT.",
+      "Liquidación final con cálculos automáticos y fundamentos de la LCT.",
     ],
+    /** Gradiente distintivo por segmento */
+    gradient: "from-rose-500/20 via-rose-500/5 to-transparent",
+    accent: "text-rose-600 dark:text-rose-400",
+    accentBg: "bg-rose-500/10 border-rose-500/20",
   },
   {
     icon: Building2,
@@ -20,6 +26,9 @@ const CASES = [
       "Acuerdos de confidencialidad (NDA) unilaterales o bilaterales.",
       "Poderes especiales y contratos de locación comercial con validez en CABA y provincias.",
     ],
+    gradient: "from-primary/20 via-primary/5 to-transparent",
+    accent: "text-primary",
+    accentBg: "bg-primary/10 border-primary/20",
   },
   {
     icon: UserIcon,
@@ -30,6 +39,9 @@ const CASES = [
       "Referencias de tus documentos anteriores — la IA imita tu estilo.",
       "Compartí documentos con tus clientes por link público, con expiración automática.",
     ],
+    gradient: "from-emerald-500/20 via-emerald-500/5 to-transparent",
+    accent: "text-emerald-700 dark:text-emerald-400",
+    accentBg: "bg-emerald-500/10 border-emerald-500/20",
   },
   {
     icon: Briefcase,
@@ -40,6 +52,9 @@ const CASES = [
       "Logo de tu estudio en todos los documentos generados.",
       "Reportes de productividad exportables para facturación interna.",
     ],
+    gradient: "from-gold/20 via-gold/5 to-transparent",
+    accent: "text-gold-600 dark:text-gold-400",
+    accentBg: "bg-gold/10 border-gold/20",
   },
 ];
 
@@ -47,65 +62,86 @@ export function UseCases() {
   return (
     <section
       id="casos-de-uso"
-      className="py-24 px-6 md:px-20 bg-white dark:bg-background-dark"
+      className="relative py-28 px-6 md:px-20 bg-parchment dark:bg-background-dark texture-noise"
     >
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-4 py-1.5 rounded-full mb-5">
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Header editorial */}
+        <Reveal className="text-center mb-16 max-w-3xl mx-auto space-y-5">
+          <div className="inline-flex items-center gap-2 text-gold-600 dark:text-gold-400 text-[11px] font-semibold uppercase tracking-[0.14em]">
             <Briefcase className="w-3.5 h-3.5" />
-            PARA QUIÉN ES DOCULEX
+            Para quién es DocuLex
           </div>
-          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-4">
+          <h2 className="font-display text-4xl md:text-5xl xl:text-6xl font-light tracking-tight text-slate-900 dark:text-white text-balance leading-[1.05]">
             Pensado para{" "}
-            <span className="text-primary">tu forma de trabajar</span>
+            <span className="italic font-medium text-primary">tu forma de trabajar</span>.
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-lg">
-            Sea que manejes un único expediente o los 50 de la semana, DocuLex
-            se adapta a tu flujo. Estos son los casos más frecuentes.
+          <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-pretty">
+            Sea que manejes un único expediente o los 50 de la semana, DocuLex se adapta
+            a tu flujo. Estos son los casos más frecuentes.
           </p>
-        </div>
+        </Reveal>
 
-        {/* Use cases grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Cards con gradientes por segmento */}
+        <RevealStagger className="grid grid-cols-1 md:grid-cols-2 gap-6" stagger={0.1}>
           {CASES.map((c) => {
             const Icon = c.icon;
             return (
-              <article
-                key={c.tag}
-                className="relative p-8 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-primary/40 hover:shadow-lg transition-all"
-              >
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                    {c.tag}
-                  </span>
-                </div>
-                <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-4 leading-snug">
-                  {c.title}
-                </h3>
-                <ul className="space-y-2.5">
-                  {c.bullets.map((b) => (
-                    <li
-                      key={b}
-                      className="flex gap-2.5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed"
-                    >
-                      <span
-                        className="text-primary font-bold mt-0.5"
-                        aria-hidden="true"
+              <StaggerItem key={c.tag}>
+                <article className="group relative h-full p-8 md:p-10 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:shadow-hover">
+                  {/* Blob gradiente decorativo */}
+                  <div
+                    aria-hidden="true"
+                    className={cn(
+                      "absolute -top-20 -right-20 w-72 h-72 rounded-full blur-3xl bg-gradient-to-br opacity-70 group-hover:opacity-100 transition-opacity duration-500",
+                      c.gradient
+                    )}
+                  />
+
+                  <div className="relative z-10">
+                    {/* Header con icono */}
+                    <div className="flex items-center gap-3 mb-5">
+                      <div
+                        className={cn(
+                          "w-12 h-12 rounded-2xl border flex items-center justify-center",
+                          c.accentBg,
+                          c.accent
+                        )}
                       >
-                        ›
+                        <Icon className="w-6 h-6" />
+                      </div>
+                      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        {c.tag}
                       </span>
-                      <span>{b}</span>
-                    </li>
-                  ))}
-                </ul>
-              </article>
+                    </div>
+
+                    {/* Title serif */}
+                    <h3 className="font-display text-2xl md:text-3xl font-light text-slate-900 dark:text-white mb-6 leading-[1.15] text-balance">
+                      {c.title}
+                    </h3>
+
+                    {/* Bullets */}
+                    <ul className="space-y-3">
+                      {c.bullets.map((b) => (
+                        <li
+                          key={b}
+                          className="flex gap-3 text-sm text-slate-700 dark:text-slate-300 leading-relaxed text-pretty"
+                        >
+                          <span
+                            className={cn("font-bold mt-0.5", c.accent)}
+                            aria-hidden="true"
+                          >
+                            ›
+                          </span>
+                          <span>{b}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
+              </StaggerItem>
             );
           })}
-        </div>
+        </RevealStagger>
       </div>
     </section>
   );
