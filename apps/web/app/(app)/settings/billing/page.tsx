@@ -171,7 +171,7 @@ function PlanCard({
   return (
     <div
       className={cn(
-        "relative flex flex-col rounded-2xl border-2 bg-white dark:bg-slate-800 p-6 shadow-sm transition-shadow hover:shadow-md",
+        "relative flex flex-col rounded-2xl border-2 bg-white dark:bg-slate-800 p-4 sm:p-6 shadow-sm transition-shadow hover:shadow-md",
         getPlanColor(plan.code, isCurrent)
       )}
     >
@@ -681,8 +681,8 @@ function BillingPageContent() {
     <>
       {/* Modal de confirmación de cambio de plan */}
       {showChangePlanModal && pendingChange && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 max-h-[92dvh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <ArrowLeftRight className="w-5 h-5 text-slate-600 dark:text-slate-400" />
@@ -767,8 +767,8 @@ function BillingPageContent() {
 
       {/* Modal selector de usuarios Estudio */}
       {showEstudioModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 max-h-[92dvh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-slate-600" /> Plan Estudio
@@ -876,7 +876,7 @@ function BillingPageContent() {
 
           {/* Usage summary */}
           {billing && (
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm space-y-4">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-6 shadow-sm space-y-4">
               <div className="flex items-center gap-2 mb-2">
                 <BarChart2 className="w-4 h-4 text-primary" />
                 <h2 className="text-base font-semibold">Uso actual</h2>
@@ -964,7 +964,7 @@ function BillingPageContent() {
 
           {/* Invoices */}
           {invoices.length > 0 && (
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-6 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
                 <Receipt className="w-4 h-4 text-primary" />
                 <h2 className="text-base font-semibold">Historial de pagos</h2>
