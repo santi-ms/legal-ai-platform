@@ -84,9 +84,9 @@ export function Features() {
             <Sparkles className="w-3.5 h-3.5" />
             Tres asistentes IA
           </div>
-          <h2 className="font-display text-4xl md:text-5xl xl:text-6xl font-light tracking-tight text-slate-900 dark:text-white mb-5 text-balance leading-[1.05]">
+          <h2 className="text-4xl md:text-5xl xl:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-5 text-balance leading-[1.05]">
             Un asistente para cada{" "}
-            <span className="italic font-medium text-primary">tarea</span>.
+            <span className="text-primary">tarea</span>.
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-pretty">
             Cada uno está especializado y todos fueron entrenados en normativa argentina.
@@ -122,14 +122,14 @@ export function Features() {
                   <p className="text-[10px] font-bold text-white/60 uppercase tracking-[0.18em]">
                     Asistente IA · Principal
                   </p>
-                  <h3 className="font-display text-2xl font-medium text-white">
+                  <h3 className="text-2xl font-bold tracking-tight text-white">
                     {FEATURE_GENERA.name}
                   </h3>
                 </div>
               </div>
 
               {/* Tagline editorial serif */}
-              <p className="font-display text-2xl md:text-3xl font-light leading-[1.15] text-white text-balance">
+              <p className="text-2xl md:text-3xl font-bold leading-[1.15] text-white text-balance tracking-tight">
                 {FEATURE_GENERA.tagline}
               </p>
 
@@ -231,13 +231,13 @@ function SmallFeatureCard({
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.18em]">
             Asistente IA
           </p>
-          <h3 className="font-display text-xl font-medium text-slate-900 dark:text-white">
+          <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
             {feature.name}
           </h3>
         </div>
       </div>
 
-      <p className="font-display text-xl md:text-2xl font-light leading-[1.2] text-slate-900 dark:text-white text-balance">
+      <p className="text-xl md:text-2xl font-bold leading-[1.2] text-slate-900 dark:text-white text-balance tracking-tight">
         {feature.tagline}
       </p>
 

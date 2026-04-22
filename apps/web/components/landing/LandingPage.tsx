@@ -31,7 +31,7 @@ import { Footer } from "@/components/landing/Footer";
  */
 export function LandingPage() {
   return (
-    <div className="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 overflow-x-hidden min-h-screen">
+    <div className="bg-background-light dark:bg-background-dark font-sans text-slate-900 dark:text-slate-100 overflow-x-hidden min-h-screen">
       <Navbar />
       <Hero />
       <HowItWorks />

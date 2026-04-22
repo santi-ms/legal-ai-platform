@@ -75,9 +75,9 @@ export function Security() {
               <Shield className="w-3.5 h-3.5" />
               Confidencialidad y cumplimiento
             </div>
-            <h2 className="font-display text-4xl md:text-5xl xl:text-6xl font-light tracking-tight text-white text-balance leading-[1.05]">
+            <h2 className="text-4xl md:text-5xl xl:text-6xl font-extrabold tracking-tight text-white text-balance leading-[1.05]">
               Seguridad pensada{" "}
-              <span className="italic font-medium text-gold-400">
+              <span className="text-gold-400">
                 para profesionales legales
               </span>
               .
@@ -109,7 +109,7 @@ export function Security() {
                     <div className="relative w-11 h-11 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                       <Icon className="w-5 h-5 text-gold-400" />
                     </div>
-                    <h3 className="font-display text-lg font-medium mb-2 text-white leading-snug">
+                    <h3 className="text-lg font-bold tracking-tight mb-2 text-white leading-snug">
                       {p.title}
                     </h3>
                     <p className="text-sm text-white/60 leading-relaxed text-pretty">

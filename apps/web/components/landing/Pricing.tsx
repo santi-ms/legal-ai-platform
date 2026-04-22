@@ -106,9 +106,9 @@ export function Pricing() {
             <Zap className="w-3.5 h-3.5" />
             Planes y precios
           </div>
-          <h2 className="font-display text-4xl md:text-5xl xl:text-6xl font-light tracking-tight text-slate-900 dark:text-white mb-5 text-balance leading-[1.05]">
+          <h2 className="text-4xl md:text-5xl xl:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-5 text-balance leading-[1.05]">
             Elegí el plan que se adapta{" "}
-            <span className="italic font-medium text-primary">a tu estudio</span>.
+            <span className="text-primary">a tu estudio</span>.
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed">
             Todos los precios en pesos argentinos. Cancelás cuando quieras.
@@ -162,7 +162,7 @@ export function Pricing() {
                 <div className="mb-6">
                   <h3
                     className={cn(
-                      "font-display text-2xl font-medium mb-1",
+                      "text-2xl font-bold tracking-tight mb-1",
                       plan.highlight ? "text-white" : "text-slate-900 dark:text-white"
                     )}
                   >
@@ -179,7 +179,7 @@ export function Pricing() {
                   <div className="flex items-baseline gap-1">
                     <span
                       className={cn(
-                        "font-display text-4xl font-medium tabular-nums",
+                        "text-4xl font-extrabold tracking-tight tabular-nums",
                         plan.highlight ? "text-white" : "text-slate-900 dark:text-white"
                       )}
                     >

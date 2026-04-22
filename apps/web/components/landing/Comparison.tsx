@@ -54,9 +54,9 @@ export function Comparison() {
               <TrendingDown className="w-3.5 h-3.5" />
               Cuánto tiempo te ahorra
             </div>
-            <h2 className="font-display text-4xl md:text-5xl xl:text-6xl font-light tracking-tight text-slate-900 dark:text-white text-balance leading-[1.05]">
+            <h2 className="text-4xl md:text-5xl xl:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white text-balance leading-[1.05]">
               Horas que deberían volver{" "}
-              <span className="italic font-medium text-primary">a tu facturación</span>.
+              <span className="text-primary">a tu facturación</span>.
             </h2>
             <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-pretty max-w-xl">
               Estimaciones basadas en los tiempos medios de un abogado
@@ -66,7 +66,7 @@ export function Comparison() {
 
           {/* Hero number con CountUp */}
           <div className="md:col-span-5 md:text-right">
-            <div className="font-display text-8xl md:text-9xl font-light text-primary leading-none tabular-nums">
+            <div className="text-8xl md:text-9xl font-extrabold text-primary leading-none tabular-nums tracking-tight">
               <CountUp to={avgReduction} prefix="−" suffix="%" />
             </div>
             <div className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-2">

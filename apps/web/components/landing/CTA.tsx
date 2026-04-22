@@ -40,10 +40,10 @@ export function CTA() {
               </span>
             </div>
 
-            {/* Headline editorial gigante */}
-            <h2 className="font-display text-5xl md:text-6xl xl:text-7xl font-light leading-[1.02] tracking-tight text-balance max-w-4xl mx-auto">
+            {/* Headline */}
+            <h2 className="text-5xl md:text-6xl xl:text-7xl font-extrabold leading-[1.02] tracking-tight text-balance max-w-4xl mx-auto">
               Dejá de tipear lo que{" "}
-              <span className="italic font-medium text-gold-400">
+              <span className="text-gold-400">
                 ya sabés
               </span>
               .

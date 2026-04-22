@@ -34,9 +34,9 @@ export function HowItWorks() {
           <div className="inline-flex items-center gap-2 text-gold-600 dark:text-gold-400 text-[11px] font-semibold uppercase tracking-[0.14em]">
             Cómo funciona
           </div>
-          <h2 className="font-display text-4xl md:text-5xl xl:text-6xl font-light tracking-tight text-slate-900 dark:text-white text-balance leading-[1.05]">
+          <h2 className="text-4xl md:text-5xl xl:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white text-balance leading-[1.05]">
             Tu flujo legal,{" "}
-            <span className="italic font-medium text-primary">simplificado</span>.
+            <span className="text-primary">simplificado</span>.
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-pretty">
             Olvidate de las horas perdidas redactando desde cero. Tres pasos.
@@ -60,7 +60,7 @@ export function HowItWorks() {
                     {/* Número decorativo en fondo — serif gigante */}
                     <div
                       aria-hidden="true"
-                      className="absolute -top-4 -right-2 font-display text-[7rem] font-light text-primary/10 dark:text-primary/15 leading-none pointer-events-none select-none"
+                      className="absolute -top-4 -right-2 text-[7rem] font-extrabold text-primary/10 dark:text-primary/15 leading-none pointer-events-none select-none tracking-tight"
                     >
                       {String(index + 1).padStart(2, "0")}
                     </div>
@@ -70,7 +70,7 @@ export function HowItWorks() {
                       <Icon className="w-6 h-6 text-primary group-hover:text-white transition-colors" />
                     </div>
 
-                    <h3 className="font-display text-xl md:text-2xl font-medium mb-3 text-slate-900 dark:text-white leading-tight">
+                    <h3 className="text-xl md:text-2xl font-bold tracking-tight mb-3 text-slate-900 dark:text-white leading-tight">
                       {step.title}
                     </h3>
                     <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-pretty">

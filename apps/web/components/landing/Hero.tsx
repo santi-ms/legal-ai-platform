@@ -346,10 +346,10 @@ export function Hero() {
             </span>
           </div>
 
-          {/* Headline — serif editorial con itálica enfática */}
-          <h1 className="font-display text-5xl md:text-6xl xl:text-7xl font-light leading-[1.02] tracking-tight text-slate-900 dark:text-white text-balance">
+          {/* Headline */}
+          <h1 className="text-5xl md:text-6xl xl:text-7xl font-extrabold leading-[1.02] tracking-tight text-slate-900 dark:text-white text-balance">
             Redactá una{" "}
-            <span className="italic font-medium text-primary">
+            <span className="text-primary">
               carta documento
             </span>
             <br className="hidden md:block" /> en 2 minutos.

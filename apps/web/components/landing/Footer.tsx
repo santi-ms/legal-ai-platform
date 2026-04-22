@@ -45,7 +45,7 @@ export function Footer() {
         <div className="mb-16 border-b border-white/10 pb-12">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
             <div>
-              <p className="font-display text-6xl md:text-8xl font-light tracking-tight text-white leading-none">
+              <p className="text-6xl md:text-8xl font-extrabold tracking-tight text-white leading-none">
                 doculex<span className="text-gold">.</span>
               </p>
               <p className="mt-5 text-white/60 max-w-md leading-relaxed text-pretty">

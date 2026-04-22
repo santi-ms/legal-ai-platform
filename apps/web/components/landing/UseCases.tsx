@@ -71,9 +71,9 @@ export function UseCases() {
             <Briefcase className="w-3.5 h-3.5" />
             Para quién es DocuLex
           </div>
-          <h2 className="font-display text-4xl md:text-5xl xl:text-6xl font-light tracking-tight text-slate-900 dark:text-white text-balance leading-[1.05]">
+          <h2 className="text-4xl md:text-5xl xl:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white text-balance leading-[1.05]">
             Pensado para{" "}
-            <span className="italic font-medium text-primary">tu forma de trabajar</span>.
+            <span className="text-primary">tu forma de trabajar</span>.
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-pretty">
             Sea que manejes un único expediente o los 50 de la semana, DocuLex se adapta
@@ -115,7 +115,7 @@ export function UseCases() {
                     </div>
 
                     {/* Title serif */}
-                    <h3 className="font-display text-2xl md:text-3xl font-light text-slate-900 dark:text-white mb-6 leading-[1.15] text-balance">
+                    <h3 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-6 leading-[1.15] text-balance">
                       {c.title}
                     </h3>
 

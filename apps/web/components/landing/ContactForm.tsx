@@ -110,9 +110,9 @@ export function ContactForm() {
               <Building2 className="w-3.5 h-3.5" />
               Plan estudio · Consultas comerciales
             </div>
-            <h2 className="font-display text-4xl md:text-5xl xl:text-6xl font-light tracking-tight text-slate-900 dark:text-white text-balance leading-[1.05]">
+            <h2 className="text-4xl md:text-5xl xl:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white text-balance leading-[1.05]">
               Hablemos de{" "}
-              <span className="italic font-medium text-primary">tu estudio</span>
+              <span className="text-primary">tu estudio</span>
               .
             </h2>
             <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-pretty">
@@ -165,7 +165,7 @@ export function ContactForm() {
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 mb-6">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
-                  <h3 className="font-display text-3xl font-medium text-slate-900 dark:text-white mb-3">
+                  <h3 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-3">
                     ¡Recibimos tu consulta!
                   </h3>
                   <p className="text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">

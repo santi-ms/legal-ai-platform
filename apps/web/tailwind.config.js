@@ -32,10 +32,12 @@ export default {
         },
       },
       fontFamily: {
-        // Sans para UI/body — Inter
+        // Sans para todo — Inter (tipografía unificada)
         sans: ["var(--font-sans)", "Inter", "sans-serif"],
-        // Display editorial para H1/H2 — Fraunces
-        display: ["var(--font-display)", "Fraunces", "Georgia", "serif"],
+        // Alias — apunta a la misma Inter para que las clases `font-display`
+        // heredadas en la landing no rompan layout. Los headings usan bold/
+        // extrabold + tracking-tight en vez de serif light.
+        display: ["var(--font-sans)", "Inter", "sans-serif"],
       },
       borderRadius: {
         DEFAULT: "0.25rem",

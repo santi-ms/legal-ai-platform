@@ -44,9 +44,9 @@ export function FAQ() {
             <HelpCircle className="w-3.5 h-3.5" />
             Preguntas frecuentes
           </div>
-          <h2 className="font-display text-4xl md:text-5xl xl:text-6xl font-light tracking-tight text-slate-900 dark:text-white text-balance leading-[1.05]">
+          <h2 className="text-4xl md:text-5xl xl:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white text-balance leading-[1.05]">
             Lo que más{" "}
-            <span className="italic font-medium text-primary">nos preguntan</span>
+            <span className="text-primary">nos preguntan</span>
             .
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed">
@@ -60,7 +60,7 @@ export function FAQ() {
             <StaggerItem key={item.q}>
               <details className="group border-b border-slate-200 dark:border-slate-800 transition-colors">
                 <summary className="flex items-start justify-between gap-6 cursor-pointer list-none py-6 md:py-7 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-sm">
-                  <span className="font-display text-lg md:text-xl font-medium text-slate-900 dark:text-white leading-snug text-pretty pr-4 group-hover:text-primary transition-colors">
+                  <span className="text-lg md:text-xl font-semibold text-slate-900 dark:text-white leading-snug text-pretty pr-4 group-hover:text-primary transition-colors">
                     {item.q}
                   </span>
                   <span
