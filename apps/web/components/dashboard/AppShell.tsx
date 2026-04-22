@@ -106,7 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <DeadlineProvider>
-      <div className="flex h-screen overflow-hidden bg-background-light dark:bg-background-dark font-display">
+      <div className="flex h-screen overflow-hidden bg-parchment dark:bg-slate-950 font-sans text-slate-900 dark:text-white">
         <DashboardSidebar
           isOpen={isMobileMenuOpen}
           onClose={() => setIsMobileMenuOpen(false)}

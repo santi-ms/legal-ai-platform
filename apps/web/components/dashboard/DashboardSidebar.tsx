@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
-import { BrandLogo } from "@/components/ui/BrandLogo";
 import {
   LayoutDashboard,
   FileText,
@@ -23,154 +22,138 @@ import {
   Globe,
   Scale,
   CalendarClock,
+  LogOut,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { useDeadlines } from "@/app/lib/contexts/DeadlineContext";
 import { useEffect, useState } from "react";
+import { useSession, signOut } from "next-auth/react";
 import { getBillingSubscription } from "@/app/lib/webApi";
 
-// Asistentes IA
+// ── Asistentes IA ──────────────────────────────────────────────────────────
 const dokiItems = [
-  {
-    id: "doku-genera",
-    label: "Doku Genera",
-    icon: PenLine,
-    href: "/documents/new",
-    disabled: false,
-    badge: null,
-  },
-  {
-    id: "doku-analiza",
-    label: "Doku Analiza",
-    icon: ScanSearch,
-    href: "/analysis",
-    disabled: false,
-    badge: null,
-  },
-  {
-    id: "doku-estratega",
-    label: "Doku Estratega",
-    icon: Swords,
-    href: "/estrategia",
-    disabled: false,
-    badge: null,
-  },
-  {
-    id: "doku-juris",
-    label: "Doku Juris",
-    icon: Scale,
-    href: "/juris",
-    disabled: false,
-    badge: null,
-  },
-];
+  { id: "doku-genera",    label: "Doku Genera",    icon: PenLine,    href: "/documents/new" },
+  { id: "doku-analiza",   label: "Doku Analiza",   icon: ScanSearch, href: "/analysis" },
+  { id: "doku-estratega", label: "Doku Estratega", icon: Swords,     href: "/estrategia" },
+  { id: "doku-juris",     label: "Doku Juris",     icon: Scale,      href: "/juris" },
+] as const;
 
-// Gestión del estudio
+// ── Gestión ────────────────────────────────────────────────────────────────
 const navigationItems = [
-  {
-    id: "dashboard",
-    label: "Panel de Control",
-    icon: LayoutDashboard,
-    href: "/dashboard",
-    disabled: false,
-  },
-  {
-    id: "documents",
-    label: "Mis Documentos",
-    icon: FileText,
-    href: "/documents",
-    disabled: false,
-  },
-  {
-    id: "references",
-    label: "Referencias IA",
-    icon: BookMarked,
-    href: "/documents/references",
-    disabled: false,
-  },
-  {
-    id: "cases",
-    label: "Expedientes",
-    icon: Briefcase,
-    href: "/expedientes",
-    disabled: false,
-  },
-  {
-    id: "vencimientos",
-    label: "Vencimientos",
-    icon: CalendarClock,
-    href: "/vencimientos",
-    disabled: false,
-  },
-  {
-    id: "calendar",
-    label: "Calendario",
-    icon: Calendar,
-    href: "/calendario",
-    disabled: false,
-  },
-  {
-    id: "clients",
-    label: "Clientes",
-    icon: Users,
-    href: "/clients",
-    disabled: false,
-  },
-  {
-    id: "finanzas",
-    label: "Finanzas",
-    icon: DollarSign,
-    href: "/finanzas",
-    disabled: false,
-  },
-  {
-    id: "importar",
-    label: "Importar datos",
-    icon: FileSpreadsheet,
-    href: "/importar",
-    disabled: false,
-  },
-  {
-    id: "portal",
-    label: "Portal Judicial",
-    icon: Globe,
-    href: "/portal",
-    disabled: false,
-  },
-  {
-    id: "analytics",
-    label: "Analytics",
-    icon: BarChart2,
-    href: "/analytics",
-    disabled: false,
-  },
-];
+  { id: "dashboard",     label: "Panel",           icon: LayoutDashboard,  href: "/dashboard" },
+  { id: "documents",     label: "Mis Documentos",  icon: FileText,         href: "/documents" },
+  { id: "references",    label: "Referencias IA",  icon: BookMarked,       href: "/documents/references" },
+  { id: "cases",         label: "Expedientes",     icon: Briefcase,        href: "/expedientes" },
+  { id: "vencimientos",  label: "Vencimientos",    icon: CalendarClock,    href: "/vencimientos" },
+  { id: "calendar",      label: "Calendario",      icon: Calendar,         href: "/calendario" },
+  { id: "clients",       label: "Clientes",        icon: Users,            href: "/clients" },
+  { id: "finanzas",      label: "Finanzas",        icon: DollarSign,       href: "/finanzas" },
+  { id: "importar",      label: "Importar datos",  icon: FileSpreadsheet,  href: "/importar" },
+  { id: "portal",        label: "Portal Judicial", icon: Globe,            href: "/portal" },
+  { id: "analytics",     label: "Analytics",       icon: BarChart2,        href: "/analytics" },
+] as const;
 
 const configItems = [
-  {
-    id: "settings",
-    label: "Ajustes",
-    icon: Settings,
-    href: "/settings",
-    disabled: false,
-  },
-  {
-    id: "help",
-    label: "Ayuda",
-    icon: HelpCircle,
-    href: "#",
-    disabled: true,
-  },
-];
+  { id: "settings", label: "Ajustes", icon: Settings,    href: "/settings", disabled: false },
+  { id: "help",     label: "Ayuda",   icon: HelpCircle,  href: "#",         disabled: true  },
+] as const;
 
 interface DashboardSidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
 }
 
+// ── Item de navegación editorial ───────────────────────────────────────────
+function NavItem({
+  href,
+  icon: Icon,
+  label,
+  isActive,
+  badge,
+  onClick,
+  disabled = false,
+}: {
+  href: string;
+  icon: typeof LayoutDashboard;
+  label: string;
+  isActive: boolean;
+  badge?: number | null;
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
+  if (disabled) {
+    return (
+      <div
+        className="relative flex items-center gap-3 pl-4 pr-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed"
+        role="button"
+        aria-disabled="true"
+        title="Próximamente"
+      >
+        <Icon className="w-[18px] h-[18px] text-slate-400 flex-shrink-0" />
+        <span className="flex-1 text-slate-400">{label}</span>
+        <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+          Pronto
+        </span>
+      </div>
+    );
+  }
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={cn(
+        "relative flex items-center gap-3 pl-4 pr-3 py-2 rounded-lg text-sm transition-all group",
+        isActive
+          ? "bg-slate-100 dark:bg-slate-800/70 text-ink dark:text-white font-semibold"
+          : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white",
+      )}
+    >
+      {/* Barra activa editorial a la izquierda */}
+      <span
+        className={cn(
+          "absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full transition-all",
+          isActive
+            ? "bg-gold-500"
+            : "bg-transparent group-hover:bg-slate-200 dark:group-hover:bg-slate-700",
+        )}
+        aria-hidden="true"
+      />
+      <Icon
+        className={cn(
+          "w-[18px] h-[18px] flex-shrink-0 transition-colors",
+          isActive
+            ? "text-ink dark:text-white"
+            : "text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200",
+        )}
+      />
+      <span className="flex-1 truncate">{label}</span>
+      {badge !== null && badge !== undefined && badge > 0 && (
+        <span className="flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-rose-500 text-white text-[10px] font-bold px-1 leading-none">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+// ── Eyebrow de sección (gold uppercase) ────────────────────────────────────
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="pt-5 pb-2 px-4 text-[10px] font-semibold text-gold-700 dark:text-gold-400 uppercase tracking-[0.14em]">
+      {children}
+    </div>
+  );
+}
+
 export function DashboardSidebar({ isOpen = false, onClose }: DashboardSidebarProps) {
   const pathname = usePathname();
   const { urgentCount } = useDeadlines();
+  const { data: session } = useSession();
+  const user = session?.user;
+  const userName = user?.name || "Usuario";
+  const userEmail = user?.email || "";
+  const userInitial = userName.charAt(0).toUpperCase();
 
   const [usageData, setUsageData] = useState<{ used: number; limit: number | null; planName: string } | null>(null);
 
@@ -187,27 +170,43 @@ export function DashboardSidebar({ isOpen = false, onClose }: DashboardSidebarPr
       .catch(() => {}); // No bloquear la sidebar si falla
   }, []);
 
+  // Helper para match activo con caso especial de /documents (no cuando es /documents/references)
+  const isItemActive = (href: string) => {
+    if (href === "/documents") {
+      return (
+        pathname === "/documents" ||
+        (pathname?.startsWith("/documents/") && !pathname?.startsWith("/documents/references"))
+      ) ?? false;
+    }
+    if (href === "/documents/new") {
+      return pathname?.startsWith("/documents/new") ?? false;
+    }
+    return (pathname === href || pathname?.startsWith(href + "/")) ?? false;
+  };
+
   const sidebarContent = (
     <aside
       className={cn(
-        // Base: ancho fijo, altura completa, columna flex
+        // Base: ancho fijo, borde derecho editorial
         "w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col h-full shrink-0",
-        // Mobile: drawer fijo sobre el contenido
+        // Mobile: drawer
         "fixed top-0 left-0 z-50 h-screen transition-transform duration-300",
-        // Desktop: parte del flujo normal (el parent ya tiene h-screen)
+        // Desktop
         "lg:relative lg:translate-x-0 lg:z-auto",
-        isOpen ? "translate-x-0" : "-translate-x-full"
+        isOpen ? "translate-x-0" : "-translate-x-full",
       )}
     >
-      {/* Logo + botón cerrar en mobile */}
-      <div className="p-6 flex items-center justify-between">
-        <div className="flex flex-col gap-1">
-          <BrandLogo size={55} />
-          <p className="text-xs text-slate-500 dark:text-slate-400 pl-0.5">Pro Edition</p>
-        </div>
-        {/* Botón cerrar solo en mobile */}
+      {/* ── Header: wordmark editorial ─────────────────────────────────── */}
+      <div className="px-5 pt-6 pb-5 flex items-start justify-between">
+        <Link href="/dashboard" onClick={onClose} className="group flex items-baseline gap-1.5">
+          <span className="text-2xl font-extrabold tracking-tight text-ink dark:text-white leading-none">
+            doculex
+          </span>
+          <span className="text-2xl font-extrabold text-gold-500 leading-none">.</span>
+        </Link>
+        {/* Botón cerrar mobile */}
         <button
-          className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="lg:hidden p-1.5 -mr-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           onClick={onClose}
           aria-label="Cerrar menú"
         >
@@ -215,196 +214,163 @@ export function DashboardSidebar({ isOpen = false, onClose }: DashboardSidebarPr
         </button>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-
-        {/* ── Asistentes IA ─────────────────────────────────── */}
-        <div className="pt-2 pb-1 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          Asistentes IA
+      {/* Plan pill */}
+      {usageData && (
+        <div className="px-5 pb-3">
+          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gold-50 dark:bg-gold-900/20 border border-gold-200/60 dark:border-gold-800/40">
+            <span className="w-1 h-1 rounded-full bg-gold-500" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-gold-700 dark:text-gold-400">
+              Plan {usageData.planName}
+            </span>
+          </div>
         </div>
-        {dokiItems.map((item) => {
-          const Icon = item.icon;
-          const isActive =
-            item.href === "/documents/new"
-              ? pathname?.startsWith("/documents/new")
-              : pathname === item.href || pathname?.startsWith(item.href + "/");
+      )}
 
-          return (
-            <Link
+      {/* ── Navegación ─────────────────────────────────────────────────── */}
+      <nav className="flex-1 px-2 overflow-y-auto pb-2">
+        <SectionLabel>Asistentes IA</SectionLabel>
+        <div className="space-y-0.5">
+          {dokiItems.map((item) => (
+            <NavItem
               key={item.id}
               href={item.href}
+              icon={item.icon}
+              label={item.label}
+              isActive={isItemActive(item.href)}
               onClick={onClose}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
-                isActive
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-              )}
-            >
-              <Icon className="w-5 h-5 flex-shrink-0" />
-              <span className="flex-1 font-medium">{item.label}</span>
-            </Link>
-          );
-        })}
-
-        {/* ── Gestión ───────────────────────────────────────── */}
-        <div className="pt-4 pb-1 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          Gestión
+            />
+          ))}
         </div>
 
-        {navigationItems.map((item) => {
-          const Icon = item.icon;
-          // Special case: /documents should not be active when on /documents/references
-          const isActive =
-            !item.disabled &&
-            (item.href === "/documents"
-              ? pathname === "/documents" ||
-                (pathname?.startsWith("/documents/") &&
-                  !pathname?.startsWith("/documents/references"))
-              : pathname === item.href || pathname?.startsWith(item.href + "/"));
-
-          if (item.disabled) {
+        <SectionLabel>Gestión</SectionLabel>
+        <div className="space-y-0.5">
+          {navigationItems.map((item) => {
+            const badge = item.id === "cases" && urgentCount > 0 ? urgentCount : null;
             return (
-              <div
+              <NavItem
                 key={item.id}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg opacity-50 cursor-not-allowed relative group"
-                role="button"
-                aria-disabled="true"
-                aria-label={`${item.label} - Próximamente`}
-                tabIndex={-1}
-                title="Próximamente"
-              >
-                <Icon className="w-5 h-5 text-slate-400" />
-                <span className="text-slate-400">{item.label}</span>
-                <span className="ml-auto text-xs text-slate-400 font-medium">
-                  Próximamente
-                </span>
-              </div>
+                href={item.href}
+                icon={item.icon}
+                label={item.label}
+                isActive={isItemActive(item.href)}
+                badge={badge}
+                onClick={onClose}
+              />
             );
-          }
-
-          // Badge: show urgent deadline count on Expedientes nav item
-          const badge = item.id === "cases" && urgentCount > 0 ? urgentCount : null;
-
-          return (
-            <Link
-              key={item.id}
-              href={item.href}
-              onClick={onClose}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
-                isActive
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-              )}
-            >
-              <Icon className="w-5 h-5 flex-shrink-0" />
-              <span className="flex-1">{item.label}</span>
-              {badge !== null && (
-                <span className="flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold px-1 leading-none">
-                  {badge > 99 ? "99+" : badge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-
-        {/* Config Section */}
-        <div className="pt-4 pb-2 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          Configuración
+          })}
         </div>
 
-        {configItems.map((item) => {
-          const Icon = item.icon;
-          const isActive =
-            !item.disabled &&
-            (pathname === item.href || pathname?.startsWith(item.href + "/"));
-
-          if (item.disabled) {
-            return (
-              <div
-                key={item.id}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg opacity-50 cursor-not-allowed relative group"
-                role="button"
-                aria-disabled="true"
-                aria-label={`${item.label} - Próximamente`}
-                tabIndex={-1}
-                title="Próximamente"
-              >
-                <Icon className="w-5 h-5 text-slate-400" />
-                <span className="text-slate-400">{item.label}</span>
-                <span className="ml-auto text-xs text-slate-400 font-medium">
-                  Próximamente
-                </span>
-              </div>
-            );
-          }
-
-          return (
-            <Link
+        <SectionLabel>Configuración</SectionLabel>
+        <div className="space-y-0.5">
+          {configItems.map((item) => (
+            <NavItem
               key={item.id}
               href={item.href}
+              icon={item.icon}
+              label={item.label}
+              isActive={isItemActive(item.href)}
+              disabled={item.disabled}
               onClick={onClose}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
-                isActive
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-              )}
-            >
-              <Icon className="w-5 h-5" />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+            />
+          ))}
+        </div>
       </nav>
 
-      {/* Plan usage + Premium Button */}
-      <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
-        {usageData && (
-          <Link href="/settings/billing" onClick={onClose} className="block group">
-            <div className="rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2.5 group-hover:border-primary/40 transition-colors">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Documentos este mes</span>
-                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                  {usageData.used}{usageData.limit ? `/${usageData.limit}` : ""}
-                </span>
-              </div>
-              <div className="h-1.5 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden">
-                {usageData.limit ? (
-                  <div
-                    className={cn(
-                      "h-full rounded-full transition-all duration-500",
-                      (usageData.used / usageData.limit) >= 0.9 ? "bg-red-500" :
-                      (usageData.used / usageData.limit) >= 0.7 ? "bg-amber-500" : "bg-primary"
-                    )}
-                    style={{ width: `${Math.min(100, Math.round((usageData.used / usageData.limit) * 100))}%` }}
-                  />
-                ) : (
-                  <div className="h-full w-3 bg-primary rounded-full" />
+      {/* ── Uso + upgrade + usuario ───────────────────────────────────── */}
+      <div className="border-t border-slate-200 dark:border-slate-800">
+        {/* Uso */}
+        {usageData && usageData.limit !== null && (
+          <Link
+            href="/settings/billing"
+            onClick={onClose}
+            className="block px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Docs este mes
+              </span>
+              <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                {usageData.used}/{usageData.limit}
+              </span>
+            </div>
+            <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all duration-500",
+                  usageData.used / usageData.limit >= 0.9
+                    ? "bg-rose-500"
+                    : usageData.used / usageData.limit >= 0.7
+                    ? "bg-amber-500"
+                    : "bg-gold-500",
                 )}
-              </div>
-              {usageData.limit && usageData.used >= usageData.limit && (
-                <p className="text-[10px] text-red-500 font-semibold mt-1">Límite alcanzado</p>
+                style={{
+                  width: `${Math.min(100, Math.round((usageData.used / usageData.limit) * 100))}%`,
+                }}
+              />
+            </div>
+            {usageData.used >= usageData.limit && (
+              <p className="text-[10px] text-rose-500 font-semibold mt-1">Límite alcanzado</p>
+            )}
+          </Link>
+        )}
+
+        {/* Upgrade pill — sólo si no es Pro/Premium */}
+        {usageData && !/(pro|premium|enterprise)/i.test(usageData.planName) && (
+          <div className="px-4 pb-3">
+            <Link
+              href="/settings/billing"
+              onClick={onClose}
+              className="group w-full inline-flex items-center justify-center gap-2 py-2.5 px-3 bg-ink hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all shadow-soft hover:shadow-hover"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-gold-400" />
+              Mejorar a Pro
+              <ChevronRight className="w-3.5 h-3.5 opacity-70 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+        )}
+
+        {/* Usuario footer */}
+        <div className="px-3 py-3 border-t border-slate-200 dark:border-slate-800 flex items-center gap-3">
+          <Link
+            href="/settings"
+            onClick={onClose}
+            className="flex items-center gap-2.5 min-w-0 flex-1 rounded-lg px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            <div className="size-8 rounded-full bg-gradient-to-br from-ink to-slate-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ring-1 ring-slate-200 dark:ring-slate-700">
+              {user?.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={user.image} alt={userName} className="w-full h-full rounded-full object-cover" />
+              ) : (
+                userInitial
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-slate-900 dark:text-white truncate leading-tight">
+                {userName}
+              </p>
+              {userEmail && (
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  {userEmail}
+                </p>
               )}
             </div>
           </Link>
-        )}
-        <Link
-          href="/settings/billing"
-          onClick={onClose}
-          className="w-full py-3 px-4 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-        >
-          <Sparkles className="w-4 h-4" />
-          Suscripción Premium
-        </Link>
+          <button
+            onClick={() => signOut({ callbackUrl: "/auth/login" })}
+            className="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </aside>
   );
 
   return (
     <>
-      {/* Overlay backdrop — solo mobile cuando está abierto */}
+      {/* Overlay backdrop — mobile */}
       {isOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"

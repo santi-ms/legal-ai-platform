@@ -19,7 +19,7 @@ function NewDocumentRedirect() {
   }, [router, searchParams]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background-light dark:bg-background-dark">
+    <div className="flex items-center justify-center min-h-screen bg-parchment dark:bg-slate-950">
       <Loader2 className="w-6 h-6 animate-spin text-primary" />
     </div>
   );
@@ -28,7 +28,7 @@ function NewDocumentRedirect() {
 export default function NewDocumentPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen bg-background-light dark:bg-background-dark">
+      <div className="flex items-center justify-center min-h-screen bg-parchment dark:bg-slate-950">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     }>

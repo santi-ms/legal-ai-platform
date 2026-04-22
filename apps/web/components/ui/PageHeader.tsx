@@ -14,11 +14,16 @@ interface Breadcrumb {
 interface PageHeaderProps {
   icon?: LucideIcon;
   iconGradient?: GradientKey;
+  /**
+   * Kicker editorial sobre el título — uppercase, dorado, tracking ancho.
+   * Ej: "Asistentes IA", "Gestión", "Configuración".
+   */
+  eyebrow?: string;
   title: string;
   description?: string;
   badge?: {
     label: string;
-    tone?: "default" | "warning" | "danger" | "success" | "info";
+    tone?: "default" | "warning" | "danger" | "success" | "info" | "gold";
   };
   actions?: React.ReactNode;
   breadcrumbs?: Breadcrumb[];
@@ -31,11 +36,13 @@ const BADGE_STYLES: Record<NonNullable<PageHeaderProps["badge"]>["tone"] & strin
   danger:  "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
   success: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
   info:    "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  gold:    "bg-gold-50 text-gold-700 dark:bg-gold-900/30 dark:text-gold-300",
 };
 
 export const PageHeader = React.memo(function PageHeader({
   icon: Icon,
   iconGradient = "primary",
+  eyebrow,
   title,
   description,
   badge,
@@ -44,9 +51,9 @@ export const PageHeader = React.memo(function PageHeader({
   className,
 }: PageHeaderProps) {
   return (
-    <div className={cn("mb-6", className)}>
+    <div className={cn("mb-8", className)}>
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav aria-label="Breadcrumb" className="mb-3">
+        <nav aria-label="Breadcrumb" className="mb-4">
           <ol className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
             {breadcrumbs.map((crumb, i) => (
               <li key={i} className="flex items-center gap-1.5">
@@ -64,12 +71,12 @@ export const PageHeader = React.memo(function PageHeader({
         </nav>
       )}
 
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="flex items-start justify-between gap-6 flex-wrap">
         <div className="flex items-start gap-4 min-w-0 flex-1">
           {Icon && (
             <div
               className={cn(
-                "flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-sm",
+                "flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-soft",
                 TOKENS.gradients[iconGradient]
               )}
             >
@@ -78,14 +85,19 @@ export const PageHeader = React.memo(function PageHeader({
           )}
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-50 tracking-tight">
+            {eyebrow && (
+              <p className={cn(TOKENS.eyebrow, "mb-2")}>
+                {eyebrow}
+              </p>
+            )}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-ink dark:text-white leading-[1.1]">
                 {title}
               </h1>
               {badge && (
                 <span
                   className={cn(
-                    "text-xs font-semibold px-2 py-1 rounded-full",
+                    "text-[11px] font-semibold px-2 py-1 rounded-full uppercase tracking-wider",
                     BADGE_STYLES[badge.tone ?? "default"]
                   )}
                 >
@@ -94,7 +106,7 @@ export const PageHeader = React.memo(function PageHeader({
               )}
             </div>
             {description && (
-              <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400 max-w-2xl">
+              <p className="mt-2.5 text-sm md:text-base text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
                 {description}
               </p>
             )}

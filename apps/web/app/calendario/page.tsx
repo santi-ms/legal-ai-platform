@@ -163,8 +163,9 @@ export default function CalendarioPage() {
       <PageHeader
         icon={CalendarDays}
         iconGradient="sky"
-        title="Calendario de Vencimientos"
-        description="Visualizá los vencimientos de tus expedientes por mes"
+        eyebrow="Gestión"
+        title="Calendario"
+        description="Visualizá los vencimientos de tus expedientes por mes."
         badge={data && data.summary.overdue > 0 ? { label: `${data.summary.overdue} vencidos`, tone: "danger" } : undefined}
       />
 

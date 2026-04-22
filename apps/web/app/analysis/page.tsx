@@ -109,19 +109,22 @@ export default function AnalysisPage() {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-[1280px] mx-auto w-full">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <ScanSearch className="w-5 h-5 text-primary" />
+    <div className="px-4 sm:px-6 lg:px-10 py-6 md:py-10 max-w-[1280px] mx-auto w-full">
+      {/* Header editorial */}
+      <div className="mb-8">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-soft flex-shrink-0">
+            <ScanSearch className="w-6 h-6 text-white" strokeWidth={2} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              Análisis de Contratos con IA
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700 dark:text-gold-400 mb-2">
+              Asistente IA
+            </p>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-ink dark:text-white leading-[1.1]">
+              Doku <span className="text-emerald-600 dark:text-emerald-400">Analiza</span>
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Subí un contrato en PDF y Claude lo analiza: riesgos, cláusulas faltantes y recomendaciones
+            <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 mt-2 max-w-2xl leading-relaxed">
+              Subí un contrato en PDF y Claude lo analiza: riesgos, cláusulas faltantes y recomendaciones.
             </p>
           </div>
         </div>

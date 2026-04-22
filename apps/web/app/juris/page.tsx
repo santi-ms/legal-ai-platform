@@ -235,8 +235,13 @@ function WelcomeState({ onSuggestion }: { onSuggestion: (s: string) => void }) {
           <Scale className="w-8 h-8 text-white" strokeWidth={2} />
         </div>
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-50 tracking-tight">Doku Juris</h2>
-          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700 dark:text-gold-400 mb-2">
+            Asistente IA
+          </p>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-ink dark:text-white tracking-tight leading-[1.1]">
+            Doku <span className="text-violet-600 dark:text-violet-400">Juris</span>
+          </h2>
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 mt-3 leading-relaxed">
             Research jurisprudencial conversacional. Hacé consultas sobre legislación y jurisprudencia argentina y recibí respuestas con citas normativas precisas.
           </p>
         </div>

@@ -22,48 +22,58 @@ interface StatsCardProps {
   href?: string;
 }
 
+/**
+ * StatsCard editorial — número grande extrabold tracking-tight, label en
+ * eyebrow uppercase. Layout airy estilo landing.
+ */
 export const StatsCard = React.memo(function StatsCard({
   icon: Icon,
   label,
   value,
   change,
-  iconBgColor = "bg-blue-100 dark:bg-blue-900/30",
+  iconBgColor = "bg-blue-50 dark:bg-blue-900/30",
   iconColor   = "text-blue-600 dark:text-blue-400",
   subText,
-  subTextColor = "text-slate-400 dark:text-slate-500",
+  subTextColor = "text-slate-500 dark:text-slate-500",
   href,
 }: StatsCardProps) {
   const inner = (
-    <div className={cn(
-      "bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm",
-      href && "hover:border-primary/40 hover:shadow-md transition-all duration-150 cursor-pointer group"
-    )}>
-      <div className="flex items-center justify-between mb-4">
-        <div className={cn("p-2 rounded-lg", iconBgColor, iconColor)}>
-          <Icon className="w-5 h-5" />
+    <div
+      className={cn(
+        "relative bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-soft transition-all duration-200",
+        href && "hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-hover cursor-pointer group",
+      )}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", iconBgColor, iconColor)}>
+          <Icon className="w-5 h-5" strokeWidth={2} />
         </div>
         {change && (
           <span
             className={cn(
-              "text-sm font-bold px-2 py-1 rounded",
+              "text-[11px] font-bold px-2 py-0.5 rounded-full",
               change.isPositive
-                ? "text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10"
-                : "text-rose-500 bg-rose-50 dark:bg-rose-500/10"
+                ? "text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10"
+                : "text-rose-600 bg-rose-50 dark:text-rose-400 dark:bg-rose-500/10",
             )}
           >
             {change.value}
           </span>
         )}
       </div>
-      <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">{label}</p>
-      <p className={cn(
-        "text-2xl font-bold mt-1 text-slate-900 dark:text-white",
-        href && "group-hover:text-primary transition-colors duration-150"
-      )}>
+      <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.12em]">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "text-3xl font-extrabold mt-1 text-ink dark:text-white tracking-tight leading-none",
+          href && "group-hover:text-primary transition-colors duration-200",
+        )}
+      >
         {value}
       </p>
       {subText && (
-        <p className={cn("text-xs font-medium mt-1", subTextColor)}>{subText}</p>
+        <p className={cn("text-[11px] font-medium mt-1.5", subTextColor)}>{subText}</p>
       )}
     </div>
   );
@@ -74,6 +84,3 @@ export const StatsCard = React.memo(function StatsCard({
 
   return inner;
 });
-
-
-

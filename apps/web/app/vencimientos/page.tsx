@@ -533,8 +533,9 @@ function VencimientosContent() {
       <PageHeader
         icon={CalendarClock}
         iconGradient="violet"
+        eyebrow="Gestión"
         title="Vencimientos"
-        description="Audiencias, plazos procesales, vencimientos de contratos y cualquier fecha crítica"
+        description="Audiencias, plazos procesales, vencimientos de contratos y cualquier fecha crítica."
         badge={
           stats && stats.vencidos > 0
             ? { label: `${stats.vencidos} vencido${stats.vencidos !== 1 ? "s" : ""}`, tone: "danger" }

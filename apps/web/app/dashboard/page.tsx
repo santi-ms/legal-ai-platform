@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Plus, AlertCircle, AlertTriangle, X } from "lucide-react";
+import { Plus, AlertCircle, AlertTriangle, X, Sparkles, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useToast } from "@/components/ui/toast";
@@ -93,7 +93,6 @@ function DashboardContent() {
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al cargar documentos";
-      // Sólo error inline — sin toast duplicado para fallas de carga
       setError(message);
     } finally {
       setLoading(false);
@@ -139,10 +138,10 @@ function DashboardContent() {
 
   if (authLoading) {
     return (
-      <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-1/3"></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-8 space-y-8 max-w-7xl mx-auto w-full">
+        <div className="animate-pulse space-y-6">
+          <div className="h-12 bg-slate-200 dark:bg-slate-800 rounded w-1/2"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-32 bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
             ))}
@@ -156,40 +155,43 @@ function DashboardContent() {
     return null;
   }
 
-  // Estadísticas desde endpoint dedicado (totales reales, no solo la página actual)
   const totalDocuments        = stats?.total                ?? 0;
   const totalClients          = stats?.totalClients         ?? 0;
   const needsReview           = stats?.byStatus?.needs_review ?? 0;
   const expedientesActivos    = stats?.expedientesActivos   ?? 0;
   const vencimientosUrgentes  = stats?.vencimientosUrgentes ?? 0;
 
-  // Onboarding: show when user has very little data
-  const showOnboarding = stats !== null && (totalDocuments === 0 || totalClients === 0 || expedientesActivos === 0);
+  const showOnboarding =
+    stats !== null && (totalDocuments === 0 || totalClients === 0 || expedientesActivos === 0);
 
-  // Nombre del usuario — sin prefijo "Dr." inventado
   const userName = session?.user?.name || "Usuario";
   const firstName = userName.split(" ")[0] || userName;
 
-  const currentDate = new Date().toLocaleDateString("es-AR", {
+  const now = new Date();
+  const currentDate = now.toLocaleDateString("es-AR", {
+    weekday: "long",
     day: "numeric",
     month: "long",
   });
+  const hour = now.getHours();
+  const greeting =
+    hour < 6 ? "Buenas madrugadas" : hour < 13 ? "Buenos días" : hour < 20 ? "Buenas tardes" : "Buenas noches";
 
   return (
-    <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
-      {/* ── Overdue deadlines alert banner ─────────────────────────────────── */}
+    <div className="px-4 sm:px-6 lg:px-10 py-6 md:py-10 max-w-7xl mx-auto w-full">
+      {/* ── Banner overdue ─────────────────────────────────────────────── */}
       {overdueCount > 0 && !bannerDismissed && (
-        <div className="flex items-center justify-between gap-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3">
+        <div className="mb-6 flex items-center justify-between gap-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-2xl px-4 py-3">
           <div className="flex items-center gap-3 min-w-0">
-            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
-            <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+            <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0" />
+            <p className="text-sm font-semibold text-rose-800 dark:text-rose-300">
               {overdueCount === 1
                 ? "Tenés 1 expediente con vencimiento vencido."
                 : `Tenés ${overdueCount} expedientes con vencimientos vencidos.`}
             </p>
             <Link
               href="/vencimientos"
-              className="text-sm font-bold text-red-700 dark:text-red-400 underline underline-offset-2 hover:no-underline flex-shrink-0"
+              className="text-sm font-bold text-rose-700 dark:text-rose-400 underline underline-offset-2 hover:no-underline flex-shrink-0"
             >
               Ver vencimientos →
             </Link>
@@ -197,143 +199,166 @@ function DashboardContent() {
           <button
             onClick={() => setBannerDismissed(true)}
             aria-label="Cerrar alerta"
-            className="p-1 rounded-md text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors flex-shrink-0"
+            className="p-1 rounded-md text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors flex-shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* Welcome & Summary */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-            Bienvenido de nuevo, {firstName}
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Acá tenés el resumen de tu actividad legal para hoy, {currentDate}.
-          </p>
+      {/* ── Hero editorial ─────────────────────────────────────────────── */}
+      <section className="mb-10">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700 dark:text-gold-400 mb-3">
+              Panel de control · {currentDate}
+            </p>
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-ink dark:text-white leading-[1.05]">
+              {greeting}, <span className="text-primary">{firstName}</span>.
+            </h1>
+            <p className="mt-3 text-base text-slate-600 dark:text-slate-400 max-w-xl leading-relaxed">
+              Acá tenés el resumen de tu actividad. Seguí donde quedaste o creá algo nuevo.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <Link href="/documents/new/chat">
+              <Button variant="outline" size="lg" className="gap-2">
+                <Sparkles className="w-4 h-4 text-gold-500" />
+                Chat con IA
+              </Button>
+            </Link>
+            <Link href="/documents/new">
+              <Button variant="ink" size="lg" className="gap-2 group">
+                <Plus className="w-4 h-4" />
+                Nuevo documento
+                <ArrowRight className="w-4 h-4 opacity-70 group-hover:translate-x-0.5 transition-transform" />
+              </Button>
+            </Link>
+          </div>
         </div>
-        <Link href="/documents/new">
-          <Button
-            size="lg"
-            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-semibold shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform"
-          >
-            <Plus className="w-5 h-5" />
-            Nuevo Documento
-          </Button>
-        </Link>
-      </div>
+      </section>
 
-      {/* Onboarding checklist — visible only when user has incomplete setup */}
+      {/* ── Onboarding checklist ─────────────────────────────────────── */}
       {showOnboarding && (
-        <OnboardingChecklist
-          hasDocs={totalDocuments > 0}
-          hasClients={totalClients > 0}
-          hasExpedientes={expedientesActivos > 0}
-          userId={(session?.user as any)?.id}
-        />
+        <div className="mb-8">
+          <OnboardingChecklist
+            hasDocs={totalDocuments > 0}
+            hasClients={totalClients > 0}
+            hasExpedientes={expedientesActivos > 0}
+            userId={(session?.user as any)?.id}
+          />
+        </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard
-          icon={FileText}
-          label="Total Documentos"
-          value={stats ? totalDocuments : "—"}
-          iconBgColor="bg-blue-100 dark:bg-blue-900/30"
-          iconColor="text-blue-600 dark:text-blue-400"
-          href="/documents"
-        />
-        <StatsCard
-          icon={Users}
-          label="Clientes"
-          value={stats ? totalClients : "—"}
-          iconBgColor="bg-violet-100 dark:bg-violet-900/30"
-          iconColor="text-violet-600 dark:text-violet-400"
-          href="/clients"
-        />
-        <StatsCard
-          icon={Briefcase}
-          label="Expedientes Activos"
-          value={stats ? expedientesActivos : "—"}
-          iconBgColor="bg-emerald-100 dark:bg-emerald-900/30"
-          iconColor="text-emerald-600 dark:text-emerald-400"
-          subText={vencimientosUrgentes > 0
-            ? `${vencimientosUrgentes} con vencimiento urgente`
-            : undefined
-          }
-          subTextColor="text-red-500 dark:text-red-400"
-          href="/expedientes"
-        />
-        <StatsCard
-          icon={Gavel}
-          label="Requieren Revisión"
-          value={stats ? needsReview : "—"}
-          iconBgColor="bg-amber-100 dark:bg-amber-900/30"
-          iconColor="text-amber-600 dark:text-amber-400"
-          subText={needsReview > 0 ? "Documentos a revisar" : undefined}
-          subTextColor="text-amber-500 dark:text-amber-400"
-          href="/documents?status=needs_review"
-        />
-      </div>
+      {/* ── Stats ──────────────────────────────────────────────────────── */}
+      <section className="mb-10">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          <StatsCard
+            icon={FileText}
+            label="Documentos"
+            value={stats ? totalDocuments : "—"}
+            iconBgColor="bg-blue-50 dark:bg-blue-900/30"
+            iconColor="text-blue-600 dark:text-blue-400"
+            href="/documents"
+          />
+          <StatsCard
+            icon={Users}
+            label="Clientes"
+            value={stats ? totalClients : "—"}
+            iconBgColor="bg-violet-50 dark:bg-violet-900/30"
+            iconColor="text-violet-600 dark:text-violet-400"
+            href="/clients"
+          />
+          <StatsCard
+            icon={Briefcase}
+            label="Expedientes"
+            value={stats ? expedientesActivos : "—"}
+            iconBgColor="bg-emerald-50 dark:bg-emerald-900/30"
+            iconColor="text-emerald-600 dark:text-emerald-400"
+            subText={vencimientosUrgentes > 0 ? `${vencimientosUrgentes} con vto. urgente` : undefined}
+            subTextColor="text-rose-500 dark:text-rose-400"
+            href="/expedientes"
+          />
+          <StatsCard
+            icon={Gavel}
+            label="Requieren revisión"
+            value={stats ? needsReview : "—"}
+            iconBgColor="bg-amber-50 dark:bg-amber-900/30"
+            iconColor="text-amber-600 dark:text-amber-400"
+            subText={needsReview > 0 ? "Pendientes" : undefined}
+            subTextColor="text-amber-600 dark:text-amber-400"
+            href="/documents?status=needs_review"
+          />
+        </div>
+      </section>
 
-      {/* Main Area Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Documents Table */}
-        <div className="lg:col-span-2">
-          {loading ? (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8">
-              <div className="animate-pulse space-y-4">
-                <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-1/4"></div>
-                <div className="space-y-2">
+      {/* ── Grid principal 12 col ──────────────────────────────────────── */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
+        {/* Columna izquierda (8/12) — Recent + Actividad */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Recent documents */}
+          <div>
+            <div className="flex items-baseline justify-between mb-4 px-1">
+              <h2 className="text-xl font-extrabold tracking-tight text-ink dark:text-white">
+                Documentos recientes
+              </h2>
+              <Link
+                href="/documents"
+                className="text-sm font-semibold text-primary hover:underline inline-flex items-center gap-1"
+              >
+                Ver todos
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            {loading ? (
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-soft p-8">
+                <div className="animate-pulse space-y-3">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-16 bg-slate-200 dark:bg-slate-800 rounded"></div>
+                    <div key={i} className="h-14 bg-slate-100 dark:bg-slate-800 rounded-xl"></div>
                   ))}
                 </div>
               </div>
-            </div>
-          ) : error ? (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8">
-              <div className="flex flex-col items-center text-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
-                  <AlertCircle className="w-6 h-6 text-red-500 dark:text-red-400" />
+            ) : error ? (
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-soft p-8">
+                <div className="flex flex-col items-center text-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center">
+                    <AlertCircle className="w-6 h-6 text-rose-500 dark:text-rose-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-semibold text-slate-900 dark:text-white">
+                      No pudimos cargar los documentos
+                    </p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{error}</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={loadDocuments}>
+                    Reintentar
+                  </Button>
                 </div>
-                <div className="space-y-1">
-                  <p className="font-semibold text-slate-900 dark:text-white">
-                    No pudimos cargar los documentos
-                  </p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{error}</p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={loadDocuments}
-                  className="mt-1"
-                >
-                  Reintentar
-                </Button>
               </div>
-            </div>
-          ) : (
-            <RecentDocumentsTable
-              documents={documents}
-              onViewAll={() => router.push("/documents")}
-            />
-          )}
+            ) : (
+              <RecentDocumentsTable
+                documents={documents}
+                onViewAll={() => router.push("/documents")}
+              />
+            )}
+          </div>
+
+          {/* Actividad + Agenda combinadas en fila */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <TodayAgendaWidget />
+            <RecentActivityWidget />
+          </div>
         </div>
 
-        {/* Side Widgets */}
-        <div className="space-y-6">
+        {/* Columna derecha (4/12) — Quick actions + finanzas + vencimientos */}
+        <div className="lg:col-span-4 space-y-6">
           <QuickActions />
           <FinanceSummaryWidget />
-          <RecentlyViewedWidget />
-          <TodayAgendaWidget />
-          <RecentActivityWidget />
           <VencimientosWidget />
           <UpcomingDeadlines />
+          <RecentlyViewedWidget />
         </div>
-      </div>
+      </section>
 
       {/* Modal de preview */}
       {previewId && (
@@ -344,7 +369,6 @@ function DashboardContent() {
         />
       )}
 
-      {/* ConfirmDialog reutilizable (components/ui/ConfirmDialog) */}
       <ConfirmDialog
         open={!!deleteId}
         title="Eliminar documento"
@@ -364,9 +388,9 @@ export default function DashboardPage() {
   return (
     <Suspense
       fallback={
-        <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
+        <div className="px-4 sm:px-6 lg:px-10 py-8 max-w-7xl mx-auto w-full">
           <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-1/3"></div>
+            <div className="h-12 bg-slate-200 dark:bg-slate-800 rounded w-1/2"></div>
           </div>
         </div>
       }

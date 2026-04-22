@@ -210,12 +210,17 @@ export default function SuperAdminPage() {
         </button>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {/* Page title */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-black text-slate-900 dark:text-white">Panel de Administración</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-            Visibilidad completa del sistema · Acceso restringido
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 md:py-10">
+        {/* Page title editorial */}
+        <div className="mb-8">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700 dark:text-gold-400 mb-2">
+            Administración · Acceso restringido
+          </p>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-ink dark:text-white leading-[1.1]">
+            Panel de administración
+          </h1>
+          <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
+            Visibilidad completa del sistema.
           </p>
         </div>
 

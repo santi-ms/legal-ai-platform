@@ -236,18 +236,16 @@ export default function EstrategiaPage() {
   const totalPages = Math.max(1, Math.ceil(total / 20));
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto w-full space-y-6">
-      {/* Header */}
+    <div className="px-4 sm:px-6 lg:px-10 py-6 md:py-10 max-w-6xl mx-auto w-full space-y-8">
+      {/* Header editorial */}
       <PageHeader
         icon={Swords}
         iconGradient="violet"
+        eyebrow="Asistente IA"
         title="Doku Estratega"
         description="Subí un escrito de la parte contraria y la IA te da la estrategia de defensa."
         actions={
-          <Button
-            onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20"
-          >
+          <Button variant="ink" size="md" onClick={() => setModalOpen(true)}>
             <Plus className="w-4 h-4" />
             Analizar escrito
           </Button>

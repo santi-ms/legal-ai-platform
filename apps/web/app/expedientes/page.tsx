@@ -407,16 +407,18 @@ function ExpedientesContent() {
     : "";
 
   return (
-    <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="px-4 sm:px-6 lg:px-10 py-6 md:py-10 space-y-8 max-w-7xl mx-auto w-full">
+      {/* Header editorial */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <Briefcase className="w-6 h-6 text-primary" />
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700 dark:text-gold-400 mb-2">
+            Gestión
+          </p>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-ink dark:text-white leading-[1.1]">
             Expedientes
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
-            {total > 0 ? `${total} caso${total !== 1 ? "s" : ""} registrado${total !== 1 ? "s" : ""}` : "Gestión de casos y expedientes"}
+          <p className="text-slate-600 dark:text-slate-400 text-sm md:text-base mt-2 leading-relaxed">
+            {total > 0 ? `${total} caso${total !== 1 ? "s" : ""} registrado${total !== 1 ? "s" : ""} en tu estudio.` : "Gestión de casos y expedientes."}
           </p>
         </div>
         <div className="flex items-center gap-2">

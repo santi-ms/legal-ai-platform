@@ -79,12 +79,12 @@ function StatCardInner({ item }: { item: StatItem }) {
         )}
       </div>
 
-      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+      <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.12em]">
         {label}
       </p>
       <p
         className={cn(
-          "text-2xl font-bold mt-1 text-slate-900 dark:text-slate-50",
+          "text-3xl font-extrabold mt-1 text-ink dark:text-white tracking-tight leading-none",
           href && "group-hover:text-primary transition-colors"
         )}
       >

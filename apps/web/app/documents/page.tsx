@@ -417,25 +417,28 @@ function DocumentsContent() {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div className="p-6 md:p-8 max-w-[1280px] mx-auto w-full">
+    <div className="px-4 sm:px-6 lg:px-10 py-6 md:py-10 max-w-[1280px] mx-auto w-full">
       <main className="flex-1">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-slate-900 dark:text-white text-3xl font-extrabold tracking-tight">
-              Historial de Documentos
+        {/* Header editorial */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+          <div className="flex flex-col min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700 dark:text-gold-400 mb-2">
+              Gestión
+            </p>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-ink dark:text-white leading-[1.1]">
+              Mis documentos
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-base">
-              Gestiona y supervisa todos tus activos legales de forma centralizada.
+            <p className="text-slate-600 dark:text-slate-400 text-sm md:text-base mt-2 max-w-xl leading-relaxed">
+              Todos los documentos generados, ordenados por fecha. Filtrá, exportá o creá uno nuevo.
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-shrink-0">
             <Button
               variant="outline"
               onClick={handleExportCsv}
               disabled={exporting || loading}
+              size="md"
               title="Exportar documentos a CSV"
-              className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {exporting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -445,12 +448,9 @@ function DocumentsContent() {
               {exporting ? "Exportando..." : "Exportar CSV"}
             </Button>
             <Link href="/documents/new">
-              <Button
-                size="lg"
-                className="flex items-center gap-2 bg-primary px-4 py-2 rounded-lg text-sm font-semibold text-white hover:bg-primary/90 transition-shadow shadow-lg shadow-primary/20"
-              >
+              <Button variant="ink" size="md">
                 <Plus className="w-4 h-4" />
-                Nuevo Documento
+                Nuevo documento
               </Button>
             </Link>
           </div>

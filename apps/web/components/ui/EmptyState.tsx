@@ -62,8 +62,8 @@ export const EmptyState = React.memo(function EmptyState({
 
         <h3
           className={cn(
-            "font-bold text-slate-900 dark:text-slate-50 tracking-tight",
-            isCompact ? "text-lg" : "text-xl sm:text-2xl"
+            "font-extrabold text-ink dark:text-white tracking-tight",
+            isCompact ? "text-xl" : "text-2xl sm:text-3xl"
           )}
         >
           {title}

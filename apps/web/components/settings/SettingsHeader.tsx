@@ -1,58 +1,22 @@
 "use client";
 
-import Link from "next/link";
-import { Settings, Bell, User } from "lucide-react";
-import { useSession } from "next-auth/react";
-
+/**
+ * Editorial header para /settings. Reducido al mínimo: eyebrow + título.
+ * Las acciones duplicadas de perfil/notificaciones se movieron al
+ * shell principal (sidebar + header) para evitar redundancia visual.
+ */
 export function SettingsHeader() {
-  const { data: session } = useSession();
-  const user = session?.user;
-
   return (
-    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 px-4 md:px-10 py-3">
-      <div className="flex items-center gap-4">
-        <div className="size-8 flex items-center justify-center text-primary">
-          <Settings className="w-6 h-6" />
-        </div>
-        <h2 className="text-lg font-bold leading-tight tracking-tight text-slate-900 dark:text-white">
-          Configuración
-        </h2>
-      </div>
-      <div className="flex flex-1 justify-end gap-4 md:gap-8 items-center">
-        <div className="flex gap-2">
-          <button
-            className="flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary opacity-50 cursor-not-allowed"
-            aria-label="Notificaciones (próximamente)"
-            aria-disabled="true"
-            tabIndex={-1}
-            title="Próximamente"
-          >
-            <Bell className="w-5 h-5" />
-          </button>
-          <Link
-            href="/settings"
-            className="flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-            aria-label="Perfil"
-          >
-            <User className="w-5 h-5" />
-          </Link>
-        </div>
-        <Link
-          href="/settings"
-          className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-primary/20 flex items-center justify-center text-primary font-semibold"
-        >
-          {user?.image ? (
-            <img
-              src={user.image}
-              alt={user.name || "Usuario"}
-              className="w-full h-full rounded-full object-cover"
-            />
-          ) : (
-            <span className="text-sm">{user?.name?.charAt(0).toUpperCase() || "U"}</span>
-          )}
-        </Link>
-      </div>
+    <header className="px-4 sm:px-6 lg:px-10 pt-6 md:pt-10 pb-0">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700 dark:text-gold-400 mb-2">
+        Configuración
+      </p>
+      <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-ink dark:text-white leading-[1.1]">
+        Ajustes de cuenta
+      </h1>
+      <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 mt-2 max-w-xl leading-relaxed">
+        Tu perfil profesional, datos del estudio, preferencias y apariencia.
+      </p>
     </header>
   );
 }
-
