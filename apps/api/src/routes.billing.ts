@@ -277,11 +277,14 @@ export async function registerBillingRoutes(app: FastifyInstance) {
         totalUsers,
       });
 
+      // NO enviamos payer_email: si lo mandamos, MP exige que el usuario
+      // esté logueado en MP con EXACTAMENTE ese mail, y muchos clientes
+      // tienen su cuenta MP con un mail distinto al de DocuLex. Omitido,
+      // MP permite pagar con cualquier cuenta MP.
       const result = await preApproval.create({
         body: {
           reason: `DocuLex ${planLabel}`,
           external_reference: externalRef,
-          payer_email: user.email ?? undefined,
           auto_recurring: {
             frequency: 1,
             frequency_type: "months",
@@ -528,6 +531,7 @@ export async function registerBillingRoutes(app: FastifyInstance) {
       const mpClient  = getMPClient();
       const preApproval = new PreApproval(mpClient);
 
+      // NO enviamos payer_email (ver /checkout arriba para la razón).
       const result = await preApproval.create({
         body: {
           reason: `DocuLex ${planLabel}`,
@@ -537,7 +541,6 @@ export async function registerBillingRoutes(app: FastifyInstance) {
             totalUsers,
             noTrial:   true,   // ← nunca iniciar trial en reactivaciones
           }),
-          payer_email: user.email ?? undefined,
           auto_recurring: {
             frequency:          1,
             frequency_type:     "months",
