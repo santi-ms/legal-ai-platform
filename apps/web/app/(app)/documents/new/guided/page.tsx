@@ -482,15 +482,15 @@ export default function GuidedDocumentCreationPage() {
       .filter(Boolean) as typeof allSchemas;
 
     return (
-      <div className="min-h-screen flex flex-col">
-        <div className="flex-1 px-6 md:px-20 py-12">
+      <div className="min-h-[100dvh] flex flex-col">
+        <div className="flex-1 px-4 sm:px-6 md:px-20 py-6 sm:py-10 md:py-12">
           <div className="max-w-7xl mx-auto">
             {/* Header Section */}
             <div className="mb-12 text-center">
-              <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-4 leading-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-3 sm:mb-4 leading-tight">
                 Crear documento legal
               </h1>
-              <p className="text-lg text-slate-600 dark:text-slate-400">
+              <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400">
                 Generá documentos profesionales con IA usando nuestro flujo guiado.
               </p>
             </div>
@@ -498,7 +498,7 @@ export default function GuidedDocumentCreationPage() {
             {/* Selection Section */}
             <div className="space-y-8">
               <div className="space-y-2 text-center">
-                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
                   ¿Qué documento necesitás crear?
                 </h2>
                 <p className="text-slate-600 dark:text-slate-400">
@@ -531,8 +531,8 @@ export default function GuidedDocumentCreationPage() {
     }
 
     return (
-      <div className="min-h-screen flex flex-col">
-        <div className="flex-1 px-6 md:px-20 py-8">
+      <div className="min-h-[100dvh] flex flex-col">
+        <div className="flex-1 px-4 sm:px-6 md:px-20 py-6 md:py-8">
           <div className="max-w-4xl mx-auto space-y-8">
             {/* Header Section */}
             <div className="space-y-4">
@@ -605,8 +605,8 @@ export default function GuidedDocumentCreationPage() {
     if (!schema) return null;
 
     return (
-      <div className="min-h-screen flex flex-col">
-        <div className="flex-1 px-6 md:px-20 py-8">
+      <div className="min-h-[100dvh] flex flex-col">
+        <div className="flex-1 px-4 sm:px-6 md:px-20 py-6 md:py-8">
           <div className="max-w-4xl mx-auto space-y-8">
             {/* Header Section */}
             <div className="space-y-4">
@@ -862,8 +862,8 @@ export default function GuidedDocumentCreationPage() {
     if (!result) return null;
 
     return (
-      <div className="min-h-screen flex flex-col">
-        <div className="flex-1 px-6 md:px-20 py-12">
+      <div className="min-h-[100dvh] flex flex-col">
+        <div className="flex-1 px-4 sm:px-6 md:px-20 py-6 sm:py-10 md:py-12">
           <div className="max-w-4xl mx-auto space-y-6">
 
             {/* Header — condicional según calidad del documento */}
@@ -998,7 +998,7 @@ export default function GuidedDocumentCreationPage() {
   })();
 
   return (
-    <div className="min-h-screen flex flex-col bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+    <div className="min-h-[100dvh] flex flex-col bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
       <DocumentCreationPageHeader />
 
       <main className="flex-1 bg-white dark:bg-slate-900">

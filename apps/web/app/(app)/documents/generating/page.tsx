@@ -183,7 +183,7 @@ function GeneratingDocumentContent() {
 
   if (hasError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-6 px-4">
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] gap-6 px-4">
         <div className="text-center space-y-2">
           <p className="text-lg font-semibold text-slate-900 dark:text-white">
             La generación está tardando más de lo esperado
@@ -211,7 +211,7 @@ function GeneratingDocumentContent() {
   }
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+    <div className="relative flex h-auto min-h-[100dvh] w-full flex-col group/design-root overflow-x-hidden bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
       <div className="layout-container flex h-full grow flex-col">
         <GenerationHeader onCancel={handleCancel} />
 
@@ -245,7 +245,7 @@ export default function GeneratingDocumentPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center justify-center min-h-[100dvh]">
           <div className="animate-pulse text-slate-500">Cargando...</div>
         </div>
       }

@@ -99,7 +99,7 @@ export function PlainTextDocumentEditor({
 
   return (
     <div className="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-lg">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 px-3 sm:px-6 py-3 sm:py-4 border-b-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
         <div className="flex items-center gap-3">
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">Contenido del documento</h2>
           {isAutosaveRetrying && !isSaving && (
@@ -124,22 +124,24 @@ export function PlainTextDocumentEditor({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           {originalContent && content !== originalContent && (
             <button
               type="button"
               onClick={onRestoreOriginal}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              aria-label="Restaurar original"
             >
               <RotateCcw className="h-3.5 w-3.5" />
-              Restaurar original
+              <span className="hidden sm:inline">Restaurar original</span>
+              <span className="sm:hidden">Restaurar</span>
             </button>
           )}
           <button
             type="button"
             onClick={onSave}
             disabled={isManualSaving || isDownloadingPdf || !isDirty}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 text-xs font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <Save className="h-3.5 w-3.5" />
             {isManualSaving ? "Guardando…" : "Guardar"}
@@ -148,10 +150,11 @@ export function PlainTextDocumentEditor({
             type="button"
             onClick={onDownloadPdf}
             disabled={isDownloadingPdf || isManualSaving}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary/90 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary/90 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
           >
             <Download className="h-3.5 w-3.5" />
-            {isDownloadingPdf ? "Generando PDF…" : "Descargar PDF"}
+            <span className="hidden sm:inline">{isDownloadingPdf ? "Generando PDF…" : "Descargar PDF"}</span>
+            <span className="sm:hidden">{isDownloadingPdf ? "PDF…" : "PDF"}</span>
           </button>
         </div>
       </div>
@@ -175,16 +178,16 @@ export function PlainTextDocumentEditor({
         </div>
       )}
 
-      <div className="overflow-y-auto max-h-[72vh] bg-slate-100 dark:bg-slate-800/40 px-6 py-8">
+      <div className="overflow-y-auto max-h-[72vh] bg-slate-100 dark:bg-slate-800/40 px-2 sm:px-6 py-4 sm:py-8">
         <div className="mx-auto max-w-[760px] bg-white dark:bg-slate-900 rounded shadow-md border border-slate-200/70 dark:border-slate-700/50">
-          <div className="border-b border-slate-100 dark:border-slate-800 px-10 py-4 bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0))] dark:bg-none">
+          <div className="border-b border-slate-100 dark:border-slate-800 px-4 sm:px-10 py-3 sm:py-4 bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0))] dark:bg-none">
             <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
               Documento editable
             </p>
           </div>
-          <div className="relative px-10 py-10">
+          <div className="relative px-4 sm:px-10 py-6 sm:py-10">
             {content.length === 0 && (
-              <p className="pointer-events-none absolute left-10 top-10 text-[15px] italic text-slate-300 dark:text-slate-600">
+              <p className="pointer-events-none absolute left-4 sm:left-10 top-6 sm:top-10 text-[15px] italic text-slate-300 dark:text-slate-600">
                 El contenido del documento aparecerá aqui...
               </p>
             )}
@@ -209,8 +212,8 @@ export function PlainTextDocumentEditor({
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-4 px-6 py-3 border-t-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-        <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between gap-3 sm:gap-4 px-3 sm:px-6 py-3 border-t-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+        <div className="flex flex-col gap-1 min-w-0">
           <p className="text-[11px] text-slate-400 dark:text-slate-500">
             {isAutosaveRetrying ? (
               "Reintentando guardado..."

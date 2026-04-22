@@ -373,32 +373,33 @@ function ChatStep({
   onBack,
 }: ChatStepProps) {
   return (
-    <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex flex-col h-[100dvh] bg-slate-50 dark:bg-slate-950">
       {/* Header */}
-      <header className="flex items-center gap-4 px-4 md:px-8 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+      <header className="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 md:px-8 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors text-sm"
+          className="flex items-center gap-1.5 sm:gap-2 text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors text-sm flex-shrink-0 p-1 -ml-1"
+          aria-label="Volver"
         >
           <ArrowLeft className="h-4 w-4" />
-          Volver
+          <span className="hidden sm:inline">Volver</span>
         </button>
 
-        <div className="flex items-center gap-3 flex-1">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 flex-shrink-0">
             <MessageSquare className="h-4 w-4 text-primary" />
           </div>
-          <div>
-            <h1 className="text-sm font-semibold text-slate-900 dark:text-white leading-none">
+          <div className="min-w-0">
+            <h1 className="text-sm font-semibold text-slate-900 dark:text-white leading-none truncate">
               Asistente Legal
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
               Generación por chat · Claude
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
           <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
             En línea
@@ -517,7 +518,7 @@ function GeneratingStep({ label }: { label: string }) {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-8">
       <div className="max-w-md w-full text-center space-y-8">
         {/* Ícono animado */}
         <div className="relative mx-auto w-20 h-20">
@@ -600,7 +601,7 @@ function ReferenceStep({
   onSelectExpediente,
 }: ReferenceStepProps) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-8">
       <div className="max-w-lg w-full space-y-6">
         {/* Icono + título */}
         <div className="text-center space-y-3">
@@ -752,50 +753,55 @@ function ResultStep({
     DOC_TYPE_LABELS[result.metadata?.documentType ?? ""] || "Documento";
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col">
+    <div className="min-h-[100dvh] bg-slate-50 dark:bg-slate-950 flex flex-col">
       {/* Header */}
-      <header className="px-4 md:px-8 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+      <header className="px-3 sm:px-4 md:px-8 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex-shrink-0">
               <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <div>
-              <h1 className="text-sm font-semibold text-slate-900 dark:text-white leading-none">
+            <div className="min-w-0">
+              <h1 className="text-sm font-semibold text-slate-900 dark:text-white leading-none truncate">
                 {docTypeLabel}
               </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Generado con IA · Podés editarlo antes de descargar
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                Generado con IA · Editable antes de descargar
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-wrap sm:flex-nowrap">
             <Button
               variant="ghost"
               size="sm"
               onClick={onNewDocument}
-              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex-1 sm:flex-initial"
+              aria-label="Nuevo documento"
             >
-              <RotateCcw className="h-4 w-4 mr-1.5" />
-              Nuevo documento
+              <RotateCcw className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Nuevo documento</span>
+              <span className="sm:hidden ml-1.5 text-xs">Nuevo</span>
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={onDashboard}
-              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex-1 sm:flex-initial"
+              aria-label="Dashboard"
             >
-              <LayoutDashboard className="h-4 w-4 mr-1.5" />
-              Dashboard
+              <LayoutDashboard className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Dashboard</span>
+              <span className="sm:hidden ml-1.5 text-xs">Inicio</span>
             </Button>
             <Button
               size="sm"
               onClick={onViewDocument}
-              className="bg-primary hover:bg-primary/90 text-white"
+              className="bg-primary hover:bg-primary/90 text-white flex-1 sm:flex-initial"
             >
-              <FileText className="h-4 w-4 mr-1.5" />
-              Ver documento
+              <FileText className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Ver documento</span>
+              <span className="sm:hidden ml-1.5 text-xs">Ver doc</span>
             </Button>
           </div>
         </div>
