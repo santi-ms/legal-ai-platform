@@ -1,15 +1,25 @@
 /*
  * Starfield — 3 capas de paralaje que hacen scroll vertical infinito.
- * Adaptado de un snippet viral en internet. Las posiciones de las estrellas
- * están hardcodeadas (box-shadow con cientos de puntos). El trick es el
- * `:after` posicionado a top: 2000px replicando las mismas sombras, para
- * cerrar el loop sin saltos.
  *
- * La animación translateY -2000px + el duplicado = loop perfecto.
+ * Migrado a CSS global (antes era CSS module) porque Next.js App Router
+ * a veces no re-escribe el nombre del @keyframes en la regla `animation`
+ * al scopearlo, dejando la animación "viva" pero apuntando a un keyframe
+ * que no existe, lo cual resulta en una animación estática.
+ *
+ * Las posiciones de las estrellas están en --sf-stars-{1,2,3} para que
+ * tanto el elemento principal como su ::after (que cierra el loop en
+ * top: 2000px) compartan las mismas box-shadows sin depender de
+ * `box-shadow: inherit` — que se comporta distinto entre browsers.
+ *
+ * La animación translateY(-2000px) + el duplicado = loop perfecto.
  * Duraciones distintas por capa = sensación de profundidad (parallax).
+ *
+ * Nota: intencionalmente NO respetamos `prefers-reduced-motion` acá
+ * porque el starfield es puramente decorativo y muy sutil; la alternativa
+ * (fondo estático) es visualmente rota.
  */
 
-.wrapper {
+.sf-wrapper {
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -26,11 +36,8 @@
 /* ============================================
    CAPA 1 — estrellas chicas (1px), más densa, scroll rápido
    ============================================ */
-.stars1 {
-  width: 1px;
-  height: 1px;
-  background: transparent;
-  box-shadow:
+.sf-stars-1 {
+  --sf-stars-1:
     501px 811px #fff, 1450px 1324px #fff, 1093px 1780px #fff, 1469px 678px #fff,
     904px 741px #fff, 1160px 781px #fff, 1841px 1962px #fff, 1630px 1667px #fff,
     1788px 676px #fff, 367px 1734px #fff, 1343px 156px #fff, 1283px 1142px #fff,
@@ -206,27 +213,28 @@
     485px 581px #fff, 1353px 1058px #fff, 1257px 131px #fff, 434px 98px #fff,
     1587px 1953px #fff, 1749px 68px #fff, 1984px 839px #fff, 1518px 183px #fff,
     1071px 855px #fff, 1662px 1994px #fff, 1111px 106px #fff, 1954px 838px #fff;
-  animation: animStar 18s linear infinite;
+  width: 1px;
+  height: 1px;
+  background: transparent;
+  box-shadow: var(--sf-stars-1);
+  animation: sfStarScroll 18s linear infinite;
 }
 
-.stars1::after {
+.sf-stars-1::after {
   content: " ";
   position: absolute;
   top: 2000px;
-  width: inherit;
-  height: inherit;
+  width: 1px;
+  height: 1px;
   background: transparent;
-  box-shadow: inherit;
+  box-shadow: var(--sf-stars-1);
 }
 
 /* ============================================
    CAPA 2 — estrellas medianas (2px), menos densa, scroll más lento
    ============================================ */
-.stars2 {
-  width: 2px;
-  height: 2px;
-  background: transparent;
-  box-shadow:
+.sf-stars-2 {
+  --sf-stars-2:
     1925px 1320px #fff, 693px 1778px #fff, 1016px 711px #fff, 1171px 563px #fff,
     661px 1919px #fff, 1610px 44px #fff, 1275px 140px #fff, 1208px 1802px #fff,
     1473px 1587px #fff, 11px 1117px #fff, 853px 1757px #fff, 1149px 937px #fff,
@@ -277,27 +285,28 @@
     1289px 730px #fff, 727px 488px #fff, 181px 842px #fff, 1230px 64px #fff,
     3px 857px #fff, 292px 1201px #fff, 1343px 673px #fff, 1096px 1412px #fff,
     1520px 292px #fff, 104px 1683px #fff, 934px 1387px #fff, 314px 739px #fff;
-  animation: animStar 36s linear infinite;
+  width: 2px;
+  height: 2px;
+  background: transparent;
+  box-shadow: var(--sf-stars-2);
+  animation: sfStarScroll 36s linear infinite;
 }
 
-.stars2::after {
+.sf-stars-2::after {
   content: " ";
   position: absolute;
   top: 2000px;
-  width: inherit;
-  height: inherit;
+  width: 2px;
+  height: 2px;
   background: transparent;
-  box-shadow: inherit;
+  box-shadow: var(--sf-stars-2);
 }
 
 /* ============================================
    CAPA 3 — estrellas grandes (3px), rala, scroll lento
    ============================================ */
-.stars3 {
-  width: 3px;
-  height: 3px;
-  background: transparent;
-  box-shadow:
+.sf-stars-3 {
+  --sf-stars-3:
     200px 981px #fff, 1731px 521px #fff, 132px 1039px #fff, 1888px 1547px #fff,
     899px 1226px #fff, 1887px 580px #fff, 1548px 1092px #fff, 1626px 689px #fff,
     254px 1072px #fff, 1684px 1211px #fff, 672px 1267px #fff, 939px 668px #fff,
@@ -323,33 +332,28 @@
     920px 471px #fff, 834px 881px #fff, 917px 1803px #fff, 466px 1266px #fff,
     483px 1108px #fff, 689px 986px #fff, 1279px 786px #fff, 458px 910px #fff,
     1250px 870px #fff, 785px 1654px #fff, 1543px 1757px #fff, 287px 1272px #fff;
-  animation: animStar 60s linear infinite;
+  width: 3px;
+  height: 3px;
+  background: transparent;
+  box-shadow: var(--sf-stars-3);
+  animation: sfStarScroll 60s linear infinite;
 }
 
-.stars3::after {
+.sf-stars-3::after {
   content: " ";
   position: absolute;
   top: 2000px;
-  width: inherit;
-  height: inherit;
+  width: 3px;
+  height: 3px;
   background: transparent;
-  box-shadow: inherit;
+  box-shadow: var(--sf-stars-3);
 }
 
-@keyframes animStar {
+@keyframes sfStarScroll {
   from {
-    transform: translateY(0px);
+    transform: translateY(0);
   }
   to {
     transform: translateY(-2000px);
-  }
-}
-
-/* Respeta preferencia del usuario de reducir movimiento */
-@media (prefers-reduced-motion: reduce) {
-  .stars1,
-  .stars2,
-  .stars3 {
-    animation: none;
   }
 }

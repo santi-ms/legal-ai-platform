@@ -1,4 +1,5 @@
 import "./globals.css";
+import "./starfield.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
