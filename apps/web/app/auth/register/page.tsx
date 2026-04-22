@@ -3,23 +3,23 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import { useToast } from "@/components/ui/toast";
 import { logger } from "@/app/lib/logger";
 import { apiPost } from "@/app/lib/api";
-import { RegisterSidebar } from "@/components/auth/RegisterSidebar";
-import { RegisterHeader } from "@/components/auth/RegisterHeader";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { RegisterFormStep1 } from "@/components/auth/RegisterFormStep1";
 import { RegisterFormStep2 } from "@/components/auth/RegisterFormStep2";
 import type { RegisterStep1Input, RegisterStep2Input } from "@/app/lib/validation/auth";
 
 export default function RegisterPage() {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState<1 | 2>(1);
   const [step1Data, setStep1Data] = useState<RegisterStep1Input | null>(null);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const router = useRouter();
-  const { data: session, status } = useSession();
-  const { success, error: showError } = useToast();
+  const { status } = useSession();
+  const { success } = useToast();
 
   // Redirigir si ya está autenticado
   useEffect(() => {
@@ -49,26 +49,30 @@ export default function RegisterPage() {
         lastName: step1Data.lastName.trim(),
         email: step1Data.email,
         password: data.password,
-        company: step1Data.companyName && step1Data.companyName.trim().length > 0 
-          ? step1Data.companyName.trim() 
-          : null,
+        company:
+          step1Data.companyName && step1Data.companyName.trim().length > 0
+            ? step1Data.companyName.trim()
+            : null,
         professionalRole: step1Data.role,
       };
 
       logger.debug("[register] Calling register proxy");
 
-      const apiResponse = await apiPost("/api/auth/register", transformedBody) as any;
+      const apiResponse = (await apiPost("/api/auth/register", transformedBody)) as any;
 
       if (!apiResponse.ok) {
-        logger.error("[register] Registration failed", undefined, { error: apiResponse.error });
+        logger.error("[register] Registration failed", undefined, {
+          error: apiResponse.error,
+        });
         if (apiResponse.error === "email_pending_verification") {
           success("Tu cuenta ya estaba pendiente. Continuá con la verificación del correo.");
-          router.push(`/auth/verify-email?email=${encodeURIComponent(step1Data.email)}&pending=1`);
+          router.push(
+            `/auth/verify-email?email=${encodeURIComponent(step1Data.email)}&pending=1`,
+          );
           return;
         }
 
         if (apiResponse.fieldErrors) {
-          // Construir mensaje legible sin exponer nombres técnicos de campos
           const fieldErrors = apiResponse.fieldErrors as Record<string, string[]>;
           if (fieldErrors.email?.length) {
             setApiError("Este email ya está registrado. Probá iniciar sesión o usá otro email.");
@@ -76,7 +80,9 @@ export default function RegisterPage() {
             setApiError("Algunos datos son inválidos. Revisá la información ingresada.");
           }
         } else {
-          setApiError(apiResponse.message || "No pudimos crear la cuenta. Intentá nuevamente.");
+          setApiError(
+            apiResponse.message || "No pudimos crear la cuenta. Intentá nuevamente.",
+          );
         }
         setLoading(false);
         return;
@@ -84,9 +90,11 @@ export default function RegisterPage() {
 
       logger.info("[register] Registration successful, redirecting");
 
-      success("¡Cuenta creada exitosamente! Revisá tu email para verificar tu cuenta.");
+      success("¡Cuenta creada! Revisá tu email para verificar tu cuenta.");
       const verificationEmail = apiResponse?.verification?.email || step1Data.email;
-      router.push(`/auth/verify-email?email=${encodeURIComponent(verificationEmail)}&sent=1`);
+      router.push(
+        `/auth/verify-email?email=${encodeURIComponent(verificationEmail)}&sent=1`,
+      );
     } catch (err: any) {
       logger.error("[register] Exception in onSubmit", err);
       setApiError(err.message || "Error de conexión. Revisá tu internet e intentá de nuevo.");
@@ -99,30 +107,78 @@ export default function RegisterPage() {
     setCurrentStep(1);
   };
 
-  return (
-    <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col lg:flex-row">
-      {/* Sidebar - Solo visible en desktop */}
-      <RegisterSidebar />
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col">
-        {/* Mobile Header */}
-        <RegisterHeader />
-
-        {/* Form Container */}
-        <div className="flex-1 flex items-center justify-center p-6 sm:p-12 lg:p-20">
-          {currentStep === 1 ? (
-            <RegisterFormStep1 onSubmit={handleStep1Submit} isLoading={loading} />
-          ) : (
-            <RegisterFormStep2
-              onSubmit={handleStep2Submit}
-              onBack={handleBack}
-              isLoading={loading}
-              apiError={apiError}
-            />
-          )}
-        </div>
-      </main>
+  // Progress bar con 2 segmentos — paso actual destacado
+  const progressBar = (
+    <div className="flex items-center gap-2">
+      <div
+        className={`h-1 w-10 rounded-full transition-colors ${
+          currentStep >= 1 ? "bg-primary" : "bg-slate-200 dark:bg-slate-800"
+        }`}
+      />
+      <div
+        className={`h-1 w-10 rounded-full transition-colors ${
+          currentStep >= 2 ? "bg-primary" : "bg-slate-200 dark:bg-slate-800"
+        }`}
+      />
+      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 ml-1">
+        Paso {currentStep}/2
+      </span>
     </div>
+  );
+
+  return (
+    <AuthShell
+      variant="register"
+      eyebrow={currentStep === 1 ? "Crear cuenta — paso 1" : "Crear cuenta — paso 2"}
+      title={
+        currentStep === 1 ? (
+          <>
+            Creá tu cuenta en{" "}
+            <span className="text-primary">DocuLex</span>
+          </>
+        ) : (
+          <>
+            Asegurá tu acceso con una{" "}
+            <span className="text-primary">contraseña fuerte</span>
+          </>
+        )
+      }
+      subtitle={
+        currentStep === 1
+          ? "Contanos sobre vos y tu estudio. Sin tarjeta de crédito, sin compromiso."
+          : "Elegí una contraseña que no uses en otros servicios. Podés cambiarla cuando quieras."
+      }
+      topRight={
+        <span className="text-sm text-slate-500 dark:text-slate-400">
+          ¿Ya tenés cuenta?{" "}
+          <Link
+            href="/auth/login"
+            className="font-semibold text-primary hover:underline"
+          >
+            Iniciar sesión
+          </Link>
+        </span>
+      }
+      contentMaxWidth="max-w-xl"
+    >
+      <div className="space-y-6">
+        {progressBar}
+
+        {currentStep === 1 ? (
+          <RegisterFormStep1
+            onSubmit={handleStep1Submit}
+            isLoading={loading}
+            defaultValues={step1Data ?? undefined}
+          />
+        ) : (
+          <RegisterFormStep2
+            onSubmit={handleStep2Submit}
+            onBack={handleBack}
+            isLoading={loading}
+            apiError={apiError}
+          />
+        )}
+      </div>
+    </AuthShell>
   );
 }

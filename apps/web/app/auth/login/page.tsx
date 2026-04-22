@@ -2,24 +2,36 @@
 
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-import { LoginHeader } from "@/components/auth/LoginHeader";
+import Link from "next/link";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 function LoginPageContent() {
   return (
-    <div className="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
-      <LoginHeader />
-      
-      <main className="flex-1 flex items-center justify-center p-6 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 relative">
-        <LoginForm />
-        
-        {/* Background decorative elements */}
-        <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none opacity-20 dark:opacity-10">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/30 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2"></div>
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2"></div>
-        </div>
-      </main>
-    </div>
+    <AuthShell
+      variant="login"
+      eyebrow="Iniciar sesión"
+      title={
+        <>
+          Retomá tu trabajo{" "}
+          <span className="text-primary">donde lo dejaste</span>.
+        </>
+      }
+      subtitle="Ingresá tus datos para volver a tu estudio, tus documentos y tus asistentes IA."
+      topRight={
+        <span className="text-sm text-slate-500 dark:text-slate-400">
+          ¿Sos nuevo?{" "}
+          <Link
+            href="/auth/register"
+            className="font-semibold text-primary hover:underline"
+          >
+            Crear cuenta
+          </Link>
+        </span>
+      }
+    >
+      <LoginForm />
+    </AuthShell>
   );
 }
 
@@ -27,7 +39,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-background-light dark:bg-background-dark flex items-center justify-center">
+        <div className="min-h-screen bg-parchment dark:bg-background-dark flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       }

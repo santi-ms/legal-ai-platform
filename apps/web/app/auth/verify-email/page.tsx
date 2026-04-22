@@ -3,45 +3,22 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { AlertCircle, CheckCircle, Loader2, Mail, Scale, ShieldCheck } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+  Mail,
+  ArrowRight,
+  RefreshCw,
+} from "lucide-react";
 import { apiGet, apiPost } from "@/app/lib/api";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { AuthField } from "@/components/auth/AuthField";
+import { OtpInput } from "@/components/auth/OtpInput";
 
 type ViewState = "loading" | "form" | "verifying" | "success";
 
-function AuthCard({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-[440px]">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 group mb-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-white shadow-lg group-hover:bg-primary/90 transition-colors">
-              <Scale className="h-6 w-6" />
-            </div>
-          </Link>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-          <div className="h-2 bg-primary" />
-          <div className="p-8">{children}</div>
-        </div>
-
-        <div className="mt-6 text-center">
-          <Link
-            href="/"
-            className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-          >
-            ← Volver al inicio
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function VerifyEmailForm() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -78,36 +55,45 @@ function VerifyEmailForm() {
     }
 
     setViewState("form");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   useEffect(() => {
-    if (resendCountdown <= 0) {
-      return;
-    }
-
+    if (resendCountdown <= 0) return;
     const timer = window.setInterval(() => {
-      setResendCountdown((current) => {
-        if (current <= 1) {
+      setResendCountdown((c) => {
+        if (c <= 1) {
           window.clearInterval(timer);
           return 0;
         }
-        return current - 1;
+        return c - 1;
       });
     }, 1000);
-
     return () => window.clearInterval(timer);
   }, [resendCountdown]);
 
+  // Auto-submit cuando se completa el código
+  useEffect(() => {
+    if (code.length === 6 && !isSubmitting && viewState === "form" && email.trim()) {
+      void handleVerifyDirect();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code]);
+
   const verifyLegacyToken = async (token: string) => {
     setViewState("verifying");
-
     try {
       const response = await apiGet("/api/_auth/verify-email", { token });
-
       if (!response.ok) {
         const msg = response.message || "";
-        if (msg.toLowerCase().includes("expir") || msg.toLowerCase().includes("invalid") || msg.toLowerCase().includes("token")) {
-          setErrorMessage("El link de verificación expiró o ya fue utilizado. Solicitá un nuevo código.");
+        if (
+          msg.toLowerCase().includes("expir") ||
+          msg.toLowerCase().includes("invalid") ||
+          msg.toLowerCase().includes("token")
+        ) {
+          setErrorMessage(
+            "El link de verificación expiró o ya fue utilizado. Solicitá un nuevo código.",
+          );
         } else {
           setErrorMessage("No se pudo verificar tu email. Intentá nuevamente.");
         }
@@ -117,25 +103,20 @@ function VerifyEmailForm() {
       }
 
       setViewState("success");
-      window.setTimeout(() => {
-        router.push("/auth/login?verified=1");
-      }, 2000);
+      window.setTimeout(() => router.push("/auth/login?verified=1"), 2000);
     } catch {
       setErrorMessage("Error de conexión. Revisá tu internet e intentá de nuevo.");
       setViewState("form");
     }
   };
 
-  const handleVerify = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
+  const handleVerifyDirect = async () => {
     if (!email.trim()) {
       setErrorMessage("Ingresá tu correo electrónico.");
       return;
     }
 
     if (!/^\d{6}$/.test(code.trim())) {
-      setErrorMessage("El código debe tener 6 dígitos.");
       return;
     }
 
@@ -144,18 +125,22 @@ function VerifyEmailForm() {
     setInfoMessage("");
 
     try {
-      const response = await apiPost("/api/auth/verify-email", {
+      const response = (await apiPost("/api/auth/verify-email", {
         email: email.trim(),
         code: code.trim(),
-      }) as any;
+      })) as any;
 
       if (!response.ok) {
         if (response.error === "code_expired") {
           setErrorMessage("El código expiró. Solicitá uno nuevo.");
         } else if (response.error === "too_many_attempts") {
-          setErrorMessage("Alcanzaste el máximo de intentos. Solicitá un nuevo código.");
+          setErrorMessage(
+            "Alcanzaste el máximo de intentos. Solicitá un nuevo código.",
+          );
         } else if (response.error === "verification_code_missing") {
-          setErrorMessage("No hay un código activo para este correo. Reenviá uno nuevo.");
+          setErrorMessage(
+            "No hay un código activo para este correo. Reenviá uno nuevo.",
+          );
         } else {
           setErrorMessage(response.message || "No se pudo verificar el código.");
         }
@@ -164,13 +149,16 @@ function VerifyEmailForm() {
       }
 
       setViewState("success");
-      window.setTimeout(() => {
-        router.push("/auth/login?verified=1");
-      }, 2000);
+      window.setTimeout(() => router.push("/auth/login?verified=1"), 2000);
     } catch {
       setErrorMessage("Error de conexión. Revisá tu internet e intentá de nuevo.");
       setIsSubmitting(false);
     }
+  };
+
+  const handleVerify = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await handleVerifyDirect();
   };
 
   const handleResend = async () => {
@@ -183,13 +171,16 @@ function VerifyEmailForm() {
     setErrorMessage("");
 
     try {
-      const response = await apiPost("/api/auth/verify-email/resend", {
+      const response = (await apiPost("/api/auth/verify-email/resend", {
         email: email.trim(),
-      }) as any;
+      })) as any;
 
       if (!response.ok) {
         if (response.error === "resend_cooldown_active") {
-          const retryAfterSeconds = Math.max(1, Number(response.retryAfterSeconds || 60));
+          const retryAfterSeconds = Math.max(
+            1,
+            Number(response.retryAfterSeconds || 60),
+          );
           setResendCountdown(retryAfterSeconds);
           setInfoMessage(`Esperá ${retryAfterSeconds}s antes de pedir otro código.`);
         } else {
@@ -200,6 +191,7 @@ function VerifyEmailForm() {
       }
 
       setInfoMessage("Te enviamos un nuevo código de verificación.");
+      setCode("");
       setResendCountdown(60);
     } catch {
       setErrorMessage("Error de conexión. Revisá tu internet e intentá de nuevo.");
@@ -208,161 +200,208 @@ function VerifyEmailForm() {
     }
   };
 
+  // ── Loading / verifying ───────────────────────────────────────────────────
   if (viewState === "loading" || viewState === "verifying") {
     return (
-      <AuthCard>
-        <div className="flex flex-col items-center text-center gap-4 py-4">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <div className="space-y-1">
-            <p className="font-semibold text-slate-900 dark:text-white">
-              {viewState === "verifying" ? "Verificando tu email..." : "Cargando..."}
-            </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {viewState === "verifying" ? "Esto solo tomará un momento." : "Preparando la pantalla de verificación."}
-            </p>
-          </div>
+      <AuthShell
+        variant="verify"
+        eyebrow="Verificando"
+        title={
+          viewState === "verifying" ? (
+            <>
+              Activando tu <span className="text-primary">cuenta</span>...
+            </>
+          ) : (
+            <>Cargando...</>
+          )
+        }
+        subtitle={
+          viewState === "verifying"
+            ? "Estamos confirmando tu email. Esto sólo tomará un momento."
+            : "Preparando la pantalla de verificación."
+        }
+      >
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
         </div>
-      </AuthCard>
+      </AuthShell>
     );
   }
 
+  // ── Success ───────────────────────────────────────────────────────────────
   if (viewState === "success") {
     return (
-      <AuthCard>
-        <div className="text-center space-y-5">
-          <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+      <AuthShell
+        variant="verify"
+        eyebrow="¡Listo!"
+        title={
+          <>
+            Tu cuenta ya está{" "}
+            <span className="text-primary">activa</span>.
+          </>
+        }
+        subtitle="Redirigiendo al inicio de sesión..."
+      >
+        <div className="space-y-6">
+          <div className="flex items-start gap-4 p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center flex-shrink-0">
+              <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-semibold text-emerald-900 dark:text-emerald-100">
+                Email verificado correctamente
+              </p>
+              <p className="text-sm text-emerald-800/80 dark:text-emerald-200/80 leading-snug">
+                Ya podés iniciar sesión y empezar a usar DocuLex.
+              </p>
+            </div>
           </div>
-          <div className="space-y-1">
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">¡Email verificado!</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-              Tu cuenta ya está activa.
-            </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 pt-1">
-              Redirigiendo al inicio de sesión...
-            </p>
-          </div>
-          <Link href="/auth/login?verified=1">
-            <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20">
-              Ir al inicio de sesión
-            </Button>
+
+          <Link
+            href="/auth/login?verified=1"
+            className="group w-full flex items-center justify-center gap-2 bg-ink hover:bg-slate-900 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-soft hover:shadow-hover"
+          >
+            Ir al inicio de sesión
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>
-      </AuthCard>
+      </AuthShell>
     );
   }
 
+  // ── Form state ────────────────────────────────────────────────────────────
   return (
-    <AuthCard>
-      <div className="space-y-6">
-        <div className="text-center space-y-3">
-          <div className="w-14 h-14 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center mx-auto">
-            <ShieldCheck className="w-7 h-7 text-primary" />
-          </div>
-          <div className="space-y-1">
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Verificá tu correo</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-              Ingresá el código de 6 dígitos enviado a tu email para activar la cuenta.
-            </p>
-          </div>
+    <AuthShell
+      variant="verify"
+      eyebrow="Verificá tu email"
+      title={
+        <>
+          Ingresá el código{" "}
+          <span className="text-primary">que te enviamos</span>.
+        </>
+      }
+      subtitle={
+        email ? (
+          <>
+            Te mandamos un código de 6 dígitos a{" "}
+            <strong className="text-ink dark:text-white">{email}</strong>. Expira
+            en 10 minutos.
+          </>
+        ) : (
+          "Ingresá el código de 6 dígitos que recibiste por email. Expira en 10 minutos."
+        )
+      }
+      topRight={
+        <Link
+          href="/auth/login"
+          className="text-sm font-semibold text-primary hover:underline"
+        >
+          Iniciar sesión
+        </Link>
+      }
+    >
+      <form onSubmit={handleVerify} className="space-y-6" noValidate>
+        {/* Email — sólo si no viene pre-rellenado */}
+        {!email && (
+          <AuthField
+            label="Correo electrónico"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            icon={<Mail className="w-4 h-4" />}
+          />
+        )}
+
+        {/* OTP input */}
+        <div className="space-y-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-400 pl-1">
+            Código de verificación
+          </p>
+          <OtpInput
+            value={code}
+            onChange={setCode}
+            length={6}
+            autoFocus={!!email}
+            disabled={isSubmitting}
+            error={!!errorMessage && !!code}
+          />
+          <p className="text-xs text-slate-500 dark:text-slate-400 pl-1">
+            Pegá el código o tipealo dígito por dígito. Tenés hasta 5 intentos.
+          </p>
         </div>
 
-        {infoMessage && (
-          <div className="flex items-start gap-3 p-3 rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30">
-            <Mail className="w-4 h-4 mt-0.5 text-blue-600 dark:text-blue-300 flex-shrink-0" />
-            <p className="text-sm text-blue-700 dark:text-blue-200 leading-snug">{infoMessage}</p>
-          </div>
-        )}
-
-        {errorMessage && (
-          <div className="flex items-start gap-3 p-3 rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30">
-            <AlertCircle className="w-4 h-4 mt-0.5 text-red-600 dark:text-red-300 flex-shrink-0" />
-            <p className="text-sm text-red-700 dark:text-red-200 leading-snug">{errorMessage}</p>
-          </div>
-        )}
-
-        <form onSubmit={handleVerify} className="space-y-5">
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-              Correo electrónico
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="nombre@firma.com"
-              className="w-full py-3"
-              autoComplete="email"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="code" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-              Código de verificación
-            </Label>
-            <Input
-              id="code"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={6}
-              value={code}
-              onChange={(event) => {
-                const nextValue = event.target.value.replace(/\D/g, "").slice(0, 6);
-                setCode(nextValue);
-              }}
-              placeholder="123456"
-              className="w-full py-3 text-center text-lg tracking-[0.35em] font-semibold"
-              autoComplete="one-time-code"
-            />
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              El código expira en 10 minutos y tenés hasta 5 intentos.
+        {/* Info */}
+        {infoMessage && !errorMessage && (
+          <div
+            className="flex items-start gap-3 p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900"
+            role="status"
+          >
+            <Mail className="w-4 h-4 text-blue-500 dark:text-blue-300 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-blue-700 dark:text-blue-200 leading-snug">
+              {infoMessage}
             </p>
           </div>
+        )}
 
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20"
+        {/* Error */}
+        {errorMessage && (
+          <div
+            className="flex items-start gap-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900"
+            role="alert"
+            aria-live="polite"
           >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Verificando...
-              </>
-            ) : (
-              "Verificar código"
-            )}
-          </Button>
-        </form>
+            <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700 dark:text-red-300 leading-snug">
+              {errorMessage}
+            </p>
+          </div>
+        )}
 
-        <div className="space-y-3">
-          <Button
+        <button
+          type="submit"
+          disabled={isSubmitting || code.length !== 6}
+          className="group w-full flex items-center justify-center gap-2 bg-ink hover:bg-slate-900 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-soft hover:shadow-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Verificando...
+            </>
+          ) : (
+            <>
+              Verificar código
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            </>
+          )}
+        </button>
+
+        {/* Reenviar */}
+        <div className="pt-2 text-center text-sm text-slate-600 dark:text-slate-400">
+          ¿No recibiste el código?{" "}
+          <button
             type="button"
-            variant="outline"
             onClick={handleResend}
             disabled={isResending || resendCountdown > 0}
-            className="w-full border-slate-200 dark:border-slate-700"
+            className="inline-flex items-center gap-1 text-primary font-semibold hover:underline disabled:no-underline disabled:text-slate-400 dark:disabled:text-slate-600 disabled:cursor-not-allowed"
           >
             {isResending ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 Reenviando...
               </>
             ) : resendCountdown > 0 ? (
               `Reenviar en ${resendCountdown}s`
             ) : (
-              "Reenviar código"
+              <>
+                <RefreshCw className="w-3.5 h-3.5" />
+                Reenviar código
+              </>
             )}
-          </Button>
-          <Link href="/auth/login" className="block">
-            <Button variant="ghost" className="w-full">
-              Volver al inicio de sesión
-            </Button>
-          </Link>
+          </button>
         </div>
-      </div>
-    </AuthCard>
+      </form>
+    </AuthShell>
   );
 }
 
@@ -370,12 +409,12 @@ export default function VerifyEmailPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="min-h-screen bg-parchment dark:bg-background-dark flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       }
     >
-      <VerifyEmailForm />
+      <VerifyEmailContent />
     </Suspense>
   );
 }

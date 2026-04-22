@@ -3,17 +3,20 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { Scale, Mail, Loader2 } from "lucide-react";
-import { resetRequestSchema, type ResetRequestInput } from "@/app/lib/validation/auth";
+import { Mail, Loader2, ArrowRight, CheckCircle } from "lucide-react";
+import {
+  resetRequestSchema,
+  type ResetRequestInput,
+} from "@/app/lib/validation/auth";
 import { apiPost } from "@/app/lib/api";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { AuthField } from "@/components/auth/AuthField";
 
 export default function ResetRequestPage() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [sentEmail, setSentEmail] = useState("");
 
   const {
     register,
@@ -25,162 +28,149 @@ export default function ResetRequestPage() {
 
   const onSubmit = async (data: ResetRequestInput) => {
     setLoading(true);
-
     try {
-      // Siempre mostramos el mismo estado de éxito independientemente del resultado,
-      // para no revelar si el email está registrado en el sistema (seguridad).
+      // Seguridad: siempre mismo estado, no revelamos si el email existe
       await apiPost("/api/auth/reset/request", { email: data.email });
     } catch {
-      // Error silenciado intencionalmente — misma UX por seguridad
+      // silenciado — misma UX
     } finally {
+      setSentEmail(data.email);
       setLoading(false);
       setSent(true);
     }
   };
 
-  // ── Estado: instrucciones enviadas ────────────────────────────────────────
+  // ── Success state ─────────────────────────────────────────────────────────
   if (sent) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-[440px]">
-          {/* Logo */}
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2 group mb-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-white shadow-lg group-hover:bg-primary/90 transition-colors">
-                <Scale className="h-6 w-6" />
-              </div>
+      <AuthShell
+        variant="reset"
+        eyebrow="Enviado"
+        title={
+          <>
+            Revisá tu{" "}
+            <span className="text-primary">correo</span>.
+          </>
+        }
+        subtitle={
+          <>
+            Si <strong className="text-ink dark:text-white">{sentEmail}</strong>{" "}
+            está registrado, te enviamos las instrucciones para recuperar el
+            acceso.
+          </>
+        }
+        topRight={
+          <span className="text-sm text-slate-500 dark:text-slate-400">
+            ¿Te acordaste?{" "}
+            <Link
+              href="/auth/login"
+              className="font-semibold text-primary hover:underline"
+            >
+              Iniciar sesión
             </Link>
-          </div>
-
-          {/* Card */}
-          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-            <div className="h-2 bg-primary" />
-            <div className="p-8 text-center space-y-4">
-              <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto">
-                <Mail className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div className="space-y-1">
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-                  Revisá tu email
-                </h1>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Si el email está registrado, te enviamos las instrucciones para recuperar el acceso.
-                </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 pt-1">
-                  Si no encontrás el email, revisá tu carpeta de spam.
-                </p>
-              </div>
-              <Link href="/auth/login">
-                <Button className="w-full mt-2 bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20">
-                  Volver al inicio de sesión
-                </Button>
-              </Link>
+          </span>
+        }
+      >
+        <div className="space-y-6">
+          {/* Confirmación visual */}
+          <div className="flex items-start gap-4 p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center flex-shrink-0">
+              <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-semibold text-emerald-900 dark:text-emerald-100">
+                Instrucciones enviadas
+              </p>
+              <p className="text-sm text-emerald-800/80 dark:text-emerald-200/80 leading-snug">
+                Si no encontrás el email, revisá tu carpeta de spam o promociones.
+                El enlace caduca en 30 minutos por seguridad.
+              </p>
             </div>
           </div>
 
-          <div className="mt-6 text-center">
-            <Link
-              href="/"
-              className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-            >
-              ← Volver al inicio
-            </Link>
-          </div>
+          <Link
+            href="/auth/login"
+            className="group w-full flex items-center justify-center gap-2 bg-ink hover:bg-slate-900 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-soft hover:shadow-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            Volver a iniciar sesión
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setSent(false)}
+            className="w-full text-sm text-center text-slate-500 dark:text-slate-400 hover:text-primary transition-colors"
+          >
+            ¿Te equivocaste de email? Probá con otro
+          </button>
         </div>
-      </div>
+      </AuthShell>
     );
   }
 
-  // ── Estado: formulario ────────────────────────────────────────────────────
+  // ── Form state ────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-[440px]">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 group mb-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-white shadow-lg group-hover:bg-primary/90 transition-colors">
-              <Scale className="h-6 w-6" />
-            </div>
-          </Link>
-        </div>
-
-        {/* Card */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-          <div className="h-2 bg-primary" />
-          <div className="p-8">
-            {/* Header */}
-            <div className="mb-8 text-center">
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-                Recuperar contraseña
-              </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Ingresá tu email y te enviamos las instrucciones para recuperar el acceso.
-              </p>
-            </div>
-
-            {/* Formulario */}
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  Correo electrónico
-                </Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
-                  <Input
-                    id="email"
-                    type="email"
-                    {...register("email")}
-                    placeholder="nombre@firma.com"
-                    autoFocus
-                    className={`w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all ${
-                      errors.email ? "border-red-500" : ""
-                    }`}
-                    aria-invalid={errors.email ? "true" : "false"}
-                    aria-describedby={errors.email ? "email-error" : undefined}
-                  />
-                </div>
-                {errors.email && (
-                  <p id="email-error" className="text-sm text-red-400" role="alert">
-                    {errors.email.message}
-                  </p>
-                )}
-              </div>
-
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-lg shadow-lg shadow-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Enviando...
-                  </>
-                ) : (
-                  "Enviar instrucciones"
-                )}
-              </Button>
-            </form>
-
-            {/* Link a login */}
-            <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
-              ¿Ya recordaste tu contraseña?{" "}
-              <Link href="/auth/login" className="text-primary font-medium hover:underline">
-                Iniciar sesión
-              </Link>
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6 text-center">
+    <AuthShell
+      variant="reset"
+      eyebrow="Recuperar contraseña"
+      title={
+        <>
+          Te mandamos un link para{" "}
+          <span className="text-primary">recuperar tu acceso</span>.
+        </>
+      }
+      subtitle="Ingresá tu correo registrado y te enviamos las instrucciones. Por seguridad, el link caduca a los 30 minutos."
+      topRight={
+        <span className="text-sm text-slate-500 dark:text-slate-400">
+          ¿Te acordaste?{" "}
           <Link
-            href="/"
-            className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+            href="/auth/login"
+            className="font-semibold text-primary hover:underline"
           >
-            ← Volver al inicio
+            Iniciar sesión
           </Link>
-        </div>
-      </div>
-    </div>
+        </span>
+      }
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+        <AuthField
+          label="Correo electrónico"
+          type="email"
+          autoComplete="email"
+          autoFocus
+          icon={<Mail className="w-4 h-4" />}
+          error={errors.email?.message}
+          {...register("email")}
+        />
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="group w-full flex items-center justify-center gap-2 bg-ink hover:bg-slate-900 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-soft hover:shadow-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Enviando...
+            </>
+          ) : (
+            <>
+              Enviar instrucciones
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            </>
+          )}
+        </button>
+
+        <p className="text-center text-sm text-slate-600 dark:text-slate-400">
+          ¿No tenés cuenta?{" "}
+          <Link
+            href="/auth/register"
+            className="text-primary font-semibold hover:underline"
+          >
+            Crear una
+          </Link>
+        </p>
+      </form>
+    </AuthShell>
   );
 }
