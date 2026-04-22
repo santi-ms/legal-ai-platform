@@ -53,3 +53,5 @@ postgres_data/
 # Claude/Agent skills (unrelated to project)
 .claude/skills/
 .agents/
+
+.claude/
