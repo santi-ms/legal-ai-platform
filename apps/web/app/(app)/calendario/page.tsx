@@ -158,6 +158,7 @@ export default function CalendarioPage() {
       <PageHeader
         icon={CalendarDays}
         iconGradient="sky"
+        iconTreatment="outline"
         eyebrow="Gestión"
         title="Calendario"
         description="Visualizá los vencimientos de tus expedientes por mes."
@@ -239,6 +240,7 @@ export default function CalendarioPage() {
               <EmptyState
                 icon={AlertCircle}
                 iconGradient="rose"
+                iconTreatment="outline"
                 title="Error al cargar"
                 description={error}
                 primaryAction={
@@ -551,11 +553,14 @@ function VencimientoCard({ item }: { item: CalendarVencimientoItem }) {
       className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
     >
       <div className="flex items-start gap-3">
-        <div className={cn(
-          "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 bg-gradient-to-br text-white shadow-soft",
-          TOKENS.gradients[gradient],
-        )}>
-          <Bell className="w-4 h-4" />
+        <div className="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <Bell
+            className={cn(
+              "w-4 h-4",
+              gradient === "rose" ? "text-rose-600 dark:text-rose-400" : "text-sky-600 dark:text-sky-400"
+            )}
+            strokeWidth={1.75}
+          />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
@@ -597,11 +602,8 @@ function DeadlineCard({ item }: { item: CalendarDeadlineItem }) {
       className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
     >
       <div className="flex items-start gap-3">
-        <div className={cn(
-          "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 bg-gradient-to-br text-white shadow-soft",
-          TOKENS.gradients[cfg.gradient],
-        )}>
-          <Icon className="w-4 h-4" />
+        <div className="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <Icon className={cn("w-4 h-4", cfg.text)} strokeWidth={1.75} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">

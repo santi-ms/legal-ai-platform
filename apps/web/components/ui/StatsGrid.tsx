@@ -27,8 +27,27 @@ interface StatsGridProps {
   items: StatItem[];
   /** Number of columns on large viewport */
   columns?: 2 | 3 | 4 | 5 | 6;
+  /**
+   * Tratamiento visual del ícono dentro de cada card:
+   *  · "gradient" (default) — cuadrado con gradiente a color, icono blanco.
+   *  · "outline" — cuadrado blanco con borde slate e icono en el color del tono.
+   *    Elimina la sensación de "cuadrados de color" saturados.
+   */
+  iconTreatment?: "gradient" | "outline";
   className?: string;
 }
+
+const OUTLINE_ICON_COLOR: Record<GradientKey, string> = {
+  primary:  "text-primary",
+  violet:   "text-violet-600 dark:text-violet-400",
+  emerald:  "text-emerald-600 dark:text-emerald-400",
+  amber:    "text-amber-600 dark:text-amber-400",
+  rose:     "text-rose-600 dark:text-rose-400",
+  sky:      "text-sky-600 dark:text-sky-400",
+  slate:    "text-slate-600 dark:text-slate-300",
+  gold:     "text-gold-600 dark:text-gold-400",
+  ink:      "text-ink dark:text-white",
+};
 
 const COLS: Record<NonNullable<StatsGridProps["columns"]>, string> = {
   2: "grid-cols-1 sm:grid-cols-2",
@@ -38,7 +57,7 @@ const COLS: Record<NonNullable<StatsGridProps["columns"]>, string> = {
   6: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6",
 };
 
-function StatCardInner({ item }: { item: StatItem }) {
+function StatCardInner({ item, iconTreatment = "gradient" }: { item: StatItem; iconTreatment?: "gradient" | "outline" }) {
   const { icon: Icon, label, value, tone = "primary", urgent, subText, subTone, change, href } = item;
   const subToneClass = subTone ? TOKENS.status[subTone].text : "text-slate-400 dark:text-slate-500";
 
@@ -54,14 +73,20 @@ function StatCardInner({ item }: { item: StatItem }) {
     >
       <div className="flex items-start justify-between mb-3">
         {Icon ? (
-          <div
-            className={cn(
-              "w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-sm",
-              TOKENS.gradients[tone]
-            )}
-          >
-            <Icon className="w-5 h-5 text-white" strokeWidth={2} />
-          </div>
+          iconTreatment === "outline" ? (
+            <div className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center">
+              <Icon className={cn("w-[18px] h-[18px]", OUTLINE_ICON_COLOR[tone])} strokeWidth={1.75} />
+            </div>
+          ) : (
+            <div
+              className={cn(
+                "w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-sm",
+                TOKENS.gradients[tone]
+              )}
+            >
+              <Icon className="w-5 h-5 text-white" strokeWidth={2} />
+            </div>
+          )
         ) : (
           <div />
         )}
@@ -100,6 +125,7 @@ function StatCardInner({ item }: { item: StatItem }) {
 export const StatsGrid = React.memo(function StatsGrid({
   items,
   columns = 4,
+  iconTreatment = "gradient",
   className,
 }: StatsGridProps) {
   return (
@@ -108,11 +134,11 @@ export const StatsGrid = React.memo(function StatsGrid({
         if (item.href) {
           return (
             <Link key={`${item.label}-${i}`} href={item.href} className="block">
-              <StatCardInner item={item} />
+              <StatCardInner item={item} iconTreatment={iconTreatment} />
             </Link>
           );
         }
-        return <StatCardInner key={`${item.label}-${i}`} item={item} />;
+        return <StatCardInner key={`${item.label}-${i}`} item={item} iconTreatment={iconTreatment} />;
       })}
     </div>
   );

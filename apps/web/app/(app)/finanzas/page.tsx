@@ -19,7 +19,6 @@ import { StatsGrid, type StatItem } from "@/components/ui/StatsGrid";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { AccentStripe } from "@/components/ui/AccentStripe";
 import { cn } from "@/app/lib/utils";
-import { TOKENS } from "@/app/lib/design-tokens";
 import {
   listHonorarios, getHonorariosStats, createHonorario, updateHonorario,
   deleteHonorario, exportHonorariosCSV,
@@ -355,6 +354,8 @@ function FinanzasContent() {
       <PageHeader
         icon={DollarSign}
         iconGradient="emerald"
+        iconTreatment="outline"
+        eyebrow="Gestión"
         title="Finanzas"
         description="Honorarios, cobros y facturación del estudio"
         badge={
@@ -403,6 +404,7 @@ function FinanzasContent() {
       {stats && (
         <StatsGrid
           columns={4}
+          iconTreatment="outline"
           items={[
             {
               icon: CheckCircle2,
@@ -564,6 +566,7 @@ function FinanzasContent() {
         <EmptyState
           icon={DollarSign}
           iconGradient="emerald"
+          iconTreatment="outline"
           title={hasFilters ? "No hay honorarios con esos filtros" : "Aún no registraste honorarios"}
           description={
             hasFilters

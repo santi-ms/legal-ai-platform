@@ -18,7 +18,7 @@ import { StatsGrid, type StatItem } from "@/components/ui/StatsGrid";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { AccentStripe } from "@/components/ui/AccentStripe";
 import { cn } from "@/app/lib/utils";
-import { TOKENS, type GradientKey, type StatusKey } from "@/app/lib/design-tokens";
+import { type GradientKey, type StatusKey } from "@/app/lib/design-tokens";
 import {
   listVencimientos, getVencimientoStats, createVencimiento, updateVencimiento,
   completeVencimiento, reopenVencimiento, deleteVencimiento, exportVencimientosCSV,
@@ -387,7 +387,7 @@ function StatsRow({ stats }: { stats: VencimientoStats }) {
     { label: "Este mes",        value: stats.proximos30d,     icon: Calendar,       tone: "sky"     },
     { label: "Completados/mes", value: stats.completadosMes,  icon: CheckCircle2,   tone: "emerald" },
   ];
-  return <StatsGrid items={items} columns={6} />;
+  return <StatsGrid items={items} columns={6} iconTreatment="outline" />;
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -543,6 +543,7 @@ function VencimientosContent() {
       <PageHeader
         icon={CalendarClock}
         iconGradient="violet"
+        iconTreatment="outline"
         eyebrow="Gestión"
         title="Vencimientos"
         description="Audiencias, plazos procesales, vencimientos de contratos y cualquier fecha crítica."
@@ -589,11 +590,14 @@ function VencimientosContent() {
       {stats && (stats.vencidos > 0 || stats.proximos3d > 0) && (
         <div className="relative flex items-center gap-3 pl-5 pr-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm text-slate-700 dark:text-slate-200 shadow-soft">
           <AccentStripe tone={stats.vencidos > 0 ? "rose" : "amber"} thickness="thick" />
-          <div className={cn(
-            "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br text-white",
-            TOKENS.gradients[stats.vencidos > 0 ? "rose" : "amber"],
-          )}>
-            <AlertTriangle className="w-4 h-4" />
+          <div className="flex-shrink-0 w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center">
+            <AlertTriangle
+              className={cn(
+                "w-4 h-4",
+                stats.vencidos > 0 ? "text-rose-600 dark:text-rose-400" : "text-amber-600 dark:text-amber-400"
+              )}
+              strokeWidth={1.75}
+            />
           </div>
           <span>
             {stats.vencidos > 0 && (
@@ -735,6 +739,7 @@ function VencimientosContent() {
         <EmptyState
           icon={CalendarClock}
           iconGradient="violet"
+          iconTreatment="outline"
           title={searchQuery.trim() ? "Sin resultados" : "Todavía no tenés vencimientos"}
           description={
             searchQuery.trim()

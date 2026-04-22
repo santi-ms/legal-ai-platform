@@ -6,6 +6,19 @@ import { ChevronRight, LucideIcon } from "lucide-react";
 import { cn } from "@/app/lib/utils";
 import { TOKENS, type GradientKey } from "@/app/lib/design-tokens";
 
+/** Color de trazo para el icono cuando iconTreatment="outline". */
+const OUTLINE_ICON_COLOR: Record<GradientKey, string> = {
+  primary:  "text-primary",
+  violet:   "text-violet-600 dark:text-violet-400",
+  emerald:  "text-emerald-600 dark:text-emerald-400",
+  amber:    "text-amber-600 dark:text-amber-400",
+  rose:     "text-rose-600 dark:text-rose-400",
+  sky:      "text-sky-600 dark:text-sky-400",
+  slate:    "text-slate-600 dark:text-slate-300",
+  gold:     "text-gold-600 dark:text-gold-400",
+  ink:      "text-ink dark:text-white",
+};
+
 interface Breadcrumb {
   label: string;
   href?: string;
@@ -14,6 +27,16 @@ interface Breadcrumb {
 interface PageHeaderProps {
   icon?: LucideIcon;
   iconGradient?: GradientKey;
+  /**
+   * Tratamiento visual del ícono:
+   *  · "gradient" (default) — cuadrado pintado con gradiente a color, icono blanco.
+   *    Look saturado clásico.
+   *  · "outline" — cuadrado blanco con borde slate y trazo editorial del icono
+   *    en el color del gradiente. Se siente mucho más limpio, sin "fondo de
+   *    color". Úsese para módulos donde la estética editorial manda.
+   *  · "none" — sin ícono.
+   */
+  iconTreatment?: "gradient" | "outline" | "none";
   /**
    * Kicker editorial sobre el título — uppercase, dorado, tracking ancho.
    * Ej: "Asistentes IA", "Gestión", "Configuración".
@@ -42,6 +65,7 @@ const BADGE_STYLES: Record<NonNullable<PageHeaderProps["badge"]>["tone"] & strin
 export const PageHeader = React.memo(function PageHeader({
   icon: Icon,
   iconGradient = "primary",
+  iconTreatment = "gradient",
   eyebrow,
   title,
   description,
@@ -73,15 +97,21 @@ export const PageHeader = React.memo(function PageHeader({
 
       <div className="flex items-start justify-between gap-6 flex-wrap">
         <div className="flex items-start gap-4 min-w-0 flex-1">
-          {Icon && (
-            <div
-              className={cn(
-                "flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-soft",
-                TOKENS.gradients[iconGradient]
-              )}
-            >
-              <Icon className="w-6 h-6 text-white" strokeWidth={2} />
-            </div>
+          {Icon && iconTreatment !== "none" && (
+            iconTreatment === "outline" ? (
+              <div className="flex-shrink-0 w-12 h-12 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center">
+                <Icon className={cn("w-5 h-5", OUTLINE_ICON_COLOR[iconGradient])} strokeWidth={1.75} />
+              </div>
+            ) : (
+              <div
+                className={cn(
+                  "flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-soft",
+                  TOKENS.gradients[iconGradient]
+                )}
+              >
+                <Icon className="w-6 h-6 text-white" strokeWidth={2} />
+              </div>
+            )
           )}
 
           <div className="min-w-0 flex-1">

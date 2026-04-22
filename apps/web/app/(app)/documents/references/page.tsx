@@ -123,11 +123,8 @@ function UploadZone({ onUpload, uploading }: UploadZoneProps) {
         />
         {selectedFile ? (
           <>
-            <div className={cn(
-              "size-12 rounded-xl bg-gradient-to-br text-white shadow-soft flex items-center justify-center",
-              TOKENS.gradients.emerald,
-            )}>
-              <CheckCircle2 className="w-6 h-6" />
+            <div className="size-12 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
             </div>
             <p className="text-sm font-medium text-slate-900 dark:text-white text-center">
               {selectedFile.name}
@@ -137,11 +134,8 @@ function UploadZone({ onUpload, uploading }: UploadZoneProps) {
           </>
         ) : (
           <>
-            <div className={cn(
-              "size-12 rounded-xl bg-gradient-to-br text-white shadow-soft flex items-center justify-center",
-              TOKENS.gradients.sky,
-            )}>
-              <Upload className="w-6 h-6" />
+            <div className="size-12 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center">
+              <Upload className="w-6 h-6 text-sky-600 dark:text-sky-400" strokeWidth={1.75} />
             </div>
             <div className="text-center">
               <p className="text-sm font-medium text-slate-900 dark:text-white">
@@ -216,11 +210,8 @@ interface ReferenceCardProps {
 function ReferenceCard({ doc, onDelete, deleting }: ReferenceCardProps) {
   return (
     <div className="flex items-start gap-3 p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-soft transition-all group">
-      <div className={cn(
-        "flex-shrink-0 size-10 rounded-lg bg-gradient-to-br text-white shadow-soft flex items-center justify-center",
-        TOKENS.gradients.rose,
-      )}>
-        <FileText className="w-5 h-5" />
+      <div className="flex-shrink-0 size-10 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center">
+        <FileText className="w-4 h-4 text-slate-600 dark:text-slate-300" strokeWidth={1.75} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -359,6 +350,8 @@ export default function ReferencesPage() {
         <PageHeader
           icon={FolderKanban}
           iconGradient="sky"
+          iconTreatment="outline"
+          eyebrow="Asistente IA"
           title="Documentos de Referencia"
           description="Subí tus propios documentos para que la IA los use como modelo de formato y estilo al generar nuevos documentos."
           badge={references.length > 0 ? { label: `${references.length} referencia${references.length !== 1 ? "s" : ""}`, tone: "info" } : undefined}
@@ -369,6 +362,7 @@ export default function ReferencesPage() {
           <div className="mb-6">
             <StatsGrid
               columns={3}
+              iconTreatment="outline"
               items={[
                 {
                   icon: FileText,
@@ -404,11 +398,8 @@ export default function ReferencesPage() {
             <div className="relative mt-4 rounded-xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-soft overflow-hidden">
               <AccentStripe tone="sky" thickness="thick" />
               <div className="flex items-start gap-2.5 pl-1">
-                <div className={cn(
-                  "flex-shrink-0 size-7 rounded-lg bg-gradient-to-br text-white shadow-soft flex items-center justify-center",
-                  TOKENS.gradients.sky,
-                )}>
-                  <Sparkles className="w-3.5 h-3.5" />
+                <div className="flex-shrink-0 size-7 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center">
+                  <Sparkles className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" strokeWidth={1.75} />
                 </div>
                 <div className="flex-1">
                   <p className={cn(TOKENS.eyebrow, "mb-1")}>
@@ -430,6 +421,7 @@ export default function ReferencesPage() {
               <EmptyState
                 icon={AlertTriangle}
                 iconGradient="rose"
+                iconTreatment="outline"
                 title="Error al cargar documentos"
                 description={loadError}
                 primaryAction={
@@ -443,6 +435,7 @@ export default function ReferencesPage() {
               <EmptyState
                 icon={FolderOpen}
                 iconGradient="sky"
+                iconTreatment="outline"
                 title="Todavía no hay documentos de referencia"
                 description="Subí tu primer PDF usando el panel de la izquierda. La IA lo usará como plantilla para mantener tu estilo y formato en los documentos que generes."
                 tips={[

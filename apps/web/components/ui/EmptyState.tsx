@@ -8,6 +8,12 @@ import { TOKENS, type GradientKey } from "@/app/lib/design-tokens";
 interface EmptyStateProps {
   icon?: LucideIcon;
   iconGradient?: GradientKey;
+  /**
+   * · "gradient" (default) — cuadrado pintado con gradiente, icono blanco.
+   * · "outline" — cuadrado blanco con borde slate y trazo del icono en color.
+   *   Versión editorial, sin bloques saturados.
+   */
+  iconTreatment?: "gradient" | "outline";
   title: string;
   description?: string;
   primaryAction?: React.ReactNode;
@@ -18,9 +24,22 @@ interface EmptyStateProps {
   size?: "default" | "compact";
 }
 
+const OUTLINE_ICON_COLOR: Record<GradientKey, string> = {
+  primary:  "text-primary",
+  violet:   "text-violet-600 dark:text-violet-400",
+  emerald:  "text-emerald-600 dark:text-emerald-400",
+  amber:    "text-amber-600 dark:text-amber-400",
+  rose:     "text-rose-600 dark:text-rose-400",
+  sky:      "text-sky-600 dark:text-sky-400",
+  slate:    "text-slate-600 dark:text-slate-300",
+  gold:     "text-gold-600 dark:text-gold-400",
+  ink:      "text-ink dark:text-white",
+};
+
 export const EmptyState = React.memo(function EmptyState({
   icon: Icon,
   iconGradient = "primary",
+  iconTreatment = "gradient",
   title,
   description,
   primaryAction,
@@ -49,15 +68,29 @@ export const EmptyState = React.memo(function EmptyState({
 
       <div className="relative flex flex-col items-center text-center max-w-lg mx-auto w-full">
         {Icon && (
-          <div
-            className={cn(
-              "rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-md mb-5",
-              TOKENS.gradients[iconGradient],
-              isCompact ? "w-12 h-12" : "w-16 h-16"
-            )}
-          >
-            <Icon className={cn("text-white", isCompact ? "w-6 h-6" : "w-8 h-8")} strokeWidth={2} />
-          </div>
+          iconTreatment === "outline" ? (
+            <div
+              className={cn(
+                "rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center mb-5",
+                isCompact ? "w-12 h-12" : "w-16 h-16"
+              )}
+            >
+              <Icon
+                className={cn(OUTLINE_ICON_COLOR[iconGradient], isCompact ? "w-5 h-5" : "w-7 h-7")}
+                strokeWidth={1.75}
+              />
+            </div>
+          ) : (
+            <div
+              className={cn(
+                "rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-md mb-5",
+                TOKENS.gradients[iconGradient],
+                isCompact ? "w-12 h-12" : "w-16 h-16"
+              )}
+            >
+              <Icon className={cn("text-white", isCompact ? "w-6 h-6" : "w-8 h-8")} strokeWidth={2} />
+            </div>
+          )
         )}
 
         <h3

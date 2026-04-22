@@ -15,7 +15,7 @@ import { StatsGrid } from "@/components/ui/StatsGrid";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { AccentStripe } from "@/components/ui/AccentStripe";
 import { cn } from "@/app/lib/utils";
-import { TOKENS, type GradientKey, type StatusKey } from "@/app/lib/design-tokens";
+import { type GradientKey, type StatusKey } from "@/app/lib/design-tokens";
 import {
   listEscritos, uploadEscrito, deleteEscrito,
   EscritoAnalisis, TipoEscrito, NivelRiesgo,
@@ -106,11 +106,8 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-lg">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
-            <div className={cn(
-              "size-9 rounded-lg bg-gradient-to-br text-white shadow-soft flex items-center justify-center",
-              TOKENS.gradients.violet,
-            )}>
-              <Swords className="w-4 h-4" />
+            <div className="size-9 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center">
+              <Swords className="w-4 h-4 text-violet-600 dark:text-violet-400" strokeWidth={1.75} />
             </div>
             <h2 className="font-semibold text-lg">Analizar escrito contrario</h2>
           </div>
@@ -252,6 +249,7 @@ export default function EstrategiaPage() {
       <PageHeader
         icon={Swords}
         iconGradient="violet"
+        iconTreatment="outline"
         eyebrow="Asistente IA"
         title="Doku Estratega"
         description="Subí un escrito de la parte contraria y la IA te da la estrategia de defensa."
@@ -267,6 +265,7 @@ export default function EstrategiaPage() {
       {items.length > 0 && (
         <StatsGrid
           columns={4}
+          iconTreatment="outline"
           items={[
             { icon: FileText,      label: "Total",         value: total,                                                         tone: "violet" },
             { icon: CheckCircle2,  label: "Completados",   value: items.filter(i => i.status === "done").length,                  tone: "emerald" },
@@ -283,6 +282,7 @@ export default function EstrategiaPage() {
         <EmptyState
           icon={Swords}
           iconGradient="violet"
+          iconTreatment="outline"
           title="Todavía no analizaste ningún escrito"
           description="Subí un PDF de la parte contraria y Doku Estratega identifica puntos débiles, sugiere defensas y detecta riesgos procesales."
           primaryAction={
@@ -315,27 +315,22 @@ export default function EstrategiaPage() {
                 isProcessing                 ? "violet" :
                 "slate";
 
-              const iconGradient: GradientKey =
-                isDone    ? "violet" :
-                isError   ? "rose"   :
-                isProcessing ? "violet" :
-                "slate";
+              const iconStrokeColor =
+                isError      ? "text-rose-600 dark:text-rose-400"  :
+                isProcessing ? "text-violet-600 dark:text-violet-400" :
+                isDone       ? "text-slate-600 dark:text-slate-300"   :
+                               "text-slate-400";
 
               return (
                 <div key={item.id} className="group relative flex items-center gap-4 pl-6 pr-5 py-4 hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors">
                   {/* Accent editorial lateral según riesgo — stripe fino, sin pintar fondo */}
                   <AccentStripe tone={accentTone} thickness="md" />
 
-                  {/* Icon gradient editorial */}
-                  <div className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-white shadow-soft",
-                    isDone || isError || isProcessing
-                      ? `bg-gradient-to-br ${TOKENS.gradients[iconGradient]}`
-                      : "bg-slate-100 dark:bg-slate-800 text-slate-400 shadow-none",
-                  )}>
-                    {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> :
-                     isError ? <AlertTriangle className="w-4 h-4" /> :
-                     <FileText className="w-4 h-4" />}
+                  {/* Icon editorial — sin cuadrado pintado, borde fino + trazo de color */}
+                  <div className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center flex-shrink-0">
+                    {isProcessing ? <Loader2 className={cn("w-4 h-4 animate-spin", iconStrokeColor)} strokeWidth={1.75} /> :
+                     isError ? <AlertTriangle className={cn("w-4 h-4", iconStrokeColor)} strokeWidth={1.75} /> :
+                     <FileText className={cn("w-4 h-4", iconStrokeColor)} strokeWidth={1.75} />}
                   </div>
 
                   {/* Info */}
