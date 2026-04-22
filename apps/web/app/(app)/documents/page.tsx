@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Plus, Download, AlertTriangle, RefreshCcw, Loader2, User, X as XIcon } from "lucide-react";
+import { Plus, Download, AlertTriangle, RefreshCcw, Loader2, User, X as XIcon, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -419,42 +420,37 @@ function DocumentsContent() {
   return (
     <div className="px-4 sm:px-6 lg:px-10 py-6 md:py-10 max-w-[1280px] mx-auto w-full">
       <main className="flex-1">
-        {/* Header editorial */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-          <div className="flex flex-col min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700 dark:text-gold-400 mb-2">
-              Gestión
-            </p>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-ink dark:text-white leading-[1.1]">
-              Mis documentos
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400 text-sm md:text-base mt-2 max-w-xl leading-relaxed">
-              Todos los documentos generados, ordenados por fecha. Filtrá, exportá o creá uno nuevo.
-            </p>
-          </div>
-          <div className="flex gap-3 flex-shrink-0">
-            <Button
-              variant="outline"
-              onClick={handleExportCsv}
-              disabled={exporting || loading}
-              size="md"
-              title="Exportar documentos a CSV"
-            >
-              {exporting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4" />
-              )}
-              {exporting ? "Exportando..." : "Exportar CSV"}
-            </Button>
-            <Link href="/documents/new">
-              <Button variant="ink" size="md">
-                <Plus className="w-4 h-4" />
-                Nuevo documento
+        <PageHeader
+          icon={FileText}
+          iconGradient="primary"
+          eyebrow="Gestión"
+          title="Mis documentos"
+          description="Todos los documentos generados, ordenados por fecha. Filtrá, exportá o creá uno nuevo."
+          actions={
+            <>
+              <Button
+                variant="outline"
+                onClick={handleExportCsv}
+                disabled={exporting || loading}
+                size="md"
+                title="Exportar documentos a CSV"
+              >
+                {exporting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                {exporting ? "Exportando..." : "Exportar CSV"}
               </Button>
-            </Link>
-          </div>
-        </div>
+              <Link href="/documents/new">
+                <Button variant="ink" size="md">
+                  <Plus className="w-4 h-4" />
+                  Nuevo documento
+                </Button>
+              </Link>
+            </>
+          }
+        />
 
         {/* Dashboard Stats Summary */}
         <DocumentsStatsCards stats={stats} />

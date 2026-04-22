@@ -15,13 +15,15 @@ import {
 import { cn } from "@/app/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ─── Risk config ─────────────────────────────────────────────────────────────
 
 const RISK_CONFIG = {
-  low:    { label: "Riesgo bajo",   badge: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50" },
-  medium: { label: "Riesgo medio",  badge: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800/50" },
-  high:   { label: "Riesgo alto",   badge: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-200 dark:border-red-800/50" },
+  low:    { label: "Riesgo bajo",   badge: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/50" },
+  medium: { label: "Riesgo medio",  badge: "bg-amber-50  text-amber-700  dark:bg-amber-900/30  dark:text-amber-300  border border-amber-200/70  dark:border-amber-800/50" },
+  high:   { label: "Riesgo alto",   badge: "bg-rose-50   text-rose-700   dark:bg-rose-900/30   dark:text-rose-300   border border-rose-200/70   dark:border-rose-800/50" },
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -110,25 +112,13 @@ export default function AnalysisPage() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-10 py-6 md:py-10 max-w-[1280px] mx-auto w-full">
-      {/* Header editorial */}
-      <div className="mb-8">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-soft flex-shrink-0">
-            <ScanSearch className="w-6 h-6 text-white" strokeWidth={2} />
-          </div>
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700 dark:text-gold-400 mb-2">
-              Asistente IA
-            </p>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-ink dark:text-white leading-[1.1]">
-              Doku <span className="text-emerald-600 dark:text-emerald-400">Analiza</span>
-            </h1>
-            <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 mt-2 max-w-2xl leading-relaxed">
-              Subí un contrato en PDF y Claude lo analiza: riesgos, cláusulas faltantes y recomendaciones.
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        icon={ScanSearch}
+        iconGradient="emerald"
+        eyebrow="Asistente IA"
+        title="Doku Analiza"
+        description="Subí un contrato en PDF y Claude lo analiza: riesgos, cláusulas faltantes y recomendaciones."
+      />
 
       {/* Upload zone */}
       <div
@@ -137,13 +127,14 @@ export default function AnalysisPage() {
         onDrop={onDrop}
         onClick={() => !uploading && fileInputRef.current?.click()}
         className={cn(
-          "relative rounded-2xl border-2 border-dashed p-10 text-center transition-all cursor-pointer mb-8",
+          "relative rounded-2xl border-2 border-dashed p-10 text-center transition-all cursor-pointer mb-10 overflow-hidden",
           dragOver
-            ? "border-primary bg-primary/5"
-            : "border-slate-300 dark:border-slate-700 hover:border-primary hover:bg-primary/5",
-          uploading && "pointer-events-none opacity-70"
+            ? "border-emerald-400 bg-emerald-50/60 dark:bg-emerald-900/10"
+            : "border-slate-300 dark:border-slate-700 hover:border-emerald-400 hover:bg-emerald-50/40 dark:hover:bg-emerald-900/5",
+          uploading && "pointer-events-none opacity-80"
         )}
       >
+        <div className="pointer-events-none absolute -top-20 -right-20 w-80 h-80 rounded-full bg-gradient-to-br from-emerald-400/10 to-teal-500/10 blur-3xl" aria-hidden />
         <input
           ref={fileInputRef}
           type="file"
@@ -153,8 +144,8 @@ export default function AnalysisPage() {
         />
 
         {uploading ? (
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-10 h-10 text-primary animate-spin" />
+          <div className="relative flex flex-col items-center gap-3">
+            <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
             <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
               {uploadProgress ?? "Analizando..."}
             </p>
@@ -163,19 +154,20 @@ export default function AnalysisPage() {
             </p>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Upload className="w-7 h-7 text-primary" />
+          <div className="relative flex flex-col items-center gap-3">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-soft">
+              <Upload className="w-7 h-7 text-white" />
             </div>
             <div>
-              <p className="text-base font-semibold text-slate-700 dark:text-slate-300">
+              <p className="text-base font-bold text-slate-800 dark:text-slate-100">
                 Arrastrá un PDF o hacé clic para seleccionar
               </p>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                 Contratos, acuerdos, NDAs, locaciones… hasta 10 MB
               </p>
             </div>
-            <span className="text-xs font-semibold text-primary border border-primary/30 rounded-lg px-3 py-1.5">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-100/70 dark:bg-emerald-900/30 border border-emerald-200/70 dark:border-emerald-800/50 rounded-lg px-3 py-1.5">
+              <ScanSearch className="w-3.5 h-3.5" />
               Analizar con IA
             </span>
           </div>
@@ -184,22 +176,30 @@ export default function AnalysisPage() {
 
       {/* List of analyses */}
       <div>
-        <h2 className="text-base font-bold text-slate-800 dark:text-slate-200 mb-3">
-          Análisis anteriores
-          {total > 0 && <span className="ml-2 text-sm font-normal text-slate-500">({total})</span>}
-        </h2>
+        <div className="flex items-end justify-between gap-3 mb-4 flex-wrap">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700 dark:text-gold-400">
+              Historial
+            </p>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5 tracking-tight">
+              Análisis anteriores
+              {total > 0 && <span className="ml-2 text-sm font-normal text-slate-500 dark:text-slate-400">· {total}</span>}
+            </h2>
+          </div>
+        </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
           </div>
         ) : analyses.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-10 text-center">
-            <ScanSearch className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Todavía no analizaste ningún contrato.
-            </p>
-          </div>
+          <EmptyState
+            size="compact"
+            icon={ScanSearch}
+            iconGradient="emerald"
+            title="Todavía no analizaste ningún contrato"
+            description="Subí un PDF desde la zona de arriba y Claude te devuelve un análisis estructurado."
+          />
         ) : (
           <div className="space-y-3">
             {analyses.map((a) => (
@@ -256,39 +256,51 @@ function AnalysisCard({
 
   const fileSizeKb = Math.round(analysis.fileSize / 1024);
 
+  const riskAccent =
+    risk === "high"   ? "from-rose-500 to-red-600" :
+    risk === "medium" ? "from-amber-500 to-orange-500" :
+    risk === "low"    ? "from-emerald-500 to-teal-600" :
+    "from-slate-300 to-slate-400 dark:from-slate-700 dark:to-slate-600";
+
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow flex items-center gap-4 px-5 py-4">
+    <div className="group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-soft hover:shadow-hover hover:border-slate-300 dark:hover:border-slate-700 transition-all flex items-center gap-4 px-5 py-4 overflow-hidden">
+      {/* Accent bar izquierda según riesgo */}
+      <span
+        className={cn("absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b", riskAccent)}
+        aria-hidden
+      />
+
       {/* File icon */}
-      <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
-        <FileText className="w-5 h-5 text-slate-500" />
+      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center flex-shrink-0 ml-1">
+        <FileText className="w-5 h-5 text-slate-600 dark:text-slate-300" />
       </div>
 
       {/* Info */}
       <div className="flex-1 min-w-0 cursor-pointer" onClick={onClick}>
         <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+          <p className="text-sm font-semibold text-slate-900 dark:text-white truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
             {analysis.originalName}
           </p>
           {statusIcon}
-        </div>
-        <div className="flex items-center gap-3 mt-1 flex-wrap">
           {riskCfg && (
-            <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded", riskCfg.badge)}>
+            <span className={cn("text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full", riskCfg.badge)}>
               {riskCfg.label}
             </span>
           )}
+        </div>
+        <div className="flex items-center gap-2.5 mt-1.5 flex-wrap text-xs text-slate-500 dark:text-slate-400">
           {analysis.result?.contractType && (
-            <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
+            <span className="truncate max-w-[220px] font-medium text-slate-600 dark:text-slate-300">
               {analysis.result.contractType}
             </span>
           )}
           {analysis.result?.riskyClausesMain && analysis.result.riskyClausesMain.length > 0 && (
-            <span className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
+            <span className="inline-flex items-center gap-1 text-orange-600 dark:text-orange-400">
               <ShieldAlert className="w-3 h-3" />
               {analysis.result.riskyClausesMain.length} cláusula{analysis.result.riskyClausesMain.length !== 1 ? "s" : ""} riesgosa{analysis.result.riskyClausesMain.length !== 1 ? "s" : ""}
             </span>
           )}
-          <span className="text-xs text-slate-400">{fileSizeKb} KB · {date}</span>
+          <span className="text-slate-400 dark:text-slate-500">{fileSizeKb} KB · {date}</span>
         </div>
       </div>
 
@@ -296,7 +308,7 @@ function AnalysisCard({
       <div className="flex items-center gap-1 flex-shrink-0">
         <button
           onClick={onClick}
-          className="p-2 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
+          className="p-2 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
           title="Ver análisis"
         >
           <ChevronRight className="w-4 h-4" />

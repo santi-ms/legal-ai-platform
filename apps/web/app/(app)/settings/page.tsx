@@ -380,38 +380,16 @@ export default function SettingsPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
-      <div className="layout-container flex h-full grow flex-col">
-        <div className="px-4 md:px-20 lg:px-40 flex flex-1 justify-center py-5">
-          <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
+    <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden bg-parchment dark:bg-ink font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
+      <div className="flex h-full grow flex-col">
+        <div className="flex flex-1 justify-center pb-10">
+          <div className="flex flex-col max-w-[1040px] w-full">
             <SettingsHeader />
 
-            {/* Hero */}
-            <div className="flex flex-col gap-4 p-4 mt-6">
-              <div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => router.push("/dashboard")}
-                  className="inline-flex items-center gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Volver al panel
-                </Button>
-              </div>
-              <div className="flex min-w-72 flex-col gap-3">
-                <p className="text-4xl font-black leading-tight tracking-[-0.033em] text-slate-900 dark:text-white">
-                  Ajustes del sistema
-                </p>
-                <p className="text-slate-500 dark:text-slate-400 text-base font-normal leading-normal">
-                  Administrá tu cuenta, estudio y preferencias.
-                </p>
-              </div>
+            {/* Tabs editoriales */}
+            <div className="mt-2">
+              <SettingsTabs activeTab="profile" />
             </div>
-
-            {/* Tabs */}
-            <SettingsTabs activeTab="profile" />
 
             {/* Error de carga */}
             {loadError && (

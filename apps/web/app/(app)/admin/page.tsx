@@ -23,8 +23,15 @@ import {
   ArrowLeft,
   RefreshCw,
   ShieldAlert,
+  LayoutDashboard,
+  Building2,
+  Users,
+  Sparkles,
+  Ticket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { SectionTabs, type SectionTab } from "@/components/ui/SectionTabs";
 
 // Sub-components
 import { AdminOverview }      from "./components/AdminOverview";
@@ -38,13 +45,13 @@ import { TenantDetailModal }  from "./components/TenantDetailModal";
 
 type Tab = "overview" | "tenants" | "users" | "prompts" | "promos";
 
-const TAB_LABELS: Record<Tab, string> = {
-  overview: "Overview",
-  tenants:  "Estudios / Tenants",
-  users:    "Usuarios",
-  prompts:  "Prompts IA",
-  promos:   "Códigos Promo",
-};
+const ADMIN_TABS: SectionTab[] = [
+  { key: "overview", label: "Overview",          icon: LayoutDashboard },
+  { key: "tenants",  label: "Estudios",          icon: Building2       },
+  { key: "users",    label: "Usuarios",          icon: Users           },
+  { key: "prompts",  label: "Prompts IA",        icon: Sparkles        },
+  { key: "promos",   label: "Códigos Promo",     icon: Ticket          },
+];
 
 // ---------------------------------------------------------------------------
 
@@ -136,7 +143,7 @@ export default function SuperAdminPage() {
 
   if (sessionStatus === "loading") {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background-light dark:bg-background-dark">
+      <div className="flex items-center justify-center min-h-screen bg-parchment dark:bg-ink">
         <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
       </div>
     );
@@ -144,13 +151,18 @@ export default function SuperAdminPage() {
 
   if (forbidden) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background-light dark:bg-background-dark">
-        <div className="text-center space-y-4">
-          <ShieldAlert className="w-12 h-12 text-red-400 mx-auto" />
-          <p className="text-xl font-bold text-slate-900 dark:text-white">Acceso denegado</p>
-          <p className="text-sm text-slate-500">Esta sección es de acceso restringido.</p>
+      <div className="flex items-center justify-center min-h-screen bg-parchment dark:bg-ink">
+        <div className="text-center space-y-4 max-w-md px-6">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center shadow-soft mx-auto">
+            <ShieldAlert className="w-7 h-7 text-white" />
+          </div>
+          <div>
+            <p className="text-2xl font-extrabold tracking-tight text-ink dark:text-white">Acceso denegado</p>
+            <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">Esta sección es de acceso restringido al equipo de administración.</p>
+          </div>
           <Button variant="outline" size="sm" onClick={() => router.push("/dashboard")}>
-            Volver al inicio
+            <ArrowLeft className="w-4 h-4" />
+            Volver al panel
           </Button>
         </div>
       </div>
@@ -184,62 +196,36 @@ export default function SuperAdminPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-      {/* Top bar */}
-      <div className="sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-3 flex items-center gap-4">
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard")}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <div className="flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 text-red-500" />
-          <span className="font-bold text-sm text-slate-900 dark:text-white">Super Admin</span>
-          <span className="text-xs text-slate-400">· {session?.user?.email}</span>
-        </div>
-        <div className="flex-1" />
-        <button
-          type="button"
-          onClick={handleRefresh}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          title="Actualizar"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-        </button>
-      </div>
-
+    <div className="min-h-screen bg-parchment dark:bg-ink text-slate-900 dark:text-slate-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 md:py-10">
-        {/* Page title editorial */}
-        <div className="mb-8">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700 dark:text-gold-400 mb-2">
-            Administración · Acceso restringido
-          </p>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-ink dark:text-white leading-[1.1]">
-            Panel de administración
-          </h1>
-          <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
-            Visibilidad completa del sistema.
-          </p>
-        </div>
+        <PageHeader
+          icon={ShieldAlert}
+          iconGradient="rose"
+          eyebrow="Administración · Acceso restringido"
+          title="Panel de administración"
+          description="Visibilidad completa del sistema: tenants, usuarios, prompts y métricas globales."
+          badge={session?.user?.email ? { label: session.user.email, tone: "default" } : undefined}
+          actions={
+            <>
+              <Button variant="outline" size="sm" onClick={() => router.push("/dashboard")}>
+                <ArrowLeft className="w-4 h-4" />
+                Volver al panel
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                Actualizar
+              </Button>
+            </>
+          }
+        />
 
-        {/* Nav tabs */}
-        <div className="flex border-b border-slate-200 dark:border-slate-800 mb-6 gap-6 overflow-x-auto">
-          {(Object.keys(TAB_LABELS) as Tab[]).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`pb-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === tab
-                  ? "border-primary text-primary"
-                  : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-              }`}
-            >
-              {TAB_LABELS[tab]}
-            </button>
-          ))}
+        {/* Nav tabs editoriales */}
+        <div className="mb-8">
+          <SectionTabs
+            tabs={ADMIN_TABS}
+            activeKey={activeTab}
+            onChange={(k) => setActiveTab(k as Tab)}
+          />
         </div>
 
         {/* ── OVERVIEW ─────────────────────────────────────────────────────── */}

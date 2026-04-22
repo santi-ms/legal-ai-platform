@@ -24,6 +24,7 @@ import {
 } from "@/components/expedientes/ExpedienteForm";
 import { cn } from "@/app/lib/utils";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 const PAGE_SIZE = 20;
 
@@ -408,80 +409,75 @@ function ExpedientesContent() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-10 py-6 md:py-10 space-y-8 max-w-7xl mx-auto w-full">
-      {/* Header editorial */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700 dark:text-gold-400 mb-2">
-            Gestión
-          </p>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-ink dark:text-white leading-[1.1]">
-            Expedientes
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 text-sm md:text-base mt-2 leading-relaxed">
-            {total > 0 ? `${total} caso${total !== 1 ? "s" : ""} registrado${total !== 1 ? "s" : ""} en tu estudio.` : "Gestión de casos y expedientes."}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* View mode toggle */}
-          <div className="flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-0.5">
-            <button
-              onClick={() => { setViewMode("list"); localStorage.setItem("exp_view", "list"); }}
-              title="Vista lista"
-              className={cn(
-                "p-1.5 rounded-md transition-colors",
-                viewMode === "list"
-                  ? "bg-primary text-white shadow-sm"
-                  : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-              )}
-            >
-              <List className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => { setViewMode("board"); localStorage.setItem("exp_view", "board"); }}
-              title="Vista tablero"
-              className={cn(
-                "p-1.5 rounded-md transition-colors",
-                viewMode === "board"
-                  ? "bg-primary text-white shadow-sm"
-                  : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-              )}
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-          </div>
+      <PageHeader
+        icon={Briefcase}
+        iconGradient="primary"
+        eyebrow="Gestión"
+        title="Expedientes"
+        description={total > 0 ? `${total} caso${total !== 1 ? "s" : ""} registrado${total !== 1 ? "s" : ""} en tu estudio.` : "Gestión de casos y expedientes."}
+        actions={
+          <>
+            {/* View mode toggle */}
+            <div className="flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-0.5">
+              <button
+                onClick={() => { setViewMode("list"); localStorage.setItem("exp_view", "list"); }}
+                title="Vista lista"
+                className={cn(
+                  "p-1.5 rounded-md transition-colors",
+                  viewMode === "list"
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                )}
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => { setViewMode("board"); localStorage.setItem("exp_view", "board"); }}
+                title="Vista tablero"
+                className={cn(
+                  "p-1.5 rounded-md transition-colors",
+                  viewMode === "board"
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                )}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+            </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={exporting}
-            onClick={async () => {
-              setExporting(true);
-              try {
-                await exportExpedientesCSV();
-              } catch {
-                showError("No se pudo exportar");
-              } finally {
-                setExporting(false);
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={exporting}
+              onClick={async () => {
+                setExporting(true);
+                try {
+                  await exportExpedientesCSV();
+                } catch {
+                  showError("No se pudo exportar");
+                } finally {
+                  setExporting(false);
+                }
+              }}
+              className="flex items-center gap-2 h-9 px-3"
+              title="Exportar expedientes como CSV"
+            >
+              {exporting
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Download className="w-4 h-4" />
               }
-            }}
-            className="flex items-center gap-2 h-9 px-3"
-            title="Exportar expedientes como CSV"
-          >
-            {exporting
-              ? <Loader2 className="w-4 h-4 animate-spin" />
-              : <Download className="w-4 h-4" />
-            }
-            <span className="hidden sm:inline">Exportar CSV</span>
-          </Button>
-          <Button
-            onClick={() => setFormOpen(true)}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
-          >
-            <Plus className="w-4 h-4" />
-            Nuevo expediente
-          </Button>
-        </div>
-      </div>
+              <span className="hidden sm:inline">Exportar CSV</span>
+            </Button>
+            <Button
+              onClick={() => setFormOpen(true)}
+              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
+            >
+              <Plus className="w-4 h-4" />
+              Nuevo expediente
+            </Button>
+          </>
+        }
+      />
 
       {/* Filters */}
       <div className="space-y-3">

@@ -287,7 +287,7 @@ export default function EstrategiaPage() {
           ]}
         />
       ) : (
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-soft overflow-hidden">
         {(
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {items.map((item) => {
@@ -296,13 +296,28 @@ export default function EstrategiaPage() {
               const isDone       = item.status === "done";
               const riesgoCfg    = item.nivelRiesgo ? RIESGO_CONFIG[item.nivelRiesgo] : null;
 
+              const accentBar =
+                item.nivelRiesgo === "alto"  ? "from-rose-500 to-red-600" :
+                item.nivelRiesgo === "medio" ? "from-amber-500 to-orange-500" :
+                item.nivelRiesgo === "bajo"  ? "from-emerald-500 to-teal-600" :
+                isError                      ? "from-red-400 to-red-500" :
+                isProcessing                 ? "from-violet-400 to-purple-500" :
+                "from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600";
+
               return (
-                <div key={item.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                <div key={item.id} className="group relative flex items-center gap-4 pl-6 pr-5 py-4 hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors">
+                  {/* Accent lateral según riesgo */}
+                  <span
+                    className={cn("absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b", accentBar)}
+                    aria-hidden
+                  />
+
                   {/* Icon */}
                   <div className={cn(
-                    "size-9 rounded-lg flex items-center justify-center flex-shrink-0",
-                    isDone ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600" :
-                    isError ? "bg-red-100 dark:bg-red-900/20 text-red-500" :
+                    "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
+                    isDone ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-soft" :
+                    isError ? "bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" :
+                    isProcessing ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400" :
                     "bg-slate-100 dark:bg-slate-800 text-slate-400",
                   )}>
                     {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> :
@@ -313,27 +328,28 @@ export default function EstrategiaPage() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">
+                      <p className="font-semibold text-sm text-slate-900 dark:text-white truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
                         {item.originalName}
                       </p>
-                      <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full">
                         {TIPO_LABELS[item.tipoEscrito]}
                       </span>
                       {riesgoCfg && (
-                        <span className={cn("text-xs px-2 py-0.5 rounded-full font-semibold", riesgoCfg.color)}>
+                        <span className={cn("text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full", riesgoCfg.color)}>
                           {riesgoCfg.label}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 mt-0.5 text-xs text-slate-400">
+                    <div className="flex items-center gap-2.5 mt-1 text-xs text-slate-500 dark:text-slate-400">
                       {item.expediente && (
-                        <span className="truncate max-w-[200px]">
-                          📁 {item.expediente.title}
+                        <span className="truncate max-w-[240px] inline-flex items-center gap-1">
+                          <FileText className="w-3 h-3 text-slate-400" />
+                          {item.expediente.title}
                         </span>
                       )}
-                      <span>{new Date(item.createdAt).toLocaleDateString("es-AR")}</span>
-                      {isProcessing && <span className="text-violet-500 animate-pulse">Analizando...</span>}
-                      {isError && <span className="text-red-500">Error en el análisis</span>}
+                      <span className="text-slate-400 dark:text-slate-500">{new Date(item.createdAt).toLocaleDateString("es-AR")}</span>
+                      {isProcessing && <span className="inline-flex items-center gap-1 text-violet-600 dark:text-violet-400 font-medium animate-pulse">Analizando…</span>}
+                      {isError && <span className="text-rose-600 dark:text-rose-400 font-medium">Error en el análisis</span>}
                     </div>
                   </div>
 
@@ -348,7 +364,8 @@ export default function EstrategiaPage() {
                     )}
                     <button
                       onClick={() => setDeleteId(item.id)}
-                      className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500"
+                      className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-colors"
+                      title="Eliminar"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>

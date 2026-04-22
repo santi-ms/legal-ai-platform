@@ -18,6 +18,7 @@ import {
 import { ClientForm } from "@/components/clients/ClientForm";
 import { cn } from "@/app/lib/utils";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -460,41 +461,36 @@ function ClientsContent() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-10 py-6 md:py-10 max-w-[1280px] mx-auto w-full text-slate-900 dark:text-slate-100">
-      {/* Header editorial */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-8">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700 dark:text-gold-400 mb-2">
-            Gestión
-          </p>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-ink dark:text-white leading-[1.1]">
-            Clientes
-          </h1>
-          <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
-            {archivedMode
-              ? "Mostrando clientes archivados"
-              : total > 0
-              ? `${total} ${total === 1 ? "cliente registrado" : "clientes registrados"} en tu estudio.`
-              : "Gestioná los clientes de tu estudio."}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Button
-            variant={archivedMode ? "subtle" : "outline"}
-            size="md"
-            onClick={() => { setArchivedMode((v) => !v); setCurrentPage(1); }}
-            className={archivedMode ? "!bg-amber-50 !text-amber-700 hover:!bg-amber-100 dark:!bg-amber-900/20 dark:!text-amber-300" : ""}
-          >
-            <Archive className="w-4 h-4" />
-            {archivedMode ? "Ver activos" : "Ver archivados"}
-          </Button>
-          {!archivedMode && (
-            <Button variant="ink" size="md" onClick={handleOpenNew}>
-              <Plus className="w-4 h-4" />
-              Nuevo cliente
+      <PageHeader
+        icon={Users}
+        iconGradient="sky"
+        eyebrow="Gestión"
+        title="Clientes"
+        description={archivedMode
+          ? "Mostrando clientes archivados."
+          : total > 0
+          ? `${total} ${total === 1 ? "cliente registrado" : "clientes registrados"} en tu estudio.`
+          : "Gestioná los clientes de tu estudio."}
+        actions={
+          <>
+            <Button
+              variant={archivedMode ? "subtle" : "outline"}
+              size="md"
+              onClick={() => { setArchivedMode((v) => !v); setCurrentPage(1); }}
+              className={archivedMode ? "!bg-amber-50 !text-amber-700 hover:!bg-amber-100 dark:!bg-amber-900/20 dark:!text-amber-300" : ""}
+            >
+              <Archive className="w-4 h-4" />
+              {archivedMode ? "Ver activos" : "Ver archivados"}
             </Button>
-          )}
-        </div>
-      </div>
+            {!archivedMode && (
+              <Button variant="ink" size="md" onClick={handleOpenNew}>
+                <Plus className="w-4 h-4" />
+                Nuevo cliente
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <main className="w-full">
         {/* Filters */}
