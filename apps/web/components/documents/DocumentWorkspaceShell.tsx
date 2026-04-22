@@ -20,7 +20,7 @@ export function DocumentWorkspaceShell({
   children,
 }: DocumentWorkspaceShellProps) {
   return (
-    <div className="layout-container flex min-h-screen flex-col bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100">
+    <div className="layout-container flex min-h-[100dvh] flex-col bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100">
       <DocumentsPageHeader />
 
       <main className="max-w-[1280px] mx-auto w-full px-4 md:px-10 py-8 flex-1">

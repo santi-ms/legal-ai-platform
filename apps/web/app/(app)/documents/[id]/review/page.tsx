@@ -134,7 +134,7 @@ export default function DocumentReviewPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[100dvh]">
         <div className="animate-pulse text-slate-500">Cargando documento...</div>
       </div>
     );
@@ -142,7 +142,7 @@ export default function DocumentReviewPage() {
 
   if (error || !data?.document) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[100dvh]">
         <div className="text-red-500">{error || "Documento no encontrado"}</div>
       </div>
     );

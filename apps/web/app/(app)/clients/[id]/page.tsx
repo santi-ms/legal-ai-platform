@@ -223,7 +223,7 @@ export default function ClientDetailPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
@@ -231,7 +231,7 @@ export default function ClientDetailPage() {
 
   if (fetchError || !client) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6">
+      <div className="min-h-[100dvh] bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6">
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-10 flex flex-col items-center text-center gap-4 max-w-sm w-full">
           <div className="size-12 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
             <AlertTriangle className="w-6 h-6 text-red-500" />
@@ -269,7 +269,7 @@ export default function ClientDetailPage() {
       : `$${n.toLocaleString("es-AR")}`;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+    <div className="min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
       <TrackVisit
         id={client.id}
         type="client"

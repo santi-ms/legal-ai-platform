@@ -17,7 +17,7 @@ export default function StepByStepRedirectPage() {
   }, [router]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background-light dark:bg-background-dark">
+    <div className="flex items-center justify-center min-h-[100dvh] bg-background-light dark:bg-background-dark">
       <Loader2 className="w-6 h-6 animate-spin text-primary" />
     </div>
   );

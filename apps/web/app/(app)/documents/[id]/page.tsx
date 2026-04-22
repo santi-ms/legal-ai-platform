@@ -553,7 +553,7 @@ export default function DocumentDetailPage() {
 
   if (!id) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center text-sm text-gray-500">
+      <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center text-sm text-gray-500">
         Cargando id…
       </div>
     );
@@ -572,7 +572,7 @@ export default function DocumentDetailPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
           {error}
         </div>
@@ -582,7 +582,7 @@ export default function DocumentDetailPage() {
 
   if (!data?.document) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center text-sm text-gray-500">
+      <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center text-sm text-gray-500">
         Documento no encontrado.
       </div>
     );

@@ -405,7 +405,7 @@ function DocumentsContent() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[100dvh]">
         <div className="animate-pulse text-slate-500">Cargando...</div>
       </div>
     );
@@ -559,7 +559,7 @@ export default function DocumentsPage() {
   return (
     <Suspense
       fallback={
-        <div className="layout-container flex h-full grow flex-col bg-background-light dark:bg-background-dark min-h-screen">
+        <div className="layout-container flex h-full grow flex-col bg-background-light dark:bg-background-dark min-h-[100dvh]">
           <div className="max-w-[1280px] mx-auto w-full px-4 md:px-10 py-8 flex-1">
             <div className="h-10 w-64 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse mb-2" />
             <div className="h-4 w-96 rounded bg-slate-100 dark:bg-slate-800 animate-pulse mb-10" />

@@ -143,7 +143,7 @@ export default function SuperAdminPage() {
 
   if (sessionStatus === "loading") {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-parchment dark:bg-ink">
+      <div className="flex items-center justify-center min-h-[100dvh] bg-parchment dark:bg-ink">
         <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
       </div>
     );
@@ -151,7 +151,7 @@ export default function SuperAdminPage() {
 
   if (forbidden) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-parchment dark:bg-ink">
+      <div className="flex items-center justify-center min-h-[100dvh] bg-parchment dark:bg-ink">
         <div className="text-center space-y-4 max-w-md px-6">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center shadow-soft mx-auto">
             <ShieldAlert className="w-7 h-7 text-white" />
@@ -196,7 +196,7 @@ export default function SuperAdminPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-parchment dark:bg-ink text-slate-900 dark:text-slate-100">
+    <div className="min-h-[100dvh] bg-parchment dark:bg-ink text-slate-900 dark:text-slate-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 md:py-10">
         <PageHeader
           icon={ShieldAlert}

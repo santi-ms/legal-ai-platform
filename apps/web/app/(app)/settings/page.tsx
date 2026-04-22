@@ -369,7 +369,7 @@ export default function SettingsPage() {
   // ── Guards ────────────────────────────────────────────────────────────────
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[100dvh]">
         <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
       </div>
     );

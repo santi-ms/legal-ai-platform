@@ -14,7 +14,7 @@ import { SupportBanner } from "@/components/settings/SupportBanner";
  */
 export default function SettingsLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden bg-parchment dark:bg-ink font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
+    <div className="relative flex h-auto min-h-[100dvh] w-full flex-col overflow-x-hidden bg-parchment dark:bg-ink font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
       <div className="flex h-full grow flex-col">
         <div className="flex flex-1 justify-center pb-16">
           <div className="flex flex-col max-w-[1040px] w-full px-4 sm:px-6 lg:px-10">

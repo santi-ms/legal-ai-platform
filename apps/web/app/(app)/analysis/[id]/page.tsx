@@ -124,7 +124,7 @@ export default function AnalysisDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -132,7 +132,7 @@ export default function AnalysisDetailPage() {
 
   if (error || !analysis) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-4">
+      <div className="min-h-[100dvh] bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-4">
         <AlertCircle className="w-12 h-12 text-red-400" />
         <p className="text-slate-600 dark:text-slate-400">{error ?? "Análisis no encontrado"}</p>
         <Link href="/analysis" className="text-sm font-semibold text-primary hover:underline">
@@ -144,7 +144,7 @@ export default function AnalysisDetailPage() {
 
   if (analysis.status === "processing" || analysis.status === "pending") {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-5 p-6">
+      <div className="min-h-[100dvh] bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-5 p-6">
         <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
@@ -175,7 +175,7 @@ export default function AnalysisDetailPage() {
 
   if (analysis.status === "error") {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center gap-4">
+      <div className="min-h-[100dvh] bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center gap-4">
         <AlertCircle className="w-12 h-12 text-red-400" />
         <h2 className="text-lg font-bold text-slate-900 dark:text-white">Error en el análisis</h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 text-center max-w-sm">
@@ -199,7 +199,7 @@ export default function AnalysisDetailPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-6 lg:p-8">
+    <div className="min-h-[100dvh] bg-slate-50 dark:bg-slate-950 p-4 md:p-6 lg:p-8">
       {/* Track this page visit for "recently viewed" widget */}
       <TrackVisit
         id={analysis.id}

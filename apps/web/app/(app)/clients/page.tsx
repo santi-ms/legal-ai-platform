@@ -452,7 +452,7 @@ function ClientsContent() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[100dvh]">
         <div className="animate-pulse text-slate-500">Cargando...</div>
       </div>
     );
