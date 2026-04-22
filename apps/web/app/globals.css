@@ -58,9 +58,11 @@
     background: transparent;
   }
 
-  /* Color de texto base — evita texto negro sobre fondo oscuro en dark mode */
+  /* Color de texto + fondo base — evita bandas blancas por overscroll/dvh en móvil */
+  html,
   body {
-    @apply text-slate-900 dark:text-slate-100;
+    @apply bg-parchment dark:bg-slate-950 text-slate-900 dark:text-slate-100;
+    overscroll-behavior-y: none;
   }
 
   /* Inputs y textareas heredan color del body */

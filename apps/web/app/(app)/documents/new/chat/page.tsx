@@ -373,7 +373,7 @@ function ChatStep({
   onBack,
 }: ChatStepProps) {
   return (
-    <div className="flex flex-col h-[100dvh] bg-slate-50 dark:bg-slate-950">
+    <div className="flex flex-col h-[calc(100dvh-4rem)] bg-slate-50 dark:bg-slate-950">
       {/* Header */}
       <header className="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 md:px-8 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
         <button
@@ -518,7 +518,7 @@ function GeneratingStep({ label }: { label: string }) {
   }, []);
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-8">
+    <div className="min-h-full flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-8">
       <div className="max-w-md w-full text-center space-y-8">
         {/* Ícono animado */}
         <div className="relative mx-auto w-20 h-20">
@@ -601,7 +601,7 @@ function ReferenceStep({
   onSelectExpediente,
 }: ReferenceStepProps) {
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-8">
+    <div className="min-h-full flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-8">
       <div className="max-w-lg w-full space-y-6">
         {/* Icono + título */}
         <div className="text-center space-y-3">
@@ -753,7 +753,7 @@ function ResultStep({
     DOC_TYPE_LABELS[result.metadata?.documentType ?? ""] || "Documento";
 
   return (
-    <div className="min-h-[100dvh] bg-slate-50 dark:bg-slate-950 flex flex-col">
+    <div className="min-h-full bg-slate-50 dark:bg-slate-950 flex flex-col">
       {/* Header */}
       <header className="px-3 sm:px-4 md:px-8 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
@@ -852,7 +852,7 @@ function ResultStep({
 export default function ChatDocumentCreationPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center min-h-[100dvh]">
+      <div className="flex items-center justify-center min-h-full">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     }>
