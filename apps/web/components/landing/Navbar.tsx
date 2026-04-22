@@ -35,7 +35,11 @@ export function Navbar() {
           "w-full border backdrop-blur-md pointer-events-auto",
           "transition-[max-width,border-radius,background-color,border-color,box-shadow,padding] duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
           scrolled
-            ? "max-w-[960px] rounded-full border-slate-800/80 bg-ink/90 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.5)] px-5 md:px-7 py-2.5"
+            ? // Cuando el menú mobile está abierto, se baja el radius a 24px
+              // para que el dropdown no quede recortado por el pill circular.
+              mobileMenuOpen
+              ? "max-w-[1400px] rounded-3xl border-slate-800/80 bg-ink/95 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.5)] px-5 md:px-7 py-3"
+              : "max-w-[960px] rounded-full border-slate-800/80 bg-ink/90 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.5)] px-5 md:px-7 py-2.5"
             : "max-w-[1400px] rounded-[20px] border-slate-200/60 dark:border-slate-800/60 bg-background-light/70 dark:bg-background-dark/70 shadow-[0_0_0_rgba(0,0,0,0)] px-5 md:px-10 py-3.5"
         )}
       >
