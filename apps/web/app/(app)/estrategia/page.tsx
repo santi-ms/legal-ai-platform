@@ -12,7 +12,10 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { StatsGrid } from "@/components/ui/StatsGrid";
+import { StatusPill } from "@/components/ui/StatusPill";
+import { AccentStripe } from "@/components/ui/AccentStripe";
 import { cn } from "@/app/lib/utils";
+import { TOKENS, type GradientKey, type StatusKey } from "@/app/lib/design-tokens";
 import {
   listEscritos, uploadEscrito, deleteEscrito,
   EscritoAnalisis, TipoEscrito, NivelRiesgo,
@@ -50,10 +53,15 @@ const PROVINCIAS = [
   { value: "otro",         label: "Otra" },
 ];
 
-const RIESGO_CONFIG: Record<NivelRiesgo, { label: string; color: string; icon: any }> = {
-  alto:  { label: "Riesgo alto",  color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",    icon: AlertTriangle },
-  medio: { label: "Riesgo medio", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: AlertTriangle },
-  bajo:  { label: "Riesgo bajo",  color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400", icon: CheckCircle2 },
+const RIESGO_CONFIG: Record<NivelRiesgo, {
+  label: string;
+  tone: StatusKey;
+  gradient: GradientKey;
+  icon: any;
+}> = {
+  alto:  { label: "Riesgo alto",  tone: "danger",  gradient: "rose",    icon: AlertTriangle },
+  medio: { label: "Riesgo medio", tone: "warning", gradient: "amber",   icon: AlertTriangle },
+  bajo:  { label: "Riesgo bajo",  tone: "success", gradient: "emerald", icon: CheckCircle2 },
 };
 
 // ─── Upload Modal ─────────────────────────────────────────────────────────────
@@ -98,8 +106,11 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-lg">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
-            <div className="size-9 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-              <Swords className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+            <div className={cn(
+              "size-9 rounded-lg bg-gradient-to-br text-white shadow-soft flex items-center justify-center",
+              TOKENS.gradients.violet,
+            )}>
+              <Swords className="w-4 h-4" />
             </div>
             <h2 className="font-semibold text-lg">Analizar escrito contrario</h2>
           </div>
@@ -117,9 +128,9 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
             onClick={() => fileRef.current?.click()}
             className={cn(
               "border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all",
-              dragging ? "border-violet-400 bg-violet-50 dark:bg-violet-950/20" :
-              file ? "border-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20" :
-              "border-slate-300 dark:border-slate-700 hover:border-violet-400/50",
+              dragging ? "border-violet-400 bg-slate-50/60 dark:bg-slate-800/40" :
+              file ? "border-emerald-400 bg-slate-50/60 dark:bg-slate-800/40" :
+              "border-slate-300 dark:border-slate-700 hover:border-violet-400/50 hover:bg-slate-50/40 dark:hover:bg-slate-800/30",
             )}
           >
             <input ref={fileRef} type="file" accept=".pdf" className="hidden"
@@ -180,7 +191,7 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
 
           <div className="flex gap-2 pt-1">
             <Button variant="outline" onClick={onClose} className="flex-1" disabled={uploading}>Cancelar</Button>
-            <Button onClick={handleSubmit} disabled={!file || uploading} className="flex-1 bg-violet-600 hover:bg-violet-700 text-white">
+            <Button variant="ink" onClick={handleSubmit} disabled={!file || uploading} className="flex-1">
               {uploading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Subiendo...</> : <><Swords className="w-4 h-4 mr-2" />Analizar</>}
             </Button>
           </div>
@@ -275,7 +286,7 @@ export default function EstrategiaPage() {
           title="Todavía no analizaste ningún escrito"
           description="Subí un PDF de la parte contraria y Doku Estratega identifica puntos débiles, sugiere defensas y detecta riesgos procesales."
           primaryAction={
-            <Button onClick={() => setModalOpen(true)} className="bg-violet-600 hover:bg-violet-700 text-white gap-2">
+            <Button variant="ink" onClick={() => setModalOpen(true)} className="gap-2">
               <Plus className="w-4 h-4" />
               Analizar primer escrito
             </Button>
@@ -296,29 +307,31 @@ export default function EstrategiaPage() {
               const isDone       = item.status === "done";
               const riesgoCfg    = item.nivelRiesgo ? RIESGO_CONFIG[item.nivelRiesgo] : null;
 
-              const accentBar =
-                item.nivelRiesgo === "alto"  ? "from-rose-500 to-red-600" :
-                item.nivelRiesgo === "medio" ? "from-amber-500 to-orange-500" :
-                item.nivelRiesgo === "bajo"  ? "from-emerald-500 to-teal-600" :
-                isError                      ? "from-red-400 to-red-500" :
-                isProcessing                 ? "from-violet-400 to-purple-500" :
-                "from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600";
+              const accentTone: GradientKey =
+                item.nivelRiesgo === "alto"  ? "rose" :
+                item.nivelRiesgo === "medio" ? "amber" :
+                item.nivelRiesgo === "bajo"  ? "emerald" :
+                isError                      ? "rose" :
+                isProcessing                 ? "violet" :
+                "slate";
+
+              const iconGradient: GradientKey =
+                isDone    ? "violet" :
+                isError   ? "rose"   :
+                isProcessing ? "violet" :
+                "slate";
 
               return (
                 <div key={item.id} className="group relative flex items-center gap-4 pl-6 pr-5 py-4 hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors">
-                  {/* Accent lateral según riesgo */}
-                  <span
-                    className={cn("absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b", accentBar)}
-                    aria-hidden
-                  />
+                  {/* Accent editorial lateral según riesgo — stripe fino, sin pintar fondo */}
+                  <AccentStripe tone={accentTone} thickness="md" />
 
-                  {/* Icon */}
+                  {/* Icon gradient editorial */}
                   <div className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
-                    isDone ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-soft" :
-                    isError ? "bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" :
-                    isProcessing ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400" :
-                    "bg-slate-100 dark:bg-slate-800 text-slate-400",
+                    "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-white shadow-soft",
+                    isDone || isError || isProcessing
+                      ? `bg-gradient-to-br ${TOKENS.gradients[iconGradient]}`
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-400 shadow-none",
                   )}>
                     {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> :
                      isError ? <AlertTriangle className="w-4 h-4" /> :
@@ -331,13 +344,13 @@ export default function EstrategiaPage() {
                       <p className="font-semibold text-sm text-slate-900 dark:text-white truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
                         {item.originalName}
                       </p>
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full">
+                      <StatusPill tone="neutral" size="sm" uppercase>
                         {TIPO_LABELS[item.tipoEscrito]}
-                      </span>
+                      </StatusPill>
                       {riesgoCfg && (
-                        <span className={cn("text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full", riesgoCfg.color)}>
+                        <StatusPill tone={riesgoCfg.tone} size="sm" uppercase>
                           {riesgoCfg.label}
-                        </span>
+                        </StatusPill>
                       )}
                     </div>
                     <div className="flex items-center gap-2.5 mt-1 text-xs text-slate-500 dark:text-slate-400">

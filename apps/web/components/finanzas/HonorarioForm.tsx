@@ -40,6 +40,15 @@ export const ESTADO_COLORS: Record<HonorarioEstado, string> = {
   cancelado:     "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
 };
 
+/** Tones editoriales para StatusPill — reemplaza el uso directo de ESTADO_COLORS
+ *  en tablas/listados para consistencia con el resto del sistema. */
+export const ESTADO_TONES: Record<HonorarioEstado, "neutral" | "warning" | "success" | "danger"> = {
+  presupuestado: "neutral",
+  facturado:     "warning",
+  cobrado:       "success",
+  cancelado:     "danger",
+};
+
 // ─── Form ─────────────────────────────────────────────────────────────────────
 
 interface Props {

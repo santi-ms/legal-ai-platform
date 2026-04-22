@@ -28,7 +28,10 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { StatsGrid } from "@/components/ui/StatsGrid";
+import { StatusPill } from "@/components/ui/StatusPill";
+import { AccentStripe } from "@/components/ui/AccentStripe";
 import { cn } from "@/app/lib/utils";
+import { TOKENS } from "@/app/lib/design-tokens";
 import { FolderKanban, Sparkles, HardDrive } from "lucide-react";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -120,8 +123,11 @@ function UploadZone({ onUpload, uploading }: UploadZoneProps) {
         />
         {selectedFile ? (
           <>
-            <div className="size-12 rounded-xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center">
-              <CheckCircle2 className="w-6 h-6 text-green-500" />
+            <div className={cn(
+              "size-12 rounded-xl bg-gradient-to-br text-white shadow-soft flex items-center justify-center",
+              TOKENS.gradients.emerald,
+            )}>
+              <CheckCircle2 className="w-6 h-6" />
             </div>
             <p className="text-sm font-medium text-slate-900 dark:text-white text-center">
               {selectedFile.name}
@@ -131,8 +137,11 @@ function UploadZone({ onUpload, uploading }: UploadZoneProps) {
           </>
         ) : (
           <>
-            <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Upload className="w-6 h-6 text-primary" />
+            <div className={cn(
+              "size-12 rounded-xl bg-gradient-to-br text-white shadow-soft flex items-center justify-center",
+              TOKENS.gradients.sky,
+            )}>
+              <Upload className="w-6 h-6" />
             </div>
             <div className="text-center">
               <p className="text-sm font-medium text-slate-900 dark:text-white">
@@ -206,9 +215,12 @@ interface ReferenceCardProps {
 
 function ReferenceCard({ doc, onDelete, deleting }: ReferenceCardProps) {
   return (
-    <div className="flex items-start gap-3 p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-colors group">
-      <div className="flex-shrink-0 size-10 rounded-lg bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
-        <FileText className="w-5 h-5 text-red-500" />
+    <div className="flex items-start gap-3 p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-soft transition-all group">
+      <div className={cn(
+        "flex-shrink-0 size-10 rounded-lg bg-gradient-to-br text-white shadow-soft flex items-center justify-center",
+        TOKENS.gradients.rose,
+      )}>
+        <FileText className="w-5 h-5" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -216,10 +228,9 @@ function ReferenceCard({ doc, onDelete, deleting }: ReferenceCardProps) {
             {doc.originalName}
           </p>
           {doc.hasText === false && (
-            <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 rounded-full px-2 py-0.5 flex-shrink-0">
-              <AlertCircle className="w-3 h-3" />
+            <StatusPill tone="warning" size="sm" icon={AlertCircle}>
               Sin texto
-            </span>
+            </StatusPill>
           )}
         </div>
         <div className="flex items-center gap-3 mt-0.5 flex-wrap">
@@ -239,7 +250,7 @@ function ReferenceCard({ doc, onDelete, deleting }: ReferenceCardProps) {
       <button
         onClick={() => onDelete(doc.id)}
         disabled={deleting}
-        className="opacity-0 group-hover:opacity-100 flex-shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all disabled:opacity-30"
+        className="opacity-0 group-hover:opacity-100 flex-shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all disabled:opacity-30"
         title="Eliminar"
       >
         {deleting ? (
@@ -389,17 +400,21 @@ export default function ReferencesPage() {
           <div className="lg:col-span-1">
             <UploadZone onUpload={handleUpload} uploading={uploading} />
 
-            {/* Info box */}
-            <div className="mt-4 rounded-xl p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-950/40 dark:to-blue-950/30 border border-sky-200 dark:border-sky-800/60">
-              <div className="flex items-start gap-2.5">
-                <div className="flex-shrink-0 size-7 rounded-lg bg-sky-500 dark:bg-sky-600 flex items-center justify-center shadow-sm">
-                  <Sparkles className="w-3.5 h-3.5 text-white" />
+            {/* Info box editorial — sin fondo pintado, solo accent stripe */}
+            <div className="relative mt-4 rounded-xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-soft overflow-hidden">
+              <AccentStripe tone="sky" thickness="thick" />
+              <div className="flex items-start gap-2.5 pl-1">
+                <div className={cn(
+                  "flex-shrink-0 size-7 rounded-lg bg-gradient-to-br text-white shadow-soft flex items-center justify-center",
+                  TOKENS.gradients.sky,
+                )}>
+                  <Sparkles className="w-3.5 h-3.5" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs font-bold text-sky-900 dark:text-sky-200 mb-1">
+                  <p className={cn(TOKENS.eyebrow, "mb-1")}>
                     ¿Cómo funciona?
                   </p>
-                  <p className="text-xs text-sky-800 dark:text-sky-300 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     Cuando creés un documento nuevo, la IA detectará si tenés algún documento similar subido aquí y podrás elegir usarlo como referencia. La IA copiará el formato, estilo y estructura de tu documento.
                   </p>
                 </div>
@@ -441,12 +456,10 @@ export default function ReferencesPage() {
                 {grouped.map((group) => (
                   <div key={group.value}>
                     <div className="flex items-center gap-2 mb-3">
-                      <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      <h3 className={TOKENS.eyebrow}>
                         {group.label}
                       </h3>
-                      <span className="text-xs font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-full px-2 py-0.5">
-                        {group.docs.length}
-                      </span>
+                      <StatusPill tone="neutral" size="sm">{group.docs.length}</StatusPill>
                     </div>
                     <div className="space-y-2">
                       {group.docs.map((doc) => (
@@ -464,12 +477,10 @@ export default function ReferencesPage() {
                 {unknownDocs.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-3">
-                      <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      <h3 className={TOKENS.eyebrow}>
                         Otros
                       </h3>
-                      <span className="text-xs font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-full px-2 py-0.5">
-                        {unknownDocs.length}
-                      </span>
+                      <StatusPill tone="neutral" size="sm">{unknownDocs.length}</StatusPill>
                     </div>
                     <div className="space-y-2">
                       {unknownDocs.map((doc) => (

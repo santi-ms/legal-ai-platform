@@ -21,6 +21,11 @@ interface SectionCardProps {
   variant?:      "default" | "subtle" | "tinted";
   /** Si true, remueve el padding del header */
   headless?:     boolean;
+  /** Barra de acento editorial. Posicionada a la izquierda del card.
+   * Úsalo para categorizar/semántica SIN pintar fondos grandes. */
+  accent?:       GradientKey;
+  /** Lado del acento. Default: left. */
+  accentSide?:   "left" | "top";
 }
 
 /**
@@ -40,11 +45,15 @@ export const SectionCard = React.memo(function SectionCard({
   padding = "md",
   variant = "default",
   headless = false,
+  accent,
+  accentSide = "left",
 }: SectionCardProps) {
   const variantCls =
     variant === "subtle" ? TOKENS.card.subtle :
     variant === "tinted" ? TOKENS.card.tinted + " border border-slate-200/70 dark:border-slate-800/70" :
     TOKENS.card.base + " " + TOKENS.card.shadow;
+
+  const accentGradient = accent ? TOKENS.gradients[accent] : null;
 
   const padCls =
     padding === "none" ? "" :
@@ -55,7 +64,19 @@ export const SectionCard = React.memo(function SectionCard({
   const hasHeader = !headless && (Icon || eyebrow || title || description || actions);
 
   return (
-    <section className={cn(variantCls, "overflow-hidden", className)}>
+    <section className={cn(variantCls, "overflow-hidden", accent && "relative", className)}>
+      {accentGradient && (
+        <span
+          aria-hidden
+          className={cn(
+            "absolute pointer-events-none",
+            accentSide === "left"
+              ? "left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b"
+              : "top-0 left-0 right-0 h-[3px] bg-gradient-to-r",
+            accentGradient,
+          )}
+        />
+      )}
       {hasHeader && (
         <header
           className={cn(

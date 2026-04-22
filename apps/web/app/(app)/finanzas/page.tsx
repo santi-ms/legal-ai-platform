@@ -16,14 +16,17 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { StatsGrid, type StatItem } from "@/components/ui/StatsGrid";
+import { StatusPill } from "@/components/ui/StatusPill";
+import { AccentStripe } from "@/components/ui/AccentStripe";
 import { cn } from "@/app/lib/utils";
+import { TOKENS } from "@/app/lib/design-tokens";
 import {
   listHonorarios, getHonorariosStats, createHonorario, updateHonorario,
   deleteHonorario, exportHonorariosCSV,
   Honorario, HonorarioEstado, HonorarioTipo, HonorariosStats,
 } from "@/app/lib/webApi";
 import {
-  HonorarioForm, TIPO_LABELS, ESTADO_LABELS, ESTADO_COLORS,
+  HonorarioForm, TIPO_LABELS, ESTADO_LABELS, ESTADO_TONES,
 } from "@/components/finanzas/HonorarioForm";
 
 const PAGE_SIZE = 20;
@@ -117,11 +120,13 @@ const HonorarioRow = React.memo(function HonorarioRow({
 }) {
   const overdue = isOverdue(h);
   return (
-    <tr className={cn(
-      "hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors",
-      overdue && "bg-red-50/30 dark:bg-red-950/10"
-    )}>
-      <td className="px-4 py-3">
+    <tr className="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+      <td className={cn(
+        "px-4 py-3 relative",
+        overdue && "pl-5"
+      )}>
+        {/* Accent editorial sólo en la primera celda — reemplaza el tint rojo del row */}
+        {overdue && <AccentStripe tone="rose" thickness="md" />}
         <div className="font-medium text-slate-900 dark:text-white">
           {h.concepto}
         </div>
@@ -148,22 +153,22 @@ const HonorarioRow = React.memo(function HonorarioRow({
         {!h.client && !h.expediente && <span className="text-slate-300">—</span>}
       </td>
       <td className="px-4 py-3">
-        <span className={cn(
-          "inline-flex px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer hover:opacity-80",
-          ESTADO_COLORS[h.estado],
-        )}
+        <button
           onClick={() => onFilterEstado(h.estado)}
           title={`Filtrar por ${ESTADO_LABELS[h.estado]}`}
+          className="hover:opacity-80 transition-opacity"
         >
-          {ESTADO_LABELS[h.estado]}
-        </span>
+          <StatusPill tone={ESTADO_TONES[h.estado]} size="sm">
+            {ESTADO_LABELS[h.estado]}
+          </StatusPill>
+        </button>
       </td>
       <td className="px-4 py-3 text-right font-semibold text-slate-900 dark:text-white">
         {formatARS(h.monto, h.moneda)}
       </td>
       <td className={cn(
         "px-4 py-3 text-xs hidden lg:table-cell",
-        overdue ? "text-red-600 dark:text-red-400 font-semibold" : "text-slate-500 dark:text-slate-400",
+        overdue ? "text-rose-600 dark:text-rose-400 font-semibold" : "text-slate-500 dark:text-slate-400",
       )}>
         {overdue && <AlertTriangle className="w-3 h-3 inline mr-1" />}
         {formatDate(h.fechaVencimiento)}
@@ -179,7 +184,7 @@ const HonorarioRow = React.memo(function HonorarioRow({
           </button>
           <button
             onClick={() => onDelete(h.id)}
-            className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-600"
+            className="p-1.5 rounded hover:bg-rose-50 dark:hover:bg-rose-900/20 text-slate-400 hover:text-rose-600"
             title="Eliminar"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -383,8 +388,9 @@ function FinanzasContent() {
               <span className="hidden sm:inline">Exportar CSV</span>
             </Button>
             <Button
+              variant="ink"
               onClick={() => { setEditing(null); setFormOpen(true); }}
-              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20"
+              className="flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               Nuevo honorario
@@ -481,52 +487,72 @@ function FinanzasContent() {
         <div className="flex items-center gap-2 flex-wrap text-xs">
           {hasFilters && <span className="text-slate-400">Filtrando por:</span>}
           {expedienteId && (
-            <span className="bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-              <Briefcase className="w-2.5 h-2.5" />
+            <StatusPill tone="info" size="sm" icon={Briefcase}>
               {expedienteLabel || "Expediente"}
               <button
                 onClick={() => updateUrl({ expedienteId: undefined, page: "1" })}
                 aria-label="Quitar filtro de expediente"
+                className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
               >
                 <X className="w-2.5 h-2.5" />
               </button>
-            </span>
+            </StatusPill>
           )}
           {clientId && (
-            <span className="bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-              <UserIcon className="w-2.5 h-2.5" />
+            <StatusPill tone="neutral" size="sm" icon={UserIcon}>
               {clientLabelFinanzas || "Cliente"}
               <button
                 onClick={() => updateUrl({ clientId: undefined, page: "1" })}
                 aria-label="Quitar filtro de cliente"
+                className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
               >
                 <X className="w-2.5 h-2.5" />
               </button>
-            </span>
+            </StatusPill>
           )}
           {query && (
-            <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+            <StatusPill tone="neutral" size="sm">
               "{query}"
-              <button onClick={() => updateUrl({ query: undefined, page: "1" })}><X className="w-2.5 h-2.5" /></button>
-            </span>
+              <button
+                onClick={() => updateUrl({ query: undefined, page: "1" })}
+                className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </StatusPill>
           )}
           {tipo !== "all" && (
-            <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+            <StatusPill tone="neutral" size="sm">
               {TIPO_LABELS[tipo as HonorarioTipo]}
-              <button onClick={() => updateUrl({ tipo: undefined, page: "1" })}><X className="w-2.5 h-2.5" /></button>
-            </span>
+              <button
+                onClick={() => updateUrl({ tipo: undefined, page: "1" })}
+                className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </StatusPill>
           )}
           {estado !== "all" && (
-            <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+            <StatusPill tone={ESTADO_TONES[estado as HonorarioEstado]} size="sm">
               {ESTADO_LABELS[estado as HonorarioEstado]}
-              <button onClick={() => updateUrl({ estado: undefined, page: "1" })}><X className="w-2.5 h-2.5" /></button>
-            </span>
+              <button
+                onClick={() => updateUrl({ estado: undefined, page: "1" })}
+                className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </StatusPill>
           )}
           {sortBy && (
-            <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+            <StatusPill tone="neutral" size="sm">
               Ord: {sortBy} {sortDir === "asc" ? "↑" : "↓"}
-              <button onClick={() => updateUrl({ sortBy: undefined, sortDir: undefined })}><X className="w-2.5 h-2.5" /></button>
-            </span>
+              <button
+                onClick={() => updateUrl({ sortBy: undefined, sortDir: undefined })}
+                className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </StatusPill>
           )}
         </div>
       )}
@@ -547,8 +573,8 @@ function FinanzasContent() {
           primaryAction={
             !hasFilters ? (
               <Button
+                variant="ink"
                 onClick={() => { setEditing(null); setFormOpen(true); }}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 <Plus className="w-4 h-4 mr-1.5" />
                 Crear primer honorario

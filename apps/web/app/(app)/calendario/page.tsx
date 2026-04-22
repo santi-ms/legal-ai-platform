@@ -15,6 +15,9 @@ import { cn } from "@/app/lib/utils";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import { StatusPill } from "@/components/ui/StatusPill";
+import { AccentStripe } from "@/components/ui/AccentStripe";
+import { TOKENS, type GradientKey, type StatusKey } from "@/app/lib/design-tokens";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -37,50 +40,42 @@ const MATTER_LABELS: Record<string, string> = {
   otro:           "Otro",
 };
 
+/** Mapeo editorial: StatusPill tone + GradientKey para dots/stripes/icon bg.
+ * `dot` es bg-gradient class para RiskDot-style inline dots sin importar el componente. */
 const URGENCY_CONFIG: Record<DeadlineUrgency, {
-  label: string;
-  dot: string;
-  badge: string;
-  border: string;
-  bg: string;
-  text: string;
-  icon: React.ElementType;
+  label:    string;
+  tone:     StatusKey;
+  gradient: GradientKey;
+  text:     string;
+  icon:     React.ElementType;
 }> = {
   overdue: {
-    label:  "Vencido",
-    dot:    "bg-red-500",
-    badge:  "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-200 dark:border-red-800/50",
-    border: "border-red-300 dark:border-red-700",
-    bg:     "bg-red-50 dark:bg-red-950/30",
-    text:   "text-red-700 dark:text-red-300",
-    icon:   AlertCircle,
+    label:    "Vencido",
+    tone:     "danger",
+    gradient: "rose",
+    text:     "text-rose-600 dark:text-rose-400",
+    icon:     AlertCircle,
   },
   urgent: {
-    label:  "Urgente",
-    dot:    "bg-orange-500",
-    badge:  "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border border-orange-200 dark:border-orange-800/50",
-    border: "border-orange-300 dark:border-orange-700",
-    bg:     "bg-orange-50 dark:bg-orange-950/30",
-    text:   "text-orange-700 dark:text-orange-300",
-    icon:   Clock,
+    label:    "Urgente",
+    tone:     "warning",
+    gradient: "amber",
+    text:     "text-amber-600 dark:text-amber-400",
+    icon:     Clock,
   },
   warning: {
-    label:  "Próximo",
-    dot:    "bg-yellow-500",
-    badge:  "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800/50",
-    border: "border-yellow-300 dark:border-yellow-700",
-    bg:     "bg-yellow-50 dark:bg-yellow-950/30",
-    text:   "text-yellow-700 dark:text-yellow-300",
-    icon:   Clock,
+    label:    "Próximo",
+    tone:     "warning",
+    gradient: "amber",
+    text:     "text-amber-600 dark:text-amber-400",
+    icon:     Clock,
   },
   normal: {
-    label:  "Programado",
-    dot:    "bg-emerald-500",
-    badge:  "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50",
-    border: "border-emerald-300 dark:border-emerald-700",
-    bg:     "bg-emerald-50 dark:bg-emerald-950/30",
-    text:   "text-emerald-700 dark:text-emerald-300",
-    icon:   CheckCircle2,
+    label:    "Programado",
+    tone:     "success",
+    gradient: "emerald",
+    text:     "text-emerald-600 dark:text-emerald-400",
+    icon:     CheckCircle2,
   },
 };
 
@@ -213,8 +208,11 @@ export default function CalendarioPage() {
                   const cfg = URGENCY_CONFIG[u];
                   return (
                     <div key={u} className="py-3 px-2">
-                      <div className={cn("text-lg font-bold", cfg.text)}>
-                        {data.summary[u]}
+                      <div className="flex items-center justify-center gap-2">
+                        <span className={cn("w-1.5 h-1.5 rounded-full bg-gradient-to-br", TOKENS.gradients[cfg.gradient])} />
+                        <div className="text-lg font-bold text-ink dark:text-white">
+                          {data.summary[u]}
+                        </div>
                       </div>
                       <div className="text-slate-500 dark:text-slate-400 mt-0.5">{cfg.label}</div>
                     </div>
@@ -283,20 +281,31 @@ export default function CalendarioPage() {
                       key={day}
                       onClick={() => hasItems ? setSelected(isSelected ? null : dateKey) : undefined}
                       className={cn(
-                        "min-h-[80px] p-2 border-b border-r border-slate-100 dark:border-slate-800/50 text-left transition-colors relative",
+                        "min-h-[80px] p-2 border-b border-r border-slate-100 dark:border-slate-800/50 text-left transition-colors relative overflow-hidden",
                         // Wrap every 7
                         (firstDayOfMonth + day - 1) % 7 === 6 && "border-r-0",
                         hasItems  ? "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50" : "cursor-default",
-                        isSelected && "ring-2 ring-inset ring-primary",
-                        !isSelected && worstUrgency && URGENCY_CONFIG[worstUrgency].bg
+                        isSelected && "ring-2 ring-inset ring-ink dark:ring-white",
                       )}
                     >
+                      {/* Accent editorial — reemplaza el fondo de color saturado.
+                          Stripe inferior gradient indica la peor urgencia del día. */}
+                      {worstUrgency && !isSelected && (
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "absolute left-0 right-0 bottom-0 h-[3px] bg-gradient-to-r pointer-events-none",
+                            TOKENS.gradients[URGENCY_CONFIG[worstUrgency].gradient],
+                          )}
+                        />
+                      )}
+
                       {/* Day number */}
                       <span
                         className={cn(
                           "inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-semibold",
                           isToday
-                            ? "bg-primary text-white"
+                            ? "bg-ink text-white dark:bg-white dark:text-ink shadow-soft"
                             : "text-slate-700 dark:text-slate-300"
                         )}
                       >
@@ -306,21 +315,24 @@ export default function CalendarioPage() {
                       {/* Deadline dots + vencimiento dots */}
                       {hasItems && (
                         <div className="mt-1 flex flex-wrap gap-1">
-                          {/* Expediente deadline dots */}
+                          {/* Expediente deadline dots — gradient editorial */}
                           {items.slice(0, 2).map((item) => (
                             <span
                               key={`exp_${item.id}`}
                               className={cn(
-                                "inline-block w-2 h-2 rounded-full",
-                                URGENCY_CONFIG[item.urgency].dot
+                                "inline-block w-2 h-2 rounded-full bg-gradient-to-br shadow-soft",
+                                TOKENS.gradients[URGENCY_CONFIG[item.urgency].gradient]
                               )}
                             />
                           ))}
-                          {/* Vencimiento dots — blue */}
+                          {/* Vencimiento dots — gradient sky editorial */}
                           {vencItems.slice(0, 2).map((item) => (
                             <span
                               key={`venc_${item.id}`}
-                              className="inline-block w-2 h-2 rounded-full bg-blue-500"
+                              className={cn(
+                                "inline-block w-2 h-2 rounded-full bg-gradient-to-br shadow-soft",
+                                TOKENS.gradients.sky,
+                              )}
                             />
                           ))}
                           {totalCount > 4 && (
@@ -343,13 +355,13 @@ export default function CalendarioPage() {
               const cfg = URGENCY_CONFIG[u];
               return (
                 <div key={u} className="flex items-center gap-1.5">
-                  <span className={cn("w-2.5 h-2.5 rounded-full", cfg.dot)} />
+                  <span className={cn("w-2.5 h-2.5 rounded-full bg-gradient-to-br shadow-soft", TOKENS.gradients[cfg.gradient])} />
                   <span className="text-xs text-slate-500 dark:text-slate-400">{cfg.label}</span>
                 </div>
               );
             })}
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+              <span className={cn("w-2.5 h-2.5 rounded-full bg-gradient-to-br shadow-soft", TOKENS.gradients.sky)} />
               <span className="text-xs text-slate-500 dark:text-slate-400">Módulo vencimientos</span>
             </div>
           </div>
@@ -449,12 +461,12 @@ function UpcomingDeadlinesSidebar({
         </h3>
         <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+            <span className={cn("w-2 h-2 rounded-full bg-gradient-to-br inline-block shadow-soft", TOKENS.gradients.rose)} />
             {allItems.length} exp.
           </span>
           {totalVencimientos > 0 && (
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+              <span className={cn("w-2 h-2 rounded-full bg-gradient-to-br inline-block shadow-soft", TOKENS.gradients.sky)} />
               {totalVencimientos} venc.
             </span>
           )}
@@ -481,18 +493,26 @@ function UpcomingDeadlinesSidebar({
       ) : (
         <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[70vh] overflow-y-auto">
           {urgent.length > 0 && (
-            <div className="px-4 py-2 bg-red-50 dark:bg-red-950/20">
-              <p className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wide">
-                Vencidos / Urgentes ({urgent.length})
-              </p>
+            <div className="relative px-4 py-2.5 bg-slate-50/60 dark:bg-slate-800/40">
+              <AccentStripe tone="rose" thickness="thick" />
+              <div className="flex items-center gap-2 pl-1">
+                <p className={TOKENS.eyebrow}>
+                  Vencidos / Urgentes
+                </p>
+                <StatusPill tone="danger" size="sm">{urgent.length}</StatusPill>
+              </div>
             </div>
           )}
           {urgent.map(item => <DeadlineCard key={item.id} item={item} />)}
           {upcoming.length > 0 && (
-            <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-                Próximos ({upcoming.length})
-              </p>
+            <div className="relative px-4 py-2.5 bg-slate-50/60 dark:bg-slate-800/40">
+              <AccentStripe tone="sky" thickness="thick" />
+              <div className="flex items-center gap-2 pl-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                  Próximos
+                </p>
+                <StatusPill tone="info" size="sm">{upcoming.length}</StatusPill>
+              </div>
             </div>
           )}
           {upcoming.map(item => <DeadlineCard key={item.id} item={item} />)}
@@ -518,6 +538,8 @@ const VENC_TIPO_LABEL: Record<string, string> = {
 
 function VencimientoCard({ item }: { item: CalendarVencimientoItem }) {
   const isOverdue = item.estado === "vencido";
+  const gradient: GradientKey = isOverdue ? "rose" : "sky";
+  const tone: StatusKey = isOverdue ? "danger" : "info";
   const deadlineDate = new Date(item.fechaVencimiento).toLocaleDateString("es-AR", {
     day: "numeric",
     month: "short",
@@ -530,36 +552,26 @@ function VencimientoCard({ item }: { item: CalendarVencimientoItem }) {
     >
       <div className="flex items-start gap-3">
         <div className={cn(
-          "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 border",
-          isOverdue
-            ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800"
-            : "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800"
+          "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 bg-gradient-to-br text-white shadow-soft",
+          TOKENS.gradients[gradient],
         )}>
-          <Bell className={cn("w-4 h-4", isOverdue ? "text-red-500" : "text-blue-500")} />
+          <Bell className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
             {item.titulo}
           </p>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span className={cn(
-              "text-[10px] font-semibold px-1.5 py-0.5 rounded",
-              isOverdue
-                ? "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300"
-                : "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
-            )}>
+            <StatusPill tone={tone} size="sm">
               {isOverdue ? "Vencido" : "Pendiente"}
-            </span>
+            </StatusPill>
             <span className="text-[10px] text-slate-400">
               {VENC_TIPO_LABEL[item.tipo] ?? item.tipo}
             </span>
           </div>
         </div>
         <div className="text-right flex-shrink-0">
-          <span className={cn(
-            "text-xs font-semibold",
-            isOverdue ? "text-red-600 dark:text-red-400" : "text-blue-600 dark:text-blue-400"
-          )}>
+          <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
             {deadlineDate}
           </span>
         </div>
@@ -585,8 +597,11 @@ function DeadlineCard({ item }: { item: CalendarDeadlineItem }) {
       className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
     >
       <div className="flex items-start gap-3">
-        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5", cfg.bg, cfg.border, "border")}>
-          <Icon className={cn("w-4 h-4", cfg.text)} />
+        <div className={cn(
+          "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 bg-gradient-to-br text-white shadow-soft",
+          TOKENS.gradients[cfg.gradient],
+        )}>
+          <Icon className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
@@ -598,9 +613,7 @@ function DeadlineCard({ item }: { item: CalendarDeadlineItem }) {
             </p>
           )}
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded", cfg.badge)}>
-              {cfg.label}
-            </span>
+            <StatusPill tone={cfg.tone} size="sm">{cfg.label}</StatusPill>
             <span className="text-[10px] text-slate-400">
               {MATTER_LABELS[item.matter] ?? item.matter}
             </span>
@@ -612,7 +625,7 @@ function DeadlineCard({ item }: { item: CalendarDeadlineItem }) {
           </div>
         </div>
         <div className="text-right flex-shrink-0">
-          <span className={cn("text-xs font-semibold", cfg.text)}>{deadlineDate}</span>
+          <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{deadlineDate}</span>
         </div>
       </div>
     </Link>

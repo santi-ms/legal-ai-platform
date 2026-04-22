@@ -15,7 +15,10 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { StatsGrid, type StatItem } from "@/components/ui/StatsGrid";
+import { StatusPill } from "@/components/ui/StatusPill";
+import { AccentStripe } from "@/components/ui/AccentStripe";
 import { cn } from "@/app/lib/utils";
+import { TOKENS, type GradientKey, type StatusKey } from "@/app/lib/design-tokens";
 import {
   listVencimientos, getVencimientoStats, createVencimiento, updateVencimiento,
   completeVencimiento, reopenVencimiento, deleteVencimiento, exportVencimientosCSV,
@@ -40,19 +43,24 @@ function daysUntil(dateStr: string): number {
   return Math.round((date.getTime() - now.getTime()) / 86_400_000);
 }
 
+/** Info editorial: tone semántico (pill) + accent (gradient stripe) + label.
+ * NO devuelve clases de fondo: la semántica se expresa con pill + stripe,
+ * no pintando el fondo del card. */
 function urgencyInfo(v: Vencimiento): {
-  color: string; bg: string; border: string; badge: string; label: string
+  tone:   StatusKey;
+  accent: GradientKey;
+  label:  string;
 } {
   if (v.estado === "completado") {
-    return { color: "text-slate-500", bg: "bg-slate-50 dark:bg-slate-800/30", border: "border-slate-200 dark:border-slate-700", badge: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400", label: "Completado" };
+    return { tone: "neutral", accent: "slate", label: "Completado" };
   }
   const d = daysUntil(v.fechaVencimiento);
-  if (d < 0)  return { color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/10",      border: "border-red-200 dark:border-red-800",      badge: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",      label: `Vencido hace ${Math.abs(d)}d` };
-  if (d === 0) return { color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/10",     border: "border-red-200 dark:border-red-800",      badge: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",      label: "Vence hoy" };
-  if (d <= 3)  return { color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-900/10", border: "border-orange-200 dark:border-orange-800", badge: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400", label: `En ${d} día${d !== 1 ? "s" : ""}` };
-  if (d <= 7)  return { color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/10",  border: "border-amber-200 dark:border-amber-800",   badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",  label: `En ${d} días` };
-  if (d <= 30) return { color: "text-blue-600",  bg: "bg-blue-50 dark:bg-blue-900/10",    border: "border-blue-100 dark:border-blue-800",      badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",    label: `En ${d} días` };
-  return       { color: "text-slate-600", bg: "bg-slate-50 dark:bg-slate-800/30",         border: "border-slate-200 dark:border-slate-700",    badge: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400",   label: `En ${d} días` };
+  if (d < 0)   return { tone: "danger",  accent: "rose",    label: `Vencido hace ${Math.abs(d)}d` };
+  if (d === 0) return { tone: "danger",  accent: "rose",    label: "Vence hoy" };
+  if (d <= 3)  return { tone: "warning", accent: "amber",   label: `En ${d} día${d !== 1 ? "s" : ""}` };
+  if (d <= 7)  return { tone: "warning", accent: "amber",   label: `En ${d} días` };
+  if (d <= 30) return { tone: "info",    accent: "sky",     label: `En ${d} días` };
+  return       { tone: "neutral", accent: "slate",   label: `En ${d} días` };
 }
 
 // ─── Modal de Crear/Editar ─────────────────────────────────────────────────────
@@ -268,10 +276,12 @@ const VencimientoItem = React.memo(function VencimientoItem({
 
   return (
     <div className={cn(
-      "flex items-start gap-3 p-4 rounded-xl border transition-all",
-      u.bg, u.border,
+      "relative flex items-start gap-3 pl-5 pr-4 py-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-soft",
       venc.estado === "completado" && "opacity-60"
     )}>
+      {/* Accent editorial — reemplaza los fondos rojo/ámbar/azul */}
+      <AccentStripe tone={u.accent} thickness="md" />
+
       {/* Complete toggle */}
       <button
         onClick={() => venc.estado === "completado" ? onReopen(venc.id) : onComplete(venc.id)}
@@ -297,9 +307,9 @@ const VencimientoItem = React.memo(function VencimientoItem({
           )}>
             {venc.titulo}
           </span>
-          <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0", u.badge)}>
+          <StatusPill tone={u.tone} size="sm" className="flex-shrink-0">
             {u.label}
-          </span>
+          </StatusPill>
         </div>
 
         <div className="mt-1 flex items-center gap-3 flex-wrap text-xs text-slate-500 dark:text-slate-400">
@@ -307,7 +317,7 @@ const VencimientoItem = React.memo(function VencimientoItem({
             <Calendar className="w-3 h-3" />
             {fmtDate(venc.fechaVencimiento)}
           </span>
-          <span className="px-1.5 py-0.5 rounded bg-white/60 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+          <span className="px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
             {TIPO_LABELS[venc.tipo] ?? venc.tipo}
           </span>
           {venc.expediente && (
@@ -336,7 +346,7 @@ const VencimientoItem = React.memo(function VencimientoItem({
       <div className="flex-shrink-0 flex items-center gap-1">
         <button
           onClick={() => onEdit(venc)}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white/60 dark:hover:bg-slate-800/60 transition-colors"
+          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           title="Editar"
         >
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -346,7 +356,7 @@ const VencimientoItem = React.memo(function VencimientoItem({
         </button>
         <button
           onClick={() => setDelConfirm(true)}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
           title="Eliminar"
         >
           <Trash2 className="w-3.5 h-3.5" />
@@ -577,14 +587,20 @@ function VencimientosContent() {
 
       {/* ── Alerts banner: critical ───────────────────────────────────────────── */}
       {stats && (stats.vencidos > 0 || stats.proximos3d > 0) && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+        <div className="relative flex items-center gap-3 pl-5 pr-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm text-slate-700 dark:text-slate-200 shadow-soft">
+          <AccentStripe tone={stats.vencidos > 0 ? "rose" : "amber"} thickness="thick" />
+          <div className={cn(
+            "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br text-white",
+            TOKENS.gradients[stats.vencidos > 0 ? "rose" : "amber"],
+          )}>
+            <AlertTriangle className="w-4 h-4" />
+          </div>
           <span>
             {stats.vencidos > 0 && (
-              <><strong>{stats.vencidos} vencimiento{stats.vencidos !== 1 ? "s" : ""} vencido{stats.vencidos !== 1 ? "s" : ""}</strong>.</>
+              <><strong className="text-ink dark:text-white">{stats.vencidos} vencimiento{stats.vencidos !== 1 ? "s" : ""} vencido{stats.vencidos !== 1 ? "s" : ""}</strong>.</>
             )}
             {stats.proximos3d > 0 && stats.vencidos === 0 && (
-              <><strong>{stats.proximos3d} vencimiento{stats.proximos3d !== 1 ? "s" : ""}</strong> en los próximos 3 días.</>
+              <><strong className="text-ink dark:text-white">{stats.proximos3d} vencimiento{stats.proximos3d !== 1 ? "s" : ""}</strong> en los próximos 3 días.</>
             )}
             {stats.proximos3d > 0 && stats.vencidos > 0 && (
               <> Además, {stats.proximos3d} vence{stats.proximos3d !== 1 ? "n" : ""} en los próximos 3 días.</>
@@ -622,9 +638,9 @@ function VencimientosContent() {
                 key={e}
                 onClick={() => setFilterEstado(e)}
                 className={cn(
-                  "px-3 py-1.5 transition-colors",
+                  "px-3 py-1.5 font-medium transition-colors",
                   filterEstado === e
-                    ? "bg-violet-500 text-white"
+                    ? "bg-ink text-white dark:bg-white dark:text-ink"
                     : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
                 )}
               >
@@ -650,8 +666,7 @@ function VencimientosContent() {
 
           {/* Expediente filter chip */}
           {filterExpedienteId && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-xl text-xs text-violet-700 dark:text-violet-300 font-medium">
-              <Briefcase className="w-3 h-3 flex-shrink-0" />
+            <StatusPill tone="info" size="sm" icon={Briefcase}>
               <span className="truncate max-w-[160px]">{expedienteLabel || "Expediente"}</span>
               <button
                 onClick={() => {
@@ -662,18 +677,17 @@ function VencimientosContent() {
                   const qs = p.toString();
                   router.replace(`/vencimientos${qs ? `?${qs}` : ""}`);
                 }}
-                className="ml-0.5 text-violet-400 hover:text-violet-700 dark:hover:text-violet-200 transition-colors"
+                className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
                 aria-label="Quitar filtro de expediente"
               >
                 <X className="w-3 h-3" />
               </button>
-            </div>
+            </StatusPill>
           )}
 
           {/* Client filter chip */}
           {filterClientId && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded-xl text-xs text-sky-700 dark:text-sky-300 font-medium">
-              <User className="w-3 h-3 flex-shrink-0" />
+            <StatusPill tone="neutral" size="sm" icon={User}>
               <span className="truncate max-w-[160px]">{clientLabel || "Cliente"}</span>
               <button
                 onClick={() => {
@@ -683,12 +697,12 @@ function VencimientosContent() {
                   const qs = p.toString();
                   router.replace(`/vencimientos${qs ? `?${qs}` : ""}`);
                 }}
-                className="ml-0.5 text-sky-400 hover:text-sky-700 dark:hover:text-sky-200 transition-colors"
+                className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
                 aria-label="Quitar filtro de cliente"
               >
                 <X className="w-3 h-3" />
               </button>
-            </div>
+            </StatusPill>
           )}
 
           {(searchQuery || filterEstado !== "todos" || filterTipo !== "todos" || filterExpedienteId || filterClientId) && (
@@ -752,7 +766,7 @@ function VencimientosContent() {
 
           {/* Vencidos */}
           {vencidos.length > 0 && (
-            <Section title="⚠️ Vencidos" count={vencidos.length} urgent>
+            <Section title="Vencidos" count={vencidos.length} tone="danger">
               {vencidos.map((v) => (
                 <VencimientoItem key={v.id} venc={v}
                   onComplete={handleComplete} onReopen={handleReopen}
@@ -764,7 +778,7 @@ function VencimientosContent() {
 
           {/* Hoy */}
           {hoy.length > 0 && (
-            <Section title="🔴 Vence hoy" count={hoy.length} urgent>
+            <Section title="Vence hoy" count={hoy.length} tone="danger">
               {hoy.map((v) => (
                 <VencimientoItem key={v.id} venc={v}
                   onComplete={handleComplete} onReopen={handleReopen}
@@ -776,7 +790,7 @@ function VencimientosContent() {
 
           {/* Esta semana */}
           {semana.length > 0 && (
-            <Section title="Esta semana" count={semana.length}>
+            <Section title="Esta semana" count={semana.length} tone="warning">
               {semana.map((v) => (
                 <VencimientoItem key={v.id} venc={v}
                   onComplete={handleComplete} onReopen={handleReopen}
@@ -788,7 +802,7 @@ function VencimientosContent() {
 
           {/* Este mes */}
           {mes.length > 0 && (
-            <Section title="Este mes" count={mes.length}>
+            <Section title="Este mes" count={mes.length} tone="info">
               {mes.map((v) => (
                 <VencimientoItem key={v.id} venc={v}
                   onComplete={handleComplete} onReopen={handleReopen}
@@ -800,7 +814,7 @@ function VencimientosContent() {
 
           {/* Futuros */}
           {futuros.length > 0 && (
-            <Section title="Próximos (+30 días)" count={futuros.length}>
+            <Section title="Próximos (+30 días)" count={futuros.length} tone="neutral">
               {futuros.map((v) => (
                 <VencimientoItem key={v.id} venc={v}
                   onComplete={handleComplete} onReopen={handleReopen}
@@ -812,7 +826,7 @@ function VencimientosContent() {
 
           {/* Completados */}
           {completados.length > 0 && (filterEstado === "todos" || filterEstado === "completado") && (
-            <Section title="Completados" count={completados.length} collapsed>
+            <Section title="Completados" count={completados.length} tone="success" collapsed>
               {completados.map((v) => (
                 <VencimientoItem key={v.id} venc={v}
                   onComplete={handleComplete} onReopen={handleReopen}
@@ -853,13 +867,13 @@ export default function VencimientosPage() {
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 
 function Section({
-  title, count, urgent = false, collapsed = false, children,
+  title, count, tone = "neutral", collapsed = false, children,
 }: {
-  title:     string;
-  count:     number;
-  urgent?:   boolean;
+  title:      string;
+  count:      number;
+  tone?:      StatusKey;
   collapsed?: boolean;
-  children:  React.ReactNode;
+  children:   React.ReactNode;
 }) {
   const [open, setOpen] = useState(!collapsed);
 
@@ -869,20 +883,12 @@ function Section({
         className="flex items-center gap-2 mb-3 w-full text-left group"
         onClick={() => setOpen((v) => !v)}
       >
-        <h2 className={cn(
-          "text-sm font-semibold",
-          urgent ? "text-red-600 dark:text-red-400" : "text-slate-700 dark:text-slate-300"
-        )}>
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
           {title}
         </h2>
-        <span className={cn(
-          "text-xs px-1.5 py-0.5 rounded-full font-medium",
-          urgent
-            ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-            : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
-        )}>
+        <StatusPill tone={tone} size="sm">
           {count}
-        </span>
+        </StatusPill>
         <ChevronDown className={cn(
           "w-4 h-4 ml-auto text-slate-400 transition-transform",
           open && "rotate-180"
