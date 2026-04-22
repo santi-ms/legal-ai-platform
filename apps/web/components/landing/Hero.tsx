@@ -318,7 +318,7 @@ export function Hero() {
 
   return (
     <header
-      className="relative isolate overflow-hidden pt-28 pb-24 px-6 md:px-20 bg-parchment dark:bg-ink"
+      className="relative isolate overflow-hidden pt-44 md:pt-52 pb-24 px-6 md:px-20 bg-parchment dark:bg-ink"
       id="inicio"
     >
       {/* Mesh blobs decorativos — grandes, difusos, editoriales */}
