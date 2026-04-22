@@ -494,10 +494,17 @@ function BillingPageContent() {
   }, [isAuthenticated]);
 
   // hasActiveSub: true cuando el usuario tiene plan activo, trial o cancelación pendiente
+  // Y además está en un plan pagado. Si el plan efectivo es Free (puede pasar si
+  // los datos quedan inconsistentes: status=active apuntando a plan Free), tratamos
+  // al usuario como "sin suscripción" para que el upgrade vaya por /billing/checkout
+  // en vez de /billing/change-plan (que calcularía un prorrateo absurdo contra $0).
+  const subStatus = billing?.subscription?.status;
+  const onPaidPlan = (billing?.plan?.code ?? "free") !== "free";
   const hasActiveSub =
-    billing?.subscription?.status === "active" ||
-    billing?.subscription?.status === "trialing" ||
-    billing?.subscription?.status === "canceling";
+    onPaidPlan &&
+    (subStatus === "active" ||
+      subStatus === "trialing" ||
+      subStatus === "canceling");
 
   const isCanceling = billing?.subscription?.status === "canceling";
 

@@ -377,6 +377,19 @@ export async function registerBillingRoutes(app: FastifyInstance) {
     }
 
     const existingPlanCode = (existingSub.plan as any)?.code ?? "";
+
+    // Si el plan actual es Free no hay nada "de pagado" sobre lo cual prorratear:
+    // el usuario debe ir por el flujo de checkout normal (/billing/checkout) para
+    // autorizar una suscripción nueva. Devolver 409 para que el cliente reintente
+    // por el path correcto.
+    if (existingPlanCode === "free") {
+      return reply.status(409).send({
+        ok: false,
+        error: "UPGRADE_FROM_FREE_USE_CHECKOUT",
+        message: "Para pasar de Free a un plan pagado usá el flujo de checkout.",
+      });
+    }
+
     if (existingPlanCode === planCode) {
       return reply.status(409).send({ ok: false, error: "SAME_PLAN", message: "Ya estás en ese plan." });
     }
