@@ -107,7 +107,7 @@ export function Features() {
         </Reveal>
 
         {/* Bento grid con stagger */}
-        <RevealStagger className="grid grid-cols-1 lg:grid-cols-12 gap-5 auto-rows-fr" stagger={0.12}>
+        <RevealStagger className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:auto-rows-fr" stagger={0.12}>
           {/* ── Card 1: Doku Genera (grande, 7×2) ───────────────── */}
           <StaggerItem className="lg:col-span-7 lg:row-span-2">
           <article className="relative group rounded-3xl overflow-hidden bg-gradient-to-br from-primary via-primary to-indigo-600 text-white p-8 md:p-10 flex flex-col h-full min-h-[480px] shadow-soft hover:shadow-hover transition-all duration-500">
@@ -247,7 +247,7 @@ function SmallFeatureCard({
   return (
     <article
       className={cn(
-        "relative h-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-7 md:p-8 flex flex-col gap-4 shadow-soft hover:shadow-hover transition-all duration-300",
+        "relative lg:h-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-7 md:p-8 flex flex-col gap-4 shadow-soft hover:shadow-hover transition-all duration-300",
         accentClasses.hoverBorder
       )}
     >
@@ -273,7 +273,7 @@ function SmallFeatureCard({
         {feature.description}
       </p>
 
-      <ul className="space-y-2 pt-2 mt-auto">
+      <ul className="space-y-2 pt-2 lg:mt-auto">
         {feature.features.map((f) => (
           <li key={f} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
             <div

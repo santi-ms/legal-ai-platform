@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowRight, Clock, Shield, Sparkles, Mail, KeyRound } from "lucide-react";
 import type { ReactNode } from "react";
+import { Starfield } from "./Starfield";
 
 export type AuthPanelVariant = "login" | "register" | "reset" | "verify";
 
@@ -140,27 +141,8 @@ export function AuthSidePanel({ variant }: AuthSidePanelProps) {
 
   return (
     <aside className="relative hidden lg:flex lg:w-[44%] xl:w-[42%] bg-ink text-white overflow-hidden isolate">
-      {/* Mesh blob primary — esquina superior derecha */}
-      <div
-        aria-hidden="true"
-        className="absolute -top-32 -right-32 w-[520px] h-[520px] bg-primary/30 rounded-full blur-[140px] animate-mesh-drift"
-      />
-      {/* Mesh blob gold — esquina inferior izquierda */}
-      <div
-        aria-hidden="true"
-        className="absolute -bottom-32 -left-32 w-[420px] h-[420px] bg-gold/20 rounded-full blur-[120px] animate-mesh-drift"
-        style={{ animationDelay: "-9s" }}
-      />
-
-      {/* Noise SVG para textura editorial */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 opacity-[0.07] pointer-events-none"
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-        }}
-      />
+      {/* Starfield de paralaje — reemplaza mesh blobs + noise SVG */}
+      <Starfield />
 
       {/* Contenido */}
       <div className="relative z-10 flex flex-col w-full px-12 py-14">
