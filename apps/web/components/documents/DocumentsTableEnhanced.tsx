@@ -13,6 +13,8 @@ import {
   FolderOpen,
   Loader2,
   CheckSquare,
+  Eye,
+  Pencil,
 } from "lucide-react";
 import { Document } from "@/app/lib/webApi";
 import { formatDate, formatDocumentType } from "@/app/lib/format";
@@ -35,7 +37,24 @@ interface DocumentsTableEnhancedProps {
 export function DocumentsTableSkeleton() {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-      <div className="overflow-x-auto">
+      {/* Mobile skeleton — cards */}
+      <div className="md:hidden divide-y divide-slate-200 dark:divide-slate-700">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="p-4 animate-pulse">
+            <div className="flex items-start gap-3">
+              <div className="size-10 rounded bg-slate-200 dark:bg-slate-700 flex-shrink-0" />
+              <div className="flex-1 space-y-2 min-w-0">
+                <div className="h-3.5 w-36 rounded bg-slate-200 dark:bg-slate-700" />
+                <div className="h-2.5 w-24 rounded bg-slate-100 dark:bg-slate-800" />
+                <div className="h-5 w-20 rounded-full bg-slate-200 dark:bg-slate-700" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop skeleton — table */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
@@ -174,34 +193,161 @@ function BulkToolbar({
   isDeleting: boolean;
 }) {
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 px-5 py-3 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl shadow-2xl shadow-black/30 animate-fade-in">
-      <div className="flex items-center gap-2">
-        <CheckSquare className="w-4 h-4 text-primary" />
-        <span className="text-sm font-semibold">
-          {count} {count === 1 ? "documento seleccionado" : "documentos seleccionados"}
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl shadow-2xl shadow-black/30 animate-fade-in max-w-[calc(100vw-1rem)]">
+      <div className="flex items-center gap-2 min-w-0">
+        <CheckSquare className="w-4 h-4 text-primary flex-shrink-0" />
+        <span className="text-xs sm:text-sm font-semibold truncate">
+          <span className="hidden sm:inline">{count} {count === 1 ? "documento seleccionado" : "documentos seleccionados"}</span>
+          <span className="sm:hidden">{count} sel.</span>
         </span>
       </div>
-      <div className="w-px h-5 bg-slate-600 dark:bg-slate-300" />
+      <div className="w-px h-5 bg-slate-600 dark:bg-slate-300 flex-shrink-0" />
       <button
         onClick={onDelete}
         disabled={isDeleting}
-        className="flex items-center gap-1.5 text-sm font-semibold text-red-400 hover:text-red-300 dark:text-red-600 dark:hover:text-red-700 disabled:opacity-50 transition-colors"
+        className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-red-400 hover:text-red-300 dark:text-red-600 dark:hover:text-red-700 disabled:opacity-50 transition-colors flex-shrink-0"
       >
         {isDeleting ? (
           <Loader2 className="w-4 h-4 animate-spin" />
         ) : (
           <Trash2 className="w-4 h-4" />
         )}
-        Eliminar {count === 1 ? "documento" : "seleccionados"}
+        <span className="hidden sm:inline">Eliminar {count === 1 ? "documento" : "seleccionados"}</span>
+        <span className="sm:hidden">Eliminar</span>
       </button>
-      <div className="w-px h-5 bg-slate-600 dark:bg-slate-300" />
+      <div className="hidden sm:block w-px h-5 bg-slate-600 dark:bg-slate-300" />
       <button
         onClick={onClear}
         disabled={isDeleting}
-        className="text-sm text-slate-400 hover:text-white dark:text-slate-500 dark:hover:text-slate-900 transition-colors disabled:opacity-50"
+        className="hidden sm:inline text-sm text-slate-400 hover:text-white dark:text-slate-500 dark:hover:text-slate-900 transition-colors disabled:opacity-50"
       >
         Deseleccionar
       </button>
+    </div>
+  );
+}
+
+// ─── Mobile Card Row ──────────────────────────────────────────────────────────
+
+function DocumentMobileCard({
+  doc,
+  isSelected,
+  onToggle,
+  onDownload,
+  onDelete,
+  isDownloading,
+  isDeleting,
+}: {
+  doc: Document;
+  isSelected: boolean;
+  onToggle: () => void;
+  onDownload: () => void;
+  onDelete: () => void;
+  isDownloading: boolean;
+  isDeleting: boolean;
+}) {
+  const status = doc.estado || "DRAFT";
+  const statusInfo = getStatusConfig(status);
+  const iconInfo = getDocumentIcon(doc.type || "");
+  const Icon = iconInfo.icon;
+
+  return (
+    <div
+      className={cn(
+        "p-4 transition-colors",
+        isSelected ? "bg-primary/5 dark:bg-primary/10" : "bg-white dark:bg-slate-800",
+        isDeleting && "opacity-50 pointer-events-none"
+      )}
+    >
+      <div className="flex items-start gap-3">
+        {/* Checkbox — hit area 44x44 */}
+        <label className="flex-shrink-0 p-2 -m-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={onToggle}
+            className="w-5 h-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary cursor-pointer"
+            aria-label={`Seleccionar documento ${doc.id}`}
+          />
+        </label>
+
+        {/* Icon */}
+        <div className={cn("size-10 rounded flex items-center justify-center flex-shrink-0", iconInfo.color)}>
+          <Icon className="w-5 h-5" />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+            {formatDocumentType(doc.type)}
+          </div>
+          {doc.matchSnippet ? (
+            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate italic">
+              {doc.matchSnippet}
+            </div>
+          ) : (
+            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {doc.client?.name || `ID: ${doc.id.slice(0, 8)}`}
+            </div>
+          )}
+
+          {/* Status + meta */}
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium", statusInfo.className)}>
+              <span className={cn("size-1.5 rounded-full mr-1", statusInfo.dotColor)} />
+              {statusInfo.label}
+            </span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              {formatRelativeDate(doc.createdAt)}
+            </span>
+            {doc.jurisdiccion && (
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                · {doc.jurisdiccion}
+              </span>
+            )}
+          </div>
+
+          {/* Actions — 44x44 targets */}
+          <div className="flex items-center gap-1 mt-3 -ml-2">
+            <Link
+              href={`/documents/${doc.id}`}
+              className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              <Eye className="w-4 h-4" />
+              Ver
+            </Link>
+            <Link
+              href={`/documents/${doc.id}/edit`}
+              className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              <Pencil className="w-4 h-4" />
+              Editar
+            </Link>
+            <button
+              type="button"
+              onClick={onDownload}
+              disabled={isDownloading}
+              className="inline-flex items-center p-2 rounded-lg text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700 disabled:opacity-40"
+              aria-label="Descargar PDF"
+            >
+              {isDownloading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={isDeleting}
+              className="inline-flex items-center p-2 rounded-lg text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-40 ml-auto"
+              aria-label="Eliminar documento"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -297,7 +443,49 @@ export function DocumentsTableEnhanced({
   return (
     <>
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* ─── Mobile: card list ───────────────────────────────────────── */}
+        <div className="md:hidden">
+          {documents.length === 0 ? (
+            <DocumentsEmptyState hasActiveFilters={hasActiveFilters} />
+          ) : (
+            <>
+              {/* Mobile select-all bar */}
+              <div className="px-4 py-2 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
+                <label className="inline-flex items-center gap-2 cursor-pointer p-1 -m-1">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                    onChange={toggleAll}
+                    className="w-5 h-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary cursor-pointer"
+                    aria-label="Seleccionar todos"
+                  />
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                    {allSelected ? "Deseleccionar todos" : "Seleccionar todos"}
+                  </span>
+                </label>
+              </div>
+
+              <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                {documents.map((doc) => (
+                  <DocumentMobileCard
+                    key={doc.id}
+                    doc={doc}
+                    isSelected={selectedIds.has(doc.id)}
+                    onToggle={() => toggleOne(doc.id)}
+                    onDownload={() => handleDownload(doc.id)}
+                    onDelete={() => setConfirmingId(doc.id)}
+                    isDownloading={downloadingId === doc.id}
+                    isDeleting={deletingId === doc.id}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ─── Desktop: table ─────────────────────────────────────────── */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
@@ -315,10 +503,10 @@ export function DocumentsTableEnhanced({
                 </th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Documento</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hidden lg:table-cell">Cliente</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Jurisdicción</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hidden xl:table-cell">Jurisdicción</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Última Modificación</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Estado</th>
-                <th className="min-w-[220px] px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Acciones</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Acciones</th>
               </tr>
             </thead>
 
@@ -398,45 +586,44 @@ export function DocumentsTableEnhanced({
                       </td>
 
                       {/* Jurisdicción */}
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 hidden xl:table-cell">
                         {doc.jurisdiccion || "—"}
                       </td>
 
                       {/* Fecha */}
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
                         {formatRelativeDate(doc.createdAt)}
                       </td>
 
                       {/* Estado */}
                       <td className="px-6 py-4">
-                        <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium", statusInfo.className)}>
+                        <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap", statusInfo.className)}>
                           <span className={cn("size-1.5 rounded-full mr-1.5", statusInfo.dotColor)} />
                           {statusInfo.label}
                         </span>
                       </td>
 
                       {/* Acciones */}
-                      <td className="min-w-[320px] px-6 py-4 text-right whitespace-nowrap">
-                        <div className="flex flex-nowrap items-center justify-end gap-2 text-sm">
+                      <td className="px-6 py-4 text-right whitespace-nowrap">
+                        <div className="flex flex-nowrap items-center justify-end gap-1 text-sm">
                           <Link
                             href={`/documents/${doc.id}/edit`}
                             className="inline-flex shrink-0 px-2 py-1 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
                           >
                             Editar
                           </Link>
-                          <span className="text-slate-300 dark:text-slate-600">|</span>
                           <Link
                             href={`/documents/${doc.id}`}
                             className="inline-flex shrink-0 px-2 py-1 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
                           >
                             Ver
                           </Link>
-                          <span className="text-slate-300 dark:text-slate-600">|</span>
                           <button
                             type="button"
                             onClick={() => handleDownload(doc.id)}
                             disabled={!!downloadingId}
                             className="inline-flex shrink-0 px-2 py-1 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                            aria-label="Descargar PDF"
                           >
                             {downloadingId === doc.id ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -444,12 +631,12 @@ export function DocumentsTableEnhanced({
                               <Download className="w-4 h-4" />
                             )}
                           </button>
-                          <span className="text-slate-300 dark:text-slate-600">|</span>
                           <button
                             type="button"
                             onClick={() => setConfirmingId(doc.id)}
                             disabled={deletingId === doc.id}
                             className="inline-flex shrink-0 px-2 py-1 rounded-md border border-slate-300 text-red-600 hover:bg-red-50 dark:border-slate-600 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                            aria-label="Eliminar documento"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

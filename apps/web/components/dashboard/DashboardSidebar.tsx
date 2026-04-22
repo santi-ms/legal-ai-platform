@@ -188,12 +188,12 @@ export function DashboardSidebar({ isOpen = false, onClose }: DashboardSidebarPr
     <aside
       className={cn(
         // Base: ancho fijo, borde derecho editorial
-        "w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col h-full shrink-0",
+        "w-[min(280px,85vw)] md:w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col h-full shrink-0",
         // Mobile: drawer
-        "fixed top-0 left-0 z-50 h-screen transition-transform duration-300",
-        // Desktop
-        "lg:relative lg:translate-x-0 lg:z-auto",
-        isOpen ? "translate-x-0" : "-translate-x-full",
+        "fixed top-0 left-0 z-50 h-[100dvh] transition-transform duration-300",
+        // Desktop (≥768px)
+        "md:relative md:translate-x-0 md:z-auto md:h-full",
+        isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
       )}
     >
       {/* ── Header: wordmark editorial ─────────────────────────────────── */}
@@ -204,9 +204,9 @@ export function DashboardSidebar({ isOpen = false, onClose }: DashboardSidebarPr
           </span>
           <span className="text-2xl font-extrabold text-gold-500 leading-none">.</span>
         </Link>
-        {/* Botón cerrar mobile */}
+        {/* Botón cerrar mobile — 44x44 mínimo para touch */}
         <button
-          className="lg:hidden p-1.5 -mr-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="md:hidden p-3 -mr-2 -mt-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           onClick={onClose}
           aria-label="Cerrar menú"
         >
@@ -370,10 +370,10 @@ export function DashboardSidebar({ isOpen = false, onClose }: DashboardSidebarPr
 
   return (
     <>
-      {/* Overlay backdrop — mobile */}
+      {/* Overlay backdrop — mobile (<768px) */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
           onClick={onClose}
           aria-hidden="true"
         />

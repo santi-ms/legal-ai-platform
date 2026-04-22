@@ -503,14 +503,14 @@ function ExpedientesContent() {
           <select
             value={matter}
             onChange={(e) => updateUrl({ matter: e.target.value === "all" ? undefined : e.target.value, page: "1" })}
-            className="h-10 rounded-md border border-input bg-white dark:bg-slate-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            className="h-10 w-full sm:w-auto rounded-md border border-input bg-white dark:bg-slate-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           >
             {MATTER_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <select
             value={status}
             onChange={(e) => updateUrl({ status: e.target.value === "all" ? undefined : e.target.value, page: "1" })}
-            className="h-10 rounded-md border border-input bg-white dark:bg-slate-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            className="h-10 w-full sm:w-auto rounded-md border border-input bg-white dark:bg-slate-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           >
             {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>

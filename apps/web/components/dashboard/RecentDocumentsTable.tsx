@@ -108,76 +108,113 @@ export const RecentDocumentsTable = React.memo(function RecentDocumentsTable({
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
-              <th className="px-6 py-4 font-semibold">Nombre del Documento</th>
-              <th className="px-6 py-4 font-semibold text-center">Estado</th>
-              <th className="px-6 py-4 font-semibold text-center">Fecha</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {recentDocs.length === 0 ? (
-              <tr>
-                <td colSpan={3}>
-                  <div className="flex flex-col items-center justify-center py-14 px-6 text-center gap-4">
-                    <div className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                      <Sparkles className="w-8 h-8 text-primary" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="font-bold text-slate-900 dark:text-white">
-                        Todavía no tenés documentos
-                      </p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
-                        Creá tu primer documento legal con IA en menos de 5 minutos.
-                      </p>
-                    </div>
-                    <Link
-                      href="/documents/new"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Crear primer documento
-                    </Link>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              recentDocs.map((doc) => {
+        {/* Empty state — shared entre mobile y desktop */}
+        {recentDocs.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-14 px-6 text-center gap-4">
+            <div className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <Sparkles className="w-8 h-8 text-primary" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-bold text-slate-900 dark:text-white">
+                Todavía no tenés documentos
+              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
+                Creá tu primer documento legal con IA en menos de 5 minutos.
+              </p>
+            </div>
+            <Link
+              href="/documents/new"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+            >
+              <Plus className="w-4 h-4" />
+              Crear primer documento
+            </Link>
+          </div>
+        ) : (
+          <>
+            {/* Mobile: cards stackeadas */}
+            <ul className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+              {recentDocs.map((doc) => {
                 const status = doc.estado || "BORRADOR";
                 const statusInfo = getStatusConfig(status);
-
                 return (
-                  <tr
-                    key={doc.id}
-                    onClick={() => router.push(`/documents/${doc.id}`)}
-                    className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-primary" />
-                        <span className="font-medium text-slate-900 dark:text-slate-100">{formatDocumentType(doc.type)}</span>
+                  <li key={doc.id}>
+                    <Link
+                      href={`/documents/${doc.id}`}
+                      className="flex items-center gap-3 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                    >
+                      <FileText className="w-5 h-5 text-primary flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">
+                          {formatDocumentType(doc.type)}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span
+                            className={cn(
+                              "px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                              statusInfo.className
+                            )}
+                          >
+                            {statusInfo.label}
+                          </span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                            {formatRelativeDate(doc.createdAt)}
+                          </span>
+                        </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span
-                        className={cn(
-                          "px-2.5 py-1 rounded-full text-[11px] font-bold uppercase",
-                          statusInfo.className
-                        )}
-                      >
-                        {statusInfo.label}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center text-sm text-slate-500 dark:text-slate-400">
-                      {formatRelativeDate(doc.createdAt)}
-                    </td>
-                  </tr>
+                    </Link>
+                  </li>
                 );
-              })
-            )}
-          </tbody>
-        </table>
+              })}
+            </ul>
+
+            {/* Desktop: tabla */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
+                    <th className="px-6 py-4 font-semibold">Nombre del Documento</th>
+                    <th className="px-6 py-4 font-semibold text-center">Estado</th>
+                    <th className="px-6 py-4 font-semibold text-center">Fecha</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {recentDocs.map((doc) => {
+                    const status = doc.estado || "BORRADOR";
+                    const statusInfo = getStatusConfig(status);
+                    return (
+                      <tr
+                        key={doc.id}
+                        onClick={() => router.push(`/documents/${doc.id}`)}
+                        className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-primary" />
+                            <span className="font-medium text-slate-900 dark:text-slate-100">{formatDocumentType(doc.type)}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span
+                            className={cn(
+                              "px-2.5 py-1 rounded-full text-[11px] font-bold uppercase whitespace-nowrap",
+                              statusInfo.className
+                            )}
+                          >
+                            {statusInfo.label}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                          {formatRelativeDate(doc.createdAt)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

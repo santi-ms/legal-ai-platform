@@ -70,7 +70,7 @@ const SORT_OPTIONS = [
 ];
 
 const SELECT_CLS =
-  "appearance-none pl-3 pr-8 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer outline-none h-10 transition-colors";
+  "appearance-none w-full sm:w-auto pl-3 pr-8 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer outline-none h-10 transition-colors";
 
 const CHEVRON_ICON = (
   <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -113,9 +113,9 @@ export function DocumentsFiltersBar({
       className
     )}>
       {/* Row 1: Search + Type + Status + Sort */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        {/* Search */}
-        <div className="flex-1 relative">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+        {/* Search — full width en mobile, flex-1 desde sm */}
+        <div className="w-full sm:flex-1 sm:min-w-[200px] relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
           <Input
             value={searchQuery}
@@ -134,7 +134,7 @@ export function DocumentsFiltersBar({
         </div>
 
         {/* Type */}
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <select
             value={documentType}
             onChange={(e) => onTypeChange?.(e.target.value)}
@@ -148,7 +148,7 @@ export function DocumentsFiltersBar({
         </div>
 
         {/* Status */}
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <select
             value={status}
             onChange={(e) => onStatusChange?.(e.target.value)}
@@ -162,8 +162,8 @@ export function DocumentsFiltersBar({
         </div>
 
         {/* Sort */}
-        <div className="relative">
-          <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+        <div className="relative w-full sm:w-auto">
+          <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none z-10" />
           <select
             value={sort}
             onChange={(e) => onSortChange?.(e.target.value)}
@@ -181,9 +181,9 @@ export function DocumentsFiltersBar({
       <div className="flex flex-wrap items-center gap-3">
         {/* Expediente Filter */}
         {expedientes.length > 0 && (
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <Briefcase className={cn(
-              "absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none",
+              "absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none z-10",
               expedienteId !== "all" ? "text-primary" : "text-slate-400"
             )} />
             <select
