@@ -157,7 +157,7 @@ export async function registerJurisRoutes(app: FastifyInstance) {
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const BodySchema = z.object({
-      mensaje:     z.string().min(5).max(4000),
+      mensaje:     z.string().min(2, "El mensaje debe tener al menos 2 caracteres.").max(4000, "El mensaje no puede superar los 4000 caracteres."),
       provincia:   z.string().optional(),
       materia:     z.string().optional(),
       expedienteId: z.string().optional(),
@@ -165,7 +165,13 @@ export async function registerJurisRoutes(app: FastifyInstance) {
 
     const body = BodySchema.safeParse(request.body);
     if (!body.success) {
-      return reply.status(400).send({ ok: false, error: "INVALID_BODY", details: body.error.flatten() });
+      const first = body.error.issues[0];
+      return reply.status(400).send({
+        ok: false,
+        error: "INVALID_BODY",
+        message: first?.message ?? "El cuerpo de la solicitud no es válido.",
+        details: body.error.flatten(),
+      });
     }
 
     const { mensaje, provincia, materia, expedienteId } = body.data;
@@ -307,11 +313,16 @@ export async function registerJurisRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
 
     const BodySchema = z.object({
-      mensaje: z.string().min(2).max(4000),
+      mensaje: z.string().min(2, "El mensaje debe tener al menos 2 caracteres.").max(4000, "El mensaje no puede superar los 4000 caracteres."),
     });
     const body = BodySchema.safeParse(request.body);
     if (!body.success) {
-      return reply.status(400).send({ ok: false, error: "INVALID_BODY" });
+      const first = body.error.issues[0];
+      return reply.status(400).send({
+        ok: false,
+        error: "INVALID_BODY",
+        message: first?.message ?? "El cuerpo de la solicitud no es válido.",
+      });
     }
 
     // Cargar consulta con historial
