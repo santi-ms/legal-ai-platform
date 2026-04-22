@@ -1555,10 +1555,10 @@ export async function getBillingPlans(): Promise<BillingPlan[]> {
   return data?.plans ?? [];
 }
 
-export async function startCheckout(planCode: string, additionalUsers = 0): Promise<{ checkoutUrl: string; subscriptionId?: string }> {
+export async function startCheckout(planCode: string, additionalUsers = 0, payerEmail?: string): Promise<{ checkoutUrl: string; subscriptionId?: string }> {
   const { data } = await proxyJson<any>("/billing/checkout", {
     method: "POST",
-    body: JSON.stringify({ planCode, additionalUsers }),
+    body: JSON.stringify({ planCode, additionalUsers, payerEmail }),
   });
   return data;
 }
@@ -1588,8 +1588,11 @@ export async function cancelSubscription(): Promise<{
   };
 }
 
-export async function reactivateSubscription(): Promise<{ checkoutUrl: string }> {
-  const { data } = await proxyJson<any>("/billing/reactivate", { method: "POST" });
+export async function reactivateSubscription(payerEmail?: string): Promise<{ checkoutUrl: string }> {
+  const { data } = await proxyJson<any>("/billing/reactivate", {
+    method: "POST",
+    body: JSON.stringify({ payerEmail }),
+  });
   return { checkoutUrl: data.checkoutUrl };
 }
 

@@ -300,7 +300,7 @@ function PlanCard({
 // ─── Page Content ─────────────────────────────────────────────────────────────
 
 function BillingPageContent() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [billing, setBilling] = useState<BillingData | null>(null);
@@ -326,6 +326,15 @@ function BillingPageContent() {
     newMonthlyAmount: number;
   } | null>(null);
   const [changePlanLoading, setChangePlanLoading] = useState(false);
+  // Mail de Mercado Pago (MP lo exige en el PreApproval y debe coincidir con
+  // el mail de la cuenta con la que el cliente se loguee en MP).
+  const [showPayerEmailModal, setShowPayerEmailModal] = useState(false);
+  const [pendingCheckout, setPendingCheckout] = useState<{
+    planCode: string;
+    additionalUsers: number;
+  } | null>(null);
+  const [payerEmailInput, setPayerEmailInput] = useState("");
+  const [payerEmailError, setPayerEmailError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -553,42 +562,65 @@ function BillingPageContent() {
     }
   };
 
-  const handleFreshCheckout = async (planCode: string) => {
+  // handleFreshCheckout: en vez de ir directo a MP, pedimos primero el mail
+  // de MP del cliente (MP exige payer_email y puede no coincidir con el mail
+  // de DocuLex). El modal invoca confirmPayerEmailAndCheckout cuando confirman.
+  const handleFreshCheckout = (planCode: string, additionalUsers = 0) => {
+    setPendingCheckout({ planCode, additionalUsers });
+    setPayerEmailInput(user?.email ?? "");
+    setPayerEmailError(null);
+    setShowPayerEmailModal(true);
+  };
+
+  const confirmPayerEmailAndCheckout = async () => {
+    if (!pendingCheckout) return;
+    const email = payerEmailInput.trim().toLowerCase();
+    if (!email || !email.includes("@") || !email.includes(".")) {
+      setPayerEmailError("Ingresá un email válido.");
+      return;
+    }
+    setPayerEmailError(null);
+    setShowPayerEmailModal(false);
     setCheckoutLoading(true);
     try {
-      const { checkoutUrl } = await startCheckout(planCode);
+      const { checkoutUrl } = await startCheckout(
+        pendingCheckout.planCode,
+        pendingCheckout.additionalUsers,
+        email,
+      );
       window.location.href = checkoutUrl;
     } catch (err: any) {
       setStatusMsg({ type: "error", text: err?.message ?? "Error al iniciar el pago. Intentá de nuevo." });
       setCheckoutLoading(false);
+    } finally {
+      setPendingCheckout(null);
     }
   };
 
   const handleEstudioCheckout = async () => {
     setShowEstudioModal(false);
-    setCheckoutLoading(true);
-    try {
-      const additionalUsers = estudioUsers - 3;
-      if (hasActiveSub) {
-        // Cambio de plan activo → usar change-plan
+    const additionalUsers = estudioUsers - 3;
+    if (hasActiveSub) {
+      // Cambio de plan activo → usar change-plan (no requiere prompt de mail)
+      setCheckoutLoading(true);
+      try {
         const result = await changePlan("estudio", additionalUsers);
         if (result.type === "upgrade") {
           window.location.href = result.checkoutUrl;
         } else {
-          // Downgrade a estudio (caso raro) — ya aplicado, refrescar datos
           const [updatedBilling, updatedPlans] = await Promise.all([getBillingSubscription(), getBillingPlans()]);
           setBilling(updatedBilling);
           setPlans(updatedPlans);
           setStatusMsg({ type: "success", text: `Plan cambiado a ${result.newPlanName}.` });
           setCheckoutLoading(false);
         }
-      } else {
-        const { checkoutUrl } = await startCheckout("estudio", additionalUsers);
-        window.location.href = checkoutUrl;
+      } catch (err: any) {
+        setStatusMsg({ type: "error", text: err?.message ?? "Error al iniciar el pago. Intentá de nuevo." });
+        setCheckoutLoading(false);
       }
-    } catch (err: any) {
-      setStatusMsg({ type: "error", text: err?.message ?? "Error al iniciar el pago. Intentá de nuevo." });
-      setCheckoutLoading(false);
+    } else {
+      // Checkout nuevo → preguntar mail MP primero
+      handleFreshCheckout("estudio", additionalUsers);
     }
   };
 
@@ -686,6 +718,66 @@ function BillingPageContent() {
 
   return (
     <>
+      {/* Modal de mail de Mercado Pago (antes de ir al checkout) */}
+      {showPayerEmailModal && pendingCheckout && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 max-h-[92dvh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                Email de Mercado Pago
+              </h2>
+              <button
+                onClick={() => { setShowPayerEmailModal(false); setPendingCheckout(null); }}
+                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">
+              Confirmá el email de tu cuenta de Mercado Pago. Tiene que coincidir con el mail con el que te vas a loguear en MP para autorizar el débito mensual.
+            </p>
+
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
+              Email de Mercado Pago
+            </label>
+            <input
+              type="email"
+              autoFocus
+              value={payerEmailInput}
+              onChange={(e) => { setPayerEmailInput(e.target.value); setPayerEmailError(null); }}
+              onKeyDown={(e) => { if (e.key === "Enter") confirmPayerEmailAndCheckout(); }}
+              placeholder="tu-cuenta@mercadopago.com"
+              className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+            />
+            {payerEmailError && (
+              <p className="mt-2 text-xs text-red-600 dark:text-red-400">{payerEmailError}</p>
+            )}
+            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+              Podés usar un mail distinto al de tu cuenta de DocuLex. No te genera ninguna cuenta nueva.
+            </p>
+
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => { setShowPayerEmailModal(false); setPendingCheckout(null); }}
+                className="flex-1 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmPayerEmailAndCheckout}
+                disabled={checkoutLoading}
+                className="flex-1 py-2.5 text-sm font-bold bg-primary text-white rounded-xl hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+              >
+                {checkoutLoading
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : "Ir al pago"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de confirmación de cambio de plan */}
       {showChangePlanModal && pendingChange && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">

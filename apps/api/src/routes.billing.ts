@@ -214,15 +214,28 @@ export async function registerBillingRoutes(app: FastifyInstance) {
     if (!user) return unauthorized(reply);
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
-    const { planCode, additionalUsers = 0 } = request.body as {
+    const { planCode, additionalUsers = 0, payerEmail } = request.body as {
       planCode: string;
       additionalUsers?: number;
+      payerEmail?: string;
     };
 
     // Validar plan
     const plan = await prisma.plan.findUnique({ where: { code: planCode } });
     if (!plan || planCode === "free") {
       return reply.status(400).send({ ok: false, error: "INVALID_PLAN", message: "Plan inválido" });
+    }
+
+    // Email para el PreApproval de MP. MP lo exige como required.
+    // Preferimos el que el cliente nos pasa explícitamente (su mail de MP,
+    // que puede diferir del de DocuLex); fallback al de la cuenta.
+    const mpPayerEmail = (payerEmail?.trim() || user.email || "").toLowerCase();
+    if (!mpPayerEmail || !mpPayerEmail.includes("@")) {
+      return reply.status(400).send({
+        ok: false,
+        error: "PAYER_EMAIL_REQUIRED",
+        message: "Necesitamos el email que vas a usar en Mercado Pago.",
+      });
     }
 
     // Guardia: evitar checkout si el usuario ya tiene una suscripción vigente
@@ -289,14 +302,15 @@ export async function registerBillingRoutes(app: FastifyInstance) {
         totalUsers,
       });
 
-      // NO enviamos payer_email: si lo mandamos, MP exige que el usuario
-      // esté logueado en MP con EXACTAMENTE ese mail, y muchos clientes
-      // tienen su cuenta MP con un mail distinto al de DocuLex. Omitido,
-      // MP permite pagar con cualquier cuenta MP.
+      // MP PreApproval exige payer_email como required. Debe coincidir con
+      // el mail de la cuenta MP con la que el cliente autorice el débito.
+      // El frontend pide al usuario ese mail antes del checkout; fallback
+      // al mail de la cuenta DocuLex si no lo especifica.
       const result = await preApproval.create({
         body: {
           reason: `DocuLex ${planLabel}`,
           external_reference: externalRef,
+          payer_email: mpPayerEmail,
           auto_recurring: {
             frequency: 1,
             frequency_type: "months",
@@ -526,6 +540,16 @@ export async function registerBillingRoutes(app: FastifyInstance) {
     if (!user) return unauthorized(reply);
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
+    const { payerEmail } = (request.body ?? {}) as { payerEmail?: string };
+    const mpPayerEmail = (payerEmail?.trim() || user.email || "").toLowerCase();
+    if (!mpPayerEmail || !mpPayerEmail.includes("@")) {
+      return reply.status(400).send({
+        ok: false,
+        error: "PAYER_EMAIL_REQUIRED",
+        message: "Necesitamos el email que vas a usar en Mercado Pago.",
+      });
+    }
+
     const subscription = await prisma.subscription.findUnique({
       where: { tenantId: user.tenantId },
       include: { plan: true },
@@ -556,7 +580,7 @@ export async function registerBillingRoutes(app: FastifyInstance) {
       const mpClient  = getMPClient();
       const preApproval = new PreApproval(mpClient);
 
-      // NO enviamos payer_email (ver /checkout arriba para la razón).
+      // MP exige payer_email en PreApproval (ver /checkout arriba).
       const result = await preApproval.create({
         body: {
           reason: `DocuLex ${planLabel}`,
@@ -566,6 +590,7 @@ export async function registerBillingRoutes(app: FastifyInstance) {
             totalUsers,
             noTrial:   true,   // ← nunca iniciar trial en reactivaciones
           }),
+          payer_email: mpPayerEmail,
           auto_recurring: {
             frequency:          1,
             frequency_type:     "months",
