@@ -154,7 +154,7 @@ export default function CalendarioPage() {
   const selectedItems = selected ? (deadlineMap.get(selected) ?? []) : null;
 
   return (
-    <div className="p-6 md:p-8 max-w-[1280px] mx-auto w-full">
+    <div className="p-3 sm:p-6 md:p-8 max-w-[1280px] mx-auto w-full">
       <PageHeader
         icon={CalendarDays}
         iconGradient="sky"
@@ -170,7 +170,7 @@ export default function CalendarioPage() {
         <div className="flex-1 min-w-0">
           {/* Month navigation */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-4 border-b border-slate-100 dark:border-slate-800">
               <button
                 onClick={prevMonth}
                 className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -257,7 +257,7 @@ export default function CalendarioPage() {
               <div className="grid grid-cols-7">
                 {/* Empty cells before first day */}
                 {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-                  <div key={`empty-${i}`} className="min-h-[80px] border-b border-r border-slate-100 dark:border-slate-800/50 last:border-r-0" />
+                  <div key={`empty-${i}`} className="min-h-[60px] sm:min-h-[80px] border-b border-r border-slate-100 dark:border-slate-800/50 last:border-r-0" />
                 ))}
 
                 {/* Day cells */}
@@ -283,7 +283,7 @@ export default function CalendarioPage() {
                       key={day}
                       onClick={() => hasItems ? setSelected(isSelected ? null : dateKey) : undefined}
                       className={cn(
-                        "min-h-[80px] p-2 border-b border-r border-slate-100 dark:border-slate-800/50 text-left transition-colors relative overflow-hidden",
+                        "min-h-[60px] sm:min-h-[80px] p-2 border-b border-r border-slate-100 dark:border-slate-800/50 text-left transition-colors relative overflow-hidden",
                         // Wrap every 7
                         (firstDayOfMonth + day - 1) % 7 === 6 && "border-r-0",
                         hasItems  ? "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50" : "cursor-default",

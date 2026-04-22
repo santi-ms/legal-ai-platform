@@ -64,27 +64,27 @@ function StatCardInner({ item, iconTreatment = "gradient" }: { item: StatItem; i
   return (
     <div
       className={cn(
-        "relative overflow-hidden bg-white dark:bg-slate-900 p-5 rounded-2xl border transition-all duration-200",
+        "relative overflow-hidden bg-white dark:bg-slate-900 p-3 sm:p-5 rounded-2xl border transition-all duration-200",
         urgent
           ? "border-rose-200 dark:border-rose-900/50 ring-1 ring-rose-100 dark:ring-rose-900/30"
           : "border-slate-200 dark:border-slate-800 shadow-sm",
         href && "hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer group"
       )}
     >
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start justify-between mb-2 sm:mb-3">
         {Icon ? (
           iconTreatment === "outline" ? (
-            <div className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center">
-              <Icon className={cn("w-[18px] h-[18px]", OUTLINE_ICON_COLOR[tone])} strokeWidth={1.75} />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center">
+              <Icon className={cn("w-4 h-4 sm:w-[18px] sm:h-[18px]", OUTLINE_ICON_COLOR[tone])} strokeWidth={1.75} />
             </div>
           ) : (
             <div
               className={cn(
-                "w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-sm",
+                "w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-sm",
                 TOKENS.gradients[tone]
               )}
             >
-              <Icon className="w-5 h-5 text-white" strokeWidth={2} />
+              <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" strokeWidth={2} />
             </div>
           )
         ) : (
@@ -93,7 +93,7 @@ function StatCardInner({ item, iconTreatment = "gradient" }: { item: StatItem; i
         {change && (
           <span
             className={cn(
-              "text-[11px] font-bold px-2 py-0.5 rounded-full",
+              "text-[10px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full",
               change.isPositive
                 ? "text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10"
                 : "text-rose-600 bg-rose-50 dark:text-rose-400 dark:bg-rose-500/10"
@@ -104,19 +104,19 @@ function StatCardInner({ item, iconTreatment = "gradient" }: { item: StatItem; i
         )}
       </div>
 
-      <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.12em]">
+      <p className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.1em] sm:tracking-[0.12em] line-clamp-1">
         {label}
       </p>
       <p
         className={cn(
-          "text-3xl font-extrabold mt-1 text-ink dark:text-white tracking-tight leading-none",
+          "text-2xl sm:text-3xl font-extrabold mt-1 text-ink dark:text-white tracking-tight leading-none",
           href && "group-hover:text-primary transition-colors"
         )}
       >
         {value}
       </p>
       {subText && (
-        <p className={cn("text-[11px] font-medium mt-1", subToneClass)}>{subText}</p>
+        <p className={cn("text-[10px] sm:text-[11px] font-medium mt-1 line-clamp-2", subToneClass)}>{subText}</p>
       )}
     </div>
   );

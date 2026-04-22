@@ -140,7 +140,7 @@ function VencimientoModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
@@ -148,7 +148,7 @@ function VencimientoModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="vencimiento-modal-title"
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-5"
+        className="bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg p-4 sm:p-6 space-y-4 sm:space-y-5 max-h-[92dvh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -276,7 +276,7 @@ const VencimientoItem = React.memo(function VencimientoItem({
 
   return (
     <div className={cn(
-      "relative flex items-start gap-3 pl-5 pr-4 py-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-soft",
+      "relative flex items-start gap-2 sm:gap-3 pl-3 sm:pl-5 pr-2 sm:pr-4 py-3 sm:py-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-soft",
       venc.estado === "completado" && "opacity-60"
     )}>
       {/* Accent editorial — reemplaza los fondos rojo/ámbar/azul */}
@@ -343,23 +343,25 @@ const VencimientoItem = React.memo(function VencimientoItem({
       </div>
 
       {/* Actions */}
-      <div className="flex-shrink-0 flex items-center gap-1">
+      <div className="flex-shrink-0 flex items-center gap-0.5 sm:gap-1">
         <button
           onClick={() => onEdit(venc)}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           title="Editar"
+          aria-label="Editar vencimiento"
         >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg className="w-4 h-4 sm:w-3.5 sm:h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
           </svg>
         </button>
         <button
           onClick={() => setDelConfirm(true)}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+          className="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
           title="Eliminar"
+          aria-label="Eliminar vencimiento"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
         </button>
       </div>
 
@@ -530,14 +532,14 @@ function VencimientosContent() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <PageSkeleton variant="list" count={6} />
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+    <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-6">
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <PageHeader
@@ -860,7 +862,7 @@ function VencimientosContent() {
 export default function VencimientosPage() {
   return (
     <Suspense fallback={
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <PageSkeleton variant="list" count={6} />
       </div>
     }>
