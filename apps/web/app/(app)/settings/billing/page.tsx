@@ -757,19 +757,6 @@ function BillingPageContent() {
               Podés usar un mail distinto al de tu cuenta de DocuLex. No te genera ninguna cuenta nueva.
             </p>
 
-            {/* Aviso sobre medios de pago aceptados por MP PreApproval.
-                Las prepagas no funcionan y el cliente se entera recién al final. */}
-            <div className="mt-4 rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/20 p-3">
-              <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 mb-1">
-                Medios de pago aceptados
-              </p>
-              <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-                Tarjeta de crédito, débito o saldo en cuenta MP.
-                <span className="block mt-1">
-                  <strong>No</strong> funciona con tarjetas prepagas — es una limitación de Mercado Pago para débitos recurrentes.
-                </span>
-              </p>
-            </div>
 
             <div className="flex gap-3 mt-5">
               <button
