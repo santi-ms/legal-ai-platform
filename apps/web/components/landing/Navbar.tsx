@@ -29,41 +29,54 @@ export function Navbar() {
   const closeMobile = () => setMobileMenuOpen(false);
 
   return (
-    <div
-      className={cn(
-        "fixed inset-x-0 top-0 z-50 flex justify-center",
-        "transition-[padding] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-        scrolled ? "px-4 md:px-6 pt-3 md:pt-4" : "px-0 pt-0"
-      )}
-    >
+    <div className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-4 pointer-events-none">
       <nav
         className={cn(
-          "w-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          "backdrop-blur-md",
+          "w-full border backdrop-blur-md pointer-events-auto",
+          "transition-[max-width,border-radius,background-color,border-color,box-shadow,padding] duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
           scrolled
-            ? "max-w-5xl rounded-full border border-slate-800/80 bg-ink/90 dark:bg-ink/90 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.45)] px-5 md:px-7 py-2.5"
-            : "max-w-none rounded-none border-b border-slate-200/60 dark:border-slate-800/60 bg-background-light/70 dark:bg-background-dark/70 px-6 md:px-20 py-4"
+            ? "max-w-[960px] rounded-full border-slate-800/80 bg-ink/90 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.5)] px-5 md:px-7 py-2.5"
+            : "max-w-[1400px] rounded-[20px] border-slate-200/60 dark:border-slate-800/60 bg-background-light/70 dark:bg-background-dark/70 shadow-[0_0_0_rgba(0,0,0,0)] px-5 md:px-10 py-3.5"
         )}
       >
-        <div
-          className={cn(
-            "flex items-center justify-between gap-6 transition-all duration-500",
-            scrolled ? "mx-0" : "max-w-7xl mx-auto"
-          )}
-        >
-          {/* Logo */}
+        <div className="flex items-center justify-between gap-6">
+          {/* Logo — siempre 50px, se escala con transform para animar suave */}
           <Link
             href="/"
-            className="flex items-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-md shrink-0"
+            className={cn(
+              "relative flex items-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-md shrink-0 origin-left",
+              "transition-transform duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+              scrolled ? "scale-[0.78]" : "scale-100"
+            )}
             aria-label="DocuLex — inicio"
           >
-            <BrandLogo size={scrolled ? 38 : 50} invert={scrolled} />
+            <span className="relative block" style={{ height: 50 }}>
+              {/* Versión temática (visible al tope) */}
+              <span
+                className={cn(
+                  "block transition-opacity duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  scrolled ? "opacity-0" : "opacity-100"
+                )}
+              >
+                <BrandLogo size={50} />
+              </span>
+              {/* Versión blanca (visible sobre pill oscura) */}
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "absolute inset-0 flex items-center transition-opacity duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  scrolled ? "opacity-100" : "opacity-0"
+                )}
+              >
+                <BrandLogo size={50} invert />
+              </span>
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
           <div
             className={cn(
-              "hidden md:flex items-center transition-all duration-500",
+              "hidden md:flex items-center transition-[gap,font-size] duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
               scrolled ? "gap-7 text-[13px]" : "gap-8 text-sm"
             )}
           >
@@ -72,7 +85,7 @@ export function Navbar() {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "font-medium tracking-[-0.005em] transition-colors focus-visible:outline-none rounded-sm",
+                  "font-medium tracking-[-0.005em] transition-colors duration-[600ms] focus-visible:outline-none rounded-sm",
                   scrolled
                     ? "text-slate-200 hover:text-white"
                     : "text-slate-700 dark:text-slate-300 hover:text-primary"
@@ -88,7 +101,7 @@ export function Navbar() {
             <Link
               href="/auth/login"
               className={cn(
-                "hidden sm:block text-sm font-medium px-4 py-2 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                "hidden sm:block text-sm font-medium px-4 py-2 rounded-lg transition-colors duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                 scrolled
                   ? "text-slate-200 hover:bg-white/5"
                   : "text-slate-700 dark:text-slate-300 hover:bg-primary/5"
@@ -99,10 +112,8 @@ export function Navbar() {
             <Link
               href="/auth/register"
               className={cn(
-                "text-sm font-bold rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                scrolled
-                  ? "bg-primary text-white px-4 py-2 hover:shadow-lg hover:shadow-primary/40"
-                  : "bg-primary text-white px-5 py-2.5 hover:shadow-lg hover:shadow-primary/30"
+                "bg-primary text-white text-sm font-bold rounded-lg transition-[padding,box-shadow] duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:shadow-lg hover:shadow-primary/30",
+                scrolled ? "px-4 py-2" : "px-5 py-2.5"
               )}
             >
               Probar gratis
