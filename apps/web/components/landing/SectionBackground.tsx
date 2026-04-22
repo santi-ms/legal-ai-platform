@@ -5,11 +5,6 @@ type Variant = "white" | "parchment" | "mesh" | "grid" | "ink";
 interface Props {
   variant?: Variant;
   className?: string;
-  /**
-   * Activa textura de ruido SVG sutil sobre el fondo. Recomendado para
-   * parchment y mesh. En dark mode se hace un poco más visible.
-   */
-  noise?: boolean;
   children?: React.ReactNode;
 }
 
@@ -27,7 +22,6 @@ interface Props {
 export function SectionBackground({
   variant = "white",
   className,
-  noise = false,
   children,
 }: Props) {
   const bgClass = {
@@ -44,7 +38,6 @@ export function SectionBackground({
       className={cn(
         "relative isolate overflow-hidden",
         bgClass,
-        noise && "texture-noise",
         className
       )}
     >

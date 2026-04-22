@@ -42,7 +42,7 @@ export function AuthShell({
   children,
 }: AuthShellProps) {
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-parchment dark:bg-background-dark texture-noise">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-parchment dark:bg-background-dark">
       {/* Panel lateral editorial — solo desktop */}
       <AuthSidePanel variant={variant} />
 

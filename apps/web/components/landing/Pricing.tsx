@@ -97,7 +97,7 @@ export function Pricing() {
   return (
     <section
       id="precios"
-      className="relative py-28 px-6 md:px-20 bg-parchment dark:bg-background-dark texture-noise overflow-hidden"
+      className="relative py-28 px-6 md:px-20 bg-parchment dark:bg-background-dark overflow-hidden"
     >
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Header editorial */}

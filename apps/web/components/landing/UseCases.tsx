@@ -62,7 +62,7 @@ export function UseCases() {
   return (
     <section
       id="casos-de-uso"
-      className="relative py-28 px-6 md:px-20 bg-parchment dark:bg-background-dark texture-noise"
+      className="relative py-28 px-6 md:px-20 bg-parchment dark:bg-background-dark"
     >
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Header editorial */}
