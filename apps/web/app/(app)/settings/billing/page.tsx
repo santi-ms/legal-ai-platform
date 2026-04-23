@@ -8,6 +8,7 @@ import {
   getBillingPlans,
   cancelSubscription,
   reactivateSubscription,
+  redeemPromoCode,
   getInvoices,
   startCheckout,
   changePlan,
@@ -34,6 +35,9 @@ import {
   ArrowLeftRight,
   RotateCcw,
   CalendarX,
+  Tag,
+  ChevronDown,
+  AlertCircle,
 } from "lucide-react";
 
 import { cn } from "@/app/lib/utils";
@@ -328,6 +332,12 @@ function BillingPageContent() {
   const [changePlanLoading, setChangePlanLoading] = useState(false);
   // Mail de Mercado Pago (MP lo exige en el PreApproval y debe coincidir con
   // el mail de la cuenta con la que el cliente se loguee en MP).
+  // Estado de canje de códigos promocionales
+  const [showPromoSection, setShowPromoSection] = useState(false);
+  const [promoCodeInput, setPromoCodeInput] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoFeedback, setPromoFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
   const [showPayerEmailModal, setShowPayerEmailModal] = useState(false);
   const [pendingCheckout, setPendingCheckout] = useState<{
     planCode: string;
@@ -701,6 +711,32 @@ function BillingPageContent() {
     }
   };
 
+  const handleRedeemPromo = async () => {
+    const normalized = promoCodeInput.trim().toUpperCase();
+    if (normalized.length < 3) {
+      setPromoFeedback({ type: "error", text: "Ingresá un código válido." });
+      return;
+    }
+    setPromoLoading(true);
+    setPromoFeedback(null);
+    try {
+      const result = await redeemPromoCode(normalized);
+      setPromoFeedback({
+        type: "success",
+        text: `¡Código activado! Tenés ${result.trialDays} días gratis del plan ${result.planName}.`,
+      });
+      setPromoCodeInput("");
+      // Refrescar billing para que se vea el nuevo plan
+      const [billingData, plansData] = await Promise.all([getBillingSubscription(), getBillingPlans()]);
+      setBilling(billingData);
+      setPlans(plansData);
+    } catch (err: any) {
+      setPromoFeedback({ type: "error", text: err?.message ?? "No pudimos canjear el código." });
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-[100dvh]">
@@ -1037,6 +1073,91 @@ function BillingPageContent() {
                 <p className="text-xs text-slate-400 dark:text-slate-500">
                   Próxima renovación: {new Date(billing.subscription.renewsAt).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}
                 </p>
+              )}
+            </div>
+          )}
+
+          {/* Código promocional — solo visible en Free */}
+          {!onPaidPlan && (
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm overflow-hidden">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPromoSection((v) => !v);
+                  if (showPromoSection) {
+                    setPromoFeedback(null);
+                    setPromoCodeInput("");
+                  }
+                }}
+                className="w-full flex items-center justify-between px-4 sm:px-6 py-4 text-left hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors"
+              >
+                <span className="flex items-center gap-2.5">
+                  <Tag className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    ¿Tenés un código promocional?
+                  </span>
+                </span>
+                <ChevronDown
+                  className={cn(
+                    "w-4 h-4 text-slate-400 transition-transform",
+                    showPromoSection && "rotate-180"
+                  )}
+                />
+              </button>
+
+              {showPromoSection && (
+                <div className="px-4 sm:px-6 pb-5 pt-1 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-900/20">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 mt-3">
+                    Si recibiste un código de DocuLex en una charla, evento o convenio, ingresalo acá para activar tu período de prueba gratuito.
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="relative flex-1">
+                      <Tag className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={promoCodeInput}
+                        onChange={(e) => {
+                          setPromoCodeInput(e.target.value.toUpperCase());
+                          setPromoFeedback(null);
+                        }}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleRedeemPromo(); }}
+                        disabled={promoLoading}
+                        className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary font-mono tracking-widest uppercase placeholder:normal-case placeholder:tracking-normal placeholder:font-sans disabled:opacity-60"
+                        placeholder="Ej: ABOGACIA2026"
+                        maxLength={40}
+                        autoComplete="off"
+                      />
+                    </div>
+                    <button
+                      onClick={handleRedeemPromo}
+                      disabled={promoLoading || promoCodeInput.trim().length < 3}
+                      className="px-5 py-2.5 text-sm font-semibold bg-primary text-white rounded-xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+                    >
+                      {promoLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Canjeando…</span>
+                        </>
+                      ) : (
+                        "Canjear"
+                      )}
+                    </button>
+                  </div>
+
+                  {promoFeedback?.type === "success" && (
+                    <div className="mt-3 flex items-start gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300">
+                      <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                      <span>{promoFeedback.text}</span>
+                    </div>
+                  )}
+                  {promoFeedback?.type === "error" && (
+                    <div className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+                      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                      <span>{promoFeedback.text}</span>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}

@@ -1596,6 +1596,33 @@ export async function reactivateSubscription(payerEmail?: string): Promise<{ che
   return { checkoutUrl: data.checkoutUrl };
 }
 
+export interface RedeemPromoResult {
+  ok: true;
+  planCode: string;
+  planName: string;
+  trialDays: number;
+  trialEndsAt: string;
+}
+
+/**
+ * Canjea un código promocional para activar un trial de plan pago.
+ * proxyJson ya hace throw si el backend devuelve error; en ese caso, el caller
+ * captura el Error y muestra `.message` (el mensaje que manda el servidor).
+ */
+export async function redeemPromoCode(code: string): Promise<RedeemPromoResult> {
+  const { data } = await proxyJson<any>("/billing/redeem-promo", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+  return {
+    ok: true,
+    planCode: data.planCode,
+    planName: data.planName,
+    trialDays: data.trialDays,
+    trialEndsAt: data.trialEndsAt,
+  };
+}
+
 export async function getInvoices(): Promise<Invoice[]> {
   const { data } = await proxyJson<any>("/billing/invoices");
   return data?.invoices ?? [];

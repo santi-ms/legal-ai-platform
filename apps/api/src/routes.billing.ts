@@ -639,6 +639,146 @@ export async function registerBillingRoutes(app: FastifyInstance) {
     }
   });
 
+  // ── POST /billing/redeem-promo ─────────────────────────────────────────────
+  // Permite a un usuario ya logueado canjear un código promocional para
+  // obtener un trial de plan pago (Pro / Pro+ / Estudio).
+  //
+  // Reglas:
+  //   - Solo desde plan "free" (si ya tiene plan pago, no se puede).
+  //   - Código debe estar activo, no vencido y con usos disponibles.
+  //   - Un tenant no puede canjear más de UN código (se registra el uso).
+  //   - El trial es independiente de MP — no se crea PreApproval. Al vencer,
+  //     la suscripción pasa a past_due y el tenant degrada a free salvo que
+  //     haga checkout.
+  app.post("/billing/redeem-promo", async (request, reply) => {
+    const user = getUserFromRequest(request);
+    if (!user) return unauthorized(reply);
+    if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
+
+    const { code } = (request.body ?? {}) as { code?: string };
+    const normalizedCode = (code ?? "").trim().toUpperCase();
+    if (!normalizedCode || normalizedCode.length < 3) {
+      return reply.status(400).send({
+        ok: false,
+        error: "INVALID_CODE",
+        message: "Ingresá un código válido.",
+      });
+    }
+
+    try {
+      const result = await prisma.$transaction(async (tx: any) => {
+        // 1. Verificar estado actual del tenant: no debe tener plan pago activo.
+        const existingSub = await tx.subscription.findUnique({
+          where: { tenantId: user.tenantId },
+          include: { plan: true },
+        });
+        const existingPlanCode = existingSub?.plan?.code ?? "";
+        const onPaidPlan = existingPlanCode && existingPlanCode !== "free";
+        const activeStatus = ["active", "trialing", "canceling"].includes(existingSub?.status ?? "");
+        if (existingSub && onPaidPlan && activeStatus) {
+          return { status: 409, error: "ALREADY_ON_PAID_PLAN", message: "Ya tenés un plan pago activo. Los códigos promocionales son solo para cuentas Free." };
+        }
+
+        // 2. Un tenant solo puede canjear una vez.
+        const previousUse = await tx.promoCodeUse.findFirst({
+          where: { tenantId: user.tenantId },
+        });
+        if (previousUse) {
+          return { status: 409, error: "ALREADY_REDEEMED", message: "Ya canjeaste un código promocional anteriormente." };
+        }
+
+        // 3. Buscar el código.
+        const promo = await tx.promoCode.findUnique({ where: { code: normalizedCode } });
+        if (!promo) {
+          return { status: 404, error: "CODE_NOT_FOUND", message: "Código promocional inválido." };
+        }
+        if (!promo.isActive) {
+          return { status: 410, error: "CODE_INACTIVE", message: "El código promocional ya no está activo." };
+        }
+        if (promo.expiresAt && promo.expiresAt < new Date()) {
+          return { status: 410, error: "CODE_EXPIRED", message: "El código promocional está vencido." };
+        }
+        if (promo.maxUses !== -1 && promo.usedCount >= promo.maxUses) {
+          return { status: 410, error: "CODE_EXHAUSTED", message: "El código promocional ya alcanzó su límite de usos." };
+        }
+
+        // 4. Resolver plan.
+        const plan = await tx.plan.findUnique({ where: { code: promo.planCode } });
+        if (!plan) {
+          return { status: 500, error: "PLAN_NOT_FOUND", message: "Error interno: plan asociado al código no existe." };
+        }
+
+        // 5. Crear / actualizar suscripción en trial.
+        const now = new Date();
+        const trialEndsAt = new Date(now.getTime() + promo.trialDays * 86_400_000);
+
+        await tx.subscription.upsert({
+          where: { tenantId: user.tenantId },
+          create: {
+            tenantId: user.tenantId,
+            planId: plan.id,
+            status: "trialing",
+            maxUsers: plan.code === "estudio" ? 3 : 1,
+            startsAt: now,
+            trialEndsAt,
+          },
+          update: {
+            planId: plan.id,
+            status: "trialing",
+            maxUsers: plan.code === "estudio" ? 3 : 1,
+            startsAt: now,
+            trialEndsAt,
+            renewsAt: null,
+            mpSubscriptionId: null,
+          },
+        });
+
+        await tx.tenant.update({
+          where: { id: user.tenantId },
+          data: { currentPlanCode: promo.planCode },
+        });
+
+        // 6. Registrar uso y aumentar contador.
+        await tx.promoCodeUse.create({
+          data: { promoCodeId: promo.id, tenantId: user.tenantId },
+        });
+        await tx.promoCode.update({
+          where: { id: promo.id },
+          data: { usedCount: { increment: 1 } },
+        });
+
+        return {
+          status: 200,
+          ok: true,
+          planCode: promo.planCode,
+          planName: plan.name,
+          trialDays: promo.trialDays,
+          trialEndsAt: trialEndsAt.toISOString(),
+        };
+      });
+
+      if (result.status !== 200) {
+        return reply.status(result.status).send({
+          ok: false,
+          error: result.error,
+          message: result.message,
+        });
+      }
+
+      console.log(`[billing/redeem-promo] ✅ Canjeado: tenant=${user.tenantId} plan=${result.planCode} trial=${result.trialDays}d`);
+      return reply.send({
+        ok: true,
+        planCode: result.planCode,
+        planName: result.planName,
+        trialDays: result.trialDays,
+        trialEndsAt: result.trialEndsAt,
+      });
+    } catch (err: any) {
+      console.error("[billing/redeem-promo] Error:", err?.message ?? err);
+      return reply.status(500).send({ ok: false, error: "SERVER_ERROR", message: "No pudimos canjear el código. Intentá de nuevo." });
+    }
+  });
+
   // ── DELETE /billing/subscription ───────────────────────────────────────────
   app.delete("/billing/subscription", async (request, reply) => {
     const user = getUserFromRequest(request);
