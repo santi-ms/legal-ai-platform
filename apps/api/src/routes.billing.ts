@@ -306,6 +306,12 @@ export async function registerBillingRoutes(app: FastifyInstance) {
       // el mail de la cuenta MP con la que el cliente autorice el débito.
       // El frontend pide al usuario ese mail antes del checkout; fallback
       // al mail de la cuenta DocuLex si no lo especifica.
+      //
+      // payment_methods_allowed: declaramos explícitamente qué medios aceptamos
+      // en el checkout (tarjeta de crédito, débito y saldo en cuenta MP).
+      // Sin esto, MP por defecto sólo muestra tarjetas y oculta "Dinero en
+      // cuenta" — varios clientes con tarjeta rechazada por whitelist PreApproval
+      // no tenían cómo completar el pago.
       const result = await preApproval.create({
         body: {
           reason: `DocuLex ${planLabel}`,
@@ -317,6 +323,14 @@ export async function registerBillingRoutes(app: FastifyInstance) {
             transaction_amount: totalAmount,
             currency_id: "ARS",
             start_date: startDate.toISOString(),
+            payment_methods_allowed: {
+              payment_types: [
+                { id: "credit_card" },
+                { id: "debit_card" },
+                { id: "account_money" },
+              ],
+              payment_methods: [],
+            },
           } as any,
           back_url: `${frontendUrl}/settings/billing?plan=${planCode}`,
           notification_url: `${apiUrl}/api/webhooks/mercado-pago`,
@@ -581,6 +595,8 @@ export async function registerBillingRoutes(app: FastifyInstance) {
       const preApproval = new PreApproval(mpClient);
 
       // MP exige payer_email en PreApproval (ver /checkout arriba).
+      // payment_methods_allowed: habilitar explícitamente crédito + débito +
+      // saldo en cuenta MP (ver comentario en /billing/checkout).
       const result = await preApproval.create({
         body: {
           reason: `DocuLex ${planLabel}`,
@@ -597,6 +613,14 @@ export async function registerBillingRoutes(app: FastifyInstance) {
             transaction_amount: totalAmount,
             currency_id:        "ARS",
             start_date:         startDate.toISOString(),
+            payment_methods_allowed: {
+              payment_types: [
+                { id: "credit_card" },
+                { id: "debit_card" },
+                { id: "account_money" },
+              ],
+              payment_methods: [],
+            },
           } as any,
           back_url: `${frontendUrl}/settings/billing?plan=${planCode}`,
           notification_url: `${apiUrl}/api/webhooks/mercado-pago`,
