@@ -166,15 +166,31 @@ export function PromoCodesManager() {
             {/* Máximo de usos */}
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1">
-                Máximo de usos <span className="text-slate-400 font-normal">(-1 = ilimitado)</span>
+                Máximo de usos
               </label>
-              <input
-                type="number"
-                min={-1}
-                value={form.maxUses}
-                onChange={(e) => setForm({ ...form, maxUses: parseInt(e.target.value) || -1 })}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
+              {form.maxUses === -1 ? (
+                <div className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm text-slate-500 dark:text-slate-400 italic">
+                  Sin límite de usos
+                </div>
+              ) : (
+                <input
+                  type="number"
+                  min={1}
+                  value={form.maxUses}
+                  onChange={(e) => setForm({ ...form, maxUses: Math.max(1, parseInt(e.target.value) || 1) })}
+                  placeholder="Ej: 100"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              )}
+              <label className="mt-2 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.maxUses === -1}
+                  onChange={(e) => setForm({ ...form, maxUses: e.target.checked ? -1 : 100 })}
+                  className="w-3.5 h-3.5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary/30"
+                />
+                Sin límite de usos (código ilimitado)
+              </label>
             </div>
 
             {/* Vencimiento */}
