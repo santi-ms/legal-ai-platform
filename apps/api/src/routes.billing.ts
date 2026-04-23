@@ -323,14 +323,11 @@ export async function registerBillingRoutes(app: FastifyInstance) {
             transaction_amount: totalAmount,
             currency_id: "ARS",
             start_date: startDate.toISOString(),
-            payment_methods_allowed: {
-              payment_types: [
-                { id: "credit_card" },
-                { id: "debit_card" },
-                { id: "account_money" },
-              ],
-              payment_methods: [],
-            },
+            payment_methods_allowed: [
+              { payment_type: "credit_card" },
+              { payment_type: "debit_card" },
+              { payment_type: "account_money" },
+            ],
           } as any,
           back_url: `${frontendUrl}/settings/billing?plan=${planCode}`,
           notification_url: `${apiUrl}/api/webhooks/mercado-pago`,
@@ -613,14 +610,11 @@ export async function registerBillingRoutes(app: FastifyInstance) {
             transaction_amount: totalAmount,
             currency_id:        "ARS",
             start_date:         startDate.toISOString(),
-            payment_methods_allowed: {
-              payment_types: [
-                { id: "credit_card" },
-                { id: "debit_card" },
-                { id: "account_money" },
-              ],
-              payment_methods: [],
-            },
+            payment_methods_allowed: [
+              { payment_type: "credit_card" },
+              { payment_type: "debit_card" },
+              { payment_type: "account_money" },
+            ],
           } as any,
           back_url: `${frontendUrl}/settings/billing?plan=${planCode}`,
           notification_url: `${apiUrl}/api/webhooks/mercado-pago`,
