@@ -29,7 +29,7 @@ import { findRelevantArticles, formatRagContext } from "./services/rag-service.j
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
   timeout: 30_000,
-  maxRetries: 2,
+  maxRetries: 1,
 });
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -86,6 +86,8 @@ async function searchWeb(query: string): Promise<string[]> {
   const braveKey = process.env.BRAVE_SEARCH_API_KEY;
   if (!braveKey) return [];
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8_000);
   try {
     const searchQuery = encodeURIComponent(`${query} jurisprudencia argentina site:saij.gob.ar OR site:csjn.gov.ar OR site:infojus.gob.ar OR site:infoleg.gob.ar`);
     const res = await fetch(
@@ -96,6 +98,7 @@ async function searchWeb(query: string): Promise<string[]> {
           "Accept-Encoding": "gzip",
           "X-Subscription-Token": braveKey,
         },
+        signal: controller.signal,
       }
     );
     if (!res.ok) return [];
@@ -104,6 +107,8 @@ async function searchWeb(query: string): Promise<string[]> {
   } catch (err) {
     logger.warn("[juris] Brave Search falló", { err });
     return [];
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -176,41 +181,35 @@ export async function registerJurisRoutes(app: FastifyInstance) {
 
     const { mensaje, provincia, materia, expedienteId } = body.data;
 
-    // Verificar expediente si se pasó
-    if (expedienteId) {
-      const exp = await prisma.expediente.findFirst({ where: { id: expedienteId, tenantId: user.tenantId } });
-      if (!exp) return reply.status(404).send({ ok: false, error: "EXPEDIENTE_NOT_FOUND" });
-    }
-
-    // Enriquecer con contexto del expediente si aplica
+    // Validar y cargar expediente (una sola query)
     let expedienteContext = "";
     if (expedienteId) {
-      const exp = await prisma.expediente.findUnique({
-        where: { id: expedienteId },
+      const exp = await prisma.expediente.findFirst({
+        where: { id: expedienteId, tenantId: user.tenantId },
         select: { title: true, number: true, matter: true, court: true },
       });
-      if (exp) {
-        expedienteContext = `\n\n[CONTEXTO DEL EXPEDIENTE: "${exp.title}"${exp.number ? ` (Nro. ${exp.number})` : ""}, materia: ${exp.matter ?? "no especificada"}, juzgado: ${exp.court ?? "no especificado"}]`;
-      }
+      if (!exp) return reply.status(404).send({ ok: false, error: "EXPEDIENTE_NOT_FOUND" });
+      expedienteContext = `\n\n[CONTEXTO DEL EXPEDIENTE: "${exp.title}"${exp.number ? ` (Nro. ${exp.number})` : ""}, materia: ${exp.matter ?? "no especificada"}, juzgado: ${exp.court ?? "no especificado"}]`;
     }
 
-    // Capa 2: Búsqueda web si la consulta lo amerita
-    const webResults: string[] = needsWebSearch(mensaje) ? await searchWeb(mensaje) : [];
-    const webContext = webResults.length > 0
-      ? `\n\n[BÚSQUEDA WEB - resultados recientes relevantes:\n${webResults.map((r, i) => `${i + 1}. ${r}`).join("\n")}]`
-      : "";
-
-    // Capa 3: RAG — artículos relevantes de los códigos locales
-    // Prioriza el código procesal de la provincia si está especificada
+    // Capas 2 y 3 en paralelo + título (no depende de la respuesta de Claude)
     const ragJurisdiction = provincia
       ? (["misiones", "corrientes"].includes(provincia.toLowerCase())
           ? provincia.toLowerCase()
           : undefined)
       : undefined;
-    const ragResults = await findRelevantArticles(mensaje, {
-      jurisdiction: ragJurisdiction,
-      limit: 5,
-    });
+
+    const [webResults, ragResults, tituloPromise] = await Promise.all([
+      needsWebSearch(mensaje) ? searchWeb(mensaje) : Promise.resolve<string[]>([]),
+      findRelevantArticles(mensaje, { jurisdiction: ragJurisdiction, limit: 5 }),
+      // El título solo depende del mensaje del usuario — lo disparamos en paralelo
+      // y lo awaiteamos recién al final, para no sumar una roundtrip a Claude.
+      Promise.resolve(generateTitle(mensaje)),
+    ]);
+
+    const webContext = webResults.length > 0
+      ? `\n\n[BÚSQUEDA WEB - resultados recientes relevantes:\n${webResults.map((r, i) => `${i + 1}. ${r}`).join("\n")}]`
+      : "";
     const ragContext = formatRagContext(ragResults);
 
     if (ragResults.length > 0) {
@@ -257,8 +256,8 @@ export async function registerJurisRoutes(app: FastifyInstance) {
       descripcion: "",
     })).slice(0, 10);
 
-    // Generar título
-    const titulo = await generateTitle(mensaje);
+    // Título (ya disparado en paralelo arriba)
+    const titulo = await tituloPromise;
 
     // Guardar en BD
     const consultaId = randomUUID();
@@ -339,20 +338,22 @@ export async function registerJurisRoutes(app: FastifyInstance) {
 
     const { mensaje } = body.data;
 
-    // Capa 2: búsqueda web
-    const webResults: string[] = needsWebSearch(mensaje) ? await searchWeb(mensaje) : [];
-    const webContext = webResults.length > 0
-      ? `\n\n[BÚSQUEDA WEB:\n${webResults.map((r, i) => `${i + 1}. ${r}`).join("\n")}]`
-      : "";
-
-    // Capa 3: RAG
+    // Capas 2 y 3 en paralelo
     const ragJurisdiction2 = consulta.provincia
       ? (["misiones", "corrientes"].includes(consulta.provincia.toLowerCase())
           ? consulta.provincia.toLowerCase()
           : undefined)
       : undefined;
-    const ragResults2 = await findRelevantArticles(mensaje, { jurisdiction: ragJurisdiction2, limit: 4 });
-    const ragContext2  = formatRagContext(ragResults2);
+
+    const [webResults, ragResults2] = await Promise.all([
+      needsWebSearch(mensaje) ? searchWeb(mensaje) : Promise.resolve<string[]>([]),
+      findRelevantArticles(mensaje, { jurisdiction: ragJurisdiction2, limit: 4 }),
+    ]);
+
+    const webContext = webResults.length > 0
+      ? `\n\n[BÚSQUEDA WEB:\n${webResults.map((r, i) => `${i + 1}. ${r}`).join("\n")}]`
+      : "";
+    const ragContext2 = formatRagContext(ragResults2);
 
     const enrichedMessage = `${mensaje}${ragContext2}${webContext}`;
 
