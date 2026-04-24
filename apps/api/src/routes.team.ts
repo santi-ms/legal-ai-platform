@@ -265,16 +265,12 @@ export async function registerTeamRoutes(app: FastifyInstance) {
 
     const { id } = request.params as { id: string };
 
-    const inv = await prisma.teamInvitation.findFirst({
+    const result = await prisma.teamInvitation.updateMany({
       where: { id, tenantId: user.tenantId },
+      data:  { status: "canceled" },
     });
 
-    if (!inv) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
-
-    await prisma.teamInvitation.update({
-      where: { id },
-      data: { status: "canceled" },
-    });
+    if (result.count === 0) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
 
     return reply.send({ ok: true, message: "Invitación cancelada." });
   });

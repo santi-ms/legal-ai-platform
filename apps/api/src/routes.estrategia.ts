@@ -335,10 +335,11 @@ export async function registerEstrategiaRoutes(app: FastifyInstance) {
     if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const { id } = request.params as { id: string };
-    const item = await prisma.escritoAnalisis.findFirst({ where: { id, tenantId: user.tenantId } });
-    if (!item) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
-
-    await prisma.escritoAnalisis.update({ where: { id }, data: { deletedAt: new Date() } });
+    const result = await prisma.escritoAnalisis.updateMany({
+      where: { id, tenantId: user.tenantId },
+      data:  { deletedAt: new Date() },
+    });
+    if (result.count === 0) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
     return reply.send({ ok: true });
   });
 }

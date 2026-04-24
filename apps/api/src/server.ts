@@ -73,22 +73,6 @@ async function buildServer() {
 
   const app = Fastify({ logger: true });
 
-  const isDev = process.env.NODE_ENV !== "production";
-
-  const allowedOrigins = [
-    process.env.FRONTEND_URL,
-    "http://localhost:3000",
-  ].filter((v): v is string => Boolean(v));
-
-  const allowedSet = new Set<string>(allowedOrigins);
-
-  const isOriginAllowed = (origin: string | undefined): boolean => {
-    if (!origin) return true;
-    if (allowedSet.has(origin)) return true;
-    if (origin.includes(".vercel.app")) return true;
-    return false;
-  };
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await app.register(multipart as any, { limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB
 
