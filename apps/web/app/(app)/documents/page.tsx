@@ -64,7 +64,6 @@ function documentsToCsv(docs: Document[]): string {
     "Estado Versión",
     "Cliente",
     "Expediente",
-    "Costo (USD)",
     "Fecha Creación",
     "Fecha Actualización",
   ];
@@ -78,7 +77,6 @@ function documentsToCsv(docs: Document[]): string {
     escapeCsvField(STATUS_LABELS[doc.lastVersion?.status ?? ""] ?? doc.lastVersion?.status),
     escapeCsvField((doc as any).client?.name ?? null),
     escapeCsvField((doc as any).expediente?.title ?? null),
-    escapeCsvField(doc.costUsd != null ? doc.costUsd.toFixed(4) : null),
     escapeCsvField(new Date(doc.createdAt).toLocaleString("es-AR")),
     escapeCsvField(new Date(doc.updatedAt).toLocaleString("es-AR")),
   ]);

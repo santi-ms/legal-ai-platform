@@ -805,10 +805,6 @@ export default function DocumentDetailPage() {
                     : undefined,
               },
               {
-                label: "Costo estimado (USD)",
-                value: doc.costUsd !== null ? `$${doc.costUsd}` : "—",
-              },
-              {
                 label: "Versión visible",
                 value: last ? `#${last.id.slice(0, 8)}` : "—",
                 mono: true,
