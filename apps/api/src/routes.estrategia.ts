@@ -13,6 +13,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "./db.js";
 import { requireAuth } from "./utils/auth.js";
 import { extractTextFromPdf } from "./modules/documents/services/pdf-extractor.js";
+import { checkMonthlyLimit, planLimitExceededResponse } from "./services/plan-limits.js";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -179,6 +180,19 @@ export async function registerEstrategiaRoutes(app: FastifyInstance) {
     if (buffer.length > 10 * 1024 * 1024) {
       return reply.status(400).send({ ok: false, error: "FILE_TOO_LARGE", message: "Máximo 10 MB" });
     }
+
+    // Chequeo de límite mensual del plan
+    const limitCheck = await checkMonthlyLimit({
+      tenantId: user.tenantId,
+      limitKey: "strategiesPerMonth",
+      fallbackLimit: 2,
+      resourceLabel: "análisis de escritos",
+      countQuery: (start, end) =>
+        prisma.escritoAnalisis.count({
+          where: { tenantId: user.tenantId!, createdAt: { gte: start, lte: end } },
+        }),
+    });
+    if (!limitCheck.ok) return reply.status(429).send(planLimitExceededResponse(limitCheck));
 
     // Extraer texto
     const pdfText = await extractTextFromPdf(buffer);

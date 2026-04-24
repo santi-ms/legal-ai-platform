@@ -25,6 +25,18 @@ import { requireAuth } from "./utils/auth.js";
 import { logger } from "./utils/logger.js";
 import { randomUUID } from "node:crypto";
 import { findRelevantArticles, formatRagContext } from "./services/rag-service.js";
+import { checkMonthlyLimit, planLimitExceededResponse } from "./services/plan-limits.js";
+
+// Cuenta mensajes "assistant" del tenant en un rango (cada respuesta IA cuenta 1).
+async function countJurisAssistantMessages(tenantId: string, start: Date, end: Date): Promise<number> {
+  return prisma.jurisMensaje.count({
+    where: {
+      role: "assistant",
+      createdAt: { gte: start, lte: end },
+      consulta: { tenantId },
+    },
+  });
+}
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -180,6 +192,16 @@ export async function registerJurisRoutes(app: FastifyInstance) {
     }
 
     const { mensaje, provincia, materia, expedienteId } = body.data;
+
+    // Chequeo de límite mensual del plan (1 respuesta IA = 1 mensaje counted)
+    const limitCheck = await checkMonthlyLimit({
+      tenantId: user.tenantId,
+      limitKey: "jurisMessagesPerMonth",
+      fallbackLimit: 10,
+      resourceLabel: "consultas a Doku Juris",
+      countQuery: (start, end) => countJurisAssistantMessages(user.tenantId!, start, end),
+    });
+    if (!limitCheck.ok) return reply.status(429).send(planLimitExceededResponse(limitCheck));
 
     // Validar y cargar expediente (una sola query)
     let expedienteContext = "";
@@ -337,6 +359,16 @@ export async function registerJurisRoutes(app: FastifyInstance) {
     if (!consulta) return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
 
     const { mensaje } = body.data;
+
+    // Chequeo de límite mensual del plan (cada respuesta IA cuenta 1)
+    const limitCheck = await checkMonthlyLimit({
+      tenantId: user.tenantId,
+      limitKey: "jurisMessagesPerMonth",
+      fallbackLimit: 10,
+      resourceLabel: "consultas a Doku Juris",
+      countQuery: (start, end) => countJurisAssistantMessages(user.tenantId!, start, end),
+    });
+    if (!limitCheck.ok) return reply.status(429).send(planLimitExceededResponse(limitCheck));
 
     // Capas 2 y 3 en paralelo
     const ragJurisdiction2 = consulta.provincia

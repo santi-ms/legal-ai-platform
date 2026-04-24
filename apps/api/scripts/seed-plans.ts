@@ -24,6 +24,8 @@ const PLANS = [
       maxExpedientes: 2,
       maxReferenceFiles: 0,
       analysesPerMonth: 2,
+      strategiesPerMonth: 2,
+      jurisMessagesPerMonth: 10,
     },
     features: {
       chatIA: false,
@@ -49,6 +51,8 @@ const PLANS = [
       maxExpedientes: -1,
       maxReferenceFiles: 10,
       analysesPerMonth: 15,
+      strategiesPerMonth: 15,
+      jurisMessagesPerMonth: 100,
     },
     features: {
       chatIA: true,
@@ -74,6 +78,8 @@ const PLANS = [
       maxExpedientes: -1,
       maxReferenceFiles: 20,
       analysesPerMonth: 30,
+      strategiesPerMonth: 30,
+      jurisMessagesPerMonth: 250,
     },
     features: {
       chatIA: true,
@@ -99,6 +105,8 @@ const PLANS = [
       maxExpedientes: -1,
       maxReferenceFiles: -1,
       analysesPerMonth: -1,
+      strategiesPerMonth: -1,
+      jurisMessagesPerMonth: -1,
     },
     features: {
       chatIA: true,
