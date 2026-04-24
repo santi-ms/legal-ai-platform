@@ -15,7 +15,9 @@ import { useToast } from "@/components/ui/toast";
 import {
   listExpedientes, createExpediente, deleteExpediente, updateExpediente, getExpediente, exportExpedientesCSV,
   Expediente, ExpedienteMatter, ExpedienteStatus,
+  isPlanLimitError,
 } from "@/app/lib/webApi";
+import { usePlanLimitHandler } from "@/app/lib/hooks/usePlanLimitHandler";
 import {
   ExpedienteForm,
   MATTER_LABELS,
@@ -241,6 +243,7 @@ function ExpedientesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { success, error: showError } = useToast();
+  const handlePlanLimit = usePlanLimitHandler();
 
   const [expedientes, setExpedientes] = useState<Expediente[]>([]);
   const [total, setTotal]             = useState(0);
@@ -338,9 +341,17 @@ function ExpedientesContent() {
   useEffect(() => { loadExpedientes(); }, [loadExpedientes]);
 
   const handleCreate = async (payload: any) => {
-    await createExpediente(payload);
-    success("Expediente creado exitosamente");
-    loadExpedientes();
+    try {
+      await createExpediente(payload);
+      success("Expediente creado exitosamente");
+      loadExpedientes();
+    } catch (err) {
+      if (isPlanLimitError(err)) {
+        handlePlanLimit(err);
+        return;
+      }
+      throw err;
+    }
   };
 
   const executeDeleteExpediente = (id: string) => {

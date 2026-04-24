@@ -46,11 +46,14 @@ import {
   listReferenceDocuments,
   patchDocumentClient,
   patchDocumentExpediente,
+  ApiError,
+  isPlanLimitError,
   type Client,
   type Expediente,
   type ReferenceDocument,
   REFERENCE_DOCUMENT_TYPES,
 } from "@/app/lib/webApi";
+import { usePlanLimitHandler } from "@/app/lib/hooks/usePlanLimitHandler";
 import { Users, Briefcase, ChevronDown as ChevronDownIcon, BookMarked } from "lucide-react";
 
 // Initialize schemas — all document types
@@ -90,6 +93,7 @@ interface GenerationResult {
 export default function GuidedDocumentCreationPage() {
   const router = useRouter();
   const { success, error: showError } = useToast();
+  const handlePlanLimit = usePlanLimitHandler();
   
   const [currentStep, setCurrentStep] = useState<FlowStep>("selection");
   const [selectedDocumentType, setSelectedDocumentType] = useState<DocumentTypeId | null>(null);
@@ -340,12 +344,23 @@ export default function GuidedDocumentCreationPage() {
       const startData = await res.json();
 
       if (!res.ok || !startData.ok) {
+        const payload = (startData ?? {}) as Record<string, unknown>;
         if (res.status === 400) {
-          const errorMessage = startData.message || startData.error || "Error de validación";
-          const details = startData.details || [];
-          throw new Error(`${errorMessage}${details.length > 0 ? `: ${details.join(", ")}` : ""}`);
+          const errorMessage = (payload.message as string) || (payload.error as string) || "Error de validación";
+          const details = (payload.details as unknown[]) || [];
+          throw new ApiError({
+            status: res.status,
+            code: typeof payload.error === "string" ? payload.error : null,
+            message: `${errorMessage}${details.length > 0 ? `: ${details.join(", ")}` : ""}`,
+            payload,
+          });
         }
-        throw new Error(startData.message || startData.error || "Error al generar el documento");
+        throw new ApiError({
+          status: res.status,
+          code: typeof payload.error === "string" ? payload.error : null,
+          message: (payload.message as string) || (payload.error as string) || "Error al generar el documento",
+          payload,
+        });
       }
 
       const { jobId } = startData;
@@ -422,10 +437,14 @@ export default function GuidedDocumentCreationPage() {
     } catch (err: any) {
       const errorMsg = err.message || "Error desconocido";
       setError(errorMsg);
-      
+
       trackUnexpectedError(selectedDocumentType, errorMsg, "summary");
-      
-      showError("Error al generar. Revisá los datos e intentá de nuevo.");
+
+      if (isPlanLimitError(err)) {
+        handlePlanLimit(err);
+      } else {
+        showError("Error al generar. Revisá los datos e intentá de nuevo.");
+      }
     } finally {
       setLoading(false);
     }

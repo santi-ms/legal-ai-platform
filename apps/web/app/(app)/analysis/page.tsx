@@ -17,6 +17,8 @@ import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { isPlanLimitError } from "@/app/lib/webApi";
+import { usePlanLimitHandler } from "@/app/lib/hooks/usePlanLimitHandler";
 
 // ─── Risk config ─────────────────────────────────────────────────────────────
 
@@ -31,6 +33,7 @@ const RISK_CONFIG = {
 export default function AnalysisPage() {
   const router = useRouter();
   const { success: toastSuccess, error: toastError } = useToast();
+  const handlePlanLimit = usePlanLimitHandler();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [analyses, setAnalyses] = useState<ContractAnalysis[]>([]);
@@ -75,11 +78,15 @@ export default function AnalysisPage() {
       toastSuccess(`"${file.name}" subido — Claude está analizando en segundo plano.`);
       router.push(`/analysis/${analysisId}`);
     } catch (err: any) {
-      toastError(`Error al subir el archivo: ${err.message}`);
+      if (isPlanLimitError(err)) {
+        handlePlanLimit(err);
+      } else {
+        toastError(`Error al subir el archivo: ${err.message}`);
+      }
       setUploading(false);
       setUploadProgress(null);
     }
-  }, [router, toastSuccess, toastError]);
+  }, [router, toastSuccess, toastError, handlePlanLimit]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

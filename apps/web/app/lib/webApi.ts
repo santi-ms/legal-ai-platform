@@ -111,6 +111,36 @@ async function readJson(resp: Response) {
   }
 }
 
+/**
+ * Error enriquecido que preserva la metadata del backend (status HTTP, código de
+ * error interno como "PLAN_LIMIT_EXCEEDED", y campos extra como limit/used).
+ * Extiende Error por lo que `err.message` sigue funcionando como antes —
+ * cualquier catch legacy no se rompe.
+ */
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code: string | null;
+  readonly payload: Record<string, unknown>;
+
+  constructor(params: {
+    status: number;
+    code: string | null;
+    message: string;
+    payload: Record<string, unknown>;
+  }) {
+    super(params.message);
+    this.name = "ApiError";
+    this.status = params.status;
+    this.code = params.code;
+    this.payload = params.payload;
+  }
+}
+
+/** True si el error es un 429 por límite de plan excedido. */
+export function isPlanLimitError(err: unknown): err is ApiError {
+  return err instanceof ApiError && err.status === 429 && err.code === "PLAN_LIMIT_EXCEEDED";
+}
+
 async function proxyJson<T = any>(
   path: string,
   init: RequestInit = {}
@@ -145,11 +175,13 @@ async function proxyJson<T = any>(
   const data = await readJson(resp);
 
   if (!resp.ok || (data && typeof data === "object" && "ok" in data && (data as any).ok === false)) {
+    const payload = (data ?? {}) as Record<string, unknown>;
     const message =
-      (data as any)?.message ||
-      (data as any)?.error ||
+      (payload.message as string | undefined) ||
+      (payload.error as string | undefined) ||
       `Error ${resp.status}`;
-    throw new Error(message);
+    const code = typeof payload.error === "string" ? payload.error : null;
+    throw new ApiError({ status: resp.status, code, message, payload });
   }
 
   return { status: resp.status, data: data as T };
@@ -1173,7 +1205,15 @@ export async function uploadEscrito(
 
   const resp = await fetch(`/api/proxy/estrategia/upload`, { method: "POST", body: formData });
   const data = await resp.json();
-  if (!resp.ok || data?.ok === false) throw new Error(data?.message || "Error al subir el escrito");
+  if (!resp.ok || data?.ok === false) {
+    const payload = (data ?? {}) as Record<string, unknown>;
+    throw new ApiError({
+      status: resp.status,
+      code: typeof payload.error === "string" ? payload.error : null,
+      message: (payload.message as string) || (payload.error as string) || "Error al subir el escrito",
+      payload,
+    });
+  }
   return data;
 }
 
@@ -1277,7 +1317,13 @@ export async function uploadContractForAnalysis(
 
   const data = await readJson(resp);
   if (!resp.ok || (data && typeof data === "object" && "ok" in data && (data as any).ok === false)) {
-    throw new Error((data as any)?.message || (data as any)?.error || `Error ${resp.status}`);
+    const payload = (data ?? {}) as Record<string, unknown>;
+    throw new ApiError({
+      status: resp.status,
+      code: typeof payload.error === "string" ? payload.error : null,
+      message: (payload.message as string) || (payload.error as string) || `Error ${resp.status}`,
+      payload,
+    });
   }
   return {
     analysisId: (data as any).analysisId as string,
@@ -1473,7 +1519,13 @@ export async function uploadReferenceDocument(
 
   const data = await readJson(resp);
   if (!resp.ok || (data && typeof data === "object" && "ok" in data && (data as any).ok === false)) {
-    throw new Error((data as any)?.message || (data as any)?.error || `Error ${resp.status}`);
+    const payload = (data ?? {}) as Record<string, unknown>;
+    throw new ApiError({
+      status: resp.status,
+      code: typeof payload.error === "string" ? payload.error : null,
+      message: (payload.message as string) || (payload.error as string) || `Error ${resp.status}`,
+      payload,
+    });
   }
   return {
     doc: (data as any).referenceDocument as ReferenceDocument,

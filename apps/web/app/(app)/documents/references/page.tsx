@@ -4,10 +4,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/lib/hooks/useAuth";
 import { useToast } from "@/components/ui/toast";
+import { usePlanLimitHandler } from "@/app/lib/hooks/usePlanLimitHandler";
 import {
   uploadReferenceDocument,
   listReferenceDocuments,
   deleteReferenceDocument,
+  isPlanLimitError,
   REFERENCE_DOCUMENT_TYPES,
   ReferenceDocument,
 } from "@/app/lib/webApi";
@@ -260,6 +262,7 @@ export default function ReferencesPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { success, error: showError } = useToast();
+  const handlePlanLimit = usePlanLimitHandler();
 
   const [references, setReferences] = useState<ReferenceDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -303,7 +306,11 @@ export default function ReferencesPage() {
         success(`"${doc.originalName}" subido correctamente`);
       }
     } catch (err) {
-      showError(err instanceof Error ? err.message : "Error al subir el documento");
+      if (isPlanLimitError(err)) {
+        handlePlanLimit(err);
+      } else {
+        showError(err instanceof Error ? err.message : "Error al subir el documento");
+      }
     } finally {
       setUploading(false);
     }

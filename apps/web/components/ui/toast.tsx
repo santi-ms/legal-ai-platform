@@ -24,9 +24,9 @@ interface ToastContextType {
   addToast: (message: string, type?: ToastType, duration?: number, action?: ToastAction) => void;
   removeToast: (id: string) => void;
   success: (message: string, duration?: number, action?: ToastAction) => void;
-  error: (message: string, duration?: number) => void;
-  info: (message: string, duration?: number) => void;
-  warning: (message: string, duration?: number) => void;
+  error: (message: string, duration?: number, action?: ToastAction) => void;
+  info: (message: string, duration?: number, action?: ToastAction) => void;
+  warning: (message: string, duration?: number, action?: ToastAction) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -67,17 +67,20 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 
   const error = useCallback(
-    (message: string, duration?: number) => addToast(message, "error", duration),
+    (message: string, duration?: number, action?: ToastAction) =>
+      addToast(message, "error", duration, action),
     [addToast]
   );
 
   const info = useCallback(
-    (message: string, duration?: number) => addToast(message, "info", duration),
+    (message: string, duration?: number, action?: ToastAction) =>
+      addToast(message, "info", duration, action),
     [addToast]
   );
 
   const warning = useCallback(
-    (message: string, duration?: number) => addToast(message, "warning", duration),
+    (message: string, duration?: number, action?: ToastAction) =>
+      addToast(message, "warning", duration, action),
     [addToast]
   );
 

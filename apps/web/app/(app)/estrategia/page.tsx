@@ -20,7 +20,9 @@ import {
   listEscritos, uploadEscrito, deleteEscrito,
   EscritoAnalisis, TipoEscrito, NivelRiesgo,
   listExpedientes, Expediente,
+  isPlanLimitError,
 } from "@/app/lib/webApi";
+import { usePlanLimitHandler } from "@/app/lib/hooks/usePlanLimitHandler";
 import Link from "next/link";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -68,6 +70,7 @@ const RIESGO_CONFIG: Record<NivelRiesgo, {
 
 function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const { success, error: showError } = useToast();
+  const handlePlanLimit               = usePlanLimitHandler();
   const [file, setFile]               = useState<File | null>(null);
   const [dragging, setDragging]       = useState(false);
   const [tipoEscrito, setTipoEscrito] = useState<TipoEscrito>("demanda");
@@ -95,7 +98,11 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
       success("Escrito subido. El análisis comenzó en segundo plano.");
       onSuccess();
     } catch (err: any) {
-      showError(err?.message || "Error al subir el escrito");
+      if (isPlanLimitError(err)) {
+        handlePlanLimit(err);
+      } else {
+        showError(err?.message || "Error al subir el escrito");
+      }
     } finally {
       setUploading(false);
     }

@@ -14,7 +14,9 @@ import { useToast } from "@/components/ui/toast";
 import {
   listClients, createClient, updateClient, deleteClient, unarchiveClient,
   Client, ClientPayload, ClientsParams, ClientType,
+  isPlanLimitError,
 } from "@/app/lib/webApi";
+import { usePlanLimitHandler } from "@/app/lib/hooks/usePlanLimitHandler";
 import { ClientForm } from "@/components/clients/ClientForm";
 import { cn } from "@/app/lib/utils";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -267,6 +269,7 @@ function ClientsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { success, error: showError, addToast } = useToast();
+  const handlePlanLimit = usePlanLimitHandler();
 
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -393,14 +396,22 @@ function ClientsContent() {
   };
 
   const handleSave = async (payload: ClientPayload) => {
-    if (editingClient) {
-      await updateClient(editingClient.id, payload);
-      success("Cliente actualizado correctamente");
-    } else {
-      await createClient(payload);
-      success("Cliente creado correctamente");
+    try {
+      if (editingClient) {
+        await updateClient(editingClient.id, payload);
+        success("Cliente actualizado correctamente");
+      } else {
+        await createClient(payload);
+        success("Cliente creado correctamente");
+      }
+      await loadClients();
+    } catch (err) {
+      if (isPlanLimitError(err)) {
+        handlePlanLimit(err);
+        return; // evita que el form muestre el error raw; el toast ya comunica
+      }
+      throw err;
     }
-    await loadClients();
   };
 
   // ── Archive with undo ─────────────────────────────────────────────────────

@@ -26,7 +26,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { PlainTextDocumentEditor } from "@/src/features/documents/ui/editor/PlainTextDocumentEditor";
 import { usePlainTextDocumentEditor } from "@/src/features/documents/ui/editor/usePlainTextDocumentEditor";
-import { listReferenceDocuments, listExpedientes, type ReferenceDocument, type Expediente } from "@/app/lib/webApi";
+import { listReferenceDocuments, listExpedientes, ApiError, isPlanLimitError, type ReferenceDocument, type Expediente } from "@/app/lib/webApi";
+import { usePlanLimitHandler } from "@/app/lib/hooks/usePlanLimitHandler";
 
 // Registrar todos los schemas de documentos
 import "@/src/features/documents/schemas/service-contract";
@@ -82,6 +83,7 @@ const INITIAL_MESSAGE: Message = {
 function ChatDocumentCreationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const handlePlanLimit = usePlanLimitHandler();
 
   // Pre-selected expediente (passed from /expedientes/[id] "New Document" button)
   const prefilledExpedienteId = searchParams.get("expedienteId") ?? "";
@@ -220,7 +222,13 @@ function ChatDocumentCreationContent() {
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
-        throw new Error(data.message || "Error al generar el documento");
+        const payload = (data ?? {}) as Record<string, unknown>;
+        throw new ApiError({
+          status: res.status,
+          code: typeof payload.error === "string" ? payload.error : null,
+          message: (payload.message as string) || (payload.error as string) || "Error al generar el documento",
+          payload,
+        });
       }
 
       const { jobId } = data;
@@ -248,15 +256,24 @@ function ChatDocumentCreationContent() {
 
       throw new Error("El documento tardó demasiado en generarse. Intentá de nuevo.");
     } catch (err) {
-      // Volvemos al chat con mensaje de error
+      // Volvemos al chat. Para plan-limit disparamos el toast con CTA a billing
+      // y agregamos un mensaje del asistente que explique el tope alcanzado.
       setStep("chat");
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: `Tuve un problema al generar el documento: ${err instanceof Error ? err.message : "error desconocido"}. ¿Querés que lo intentemos de nuevo?`,
-        },
-      ]);
+      if (isPlanLimitError(err)) {
+        handlePlanLimit(err);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: `${err.message} Podés ver tus planes disponibles desde el botón "Ver planes".` },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `Tuve un problema al generar el documento: ${err instanceof Error ? err.message : "error desconocido"}. ¿Querés que lo intentemos de nuevo?`,
+          },
+        ]);
+      }
     }
   };
 

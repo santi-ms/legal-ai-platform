@@ -5,8 +5,10 @@ import { useAuth } from "@/app/lib/hooks/useAuth";
 import {
   createJurisConsulta, sendJurisMensaje, listJurisConsultas,
   getJurisConsulta, deleteJurisConsulta,
+  isPlanLimitError,
   JurisConsulta, JurisMensaje,
 } from "@/app/lib/webApi";
+import { usePlanLimitHandler } from "@/app/lib/hooks/usePlanLimitHandler";
 import {
   Scale, Send, Plus, Trash2, Loader2, BookOpen, ChevronDown,
   MessageSquare, Clock, Sparkles, AlertCircle, Search, X, Menu,
@@ -296,6 +298,7 @@ function WelcomeState({ onSuggestion }: { onSuggestion: (s: string) => void }) {
 
 export default function JurisPage() {
   useAuth();
+  const handlePlanLimit = usePlanLimitHandler();
 
   // State
   const [consultas, setConsultas]         = useState<JurisConsulta[]>([]);
@@ -432,7 +435,12 @@ export default function JurisPage() {
         } : prev);
       }
       setInput(text);
-      setError(err?.message ?? "Error al enviar la consulta.");
+      if (isPlanLimitError(err)) {
+        handlePlanLimit(err);
+        setError(null);
+      } else {
+        setError(err?.message ?? "Error al enviar la consulta.");
+      }
     } finally {
       setSending(false);
     }
