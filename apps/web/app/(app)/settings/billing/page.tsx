@@ -38,6 +38,12 @@ import {
   Tag,
   ChevronDown,
   AlertCircle,
+  Users,
+  Briefcase,
+  Scale,
+  MessageSquare,
+  Search,
+  BookOpen,
 } from "lucide-react";
 
 import { cn } from "@/app/lib/utils";
@@ -748,7 +754,14 @@ function BillingPageContent() {
   if (!isAuthenticated) return null;
 
   const currentPlanCode = billing?.plan?.code ?? "free";
-  const docsLimit = billing?.plan?.limits?.docsPerMonth ?? 5;
+  const planLimits = (billing?.plan?.limits ?? {}) as Record<string, number | undefined>;
+  const docsLimit          = planLimits.docsPerMonth          ?? 5;
+  const analysesLimit      = planLimits.analysesPerMonth      ?? 2;
+  const strategiesLimit    = planLimits.strategiesPerMonth    ?? 2;
+  const jurisLimit         = planLimits.jurisMessagesPerMonth ?? 10;
+  const clientsLimit       = planLimits.maxClients            ?? 3;
+  const expedientesLimit   = planLimits.maxExpedientes        ?? 2;
+  const referencesLimit    = planLimits.maxReferenceFiles     ?? 0;
   const estudioPlan = plans.find((p) => p.code === "estudio");
   const estudioTotal = (estudioPlan?.priceArs ?? 45000) * estudioUsers;
 
@@ -1033,6 +1046,46 @@ function BillingPageContent() {
                   limit={docsLimit === -1 ? null : docsLimit}
                   icon={FileText}
                 />
+                <UsageBar
+                  label="Análisis de contratos este mes"
+                  used={billing.usage.analysesThisMonth ?? 0}
+                  limit={analysesLimit === -1 ? null : analysesLimit}
+                  icon={Search}
+                />
+                <UsageBar
+                  label="Análisis de escritos este mes"
+                  used={billing.usage.strategiesThisMonth ?? 0}
+                  limit={strategiesLimit === -1 ? null : strategiesLimit}
+                  icon={Scale}
+                />
+                <UsageBar
+                  label="Consultas a Doku Juris este mes"
+                  used={billing.usage.jurisMessagesThisMonth ?? 0}
+                  limit={jurisLimit === -1 ? null : jurisLimit}
+                  icon={MessageSquare}
+                />
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-700/50 space-y-4">
+                  <UsageBar
+                    label="Clientes activos"
+                    used={billing.usage.clientsTotal ?? 0}
+                    limit={clientsLimit === -1 ? null : clientsLimit}
+                    icon={Users}
+                  />
+                  <UsageBar
+                    label="Expedientes activos"
+                    used={billing.usage.expedientesTotal ?? 0}
+                    limit={expedientesLimit === -1 ? null : expedientesLimit}
+                    icon={Briefcase}
+                  />
+                  {referencesLimit !== 0 && (
+                    <UsageBar
+                      label="Documentos de referencia"
+                      used={billing.usage.referenceFilesTotal ?? 0}
+                      limit={referencesLimit === -1 ? null : referencesLimit}
+                      icon={BookOpen}
+                    />
+                  )}
+                </div>
               </div>
 
               {/* Trial info */}

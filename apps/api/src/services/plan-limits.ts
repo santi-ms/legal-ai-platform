@@ -14,7 +14,11 @@ export type PlanLimitKey =
   | "docsPerMonth"
   | "analysesPerMonth"
   | "strategiesPerMonth"
-  | "jurisMessagesPerMonth";
+  | "jurisMessagesPerMonth"
+  | "maxClients"
+  | "maxExpedientes"
+  | "maxReferenceFiles"
+  | "maxUsers";
 
 export type LimitCountQuery = (startOfMonth: Date, endOfMonth: Date) => Promise<number>;
 
@@ -61,6 +65,35 @@ export async function checkMonthlyLimit(params: {
   const { start, end } = currentMonthRange();
   const used = await params.countQuery(start, end);
 
+  return {
+    ok: used < limit,
+    limit,
+    used,
+    resource: params.resourceLabel,
+  };
+}
+
+/**
+ * Chequea un límite de "total de recursos" (no mensual): maxClients, maxExpedientes, etc.
+ * Igual que checkMonthlyLimit pero sin filtro de fecha.
+ */
+export async function checkResourceLimit(params: {
+  tenantId: string;
+  limitKey: PlanLimitKey;
+  countQuery: () => Promise<number>;
+  fallbackLimit: number;
+  resourceLabel: string;
+}): Promise<PlanLimitResult> {
+  const { plan } = await getPlanForTenant(params.tenantId);
+  const limits = (plan as { limits?: Record<string, unknown> } | null)?.limits ?? {};
+  const raw = limits[params.limitKey];
+  const limit: number = typeof raw === "number" ? raw : params.fallbackLimit;
+
+  if (limit === -1) {
+    return { ok: true, limit: -1, used: 0, resource: params.resourceLabel };
+  }
+
+  const used = await params.countQuery();
   return {
     ok: used < limit,
     limit,

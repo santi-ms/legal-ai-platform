@@ -12,6 +12,8 @@ import { z } from "zod";
 import { getUserFromRequest } from "./utils/auth.js";
 import { prisma } from "./db.js";
 import { calculateDeadline, PROVINCIAS, type Provincia } from "./utils/plazo-calculator.js";
+import { checkResourceLimit, planLimitExceededResponse } from "./services/plan-limits.js";
+import { auditLog } from "./services/audit-log.js";
 
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 
@@ -276,6 +278,18 @@ export async function registerExpedienteRoutes(app: FastifyInstance) {
       return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.format() });
     }
 
+    const limitCheck = await checkResourceLimit({
+      tenantId: user.tenantId!,
+      limitKey: "maxExpedientes",
+      fallbackLimit: 2,
+      resourceLabel: "expedientes activos",
+      countQuery: () =>
+        prisma.expediente.count({
+          where: { tenantId: user.tenantId!, status: { not: "archivado" } },
+        }),
+    });
+    if (!limitCheck.ok) return reply.status(429).send(planLimitExceededResponse(limitCheck));
+
     const data = parsed.data;
 
     // Validar que el clientId pertenece al mismo tenant
@@ -397,10 +411,19 @@ export async function registerExpedienteRoutes(app: FastifyInstance) {
 
     const { id } = request.params as { id: string };
 
-    const existing = await prisma.expediente.findFirst({ where: { id, tenantId: user.tenantId! } });
-    if (!existing) return notFound(reply);
+    const result = await prisma.expediente.deleteMany({
+      where: { id, tenantId: user.tenantId! },
+    });
+    if (result.count === 0) return notFound(reply);
 
-    await prisma.expediente.delete({ where: { id } });
+    await auditLog({
+      tenantId: user.tenantId!,
+      userId: user.userId,
+      action: "expediente.delete",
+      resourceType: "Expediente",
+      resourceId: id,
+      request,
+    });
 
     return reply.send({ ok: true, message: "Expediente eliminado correctamente" });
   });

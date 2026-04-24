@@ -16,6 +16,7 @@ import { MercadoPagoConfig, PreApproval, Payment, Preference } from "mercadopago
 import { createHmac } from "node:crypto";
 import { getUserFromRequest } from "./utils/auth.js";
 import { prisma } from "./db.js";
+import { auditLog } from "./services/audit-log.js";
 
 // ─── Webhook signature verification ──────────────────────────────────────────
 // MP firma los webhooks con HMAC-SHA256 usando el secret del panel de MP.
@@ -173,12 +174,42 @@ export async function registerBillingRoutes(app: FastifyInstance) {
 
     const { subscription, plan } = await getPlanForTenant(user.tenantId);
 
-    const docsThisMonth = await prisma.document.count({
-      where: {
-        tenantId: user.tenantId,
-        createdAt: { gte: getStartOfMonth(), lte: getEndOfMonth() },
-      },
-    });
+    const monthRange = { gte: getStartOfMonth(), lte: getEndOfMonth() };
+    const [
+      docsThisMonth,
+      analysesThisMonth,
+      strategiesThisMonth,
+      jurisMessagesThisMonth,
+      clientsTotal,
+      expedientesTotal,
+      referenceFilesTotal,
+    ] = await Promise.all([
+      prisma.document.count({
+        where: { tenantId: user.tenantId, createdAt: monthRange },
+      }),
+      prisma.contractAnalysis.count({
+        where: { tenantId: user.tenantId, createdAt: monthRange },
+      }),
+      prisma.escritoAnalisis.count({
+        where: { tenantId: user.tenantId, createdAt: monthRange },
+      }),
+      prisma.jurisMensaje.count({
+        where: {
+          role: "assistant",
+          createdAt: monthRange,
+          consulta: { tenantId: user.tenantId },
+        },
+      }),
+      prisma.client.count({
+        where: { tenantId: user.tenantId, archivedAt: null },
+      }),
+      prisma.expediente.count({
+        where: { tenantId: user.tenantId, status: { not: "archivado" } },
+      }),
+      prisma.referenceDocument.count({
+        where: { tenantId: user.tenantId, deletedAt: null },
+      }),
+    ]);
 
     return reply.send({
       ok: true,
@@ -202,7 +233,15 @@ export async function registerBillingRoutes(app: FastifyInstance) {
             features: (plan as any).features,
           }
         : null,
-      usage: { docsThisMonth },
+      usage: {
+        docsThisMonth,
+        analysesThisMonth,
+        strategiesThisMonth,
+        jurisMessagesThisMonth,
+        clientsTotal,
+        expedientesTotal,
+        referenceFilesTotal,
+      },
     });
   });
 
@@ -817,6 +856,15 @@ export async function registerBillingRoutes(app: FastifyInstance) {
         where: { id: subscription.id },
         data: { status: "canceling" },
       });
+      await auditLog({
+        tenantId: user.tenantId,
+        userId: user.userId,
+        action: "billing.cancel_scheduled",
+        resourceType: "Subscription",
+        resourceId: subscription.id,
+        metadata: { renewsAt: subscription.renewsAt },
+        request,
+      });
       const renewsDate = subscription.renewsAt!.toLocaleDateString("es-AR", {
         day: "numeric", month: "long", year: "numeric",
       });
@@ -837,6 +885,14 @@ export async function registerBillingRoutes(app: FastifyInstance) {
     await prisma.tenant.update({
       where: { id: user.tenantId },
       data: { currentPlanCode: "free" },
+    });
+    await auditLog({
+      tenantId: user.tenantId,
+      userId: user.userId,
+      action: "billing.cancel_immediate",
+      resourceType: "Subscription",
+      resourceId: subscription.id,
+      request,
     });
     return reply.send({ ok: true, canceledAtPeriodEnd: false, message: "Suscripción cancelada. Tu plan vuelve a Free." });
   });

@@ -1023,3 +1023,29 @@ model LegalCodeChunk {
   @@index([jurisdiction])
   @@map("LegalCodeChunk")
 }
+
+// ─── Audit log ───────────────────────────────────────────────────────────────
+// Registro append-only de acciones sensibles. Cubre el compliance básico
+// ("¿quién hizo qué con mis datos?") que cualquier estudio jurídico va a
+// preguntar al evaluar el producto.
+
+model AuditLog {
+  id           String   @id @default(uuid())
+
+  tenantId     String
+  userId       String?  // null si es acción de sistema / webhook
+
+  action       String   // "document.delete" | "client.archive" | "billing.checkout" | etc.
+  resourceType String?  // "Document" | "Client" | "Expediente" | ...
+  resourceId   String?  // id del recurso afectado
+
+  metadata     Json?    // datos adicionales (ej: old/new status)
+  ipAddress    String?
+  userAgent    String?
+
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([action])
+  @@index([resourceType, resourceId])
+}

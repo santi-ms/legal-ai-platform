@@ -1528,10 +1528,20 @@ export interface BillingSubscription {
   maxUsers: number;
 }
 
+export interface BillingUsage {
+  docsThisMonth: number;
+  analysesThisMonth: number;
+  strategiesThisMonth: number;
+  jurisMessagesThisMonth: number;
+  clientsTotal: number;
+  expedientesTotal: number;
+  referenceFilesTotal: number;
+}
+
 export interface BillingData {
   subscription: BillingSubscription | null;
   plan: BillingPlan | null;
-  usage: { docsThisMonth: number };
+  usage: BillingUsage;
 }
 
 export interface Invoice {

@@ -11,6 +11,8 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { getUserFromRequest } from "./utils/auth.js";
 import { prisma } from "./db.js";
+import { checkResourceLimit, planLimitExceededResponse } from "./services/plan-limits.js";
+import { auditLog } from "./services/audit-log.js";
 
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 
@@ -137,6 +139,15 @@ export async function registerClientRoutes(app: FastifyInstance) {
       return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.format() });
     }
 
+    const limitCheck = await checkResourceLimit({
+      tenantId: user.tenantId,
+      limitKey: "maxClients",
+      fallbackLimit: 3,
+      resourceLabel: "clientes",
+      countQuery: () => prisma.client.count({ where: { tenantId: user.tenantId!, archivedAt: null } }),
+    });
+    if (!limitCheck.ok) return reply.status(429).send(planLimitExceededResponse(limitCheck));
+
     const data = parsed.data;
 
     const client = await prisma.client.create({
@@ -221,17 +232,25 @@ export async function registerClientRoutes(app: FastifyInstance) {
 
   // ── DELETE /clients/:id — soft delete (archivar) ──────────────────────────
   app.delete("/clients/:id", async (request, reply) => {
-    const tenantId = await getTenantId(request, reply);
-    if (!tenantId) return;
+    const user = getUserFromRequest(request);
+    if (!user) return unauthorized(reply);
+    if (!user.tenantId) return reply.status(403).send({ ok: false, error: "TENANT_REQUIRED" });
 
     const { id } = request.params as { id: string };
 
-    const existing = await prisma.client.findFirst({ where: { id, tenantId } });
-    if (!existing) return notFound(reply);
-
-    await prisma.client.update({
-      where: { id },
+    const result = await prisma.client.updateMany({
+      where: { id, tenantId: user.tenantId },
       data: { archivedAt: new Date() },
+    });
+    if (result.count === 0) return notFound(reply);
+
+    await auditLog({
+      tenantId: user.tenantId,
+      userId: user.userId,
+      action: "client.archive",
+      resourceType: "Client",
+      resourceId: id,
+      request,
     });
 
     return reply.send({ ok: true, message: "Cliente archivado correctamente" });
@@ -262,10 +281,18 @@ export async function registerClientRoutes(app: FastifyInstance) {
 
     const { id } = request.params as { id: string };
 
-    const existing = await prisma.client.findFirst({ where: { id, tenantId, archivedAt: { not: null } } });
-    if (!existing) return reply.status(404).send({ ok: false, error: "NOT_FOUND", message: "Cliente archivado no encontrado" });
+    const user = getUserFromRequest(request);
+    const result = await prisma.client.deleteMany({ where: { id, tenantId, archivedAt: { not: null } } });
+    if (result.count === 0) return reply.status(404).send({ ok: false, error: "NOT_FOUND", message: "Cliente archivado no encontrado" });
 
-    await prisma.client.delete({ where: { id } });
+    await auditLog({
+      tenantId,
+      userId: user?.userId,
+      action: "client.delete_permanent",
+      resourceType: "Client",
+      resourceId: id,
+      request,
+    });
 
     return reply.send({ ok: true, message: "Cliente eliminado definitivamente" });
   });
