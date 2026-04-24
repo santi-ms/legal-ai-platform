@@ -10,14 +10,21 @@
         "NEXTAUTH_SECRET",
         "NEXTAUTH_URL",
         "DATABASE_URL",
-        "OPENAI_API_KEY",
         "API_URL",
         "GOOGLE_CLIENT_ID",
         "GOOGLE_CLIENT_SECRET",
         "SENTRY_AUTH_TOKEN",
         "SENTRY_ORG",
         "SENTRY_PROJECT",
-        "NEXT_PUBLIC_SENTRY_DSN"
+        "NEXT_PUBLIC_SENTRY_DSN",
+        "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_PDF_SERVICE_URL",
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_INACTIVITY_MINUTES",
+        "NEXT_PUBLIC_DEBUG",
+        "POSTMARK_SERVER_TOKEN",
+        "POSTMARK_FROM_EMAIL",
+        "CONTACT_TO_EMAIL"
       ]
     },
     "lint": {

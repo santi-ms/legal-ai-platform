@@ -334,7 +334,7 @@ function DataExportSection({ isAdmin }: { isAdmin: boolean }) {
   return (
     <SectionCard
       icon={Download}
-      iconGradient="blue"
+      iconGradient="sky"
       eyebrow="Portabilidad"
       title="Descargar mis datos"
       description="Exportá en JSON todos los datos del estudio: clientes, expedientes, documentos, vencimientos, honorarios y más. Los PDFs binarios y credenciales no se incluyen."
