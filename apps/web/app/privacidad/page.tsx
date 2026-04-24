@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://doculex.com.ar/privacidad" },
 };
 
-const LAST_UPDATED = "7 de abril de 2025";
+const LAST_UPDATED = "24 de abril de 2026";
 
 export default function PrivacidadPage() {
   return (
@@ -101,7 +101,30 @@ export default function PrivacidadPage() {
             <p>
               Si el Usuario ingresa datos de terceros (clientes, contrapartes) en la Plataforma
               para la generación de documentos, es responsabilidad del Usuario haber obtenido
-              el consentimiento correspondiente conforme a la normativa aplicable.
+              el consentimiento correspondiente o contar con la base legal adecuada conforme a la
+              normativa aplicable.
+            </p>
+            <h3>2.5 Datos profesionales y secreto profesional</h3>
+            <p>
+              Cuando el Usuario es abogado matriculado u otro profesional sujeto a deber de
+              secreto, los datos de sus clientes y expedientes ingresados en la Plataforma gozan
+              de la protección reforzada del <strong>secreto profesional</strong>. Respecto de
+              dichos datos, la Empresa actúa como <strong>encargado del tratamiento</strong>
+              (art. 25 Ley 25.326) y se compromete a:
+            </p>
+            <ul>
+              <li>Tratarlos únicamente conforme a las instrucciones del Usuario y a las finalidades del Servicio.</li>
+              <li>Aplicar las medidas de seguridad descriptas en la Sección 9.</li>
+              <li><strong>No</strong> utilizarlos para entrenar modelos de inteligencia artificial propios ni de terceros.</li>
+              <li>Restituirlos o suprimirlos al finalizar la relación contractual, conforme a la Sección 5.</li>
+            </ul>
+            <h3>2.6 Credenciales de portales judiciales</h3>
+            <p>
+              Si el Usuario habilita la sincronización con portales judiciales (MEV Misiones, PJN,
+              SCBA, Corrientes u otros), las credenciales de acceso se almacenan{" "}
+              <strong>cifradas con AES-256</strong> y se utilizan exclusivamente para consultar
+              los expedientes habilitados por el Usuario. No se comparten con terceros ni con otros
+              tenants. El Usuario puede eliminarlas en cualquier momento desde la configuración.
             </p>
 
             {/* ── 3 ── */}
@@ -110,12 +133,19 @@ export default function PrivacidadPage() {
             <ul>
               <li>Crear y gestionar la cuenta del Usuario y prestar el Servicio contratado.</li>
               <li>Procesar pagos y gestionar suscripciones.</li>
-              <li>Mejorar y optimizar los modelos de inteligencia artificial y la calidad del Servicio.</li>
-              <li>Enviar comunicaciones relacionadas con el Servicio (actualizaciones, alertas de seguridad, cambios en los Términos).</li>
-              <li>Enviar comunicaciones comerciales y de marketing, únicamente con consentimiento previo del Usuario.</li>
-              <li>Cumplir con obligaciones legales y regulatorias.</li>
-              <li>Prevenir fraudes y garantizar la seguridad de la Plataforma.</li>
+              <li>Garantizar la continuidad, la calidad operativa y la seguridad de la Plataforma (métricas agregadas, prevención de fraude, resolución de incidencias).</li>
+              <li>Enviar comunicaciones relacionadas con el Servicio (actualizaciones, alertas de seguridad, cambios en los Términos, vencimientos).</li>
+              <li>Enviar comunicaciones comerciales y de marketing, únicamente con consentimiento previo del Usuario y con opción de baja en cada envío.</li>
+              <li>Cumplir con obligaciones legales, regulatorias y requerimientos de autoridad competente.</li>
             </ul>
+            <p className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4 text-sm text-emerald-800 dark:text-emerald-200">
+              <strong>Importante — uso de IA:</strong> los datos ingresados por el Usuario (prompts,
+              documentos, consultas) son enviados al proveedor de modelos de inteligencia
+              artificial únicamente para producir la respuesta solicitada. La Empresa{" "}
+              <strong>no utiliza los datos del Usuario para entrenar modelos propios ni de
+              terceros</strong>. El proveedor actual (Anthropic PBC) tampoco los utiliza para
+              entrenar sus modelos al operar bajo su API comercial.
+            </p>
 
             {/* ── 4 ── */}
             <h2>4. Base Legal del Tratamiento</h2>
@@ -148,32 +178,108 @@ export default function PrivacidadPage() {
             <p>
               Los datos personales se conservan durante el tiempo que la cuenta del Usuario
               permanezca activa y mientras sea necesario para los fines indicados en esta Política.
-              Tras la baja de la cuenta, los datos se conservan por un período de hasta cinco (5)
-              años a los efectos de cumplimiento legal, prevención de fraudes y resolución de
-              disputas, salvo que el Usuario ejerza su derecho de supresión conforme a lo indicado
-              en la Sección 7.
-            </p>
-
-            {/* ── 6 ── */}
-            <h2>6. Transferencia y Compartición de Datos</h2>
-            <p>
-              La Empresa no vende ni cede datos personales a terceros con fines comerciales
-              propios. Los datos podrán ser compartidos con:
+              Tras la baja de la cuenta:
             </p>
             <ul>
               <li>
-                <strong>Proveedores de servicios tecnológicos:</strong> como proveedores de
-                infraestructura en la nube, procesadores de pagos y servicios de IA, que actúan
-                como encargados del tratamiento bajo contratos de confidencialidad.
+                Los <strong>datos operativos</strong> (documentos, expedientes, clientes,
+                vencimientos, historial de consultas) quedan accesibles para descarga en formato
+                JSON durante los treinta (30) días posteriores a la baja y luego se anonimizan o
+                suprimen, salvo que el Usuario solicite su conservación o supresión anticipada.
               </li>
               <li>
-                <strong>Autoridades públicas:</strong> cuando sea requerido por ley, orden judicial
-                o autoridad competente.
+                Los <strong>datos de facturación</strong> se conservan por el plazo que exijan las
+                normas impositivas aplicables (hasta diez años en materia fiscal).
+              </li>
+              <li>
+                Los <strong>registros de auditoría</strong> (audit log) se conservan por un
+                máximo de cinco (5) años con fines de cumplimiento, resolución de disputas y
+                prevención de fraudes.
               </li>
             </ul>
             <p>
-              En caso de transferencias internacionales de datos, la Empresa adoptará las
-              salvaguardas adecuadas conforme a la normativa argentina aplicable.
+              El Usuario puede ejercer en cualquier momento su derecho de supresión conforme a la
+              Sección 7, y su derecho de <strong>portabilidad</strong> descargando la totalidad
+              de sus datos en formato JSON desde «Ajustes → Seguridad → Descargar mis datos».
+            </p>
+
+            {/* ── 6 ── */}
+            <h2>6. Subprocesadores y Compartición de Datos</h2>
+            <p>
+              La Empresa <strong>no vende ni cede datos personales</strong> a terceros con fines
+              comerciales propios. Los datos pueden ser compartidos con los siguientes
+              subprocesadores, que actúan como encargados del tratamiento bajo acuerdos de
+              confidencialidad:
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border border-slate-200 dark:border-slate-800 rounded-lg">
+                <thead className="bg-slate-50 dark:bg-slate-900 text-left">
+                  <tr>
+                    <th className="px-3 py-2">Proveedor</th>
+                    <th className="px-3 py-2">Finalidad</th>
+                    <th className="px-3 py-2">País</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t border-slate-200 dark:border-slate-800">
+                    <td className="px-3 py-2">Anthropic PBC</td>
+                    <td className="px-3 py-2">Modelos de IA (Claude) para generación y análisis</td>
+                    <td className="px-3 py-2">Estados Unidos</td>
+                  </tr>
+                  <tr className="border-t border-slate-200 dark:border-slate-800">
+                    <td className="px-3 py-2">Mercado Pago S.R.L.</td>
+                    <td className="px-3 py-2">Procesamiento de pagos y suscripciones</td>
+                    <td className="px-3 py-2">Argentina</td>
+                  </tr>
+                  <tr className="border-t border-slate-200 dark:border-slate-800">
+                    <td className="px-3 py-2">Supabase Inc.</td>
+                    <td className="px-3 py-2">Base de datos gestionada (PostgreSQL)</td>
+                    <td className="px-3 py-2">Estados Unidos / Unión Europea</td>
+                  </tr>
+                  <tr className="border-t border-slate-200 dark:border-slate-800">
+                    <td className="px-3 py-2">Railway Corp.</td>
+                    <td className="px-3 py-2">Infraestructura de API y microservicios</td>
+                    <td className="px-3 py-2">Estados Unidos</td>
+                  </tr>
+                  <tr className="border-t border-slate-200 dark:border-slate-800">
+                    <td className="px-3 py-2">Vercel Inc.</td>
+                    <td className="px-3 py-2">Hosting de la aplicación web</td>
+                    <td className="px-3 py-2">Estados Unidos</td>
+                  </tr>
+                  <tr className="border-t border-slate-200 dark:border-slate-800">
+                    <td className="px-3 py-2">Postmark (ActiveCampaign)</td>
+                    <td className="px-3 py-2">Envío de correo electrónico transaccional</td>
+                    <td className="px-3 py-2">Estados Unidos</td>
+                  </tr>
+                  <tr className="border-t border-slate-200 dark:border-slate-800">
+                    <td className="px-3 py-2">Brave Software Inc.</td>
+                    <td className="px-3 py-2">Búsqueda web opcional (jurisprudencia)</td>
+                    <td className="px-3 py-2">Estados Unidos</td>
+                  </tr>
+                  <tr className="border-t border-slate-200 dark:border-slate-800">
+                    <td className="px-3 py-2">Sentry</td>
+                    <td className="px-3 py-2">Monitoreo y captura de errores técnicos (sin PII)</td>
+                    <td className="px-3 py-2">Estados Unidos</td>
+                  </tr>
+                  <tr className="border-t border-slate-200 dark:border-slate-800">
+                    <td className="px-3 py-2">Google LLC</td>
+                    <td className="px-3 py-2">Autenticación federada opcional (OAuth)</td>
+                    <td className="px-3 py-2">Estados Unidos</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p>
+              Los datos también podrán ser compartidos con <strong>autoridades públicas</strong>{" "}
+              cuando sea requerido por ley, orden judicial o autoridad competente argentina.
+            </p>
+            <h3>6.1 Transferencia internacional de datos</h3>
+            <p>
+              Varios subprocesadores se encuentran en países fuera de la República Argentina
+              (principalmente Estados Unidos). Conforme a lo previsto por el art. 12 de la Ley N.º
+              25.326 y las resoluciones de la AAIP, la Empresa adopta salvaguardas adecuadas
+              mediante cláusulas contractuales que obligan a los proveedores a aplicar niveles
+              de protección equivalentes a los previstos por la legislación argentina.
             </p>
 
             {/* ── 7 ── */}
@@ -204,15 +310,23 @@ export default function PrivacidadPage() {
                 <strong>Oposición (art. 27):</strong> oponerse al tratamiento de sus datos para
                 fines de publicidad o marketing.
               </li>
+              <li>
+                <strong>Portabilidad:</strong> descargar en formato JSON estructurado la totalidad
+                de los datos asociados a su cuenta, directamente desde{" "}
+                <em>Ajustes → Seguridad → Descargar mis datos</em>. Esta función está disponible
+                para el administrador del tenant en cualquier momento, sin necesidad de
+                solicitarla por correo.
+              </li>
             </ul>
             <p>
-              Para ejercer estos derechos, el Usuario deberá enviar una solicitud por escrito a{" "}
+              Para ejercer los demás derechos, el Usuario deberá enviar una solicitud por escrito a{" "}
               <a href="mailto:privacidad@doculex.com.ar" className="text-primary hover:underline">
                 privacidad@doculex.com.ar
               </a>
               , indicando nombre completo, correo electrónico de la cuenta y descripción del
-              derecho que desea ejercer. La Empresa responderá dentro de los cinco (5) días hábiles
-              siguientes a la recepción de la solicitud.
+              derecho que desea ejercer. La Empresa responderá dentro de los diez (10) días
+              corridos siguientes a la recepción de la solicitud, conforme al art. 14 inc. 2 de
+              la Ley 25.326.
             </p>
 
             {/* ── 8 ── */}
@@ -237,9 +351,39 @@ export default function PrivacidadPage() {
             <p>
               La Empresa implementa medidas técnicas y organizativas adecuadas para proteger los
               datos personales contra acceso no autorizado, pérdida, alteración o destrucción,
-              incluyendo cifrado en tránsito (TLS) y en reposo, controles de acceso basados en
-              roles, monitoreo de seguridad y copias de seguridad periódicas.
+              entre otras:
             </p>
+            <ul>
+              <li>Cifrado en tránsito mediante TLS 1.2 o superior en toda la comunicación.</li>
+              <li>
+                Cifrado en reposo de la base de datos y de las credenciales de portales judiciales
+                (AES-256).
+              </li>
+              <li>
+                Hash seguro de contraseñas con bcrypt y tokens de acceso firmados con secretos
+                rotables (NextAuth).
+              </li>
+              <li>
+                <strong>Aislamiento multi-tenant:</strong> cada operación contra la base de datos
+                se filtra por <em>tenantId</em>, garantizando que los datos de un estudio no sean
+                accesibles desde otra cuenta.
+              </li>
+              <li>
+                Controles de acceso basados en roles (administrador / miembro del equipo) y
+                verificación de correo electrónico al registro.
+              </li>
+              <li>
+                Registro de auditoría (audit log) de las acciones sensibles, consultable mediante
+                exportación.
+              </li>
+              <li>
+                Rate-limiting en endpoints sensibles (login, reset de contraseña, invitaciones)
+                para mitigar ataques de fuerza bruta.
+              </li>
+              <li>
+                Monitoreo de errores y alertas operativas mediante Sentry (sin PII del usuario).
+              </li>
+            </ul>
             <p>
               En caso de brecha de seguridad que afecte datos personales, la Empresa notificará
               a los Usuarios afectados y a la AAIP en los plazos y formas previstos por la
