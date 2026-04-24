@@ -141,6 +141,20 @@ export function isPlanLimitError(err: unknown): err is ApiError {
   return err instanceof ApiError && err.status === 429 && err.code === "PLAN_LIMIT_EXCEEDED";
 }
 
+/** True si el error es un 403 por feature no incluida en el plan actual. */
+export function isPlanFeatureError(err: unknown): err is ApiError {
+  return err instanceof ApiError && err.status === 403 && err.code === "PLAN_FEATURE_UNAVAILABLE";
+}
+
+/**
+ * True si cualquier error del backend sugiere "upgradeá tu plan" —
+ * ya sea por límite excedido o por feature no incluida. Ambos se manejan
+ * con el mismo CTA en la UI.
+ */
+export function isPlanUpsellError(err: unknown): err is ApiError {
+  return isPlanLimitError(err) || isPlanFeatureError(err);
+}
+
 async function proxyJson<T = any>(
   path: string,
   init: RequestInit = {}

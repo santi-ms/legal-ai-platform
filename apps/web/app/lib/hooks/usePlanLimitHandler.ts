@@ -1,22 +1,24 @@
 "use client";
 
 /**
- * Hook para manejar errores de API de forma uniforme, con atención especial
- * a los 429 PLAN_LIMIT_EXCEEDED — estos se muestran con un CTA "Ver planes"
- * que lleva a /settings/billing.
+ * Hook para manejar errores de API de forma uniforme. Detecta los 2 casos
+ * donde la respuesta correcta es "mostrale al usuario los planes":
+ *   - 429 PLAN_LIMIT_EXCEEDED  — superó la cuota mensual/total del plan
+ *   - 403 PLAN_FEATURE_UNAVAILABLE — la feature no está incluida en el plan
  *
- * Uso típico:
+ * En ambos: toast persistente con CTA "Ver planes" que lleva a
+ * /settings/billing. Cualquier otro error cae a un toast de error normal.
+ *
+ * Uso:
  *   const handleError = usePlanLimitHandler();
  *   try { await uploadEscrito(file, opts); }
  *   catch (err) { handleError(err); }
- *
- * Si el error es otro tipo, cae al toast de error normal con `err.message`.
  */
 
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { useToast } from "@/components/ui/toast";
-import { isPlanLimitError } from "@/app/lib/webApi";
+import { isPlanUpsellError } from "@/app/lib/webApi";
 
 export function usePlanLimitHandler() {
   const router = useRouter();
@@ -24,7 +26,7 @@ export function usePlanLimitHandler() {
 
   return useCallback(
     (err: unknown, fallbackMessage = "Ocurrió un error") => {
-      if (isPlanLimitError(err)) {
+      if (isPlanUpsellError(err)) {
         // Toast persistente (duration 0 = no auto-dismiss) con CTA a billing
         showError(err.message, 0, {
           label: "Ver planes",

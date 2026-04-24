@@ -10,15 +10,17 @@ import { SmartRevisionsSidebar } from "@/components/documents/review/SmartRevisi
 import { DocumentWorkspaceShell } from "@/components/documents/DocumentWorkspaceShell";
 import { DocumentStatusBadge } from "@/app/components/DocumentStatusBadge";
 import { Button } from "@/components/ui/button";
-import { getDocument, askDocument, getDocumentRevisions, saveEditedContent, downloadDocumentDocx, type DocumentRevisionSuggestion } from "@/app/lib/webApi";
+import { getDocument, askDocument, getDocumentRevisions, saveEditedContent, downloadDocumentDocx, isPlanUpsellError, type DocumentRevisionSuggestion } from "@/app/lib/webApi";
 import { sanitizeInput } from "@/app/lib/sanitize";
 import type { DocumentApiResponse } from "@/app/lib/webApi";
+import { usePlanLimitHandler } from "@/app/lib/hooks/usePlanLimitHandler";
 
 type DocumentResponse = DocumentApiResponse;
 
 export default function DocumentReviewPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const handlePlanLimit = usePlanLimitHandler();
   const id = params?.id;
 
   const [data, setData] = useState<DocumentResponse | null>(null);
@@ -61,15 +63,19 @@ export default function DocumentReviewPage() {
       try {
         const revisions = await getDocumentRevisions(id);
         setSuggestedChanges(revisions);
-      } catch {
-        // Silently fail — revisions are a nice-to-have
+      } catch (err) {
+        if (isPlanUpsellError(err)) {
+          // La sugerencia de revisiones no está en el plan — mostramos el CTA
+          handlePlanLimit(err);
+        }
+        // Otros errores: silent — las revisiones son un nice-to-have
       } finally {
         setLoadingRevisions(false);
       }
     }
 
     fetchRevisions();
-  }, [id, loading]);
+  }, [id, loading, handlePlanLimit]);
 
   const handleFinalize = async () => {
     if (!id) return;
@@ -129,7 +135,16 @@ export default function DocumentReviewPage() {
 
   const handleAskAI = async (question: string): Promise<string> => {
     if (!id) throw new Error("No hay documento seleccionado");
-    return askDocument(id, question);
+    try {
+      return await askDocument(id, question);
+    } catch (err) {
+      if (isPlanUpsellError(err)) {
+        handlePlanLimit(err);
+        // Devolvemos un mensaje amable en lugar de propagar el error feo
+        return "Esta función no está disponible en tu plan actual. Revisá los planes disponibles para activarla.";
+      }
+      throw err;
+    }
   };
 
   if (loading) {
