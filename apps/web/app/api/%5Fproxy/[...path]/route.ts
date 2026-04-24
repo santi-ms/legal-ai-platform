@@ -290,12 +290,14 @@ async function handler(
     } else {
       // Para JSON y texto, usar text()
       const responseText = await backendResponse.text();
-    return new NextResponse(responseText, {
-      status: backendResponse.status,
-      headers: {
-          "Content-Type": contentType,
-      },
-    });
+      const textHeaders: Record<string, string> = { "Content-Type": contentType };
+      // Forwardear Content-Disposition si viene (útil para exports JSON con attachment)
+      const disposition = backendResponse.headers.get("content-disposition");
+      if (disposition) textHeaders["Content-Disposition"] = disposition;
+      return new NextResponse(responseText, {
+        status: backendResponse.status,
+        headers: textHeaders,
+      });
     }
 
   } catch (error: any) {

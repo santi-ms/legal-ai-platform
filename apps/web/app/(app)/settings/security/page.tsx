@@ -18,6 +18,7 @@ import {
   Check,
   AlertCircle,
   KeyRound,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -294,10 +295,78 @@ function TwoFactorSection() {
   );
 }
 
+// ─── Export de datos ──────────────────────────────────────────────────────────
+
+function DataExportSection({ isAdmin }: { isAdmin: boolean }) {
+  const { error: toastError, success: toastSuccess } = useToast();
+  const [downloading, setDownloading] = useState(false);
+
+  async function handleExport() {
+    setDownloading(true);
+    try {
+      const resp = await fetch("/api/_proxy/tenant/export", {
+        method: "GET",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        cache: "no-store",
+      });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw new Error(data?.message || `Error ${resp.status}`);
+      }
+      const blob = await resp.blob();
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `doculex-export-${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toastSuccess("Descarga iniciada. Guardá el archivo en un lugar seguro.");
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : "No pudimos generar la exportación.");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  return (
+    <SectionCard
+      icon={Download}
+      iconGradient="blue"
+      eyebrow="Portabilidad"
+      title="Descargar mis datos"
+      description="Exportá en JSON todos los datos del estudio: clientes, expedientes, documentos, vencimientos, honorarios y más. Los PDFs binarios y credenciales no se incluyen."
+    >
+      <div className="space-y-3">
+        <Button
+          type="button"
+          onClick={handleExport}
+          disabled={downloading || !isAdmin}
+          className="gap-2"
+        >
+          {downloading ? (
+            <><Loader2 className="w-4 h-4 animate-spin" /> Preparando descarga…</>
+          ) : (
+            <><Download className="w-4 h-4" /> Descargar JSON</>
+          )}
+        </Button>
+        {!isAdmin && (
+          <p className="text-xs text-slate-500 dark:text-slate-400 flex items-start gap-1.5">
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+            Solo el administrador del estudio puede exportar los datos.
+          </p>
+        )}
+      </div>
+    </SectionCard>
+  );
+}
+
 // ─── Página principal ─────────────────────────────────────────────────────────
 
 export default function SecuritySettingsPage() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -320,6 +389,7 @@ export default function SecuritySettingsPage() {
     <div className="mt-6 space-y-5">
       <ChangePasswordSection />
       <TwoFactorSection />
+      <DataExportSection isAdmin={isAdmin} />
     </div>
   );
 }

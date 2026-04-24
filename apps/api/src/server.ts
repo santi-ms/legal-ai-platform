@@ -30,6 +30,7 @@ import { registerStatsRoutes } from "./routes.stats.js";
 import { registerSuperAdminRoutes } from "./routes.superadmin.js";
 import { registerPortalRoutes } from "./routes.portal.js";
 import { registerClientPortalRoutes } from "./routes.client-portal.js";
+import { registerTenantRoutes } from "./routes.tenant.js";
 import { initializeDocumentRegistry } from "./modules/documents/domain/document-registry.js";
 import { runDeadlineNotifier } from "./services/deadline-notifier.js";
 import { runVencimientoNotifier } from "./services/vencimiento-notifier.js";
@@ -291,6 +292,7 @@ async function buildServer() {
   await registerSuperAdminRoutes(app);
   await registerPortalRoutes(app);
   await registerClientPortalRoutes(app);
+  await registerTenantRoutes(app);
   await registerJurisRoutes(app);
   await registerVencimientosRoutes(app);
   await registerActuacionesRoutes(app);
