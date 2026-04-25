@@ -2069,6 +2069,10 @@ export async function getSuperAdminUsers(params?: {
   return { users: data.users, total: data.total, page: data.page, pageSize: data.pageSize };
 }
 
+export async function deleteSuperAdminUser(id: string): Promise<void> {
+  await proxyJson(`/superadmin/users/${id}`, { method: "DELETE" });
+}
+
 // ─── Promo Codes (Super-Admin) ────────────────────────────────────────────────
 
 export interface PromoCode {

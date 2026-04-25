@@ -8,6 +8,7 @@
  * GET /superadmin/tenants         — paginated list of all tenants with stats
  * GET /superadmin/tenants/:id     — full detail for a single tenant
  * GET /superadmin/users           — paginated list of all users
+ * DELETE /superadmin/users/:id    — delete a user account (only if no content created)
  */
 
 import { FastifyInstance } from "fastify";
@@ -368,6 +369,96 @@ export async function registerSuperAdminRoutes(app: FastifyInstance) {
     ]);
 
     return reply.send({ ok: true, users, total, page, pageSize });
+  });
+
+  // ── DELETE /superadmin/users/:id ──────────────────────────────────────────
+  app.delete("/superadmin/users/:id", async (request, reply) => {
+    const admin = requireSuperAdmin(request, reply);
+    if (!admin) return;
+
+    const { id } = request.params as { id: string };
+
+    const target = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        _count: {
+          select: {
+            documentsCreated: true,
+            clientsCreated: true,
+            expedientesCreated: true,
+            referenceDocuments: true,
+            contractAnalyses: true,
+            invitationsSent: true,
+            honorariosCreated: true,
+            escritosUploaded: true,
+            clientPortalCreated: true,
+            annotations: true,
+          },
+        },
+      },
+    });
+
+    if (!target) {
+      return reply.status(404).send({ ok: false, error: "NOT_FOUND" });
+    }
+
+    if (target.email.toLowerCase() === admin.email.toLowerCase()) {
+      return reply.status(400).send({
+        ok: false,
+        error: "CANNOT_DELETE_SELF",
+        message: "No podés borrar tu propia cuenta de super-admin.",
+      });
+    }
+
+    // Bloquear si el usuario creó contenido sin cascade — borrarlo dejaría
+    // FK colgadas o requeriría borrado masivo de datos del estudio.
+    const c = target._count;
+    const total =
+      c.documentsCreated +
+      c.clientsCreated +
+      c.expedientesCreated +
+      c.referenceDocuments +
+      c.contractAnalyses +
+      c.invitationsSent +
+      c.honorariosCreated +
+      c.escritosUploaded +
+      c.clientPortalCreated +
+      c.annotations;
+
+    if (total > 0) {
+      return reply.status(409).send({
+        ok: false,
+        error: "USER_HAS_CONTENT",
+        message:
+          "Este usuario creó contenido (documentos, clientes, expedientes, etc.). Reasigná o eliminá ese contenido antes de borrar la cuenta.",
+        counts: c,
+      });
+    }
+
+    try {
+      await prisma.user.delete({ where: { id } });
+      request.log.info({
+        event: "superadmin:user_deleted",
+        deletedUserId: id,
+        deletedUserEmail: target.email,
+        by: admin.email,
+      });
+      return reply.send({ ok: true });
+    } catch (e: any) {
+      request.log.error({
+        event: "superadmin:user_delete_failed",
+        userId: id,
+        error: e?.message,
+        code: e?.code,
+      });
+      return reply.status(500).send({
+        ok: false,
+        error: "DELETE_FAILED",
+        message: e?.message ?? "No se pudo eliminar el usuario.",
+      });
+    }
   });
 
   // ── GET /superadmin/promos ────────────────────────────────────────────────

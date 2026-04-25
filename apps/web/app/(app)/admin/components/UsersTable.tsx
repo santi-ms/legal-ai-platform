@@ -1,7 +1,7 @@
 "use client";
 
 import { type SuperAdminUser } from "@/app/lib/webApi";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlanBadge, fmtDate } from "./adminHelpers";
 
@@ -11,10 +11,12 @@ interface UsersTableProps {
   usersPage: number;
   userSearch: string;
   loading: boolean;
+  deletingId: string | null;
   onSearchChange: (val: string) => void;
   onSearch: () => void;
   onPageChange: (page: number) => void;
   onSelectTenant: (id: string) => void;
+  onDeleteUser: (user: SuperAdminUser) => void;
 }
 
 export function UsersTable({
@@ -23,10 +25,12 @@ export function UsersTable({
   usersPage,
   userSearch,
   loading,
+  deletingId,
   onSearchChange,
   onSearch,
   onPageChange,
   onSelectTenant,
+  onDeleteUser,
 }: UsersTableProps) {
   return (
     <div className="space-y-4">
@@ -59,7 +63,7 @@ export function UsersTable({
             <table className="w-full text-sm">
               <thead className="bg-slate-50 dark:bg-slate-800">
                 <tr>
-                  {["Usuario", "Email", "Rol", "Estudio", "Plan", "Verificado", "Creado"].map((h) => (
+                  {["Usuario", "Email", "Rol", "Estudio", "Plan", "Verificado", "Creado", ""].map((h) => (
                     <th
                       key={h}
                       className="text-left text-xs font-semibold text-slate-500 dark:text-slate-400 px-4 py-3 uppercase tracking-wide whitespace-nowrap"
@@ -72,7 +76,7 @@ export function UsersTable({
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center text-slate-400 py-12 text-sm">
+                    <td colSpan={8} className="text-center text-slate-400 py-12 text-sm">
                       No se encontraron usuarios
                     </td>
                   </tr>
@@ -122,6 +126,25 @@ export function UsersTable({
                       </td>
                       <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
                         {fmtDate(u.createdAt)}
+                      </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          disabled={deletingId === u.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteUser(u);
+                          }}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          title="Eliminar cuenta"
+                          aria-label="Eliminar cuenta"
+                        >
+                          {deletingId === u.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
                       </td>
                     </tr>
                   ))

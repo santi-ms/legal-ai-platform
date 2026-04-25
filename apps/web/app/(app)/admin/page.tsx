@@ -14,6 +14,7 @@ import {
   getSuperAdminOverview,
   getSuperAdminTenants,
   getSuperAdminUsers,
+  deleteSuperAdminUser,
   type SuperAdminOverview,
   type SuperAdminTenant,
   type SuperAdminUser,
@@ -70,6 +71,7 @@ export default function SuperAdminPage() {
   const [usersTotal, setUsersTotal]           = useState(0);
   const [usersPage, setUsersPage]             = useState(1);
   const [userSearch, setUserSearch]           = useState("");
+  const [deletingUserId, setDeletingUserId]   = useState<string | null>(null);
   const [loading, setLoading]                 = useState(false);
   const [forbidden, setForbidden]             = useState(false);
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
@@ -193,6 +195,29 @@ export default function SuperAdminPage() {
     loadUsers(page, userSearch);
   }
 
+  async function handleDeleteUser(u: SuperAdminUser) {
+    const label =
+      u.firstName || u.lastName
+        ? `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim()
+        : u.name || u.email;
+    if (
+      !window.confirm(
+        `¿Eliminar la cuenta de ${label} (${u.email})? Esta acción es permanente y no se puede deshacer.`,
+      )
+    ) {
+      return;
+    }
+    setDeletingUserId(u.id);
+    try {
+      await deleteSuperAdminUser(u.id);
+      await loadUsers(usersPage, userSearch);
+    } catch (e: any) {
+      window.alert(e?.message || "No se pudo eliminar el usuario.");
+    } finally {
+      setDeletingUserId(null);
+    }
+  }
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
@@ -262,10 +287,12 @@ export default function SuperAdminPage() {
             usersPage={usersPage}
             userSearch={userSearch}
             loading={loading}
+            deletingId={deletingUserId}
             onSearchChange={setUserSearch}
             onSearch={() => loadUsers(1, userSearch)}
             onPageChange={handleUsersPageChange}
             onSelectTenant={setSelectedTenantId}
+            onDeleteUser={handleDeleteUser}
           />
         )}
 
