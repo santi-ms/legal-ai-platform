@@ -389,3 +389,131 @@ relevamiento interno DocuLex · muestra n=240`.)
 - Paleta como swatches: `#EDE7DA`, `#0A0A0A`, `#C92A1A`, `#1F4D3A`.
 - Versión alternativa del cover con titular más cortante:
   **"LO QUE NO TE ESTÁN CONTANDO SOBRE LA IA EN DERECHO."**
+
+---
+
+## v4 — Revisión / fix pass
+
+Revisión a aplicar **sobre el output ya generado** del v4 (no rehacer desde
+cero). Corrige seis problemas detectados en la primera pasada de Claude
+Design: logo sin icono, colisiones de texto con números grandes, highlights
+verdes que pisan el interlineado, etiquetas ilegibles en el gráfico de
+barras, glifo cortado en el cover, y CTA faltante.
+
+### Prompt (copiar y pegar en Claude Design)
+
+Revisá el carrusel **"4 mitos sobre IA legal"** sin cambiar el sistema visual
+general (papel hueso `#EDE7DA`, tinta negra, acento rojo `#C92A1A`, verde
+tinta `#1F4D3A`, tipografía condensada de diario, sellos `MITO`/`REALIDAD`,
+masthead tipo diario, líneas divisorias gruesas y halftone sutil). **Aplicá
+solo las siguientes correcciones puntuales.**
+
+---
+
+#### 1. Logo DocuLex — en los 6 slides
+
+Donde aparece el masthead arriba a la izquierda **no alcanza con escribir
+"DocuLex" como texto**. Usá el **logo completo** del design system DocuLex:
+el **icono/símbolo monogramático a la izquierda + el lockup `Docu` regular
++ `Lex` bold a la derecha**. El icono es el mismo que aparece en el deck
+original publicado (no inventes uno nuevo). Si el design system tiene un
+componente `Logo`, insertalo desde ahí. El logo en negro tinta sobre papel
+hueso, alineado al baseline del kicker del masthead.
+
+En el slide 6 (CTA), el logo va centrado y un poco más grande, también con
+icono.
+
+#### 2. Slide 03 (Mito 02) — colisión "SERVIDOR" con el "02" gigante
+
+En el titular *"«Mis clientes terminan en un servidor de Silicon Valley.»"*,
+las letras `DOR` de **SERVIDOR** quedan tapadas por el `02`. Resolvelo así:
+
+- Forzá saltos de línea para que cada renglón termine antes de la columna
+  del número:
+  *«MIS CLIENTES /
+  TERMINAN EN UN SERVIDOR /
+  DE SILICON VALLEY.»*
+  La palabra SERVIDOR debe ocupar un renglón propio, completa, sin invadir
+  la columna del `02`.
+- Si aun así no entra, achicá el `02` un 20–25 % y movelo unos 40 px a la
+  derecha.
+
+Verificá lo mismo en los otros tres mitos: **ningún titular debe invadir
+la columna del número grande**. En el slide del Mito 03 *"COBRAR MENOS"*
+también está al borde del `03` — dejá al menos 80 px de aire entre el final
+del titular y el número.
+
+#### 3. Slide 02 (Mito 01) — highlights verdes atropellan el interlineado
+
+En la frase *"EN DOCULEX CADA CITA APUNTA A LA `FUENTE` `ORIGINAL`, CON
+ENLACE VERIFICABLE."*, los rectángulos verdes que envuelven FUENTE y
+ORIGINAL pisan la línea siguiente y la anterior.
+
+- Aumentá el `line-height` del bloque a **1.30–1.40**.
+- Dejá **padding vertical de al menos 8 px** adentro de cada caja de
+  highlight (top y bottom).
+- Asegurate de que las cajas verdes no se solapen entre sí ni con la línea
+  superior. Si todavía se chocan, bajá el peso del titular un 5 % o
+  acortá la frase resaltada (resaltá solo `FUENTE ORIGINAL`, no las dos
+  palabras por separado).
+
+#### 4. Slide 05 (Mito 04) — gráfico de barras ilegible
+
+Dos arreglos:
+
+- **Etiquetas por fuera de la barra**: `17 %`, `28 %`, `49 %`, `68 %` van
+  **arriba del tope de cada barra**, no adentro. Tipografía display, peso
+  bold, color tinta negra (excepto `68 %` que puede ir en rojo, igual que
+  su barra).
+- **Verificá los valores**: la barra de Q2 2025 debe leer **28 %**
+  (actualmente se ve `20 %` o `29 %` por el cruce con la trama). La altura
+  de cada barra debe ser proporcional a su valor sobre 100 (17, 28, 49,
+  68).
+- Mantené la última barra (Q1 2026, 68 %) en rojo emergencia. Las dos
+  primeras pueden ir con trama diagonal o en gris para indicar que son
+  pasado, pero **sin etiquetas adentro de la trama**.
+- Sumá una línea horizontal punteada a la altura del 50 % como referencia
+  visual del salto de adopción.
+
+#### 5. Slide 01 (Cover) — glifo cortado en "ARGENTINA"
+
+La "I" de **ARGENTINA** se renderiza con un artefacto que la hace parecer
+una "L" mal cerrada (`ARGENTLNA`). Revisá el glifo. Si es problema de la
+fuente actual, probá:
+
+- Bajar 1 punto el tracking del título.
+- Cambiar a una variante de la misma familia que renderice limpio (ej. de
+  *Druk Wide* a *Druk Condensed*).
+- Confirmar que el archivo de fuente esté completo (a veces falta la
+  versión con acentos / caracteres latinos extendidos).
+
+Hacé un check global: que no haya otros glifos cortados en `Á`, `É`, `Í`,
+`Ó`, `Ú`, `Ñ` en ningún slide.
+
+#### 6. Slide 06 (CTA) — falta
+
+El deck quedó en 5 slides. **Agregá el slide 6** según lo planteado en el
+prompt original:
+
+- Cierre tipo editorial. Titular condensado en MAYÚSCULAS:
+  **"NO TENÉS QUE CREERNOS. PROBALO 14 DÍAS."**
+- Logo DocuLex completo (icono + wordmark) **centrado y un poco más
+  grande** que en los slides anteriores.
+- `doculex.com.ar` debajo, en serif grande, color tinta negra.
+- Pill horizontal en papel hueso con borde fino:
+  *"Sin tarjeta · Sin instalación · En español argentino."*
+- Sello rojo opcional en esquina inferior: *"VER EDICIÓN COMPLETA →"*.
+- Mantené el masthead arriba (`DocuLex · Informe especial · N° 04`) y el
+  contador `06 / 06` abajo a la izquierda para coherencia con el resto del
+  informe.
+
+---
+
+#### Lo que **no** hay que cambiar
+
+- Paleta (`#EDE7DA`, `#0A0A0A`, `#C92A1A`, `#1F4D3A`).
+- Tipografía y jerarquía general.
+- Copy de los mitos y la realidad documentada.
+- Sellos `MITO` (rojo, rotado 4–6°) y `REALIDAD` (verde, recto).
+- Masthead tipo diario, líneas divisorias gruesas, halftone sutil de fondo.
+- Numeración `01 / 06` … `06 / 06` abajo a la izquierda.
