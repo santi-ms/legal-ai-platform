@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { ServerClient } from "postmark";
+import { Resend } from "resend";
 import { randomBytes } from "crypto";
 import { logger } from "../utils/logger.js";
 import {
@@ -17,7 +18,7 @@ export interface SendEmailOptions {
 
 export interface SendEmailResult {
   success: true;
-  provider: "postmark" | "smtp" | "logger";
+  provider: "resend" | "postmark" | "smtp" | "logger";
   messageId?: string;
 }
 
@@ -38,8 +39,36 @@ function isPostmarkConfigured() {
   return Boolean(process.env.POSTMARK_SERVER_TOKEN);
 }
 
+function isResendConfigured() {
+  return Boolean(process.env.RESEND_API_KEY);
+}
+
 function getEmailFrom() {
   return process.env.EMAIL_FROM || "Legal AI <noreply@legal-ai-platform.com>";
+}
+
+class ResendEmailSender implements EmailSender {
+  private readonly client = new Resend(process.env.RESEND_API_KEY || "");
+
+  async send({ to, subject, html, text }: SendEmailOptions): Promise<SendEmailResult> {
+    const { data, error } = await this.client.emails.send({
+      from: getEmailFrom(),
+      to,
+      subject,
+      html,
+      text,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return {
+      success: true,
+      provider: "resend",
+      messageId: data?.id,
+    };
+  }
 }
 
 class PostmarkEmailSender implements EmailSender {
@@ -103,6 +132,10 @@ class LoggerEmailSender implements EmailSender {
 }
 
 function getEmailSender(): EmailSender {
+  if (isResendConfigured()) {
+    return new ResendEmailSender();
+  }
+
   if (isPostmarkConfigured()) {
     return new PostmarkEmailSender();
   }
