@@ -374,6 +374,20 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           error: emailError?.message,
         });
 
+        // Rollback: si no pudimos entregar el código, borramos el usuario recién
+        // creado para que el siguiente intento no caiga en 409 `email_pending_verification`
+        // y el usuario pueda reintentar el alta.
+        try {
+          await prisma.user.delete({ where: { id: created.id } });
+        } catch (rollbackError: any) {
+          request.log.error({
+            event: "register:rollback_failed",
+            userId: created.id,
+            email: normEmail,
+            error: rollbackError?.message,
+          });
+        }
+
         return reply.code(500).send({
           ok: false,
           message: "No pudimos enviar el codigo de verificacion. Intenta nuevamente.",
