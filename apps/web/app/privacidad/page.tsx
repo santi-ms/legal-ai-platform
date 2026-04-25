@@ -247,7 +247,7 @@ export default function PrivacidadPage() {
                     <td className="px-3 py-2">Estados Unidos</td>
                   </tr>
                   <tr className="border-t border-slate-200 dark:border-slate-800">
-                    <td className="px-3 py-2">Postmark (ActiveCampaign)</td>
+                    <td className="px-3 py-2">Resend (Resend, Inc.)</td>
                     <td className="px-3 py-2">Envío de correo electrónico transaccional</td>
                     <td className="px-3 py-2">Estados Unidos</td>
                   </tr>

@@ -261,7 +261,7 @@ async function buildServer() {
       services: {
         database: { status: dbStatus, latencyMs: dbLatency },
         ai: { status: process.env.ANTHROPIC_API_KEY ? 'configured' : 'missing' },
-        email: { status: process.env.POSTMARK_SERVER_TOKEN ? 'configured' : 'fallback' },
+        email: { status: process.env.RESEND_API_KEY ? 'configured' : 'fallback' },
       }
     });
   });

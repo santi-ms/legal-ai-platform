@@ -152,14 +152,14 @@ Error de base de datos: La columna 'Tenant.updatedAt' no existe en la tabla.
 | `NODE_ENV` | Entorno (development/production) | `development` |
 | `FRONTEND_URL` | URL del frontend (para CORS) | `http://localhost:3000` |
 | `PDF_SERVICE_URL` | URL del servicio de PDFs | `http://localhost:4100` |
-| `POSTMARK_SERVER_TOKEN` | Server token de Postmark para email OTP | - |
+| `RESEND_API_KEY` | API key de Resend para email OTP | - |
 | `EMAIL_FROM` | Remitente de los emails | `Legal AI <noreply@legal-ai-platform.com>` |
 | `EMAIL_SERVER_HOST` | Host SMTP secundario | - |
 | `EMAIL_SERVER_PORT` | Puerto SMTP secundario | - |
 | `EMAIL_SERVER_USER` | Usuario SMTP secundario | - |
 | `EMAIL_SERVER_PASSWORD` | Password SMTP secundario | - |
 
-Prioridad de envío de emails en el API: `POSTMARK_SERVER_TOKEN` -> SMTP -> logger fallback.
+Prioridad de envío de emails en el API: `RESEND_API_KEY` -> SMTP -> logger fallback.
 
 ## 🏗️ Estructura del Proyecto
 

@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { ServerClient } from "postmark";
+import { Resend } from "resend";
 import { randomBytes } from "crypto";
 import { logger } from "../utils/logger.js";
 import {
@@ -17,7 +17,7 @@ export interface SendEmailOptions {
 
 export interface SendEmailResult {
   success: true;
-  provider: "postmark" | "smtp" | "logger";
+  provider: "resend" | "smtp" | "logger";
   messageId?: string;
 }
 
@@ -34,30 +34,34 @@ function isSmtpConfigured() {
   );
 }
 
-function isPostmarkConfigured() {
-  return Boolean(process.env.POSTMARK_SERVER_TOKEN);
+function isResendConfigured() {
+  return Boolean(process.env.RESEND_API_KEY);
 }
 
 function getEmailFrom() {
   return process.env.EMAIL_FROM || "Legal AI <noreply@legal-ai-platform.com>";
 }
 
-class PostmarkEmailSender implements EmailSender {
-  private readonly client = new ServerClient(process.env.POSTMARK_SERVER_TOKEN || "");
+class ResendEmailSender implements EmailSender {
+  private readonly client = new Resend(process.env.RESEND_API_KEY || "");
 
   async send({ to, subject, html, text }: SendEmailOptions): Promise<SendEmailResult> {
-    const response = await this.client.sendEmail({
-      From: getEmailFrom(),
-      To: to,
-      Subject: subject,
-      HtmlBody: html,
-      TextBody: text,
+    const response = await this.client.emails.send({
+      from: getEmailFrom(),
+      to,
+      subject,
+      html,
+      text,
     });
+
+    if (response.error) {
+      throw new Error(`${response.error.name}: ${response.error.message}`);
+    }
 
     return {
       success: true,
-      provider: "postmark",
-      messageId: response.MessageID,
+      provider: "resend",
+      messageId: response.data?.id,
     };
   }
 }
@@ -103,8 +107,8 @@ class LoggerEmailSender implements EmailSender {
 }
 
 function getEmailSender(): EmailSender {
-  if (isPostmarkConfigured()) {
-    return new PostmarkEmailSender();
+  if (isResendConfigured()) {
+    return new ResendEmailSender();
   }
 
   if (isSmtpConfigured()) {

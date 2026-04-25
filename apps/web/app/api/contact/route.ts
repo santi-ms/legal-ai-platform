@@ -2,8 +2,8 @@
  * POST /api/contact
  *
  * Recibe el formulario de contacto de la landing (plan Estudio / consultas
- * generales). MVP: valida con zod, envía un mail a soporte vía Postmark.
- * Si no hay Postmark configurado, queda en logs (el equipo lo lee en
+ * generales). MVP: valida con zod, envía un mail a soporte vía Resend.
+ * Si no hay Resend configurado, queda en logs (el equipo lo lee en
  * observabilidad). Rate-limit en memoria por IP, 5 envíos / 10 min.
  */
 
@@ -59,13 +59,16 @@ function getClientIp(req: Request): string {
 }
 
 async function sendEmail(payload: z.infer<typeof ContactSchema>) {
-  const token = process.env.POSTMARK_SERVER_TOKEN;
-  const from = process.env.POSTMARK_FROM_EMAIL || "soporte@doculex.ar";
+  const apiKey = process.env.RESEND_API_KEY;
+  const from =
+    process.env.RESEND_FROM_EMAIL ||
+    process.env.EMAIL_FROM ||
+    "soporte@doculex.ar";
   const to = process.env.CONTACT_TO_EMAIL || "soporte@doculex.ar";
 
-  if (!token) {
-    // Fallback: logueamos. El equipo ve el lead en los logs hasta que configuren Postmark.
-    console.info("[contact] Sin POSTMARK_SERVER_TOKEN — lead solo en logs:", {
+  if (!apiKey) {
+    // Fallback: logueamos. El equipo ve el lead en los logs hasta que configuren Resend.
+    console.info("[contact] Sin RESEND_API_KEY — lead solo en logs:", {
       name: payload.name,
       email: payload.email,
       studio: payload.studio,
@@ -73,15 +76,15 @@ async function sendEmail(payload: z.infer<typeof ContactSchema>) {
       phone: payload.phone,
       message: payload.message.slice(0, 200),
     });
-    return { delivered: false, reason: "no_postmark_token" };
+    return { delivered: false, reason: "no_resend_api_key" };
   }
 
   const body = {
-    From: from,
-    To: to,
-    ReplyTo: payload.email,
-    Subject: `[Landing] ${payload.studio || payload.name} — consulta DocuLex`,
-    TextBody: [
+    from,
+    to,
+    reply_to: payload.email,
+    subject: `[Landing] ${payload.studio || payload.name} — consulta DocuLex`,
+    text: [
       `Nombre: ${payload.name}`,
       `Email:  ${payload.email}`,
       payload.phone && `Teléfono: ${payload.phone}`,
@@ -93,23 +96,22 @@ async function sendEmail(payload: z.infer<typeof ContactSchema>) {
     ]
       .filter(Boolean)
       .join("\n"),
-    MessageStream: "outbound",
   };
 
-  const res = await fetch("https://api.postmarkapp.com/email", {
+  const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      "X-Postmark-Server-Token": token,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify(body),
   });
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    console.error("[contact] Postmark error:", res.status, text);
-    return { delivered: false, reason: "postmark_error" };
+    console.error("[contact] Resend error:", res.status, text);
+    return { delivered: false, reason: "resend_error" };
   }
 
   return { delivered: true };
