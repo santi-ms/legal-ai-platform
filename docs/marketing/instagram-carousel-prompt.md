@@ -925,3 +925,167 @@ Queda monocromático.
 - Logo, pills de sección, contadores, barra de progreso.
 - Mockups internos (chat, dos columnas modelo/output, grid de
   seguridad).
+- Slide 6 (CTA): solo aplicale el ajuste de composición vertical del
+  punto 1.
+
+---
+
+## v7 — Reel animado para Instagram (a partir del cover del v6)
+
+Animación vertical de 12 segundos pensada como **Reel de Instagram /
+Stories / TikTok**. Reusa el concepto y el lenguaje visual del v6
+(ChatGPT vs DocuLex, paleta light) y lo lleva a movimiento. Pensada
+para funcionar **muteada** (mayor parte de Reels se ven sin sonido) —
+toda la información va por tipografía animada.
+
+**Setup en Claude Design**: proyecto nuevo desde `From template →
+Animation`, con `Doculex Design System` como default. NO heredar el
+canvas del proyecto del v6 porque cambia el ratio (9:16 vs 4:5) y el
+modo de proyecto.
+
+### Prompt (copiar y pegar en el proyecto Animation)
+
+Diseñá un **Reel vertical de 12 segundos** para DocuLex, formato
+**9:16 (1080 × 1920 px)**, **30 fps**, pensado para publicarse en
+**Instagram Reels, Stories y TikTok**. Toda la pieza tiene que
+funcionar **sin sonido** — los Reels se ven muteados por default, así
+que el mensaje va 100 % por tipografía animada.
+
+#### Concepto
+
+**"ChatGPT redacta. DocuLex redacta con validez jurídica argentina."**
+
+El Reel construye la frase en tiempo real: primero aparece la
+afirmación, después la rebate, suma una prueba mínima (cita
+verificada), y cierra con CTA. Tono declarativo, seco, confiado.
+**No** humorístico, **no** agresivo con ChatGPT — es comparación, no
+ataque.
+
+#### Sistema visual (heredar del Doculex Design System)
+
+- Fondo: `#FAFAFA` (papel claro), mismo del v6.
+- Texto principal: `#0E1A2B` navy.
+- Acento violeta: `#5B45D9`.
+- Acento carmín (para tachado): `#E11D48`.
+- Logo DocuLex (icono + wordmark) presente en una esquina durante todo
+  el Reel, en `#0E1A2B`, tamaño chico (~40 px de alto), arriba a la
+  izquierda. **Nunca debe desaparecer.**
+- Barra de progreso fina abajo del canvas que avanza linealmente del
+  segundo 0 al 12, en violeta `#5B45D9`.
+- Tipografía y jerarquía: la del design system (no la nombres).
+
+#### Storyboard segundo a segundo
+
+**00:00 – 00:01 · Hook silencioso.**
+Canvas vacío sobre fondo claro. En el centro parpadea una vez un
+cursor de texto vertical (`|`) en violeta. Logo y barra de progreso
+aparecen al frame 1.
+
+**00:01 – 00:03 · Aparece la afirmación.**
+El cursor empieza a tipear en navy bold:
+**"ChatGPT redacta."**
+Aparece carácter por carácter como si lo escribiera, completándose
+exactamente al segundo 03.
+
+**00:03 – 00:04 · Tachado.**
+Una línea carmín cruza la palabra "ChatGPT" (no toda la frase, solo
+el sustantivo) de izquierda a derecha en 0.4 s, easing rápido al
+inicio y suave al final. Mismo estilo de tachado que el "MEV" del
+deck dark original.
+
+**00:04 – 00:06 · Salto de línea, aparece el contrapunto.**
+La frase tachada se desliza hacia arriba 80 px y queda como referencia
+gris al 50 % de opacidad. Debajo, aparece tipeada en navy bold:
+**"DocuLex redacta"**.
+La palabra "DocuLex" debe usar el lockup `Docu` regular + `Lex` bold
+del design system, no texto plano.
+
+**00:06 – 00:08.5 · Build del concepto clave.**
+Debajo de "DocuLex redacta", aparece línea por línea:
+
+- *"con validez"* (navy, 0.4 s)
+- *"jurídica"* (navy, 0.4 s)
+- *"argentina."* (violeta `#5B45D9`, sólida, 0.6 s con un leve
+  *scale-up* del 90 % al 100 %)
+
+Cada línea entra desde abajo con un fade + slide de 12 px. La palabra
+"argentina." es la única en violeta y la más grande — remate visual.
+
+**00:08.5 – 00:10.5 · Prueba mínima.**
+Toda la composición tipográfica se reduce y sale por arriba (escala
+al 65 %, slide-up 0.5 s). Aparece centrada una **card chica blanca**
+con borde fino `#E5E7EB` y borde izquierdo violeta de 3 px. Adentro,
+en monoespaciada:
+
+```
+✦ CITA VERIFICADA
+Art. 1.197 — Código Civil y Comercial
+Cám. Civ. Sala D · 12/03/2024
+```
+
+Entra con fade + scale-up del 95 % al 100 % en 0.4 s. A los 9.5 s
+pulsa el ícono ✦ una vez en violeta.
+
+**00:10.5 – 00:12 · CTA.**
+La card se desvanece (fade-out 0.3 s). Queda centrado, en navy bold:
+**"Probalo gratis 14 días."**
+Debajo, un botón pill violeta sólido `#5B45D9` con texto blanco:
+**"doculex.com.ar →"**. La flecha tiene un *bounce-loop* sutil
+(5 px hacia la derecha cada segundo, easing in-out).
+
+A los 11.8 s aparece debajo del botón un texto chico en gris
+(`#5A6678`): *"Sin tarjeta · Sin instalación · En español argentino."*
+
+**00:12 · Frame final.**
+La barra de progreso llega al 100 %. Termina con esa composición
+estática — el Reel hace loop automático en Instagram, así que el
+espectador puede leer el CTA durante el loop.
+
+#### Tipos de movimiento permitidos
+
+- **Tipeo** carácter por carácter, cursor visible.
+- **Fade + slide vertical** corto (8–16 px).
+- **Tachado lineal** (line drawing, izquierda a derecha).
+- **Scale sutil** (90 %–100 % o 95 %–100 %, no más exagerado).
+- **Pulse** (un ícono que parpadea una vez).
+- **Bounce-loop** (la flecha del CTA).
+
+#### Tipos de movimiento **prohibidos**
+
+- Rebotes excesivos, *spring* exagerado.
+- Cámara en movimiento (zoom, pan, parallax).
+- Glitch, distorsión, transiciones tipo TV vieja.
+- Confetti, partículas, glow excesivo.
+- Tipografías "artísticas" o efectos manuscritos.
+
+El movimiento **sirve al texto**, no al revés. La pieza tiene que
+sentirse como un **documento legal que se autoescribe**, no como un
+anuncio de FinTech.
+
+#### Captions / accesibilidad
+
+- **No** uses captions sobreimpresas adicionales — el texto animado
+  YA es la caption.
+- Contraste navy sobre `#FAFAFA` debe cumplir AAA en todos los frames
+  (ratio ≥ 7:1).
+- Texto chico del CTA puede ser ~32 px porque queda estático.
+
+#### Audio (opcional, no obligatorio)
+
+Si se le suma sonido más adelante:
+
+- **Una sola vez** un click sutil de tecla cuando termina de tipearse
+  "ChatGPT redacta." (segundo 03).
+- Un *swoosh* corto cuando entra el tachado (segundo 03.5).
+- Resto: silencio o música de fondo al 30 % de volumen.
+- **Nada de voz en off.**
+
+#### Entregables
+
+- **MP4 H.264**, 1080 × 1920, 30 fps, 12 segundos exactos.
+- **GIF** liviano (< 8 MB) del mismo Reel, para previews en
+  WhatsApp / Slack.
+- **Last frame como PNG estático** (1080 × 1920) para usar como
+  thumbnail si Instagram pide cover personalizada.
+- Versión alternativa de **9 segundos** (sacando los segundos
+  08.5–10.5 de la card de cita) para Stories.
