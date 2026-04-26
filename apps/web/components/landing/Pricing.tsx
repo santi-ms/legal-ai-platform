@@ -199,7 +199,7 @@ export function Pricing() {
                   >
                     {plan.description}
                   </p>
-                  <div className="flex items-baseline gap-1">
+                  <div className="flex items-baseline gap-x-1 flex-wrap">
                     <span
                       className={cn(
                         "text-4xl font-extrabold tracking-tight tabular-nums",
@@ -211,7 +211,7 @@ export function Pricing() {
                     {plan.period && (
                       <span
                         className={cn(
-                          "text-sm",
+                          "text-sm whitespace-nowrap",
                           plan.highlight ? "text-white/60" : "text-slate-500 dark:text-slate-400"
                         )}
                       >
