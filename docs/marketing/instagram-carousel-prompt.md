@@ -1264,29 +1264,32 @@ Actualmente la barra abajo se ve como un puntito apenas perceptible.
 
 ---
 
-## v8 — Reel de demo: "Carta documento en 40 segundos"
+## v8 — Reel de demo: "Carta documento en 40 segundos" (15 s)
 
-Reel **de conversión**, no educacional. Reusa el sistema visual de v6/v7
-(paleta light, anclajes del fix pass del v7) pero cambia totalmente la
-estrategia: en vez de advertir un riesgo, **muestra el producto haciendo
-algo útil en tiempo real**. Promete un payoff específico ("redactar
-carta documento en 40 segundos") y lo cumple visualmente con un
-cronómetro corriendo.
+Reel **de conversión**, 15 segundos. Reusa el sistema visual de v6/v7
+(paleta light) sin los anclajes que el usuario rechazó (frame interior,
+square decorativo, numeración). Cambia totalmente la estrategia: en vez
+de advertir un riesgo, **muestra el producto haciendo algo útil en
+tiempo real**. Promete un payoff específico ("redactar carta documento
+en 40 segundos") y lo cumple visualmente con un cronómetro corriendo.
+
+Los 3 segundos extra respecto del primer plan se usan para sumar un
+**panel lateral de validación** que aparece durante la demo: muestra
+que DocuLex no solo tipea, también verifica modelo de referencia, norma
+aplicable y tono. Diferencia clave para B2B legal.
 
 Este patrón es lo que mejor convierte para SaaS B2B en Reels: promesa
-+ demo + tiempo concreto + CTA.
++ demo + verificación visible + tiempo concreto + CTA.
 
 **Setup en Claude Design**: proyecto nuevo desde `From template →
-Animation`, con `Doculex Design System` como default. Si querés mantener
-los anclajes visuales del v7 ya construidos (marco interior, color echo,
-etc.), pegá este prompt en el mismo chat del v7.
+Animation`, con `Doculex Design System` como default.
 
 ### Prompt (copiar y pegar en el proyecto Animation)
 
-Diseñá un **Reel vertical de 12 segundos** para DocuLex, formato **9:16
-(1080 × 1920 px)**, **30 fps**, pensado para Instagram Reels, Stories y
-TikTok. Tiene que funcionar **muteado** — el mensaje va por tipografía
-animada y por la demo visual del producto.
+Diseñá un **Reel vertical de 15 segundos** para DocuLex, formato
+**9:16 (1080 × 1920 px)**, **30 fps**, pensado para Instagram Reels,
+Stories y TikTok. Tiene que funcionar **muteado** — el mensaje va por
+tipografía animada y por la demo visual del producto.
 
 #### Concepto
 
@@ -1294,8 +1297,9 @@ animada y por la demo visual del producto.
 
 Reel de **demostración pura**. El espectador ve la app DocuLex
 generando un documento real, palabra por palabra, mientras un
-cronómetro corre regresivo de 0:40 a 0:00. Cuando llega a cero, el
-documento está terminado. Cierra con CTA.
+cronómetro corre regresivo de 0:40 a 0:00. En paralelo, un panel
+lateral muestra checks de validación apareciendo. Cuando el timer
+llega a cero, el documento está listo. Cierra con CTA.
 
 **Tono**: confiado, calmo, "mirá esto y juzgá vos". **No** excited.
 **No** urgent. **No** vendedor. La fuerza de la pieza es que muestra,
@@ -1305,33 +1309,33 @@ no que dice.
 
 - Fondo: `#FAFAFA`. Texto: `#0E1A2B` navy.
 - Acento violeta: `#5B45D9`.
-- Acento verde: `#0D9488` (solo para el estado "completado").
-- **Logo: solo el ícono monogramático del design system** (sin wordmark
-  "DocuLex"), arriba a la izquierda, **80 px de alto**, en navy.
-  Persistente los 12 s, nunca cambia de tamaño ni desaparece. **No
-  agregues el wordmark "DocuLex" como texto** — el sistema lo renderiza
-  con una tipografía que no es la de marca y queda mal. Solo ícono.
-- **Composición limpia**: nada de marco interior, anclajes en esquinas,
-  numeraciones de Reel ni elementos decorativos extra. El editor
-  mockup ocupa el centro y eso ya llena el canvas — no hace falta
-  rellenar con elementos auxiliares.
+- Acento verde: `#0D9488` (solo para el estado "completado" y los
+  checks de validación).
+- **Logo: solo el ícono monogramático del design system** (sin
+  wordmark "DocuLex"), arriba a la izquierda, **80 px de alto**, en
+  navy. Persistente los 15 s, nunca cambia de tamaño ni desaparece.
+  **No agregues el wordmark "DocuLex" como texto** — el sistema lo
+  renderiza con una tipografía que no es la de marca y queda mal.
+  Solo ícono.
+- **Composición limpia**: nada de marco interior, anclajes en
+  esquinas, numeraciones de Reel ni elementos decorativos extra.
 - Barra de progreso: 4 px de alto, ancho completo del canvas, fill
   violeta, track `#E5E7EB`, pegada al borde inferior. Único elemento
   permanente además del logo.
 
 #### Storyboard segundo a segundo
 
-**00:00 – 00:01.5 · Hook + setup.**
+**00:00 – 00:01.5 · Hook.**
 
-- Frame 0: anclajes y logo aparecen instantáneos.
+- Frame 0: logo y barra de progreso aparecen instantáneos.
 - 0.2 – 1.0 s: en el centro vertical (38 %) tipea en navy bold:
   *"Mirá una carta documento redactarse en"*
 - 1.0 – 1.5 s: aparece debajo, en violeta `#5B45D9`, peso display más
   grande:
   **"40 segundos."**
 - A los 1.3 s aparece a la derecha del "40" un **badge timer pill**
-  con fondo violeta sólido y texto blanco monoespaciado: `0:40`. Pulsa
-  una vez (scale 100 → 110 → 100 % en 0.3 s).
+  con fondo violeta sólido y texto blanco monoespaciado: `0:40`.
+  Pulsa una vez (scale 100 → 110 → 100 % en 0.3 s).
 
 **00:01.5 – 00:02.0 · Setup de la demo.**
 
@@ -1339,94 +1343,121 @@ no que dice.
   (centro vertical 16 %).
 - El badge timer `0:40` se separa del título: se mueve a la **esquina
   superior derecha del canvas** (con margen de 80 px del borde), se
-  agranda a 64 px de alto y se queda fijo ahí los próximos 8 s.
+  agranda a 64 px de alto y se queda fijo ahí los próximos 10 s.
 - En el centro vertical (48 %) aparece una **mockup del editor de
   DocuLex** con fade + scale-up 95 → 100 % en 0.4 s:
-  - Header del editor estilo navegador: pestaña *"Doku Genera · Nueva
-    carta documento"*, tres puntitos del lado izquierdo (red/yellow/
-    green-gray).
+  - Header del editor estilo navegador: pestaña *"Doku Genera ·
+    Nueva carta documento"*.
   - Sidebar mínima a la izquierda (3 íconos chiquitos).
   - Área central de texto con cursor parpadeando en violeta.
-  - Barra de prompt en la parte inferior del editor, con placeholder
+  - Barra de prompt en la parte inferior con placeholder
     *"Describí el documento…"* en gris.
+- El editor ocupa **~70 % del ancho** del canvas, dejando una columna
+  derecha de ~25 % vacía donde después entrará el panel de
+  validación.
 
 **00:02.0 – 00:03.5 · Aparece el prompt + arranca el timer.**
 
-- En la barra de prompt del editor aparece tipeado, carácter por
-  carácter (acelerado, ~30 caracteres/seg):
+- En la barra de prompt aparece tipeado, carácter por carácter
+  (acelerado, ~30 caracteres/seg):
   *"Carta documento al inquilino del local Av. Corrientes 1234 por
   falta de pago. Ley 27.551."*
-- En 03.0 s, el botón de submit del prompt (un ícono ✦ violeta) pulsa
-  una vez.
+- En 03.0 s, el botón submit (ícono ✦ violeta) pulsa una vez.
 - En 03.0 s, el **timer arranca**: `0:40` empieza a contar regresivo,
-  un dígito por cada 0.21 s reales. Llega a `0:00` exactamente en el
-  segundo 09.5.
+  un dígito cada **0.24 s** reales. Llega a `0:00` exactamente en el
+  segundo 12.5.
 
-**00:03.5 – 00:09.5 · La demo (6 segundos comprimiendo "40 segundos").**
+**00:03.5 – 00:11.5 · La demo (8 segundos).**
 
-El cursor del editor empieza a tipear el documento. Es un **time-lapse
-acelerado** — el espectador entiende que en la app real toma 40 s, en
-el Reel se ve la versión comprimida. Va apareciendo bloque por bloque,
-no carácter por carácter (sería tedioso):
+Time-lapse del documento generándose. Cada bloque entra con fade +
+slide vertical de 8 px, sin tipeo carácter a carácter (sería
+demasiado lento). El cursor del editor parpadea al final del último
+bloque visible.
 
 - 03.5 – 04.0 s: aparece el membrete:
   *"ESTUDIO MÉNDEZ & ASOCIADOS · ABOGADOS · CABA"*
-- 04.0 – 04.3 s: aparece el título centrado, peso bold:
+- 04.0 – 04.5 s: título centrado, peso bold:
   **"CARTA DOCUMENTO"**
-- 04.3 – 04.7 s: aparece el subtítulo:
+- 04.5 – 05.0 s: subtítulo:
   *"INTIMACIÓN POR FALTA DE PAGO"*
-- 04.7 – 05.7 s: aparece el primer párrafo (3 líneas):
-  *"Por la presente, y en mi carácter de letrado apoderado, intimo a
-  Ud. en el plazo perentorio de cinco (5) días hábiles a regularizar
-  el pago de tres (3) períodos locativos adeudados…"*
-- 05.7 – 06.7 s: aparece el segundo párrafo con la cita normativa,
-  con la palabra `Ley 27.551` resaltada en violeta:
+- 05.0 – 06.5 s: primer párrafo (3 líneas):
+  *"Por la presente, y en mi carácter de letrado apoderado, intimo
+  a Ud. en el plazo perentorio de cinco (5) días hábiles a
+  regularizar el pago de tres (3) períodos locativos adeudados…"*
+
+**A los 06.0 s aparece el panel lateral de validación:**
+
+- Se desliza desde el borde derecho (slide-in horizontal 16 px +
+  fade en 0.4 s) un **panel flotante chico** con:
+  - Header pequeño en monoespaciada gris:
+    `VALIDACIÓN EN TIEMPO REAL`
+  - Tres slots vacíos donde van a ir apareciendo los checks
+    (placeholders en gris claro).
+- Posición: borde derecho del canvas, alineado verticalmente al
+  centro del editor.
+
+- 06.5 – 08.0 s: segundo párrafo con la cita normativa, palabra
+  `Ley 27.551` resaltada en violeta:
   *"Conforme al art. 1.219 del Código Civil y Comercial y a lo
   establecido por la **Ley 27.551**, la mora se produce de pleno
   derecho…"*
-- 06.7 – 07.7 s: aparece el tercer párrafo de apercibimiento:
+- **A los 07.0 s** aparece en el panel el primer check verde:
+  `✓ Modelo de referencia · Estudio Méndez 2024`. Slide-in
+  horizontal 8 px + fade.
+- 08.0 – 09.5 s: tercer párrafo de apercibimiento:
   *"…bajo apercibimiento de iniciar las acciones legales que
   correspondan, con expresa imposición de costas y honorarios
   profesionales."*
-- 07.7 – 08.5 s: aparece la línea de cierre y firma:
+- **A los 08.5 s** aparece el segundo check:
+  `✓ Norma aplicable · Ley 27.551, art. 5`.
+- 09.5 – 10.5 s: línea de cierre y firma:
   *"Sin más. / Dr. R. Méndez · CPACF T° 88 F° 432"*
-- 08.5 – 09.5 s: hold breve, mientras el timer corre los últimos
-  segundos. **Cada bloque entra con un fade + slide vertical de 8 px,
-  sin "tipeo" carácter a carácter** (sería demasiado lento) — pero el
-  cursor del editor permanece visible al final de cada bloque,
-  parpadeando, como si lo estuviera tipeando.
+- **A los 10.0 s** aparece el tercer check:
+  `✓ Tono y formato · Estilo del estudio`.
+- 10.5 – 11.5 s: hold mientras el timer corre los últimos segundos.
 
-#### 00:09.5 – 00:10.5 · Estado "completado".
+**00:11.5 – 00:12.5 · Estado "completado".**
 
-- El timer llega a `0:00` con un pulse final (scale 100 → 115 → 100 %
-  en 0.3 s) y cambia de violeta a **verde** `#0D9488`.
+- El timer llega a `0:00` con un pulse final (scale 100 → 115 →
+  100 % en 0.3 s) y cambia de violeta a **verde** `#0D9488`.
 - Sobre el documento aparece un **badge verde** con check blanco y
-  texto: `✓ LISTO EN 0:40`. Slide-up + fade en 0.3 s. Posición: arriba
-  del editor, centrado.
+  texto: `✓ LISTO EN 0:40`. Slide-up + fade en 0.3 s. Posición:
+  arriba del editor, centrado.
 - El cursor del editor se apaga.
+- El panel de validación queda con sus 3 checks completos, en
+  verde, como prueba persistente.
 
-**00:10.5 – 00:12 · CTA.**
+**00:12.5 – 00:15.0 · CTA.**
 
-- El editor completo se reduce al 55 % y se desliza al borde superior
-  (queda visible como prueba persistente, centro vertical 22 %).
-- El badge timer y el badge "LISTO" suben con él (mantienen tamaño
-  proporcional).
+- El editor + el panel de validación se reducen al 55 % y se
+  deslizan al borde superior (quedan visibles como prueba
+  persistente, centro vertical 22 %).
+- El badge timer y el badge "LISTO" suben con ellos (mantienen
+  tamaño proporcional).
 - En el centro vertical (48 %) aparece, en navy bold:
   **"Tu turno."**
-- Debajo, **botón pill violeta sólido** `#5B45D9` con texto blanco:
+- A los 13.0 s, debajo de "Tu turno.", aparece un **botón pill
+  violeta sólido** `#5B45D9` con texto blanco:
   **"doculex.com.ar →"**. Flecha con bounce-loop sutil.
-- A los 11.8 s, debajo del botón, en gris `#5A6678`:
+- A los 14.0 s, debajo del botón, en gris `#5A6678`:
   *"14 días gratis · sin tarjeta · sin instalación."*
+- A los 14.5 s, en monoespaciada chica gris al pie del canvas
+  (encima de la barra de progreso):
+  *"Estudios chicos en Argentina · LegalTech argentina"*
 
-**00:12 · Frame final.** Barra de progreso al 100 %. Composición
-estática para el loop.
+**00:15 · Frame final.**
+
+Barra de progreso al 100 %. Composición estática para el loop
+automático.
 
 #### Tipos de movimiento permitidos
 
-- **Tipeo** carácter por carácter (solo en el hook y en el prompt del
-  editor).
+- **Tipeo** carácter por carácter (solo en el hook y en el prompt
+  del editor).
 - **Fade + slide vertical** corto (8–16 px) para los bloques del
   documento.
+- **Slide-in horizontal** corto (8–16 px) para el panel de
+  validación y sus checks.
 - **Scale sutil** (95 → 100 %, 100 → 110 → 100 % para pulsos).
 - **Pulse** (badge timer, ícono submit, timer al llegar a cero).
 - **Bounce-loop** (flecha del CTA).
@@ -1442,25 +1473,30 @@ estática para el loop.
 
 #### Captions / accesibilidad
 
-- **No** uses captions sobreimpresas adicionales.
-- Contraste navy sobre `#FAFAFA` debe cumplir AAA.
-- El texto del documento dentro del editor puede ser ~22 px porque el
-  editor ocupa la mayor parte del canvas (~700 px de ancho útil).
+- **No** uses captions sobreimpresas adicionales — el texto del
+  documento dentro del editor es legible y la demo se entiende sin
+  caption.
+- Contraste navy sobre `#FAFAFA` debe cumplir AAA en todos los
+  frames.
+- El texto del documento dentro del editor puede ser ~22 px porque
+  el editor ocupa ~70 % del ancho útil (~750 px).
+- Los checks del panel lateral en ~24 px, monoespaciada.
 
 #### Audio (opcional)
 
 - *Tick* sutil del timer cada segundo durante la cuenta regresiva
   (volumen muy bajo).
 - *Tap* del botón de submit cuando se manda el prompt (segundo 03.0).
+- *Tick* corto cuando aparece cada check del panel de validación
+  (segundos 07.0, 08.5 y 10.0).
 - *Chime* corto cuando el timer llega a cero y aparece "LISTO"
-  (segundo 09.5). El golpe positivo del Reel.
+  (segundo 11.5). El golpe positivo del Reel.
 - Resto: silencio. **Nada de voz en off.**
 
 #### Entregables
 
-- **MP4 H.264**, 1080 × 1920, 30 fps, 12 segundos exactos.
+- **MP4 H.264**, 1080 × 1920, 30 fps, 15 segundos exactos.
 - **GIF** liviano (< 8 MB).
 - **Last frame como PNG estático** (1080 × 1920) como thumbnail.
-- Versión alternativa de **15 segundos** que extienda la demo
-  (mostrar más contenido del documento, no apurar el time-lapse) para
-  Reels donde quieras priorizar producto sobre alcance.
+- Versión alternativa de **9 segundos** (cortar el panel lateral y
+  comprimir la demo) para Stories.
