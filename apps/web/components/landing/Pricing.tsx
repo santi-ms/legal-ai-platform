@@ -50,7 +50,7 @@ const PLANS = [
   },
   {
     name: "Pro+",
-    price: "$35.000",
+    price: "$34.999",
     period: "/mes",
     description: "Para mayor volumen",
     highlight: true,

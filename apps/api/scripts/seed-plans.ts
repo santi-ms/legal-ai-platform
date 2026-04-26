@@ -69,7 +69,7 @@ const PLANS = [
     code: "proplus",
     name: "Pro+",
     description: "Para abogados con mayor volumen",
-    priceArs: 35000,
+    priceArs: 34999,
     trialDays: 7,
     limits: {
       docsPerMonth: 100,
@@ -176,7 +176,7 @@ async function main() {
   console.log("\n✅ Planes seeded correctamente!");
   console.log("   Free: $0/mes · 5 docs/mes · 1 usuario");
   console.log("   Pro: $24.999/mes · 50 docs/mes · 1 usuario · 7 días gratis");
-  console.log("   Pro+: $35.000/mes · 100 docs/mes · 1 usuario · 7 días gratis");
+  console.log("   Pro+: $34.999/mes · 100 docs/mes · 1 usuario · 7 días gratis");
   console.log("   Equipo: $60.000/mes · 150 docs/mes · hasta 3 usuarios · 7 días gratis");
   console.log("   Estudio: $45.000/usuario/mes · ilimitado · mín. 3 usuarios · 14 días gratis");
 }
