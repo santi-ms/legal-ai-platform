@@ -1108,3 +1108,156 @@ Si se le suma sonido más adelante:
 - Versión alternativa de **9 segundos** comprimida para Stories
   (recortar segundos 08.0–10.5: pasar directo de "DocuLex redacta con
   fuente." al CTA).
+
+---
+
+## v7 — Revisión / fix pass
+
+Revisión a aplicar **sobre el render ya generado** del v7 (no rehacer desde
+cero). Corrige seis problemas detectados al revisar 5 frames clave del
+Reel: logo sin wordmark en todos los frames, composición vertical
+desbalanceada, hook que no se reduce al aparecer la amenaza, sello
+"FALLO INEXISTENTE" que tapa demasiado la cita, línea chica del CTA
+faltante, y barra de progreso casi imperceptible.
+
+### Prompt (copiar y pegar en el mismo proyecto Animation)
+
+Revisá el Reel **"1 alucinación = sanción del Colegio"**. **Los timings,
+las transiciones y los efectos de aparición / desplazamiento /
+desaparición de letras y bloques están bien — no los toques.** El
+problema es que **la pantalla queda muy vacía** entre los movimientos y
+**el logo se ve demasiado chico**. Aplicá solo las siguientes
+correcciones de composición y branding.
+
+#### 1. Logo — falta el wordmark "DocuLex" y está demasiado chico
+
+Solo está rindiendo el ícono monogramático en tamaño minúsculo. Falta la
+palabra **"DocuLex"** al lado, con el lockup `Docu` en peso regular y
+`Lex` en peso bold. **Esto es crítico.** Sin wordmark + en ese tamaño,
+alguien que ve el Reel sin contexto no sabe de qué marca es hasta el
+segundo 8.
+
+- Usá el componente `Logo` completo del Doculex Design System (no solo
+  el `Icon`). Si en el design system hay dos componentes separados,
+  combinalos en un wrapper que incluya icono + wordmark.
+- **Tamaño**: ícono **64 px de alto** (el doble del actual), wordmark
+  "DocuLex" del mismo alto al lado.
+- Posición: arriba a la izquierda, márgenes 48 px.
+- Color: `#0E1A2B` navy.
+- Persistente los 12 segundos. Nunca desaparece, nunca cambia de tamaño.
+
+#### 2. Pantalla vacía — agregar anclajes visuales y subir composición
+
+Hay dos cosas pasando:
+
+**(a)** Los bloques de texto están al 50 % vertical exacto, dejando aire
+muerto arriba.
+
+- **Centro vertical del bloque principal entre el 38 % y el 48 %** del
+  alto del canvas, **nunca al 50 % o más abajo**.
+- En el frame del CTA (segundo 11.59), el bloque "Probalo gratis 14
+  días" + botón debe centrarse al 42 %.
+
+**(b)** Aun reposicionando, el canvas se siente vacío en los frames
+"de transición" (mensaje clave a los 09s, CTA a los 11.59s). Sumá
+**anclajes visuales sutiles** que no compitan con el texto:
+
+- **Marco interior**: un rectángulo de borde fino (2 px, color
+  `#E5E7EB`) a 48 px de cada borde del canvas, presente los 12 segundos.
+  Le da contención visual a todo lo demás.
+- **Esquina superior derecha**: un cuadrado pequeño (96 × 96 px) con
+  fondo violeta `#5B45D9` al **6 % de opacidad**, presente los 12 s.
+  Echo cromático del acento principal.
+- **Numeración del Reel**: en la esquina inferior derecha, mismo
+  tratamiento que el contador `01 / 06` de los carruseles, monoespaciada
+  pequeña, color gris `#5A6678`. En este caso `REEL · 01` o `01 / 01`.
+  Presente los 12 s.
+- **Línea horizontal hairline** a 80 px del top, cruzando el canvas a
+  la altura del baseline del logo. Color `#E5E7EB`. Le da una "cabecera"
+  al Reel sin meter peso visual.
+
+Aplicá los cuatro elementos a todos los frames. Que estén siempre, no
+solo en los frames vacíos — así el Reel completo se siente como una
+pieza unificada, no una serie de slides sueltos sobre fondo blanco.
+
+#### 3. Frame del mensaje clave (segundo 9.0) — falta soporte visual
+
+Cuando solo queda **"DocuLex redacta con fuente."** centrado, el frame
+se siente desnudo. Sumale:
+
+- La **card de "CITA VERIFICADA"** del segundo 7.52 que se redujo al
+  70 % y subió, debe **seguir visible** en la mitad superior del canvas
+  (al 22 % vertical), no haber salido del frame. Funciona como prueba
+  persistente del mensaje.
+- Si la card sale del frame en el render actual, hacela quedar.
+
+#### 4. Segundo 02.5 → 03.5 — el hook no se reduce al aparecer la cita falsa
+
+El bloque **"1 alucinación de IA = sanción del Colegio."** debe achicarse
+al **65 %** de su tamaño original y deslizarse al borde superior (centro
+vertical al 18 %) en una sola animación de **0.5 s**, **antes** de que
+entre la card "Respuesta de IA genérica".
+
+Después de esa transición, el hook **no debe seguir compitiendo en tamaño
+con la card**. Tiene que quedar como contexto persistente arriba.
+
+Aplicar este criterio:
+
+- 02.5 – 03.0 s: hook se achica y sube simultáneamente.
+- 03.0 – 03.5 s: entra la card de cita falsa al centro vertical 55 %.
+- 03.5 – 04.0 s: hold breve antes del sello.
+
+#### 5. Segundo 04.0 — el sello "FALLO INEXISTENTE" tapa demasiado
+
+En el render actual, el sello cubre prácticamente toda la cita; solo se
+lee "12/03/2024 fundamenta lo solicitado". No se entiende qué se está
+marcando como falso.
+
+- **Achicá el sello al 70 %** de su ancho actual.
+- **Posicionalo en el tercio superior de la card**, sobre la línea que
+  tiene el nombre del fallo (`Cám. Civ. Sala D · 'Pérez c/ González'`),
+  no centrado vertical.
+- **Mantené la rotación de 6°** y la sensación de "stamp-down".
+- **Bajá la opacidad al 95 %** para que se vea apenas la cita debajo del
+  sello — refuerza la idea de que se está "marcando" algo que existe en
+  el frame.
+- La línea con el nombre del caso debe quedar al menos parcialmente
+  visible debajo del sello.
+
+#### 6. Segundo 11.8 — falta la línea chica del CTA
+
+Debajo del botón pill `doculex.com.ar →`, en gris `#5A6678`, debe
+aparecer:
+
+*"Sin tarjeta · Sin instalación · En español argentino."*
+
+- Tamaño chico (~28 px).
+- Aparece con fade simple a los 11.8 s, sin movimiento.
+- Quede visible hasta el frame final.
+
+#### 7. Barra de progreso — más visible
+
+Actualmente la barra abajo se ve como un puntito apenas perceptible.
+
+- **Altura: 4 px** (no menos).
+- **Ancho: cruza todo el canvas de borde a borde**, sin márgenes
+  laterales.
+- Color del fill: violeta `#5B45D9`.
+- Color del track de fondo: `#E5E7EB` al 100 % de opacidad (no
+  transparente).
+- Posición: pegada al borde inferior, sin gap.
+
+#### Lo que NO hay que cambiar
+
+- **Las animaciones y transiciones**: cómo aparecen, se desplazan y
+  desaparecen las letras y los bloques está bien. No toques timings,
+  easings ni efectos de tipeo.
+- Paleta (`#FAFAFA`, `#0E1A2B`, `#5B45D9`, `#E11D48`, `#0D9488`,
+  `#5A6678`, `#E5E7EB`).
+- Tipografía y jerarquía.
+- Copy de los 5 momentos del Reel.
+- Duración total (12 s).
+- Card de "CITA VERIFICADA" (frame 07.52) — está bien resuelta tal cual.
+- Botón pill violeta del CTA — está bien resuelto.
+- Sello "FALLO INEXISTENTE" en sí — solo achicá y reposicioná, no
+  cambies el tratamiento.
