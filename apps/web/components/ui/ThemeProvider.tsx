@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { isAppRoute } from "@/app/lib/theme-routes";
 
 export type Theme = "light" | "dark" | "system";
 
@@ -8,12 +10,15 @@ interface ThemeContextType {
   theme: Theme;
   setTheme: (t: Theme) => void;
   resolvedTheme: "light" | "dark";
+  /** true cuando la ruta actual fuerza dark (landing, auth, etc.) y el toggle no aplica */
+  themeLocked: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
   theme: "system",
   setTheme: () => {},
-  resolvedTheme: "light",
+  resolvedTheme: "dark",
+  themeLocked: true,
 });
 
 export function useTheme() {
@@ -21,9 +26,13 @@ export function useTheme() {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [theme, setThemeState] = useState<Theme>("system");
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
   const [mounted, setMounted] = useState(false);
+
+  // El toggle del usuario sólo aplica en rutas del dashboard interno.
+  const themeLocked = !isAppRoute(pathname);
 
   // Read stored preference on mount
   useEffect(() => {
@@ -34,13 +43,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Apply dark class to <html> whenever theme changes
+  // Apply dark class to <html> whenever theme or route changes
   useEffect(() => {
     if (!mounted) return;
     const root = document.documentElement;
 
     let isDark: boolean;
-    if (theme === "dark") {
+    if (themeLocked) {
+      // Fuera del dashboard interno: siempre dark.
+      isDark = true;
+    } else if (theme === "dark") {
       isDark = true;
     } else if (theme === "light") {
       isDark = false;
@@ -50,11 +62,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     root.classList.toggle("dark", isDark);
     setResolvedTheme(isDark ? "dark" : "light");
-  }, [theme, mounted]);
+  }, [theme, mounted, themeLocked]);
 
-  // Follow system preference changes when theme === "system"
+  // Follow system preference changes when theme === "system" (sólo en rutas del dashboard)
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || themeLocked) return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = () => {
       if (theme === "system") {
@@ -64,7 +76,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     };
     mq.addEventListener("change", handleChange);
     return () => mq.removeEventListener("change", handleChange);
-  }, [theme, mounted]);
+  }, [theme, mounted, themeLocked]);
 
   const setTheme = (t: Theme) => {
     setThemeState(t);
@@ -72,7 +84,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme, themeLocked }}>
       {children}
     </ThemeContext.Provider>
   );
