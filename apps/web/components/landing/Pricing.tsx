@@ -55,7 +55,7 @@ const PLANS = [
     description: "Para mayor volumen",
     highlight: true,
     badge: "Más popular",
-    cta: "Probar 7 días gratis",
+    cta: "Suscribirme",
     features: [
       "100 documentos por mes",
       "Clientes ilimitados",
@@ -77,7 +77,7 @@ const PLANS = [
     description: "Para estudios de 2 a 3 abogados",
     highlight: false,
     badge: "Equipos chicos",
-    cta: "Probar 7 días gratis",
+    cta: "Suscribirme",
     features: [
       "150 documentos por mes",
       "Hasta 3 usuarios",
@@ -98,7 +98,7 @@ const PLANS = [
     period: "/usuario/mes",
     description: "Para estudios jurídicos grandes",
     highlight: false,
-    badge: "14 días gratis",
+    badge: null,
     cta: "Contactar ventas",
     features: [
       "Documentos ilimitados",

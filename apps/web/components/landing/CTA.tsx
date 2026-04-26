@@ -68,7 +68,7 @@ export function CTA() {
 
             {/* Microtexto */}
             <p className="text-sm text-white/50 pt-2">
-              7 días gratis · Sin tarjeta · Cancelás con 1 click
+              7 días de prueba en Pro · Cancelás con 1 click
             </p>
           </div>
         </div>
