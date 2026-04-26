@@ -4,7 +4,7 @@
 
 set -e
 
-SCHEMA_PATH="../../packages/db/prisma/schema.prisma"
+SCHEMA_PATH="$(dirname "$0")/../prisma/schema.prisma"
 
 echo "🔍 Generando diff entre base de datos y schema.prisma..."
 echo "📋 Schema path: $SCHEMA_PATH"

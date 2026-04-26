@@ -10,12 +10,8 @@
       "default": "./index.ts"
     }
   },
-  "scripts": {
-    "prisma:generate": "prisma generate --schema prisma/schema.prisma || echo 'Schema not found, skipping Prisma generate'",
-    "prisma:migrate": "prisma migrate dev --schema prisma/schema.prisma"
-  },
+  "scripts": {},
   "dependencies": {
-    "@prisma/client": "^5.22.0",
-    "prisma": "^5.22.0"
+    "@prisma/client": "^5.22.0"
   }
 }

@@ -27,19 +27,7 @@ El servidor estará disponible en `http://localhost:4001`
 
 ### Schema de Prisma
 
-**⚠️ IMPORTANTE:** Para Railway (producción), el schema de Prisma está en `prisma/schema.prisma` (local al repo del API).
-
-- ✅ **Schema para Railway:** `prisma/schema.prisma` (este repo)
-- ✅ **Schema del monorepo:** `packages/db/prisma/schema.prisma` (desarrollo local)
-- ✅ **Migraciones locales:** `prisma/migrations/` (este repo)
-
-**Sincronización Manual:**
-
-Si trabajás en el monorepo y modificás `packages/db/prisma/schema.prisma`, debés copiar los cambios a `prisma/schema.prisma` antes de hacer deploy a Railway:
-
-1. Copiar el contenido de `packages/db/prisma/schema.prisma` a `prisma/schema.prisma`
-2. Copiar las migraciones nuevas de `packages/db/prisma/migrations/` a `prisma/migrations/`
-3. Hacer commit y push
+El schema canónico vive en `apps/api/prisma/schema.prisma` y las migraciones en `apps/api/prisma/migrations/`. No hay otra copia: tanto Railway como el desarrollo local usan estos archivos.
 
 ### Prisma Client
 
@@ -100,8 +88,7 @@ npm run migrate:dev
 
 **⚠️ Nota:** 
 - Las migraciones se ejecutan automáticamente al iniciar el servidor en producción (ver `src/server.ts`)
-- El servidor busca el schema en `prisma/schema.prisma` (local)
-- Si no existe, intenta usar `packages/db/prisma/schema.prisma` como fallback (solo desarrollo local)
+- El servidor busca el schema en `prisma/schema.prisma` (local al API)
 
 ### Migración Actual: Agregar `updatedAt` a Tenant
 
