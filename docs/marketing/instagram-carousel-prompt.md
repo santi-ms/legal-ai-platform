@@ -517,3 +517,110 @@ prompt original:
 - Sellos `MITO` (rojo, rotado 4–6°) y `REALIDAD` (verde, recto).
 - Masthead tipo diario, líneas divisorias gruesas, halftone sutil de fondo.
 - Numeración `01 / 06` … `06 / 06` abajo a la izquierda.
+
+---
+
+## v5 — Variante light del deck original
+
+Versión **invertida** del primer deck publicado (dark navy + violeta). Misma
+estructura de 6 slides, misma tipografía, mismos mockups, **paleta light**.
+Pensado para alternar con el original en el feed: el dark queda como pieza
+principal, el light como complemento (Stories, web hero, ads, repost).
+
+**Cómo usar este prompt**: pegalo en el **mismo chat de Claude Design** que
+generó el deck dark original. Así hereda fuentes, componentes y logo. Si
+arrancás un proyecto nuevo tenés que volver a establecer todo eso a mano.
+
+### Prompt (copiar y pegar en el mismo chat de Claude Design)
+
+Genemos una **variante light** del carrusel original de DocuLex (el dark
+navy + violeta de 6 slides que ya armamos en este proyecto).
+
+**Mantené todo igual** —misma estructura de 6 slides, misma jerarquía,
+misma tipografía sans bold display, mismos mockups (chat de Doku Genera,
+cards de portales, panel con calendario, bar chart), mismos textos
+exactos, misma posición del logo (icono + wordmark `Docu` regular + `Lex`
+bold) arriba a la izquierda, mismas pills arriba a la derecha, mismos
+contadores `01 / 06` … `06 / 06`— **excepto la paleta**, que se invierte.
+
+---
+
+#### Mapa de inversión de paleta
+
+| Rol | Original (dark) | Variante light |
+|---|---|---|
+| Fondo | `#0E1A2B` navy profundo | `#FAFAFA` blanco hueso |
+| Texto principal | `#FFFFFF` blanco | `#0E1A2B` navy profundo |
+| Texto secundario | `#A8B0BF` gris claro | `#5A6678` slate medio |
+| Acento violeta (palabras destacadas, chat bubble) | `#7C5CFC` | `#5B45D9` (un toque más oscuro para mantener contraste AAA) |
+| Tag rojo / problema | rosa pastel sobre fondo dark | `#E11D48` carmín sobre fondo light |
+| Tag verde / solución | teal claro sobre fondo dark | `#0D9488` teal medio sobre fondo light |
+| Tag azul / sincronización | celeste claro sobre fondo dark | `#1D4ED8` azul medio sobre fondo light |
+| Cards / paneles | navy un poco más claro que el fondo | gris muy claro `#F1F3F6`, ligeramente más oscuro que el fondo |
+| Bordes / hairlines | gris navy con baja opacidad | `#E5E7EB` gris claro |
+| Tachado rojo (sobre "MEV" en cover y cierre) | rojo sobre texto blanco | mismo rojo `#E11D48` sobre texto navy |
+
+---
+
+#### Notas finas para no perder calidad al invertir
+
+- **Los pills de tag** (`PROBLEMA`, `SOLUCIÓN · 01`, `SINCRONIZACIÓN`,
+  `CENTRALIZACIÓN`, `Resultados`) en el dark son texto coloreado sobre
+  fondo del mismo color al 10–15 % de opacidad. En la variante light
+  hacé lo mismo: texto del color saturado (carmín, teal, azul) sobre fondo
+  del mismo color al **8–10 %** de opacidad. Si la transparencia se ve
+  débil sobre blanco, subí el saturado un punto.
+- **El chat mockup de Doku Genera**: la burbuja del usuario era violeta
+  sólida con texto blanco. Mantenela violeta sólida (`#5B45D9`) con texto
+  blanco. La sugerencia de la IA era una card con fondo dark un poco más
+  claro; ahora es card con fondo `#F1F3F6` y borde `#E5E7EB`. La cita
+  destacada de la cláusula tenía borde violeta a la izquierda; mantenela.
+- **El panel de control** (slide 4): el fondo del panel pasa de navy
+  oscuro a `#F1F3F6`. Las filas de novedades ahora son texto navy sobre
+  blanco. El día seleccionado del calendario se mantiene en violeta sólido
+  con texto blanco. Los puntitos de actividad amarillos / violetas se
+  mantienen igual.
+- **El bar chart** (slide 5): el degradé violeta de las barras se mantiene
+  pero un punto más oscuro para destacar sobre blanco. Los números arriba
+  de cada barra (`28`, `42`, `38`, `56`, `68`, `80`) en navy bold. Las
+  barras descendentes / pasadas en gris `#D1D5DB`, la última en violeta
+  sólido `#5B45D9`.
+- **Las pills indicadoras de portal** (`PJN`, `MEV`, `SCBA`, `CTES`):
+  fondo blanco con borde fino color violeta y texto navy. El dot verde
+  arriba a la derecha (estado "activo") se mantiene.
+- **Sombras**: el dark tenía sombras imperceptibles. En light, **agregá
+  shadow muy sutil** a las cards (`0 1px 2px rgba(14, 26, 43, 0.04)`)
+  para darles profundidad sin recargar.
+
+---
+
+#### Lo único que **sí** podés ajustar del copy
+
+- El indicador de slide 6 puede decir `06 / 06 · LIGHT EDITION` para
+  diferenciarla cuando se vea junto al original.
+- La pill arriba a la derecha del cover (slide 1) puede leer
+  `LegalTech · Argentina · Light` para distinguir la variante.
+- El resto del texto **idéntico al deck dark original**.
+
+---
+
+#### Restricciones
+
+- **No** cambies tipografía, jerarquía, copy ni layout.
+- **No** modifiques los mockups internos más allá de la inversión de
+  fondos / colores planos.
+- **No** uses violeta puro (`#7C5CFC`) sobre blanco — pierde contraste.
+  Usá `#5B45D9` o más oscuro para texto y elementos chicos.
+- **No** uses fondo blanco puro (`#FFFFFF`) — usá `#FAFAFA` para que las
+  cards `#F1F3F6` tengan contraste suficiente para leerse como cards.
+- **No** agregues elementos decorativos nuevos (ilustraciones, halftone,
+  texturas). La estética del deck dark es plana / digital, mantenelo así.
+
+---
+
+#### Entregables
+
+- 6 artboards 1080 × 1350 px, espejo light del deck dark original.
+- Mismos nombres de slides para que sea fácil cruzar con el original.
+- Paleta light exportada como swatches al lado de la dark, para futuras
+  piezas de marca.
