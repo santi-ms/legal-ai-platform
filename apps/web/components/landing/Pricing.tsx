@@ -76,7 +76,7 @@ const PLANS = [
     period: "/mes",
     description: "Para estudios de 2 a 3 abogados",
     highlight: false,
-    badge: "Equipos chicos",
+    badge: null,
     cta: "Suscribirme",
     features: [
       "150 documentos por mes",
@@ -199,10 +199,10 @@ export function Pricing() {
                   >
                     {plan.description}
                   </p>
-                  <div className="flex items-baseline gap-x-1 flex-wrap">
+                  <div className="flex flex-col">
                     <span
                       className={cn(
-                        "text-4xl font-extrabold tracking-tight tabular-nums",
+                        "text-4xl font-extrabold tracking-tight tabular-nums leading-none",
                         plan.highlight ? "text-white" : "text-slate-900 dark:text-white"
                       )}
                     >
@@ -211,7 +211,7 @@ export function Pricing() {
                     {plan.period && (
                       <span
                         className={cn(
-                          "text-sm whitespace-nowrap",
+                          "text-sm mt-1.5 whitespace-nowrap",
                           plan.highlight ? "text-white/60" : "text-slate-500 dark:text-slate-400"
                         )}
                       >
