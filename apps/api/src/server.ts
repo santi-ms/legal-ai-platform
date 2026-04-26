@@ -39,6 +39,12 @@ import { syncAllTenants } from "./services/portal-sync-service.js";
 import { logger } from "./utils/logger.js";
 import { prisma } from "./db.js";
 import { AppError } from "./utils/errors.js";
+import { getUserFromRequest } from "./utils/auth.js";
+import {
+  consumeAiRateLimit,
+  pruneExpiredEntries,
+  type AiRateLimitEntry,
+} from "./services/ai-rate-limit.js";
 
 // Initialize Sentry (only in production)
 if (process.env.SENTRY_DSN && process.env.NODE_ENV === 'production') {
@@ -57,15 +63,14 @@ if (process.env.SENTRY_DSN && process.env.NODE_ENV === 'production') {
   });
 }
 
-// In-memory per-tenant AI rate limit state
-const aiRequestCounts = new Map<string, { count: number; resetAt: number }>();
+// In-memory per-user AI rate limit state.
+const aiRequestCounts = new Map<string, AiRateLimitEntry>();
+const AI_RATE_LIMIT_MAX = 30;
+const AI_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 
 // Cleanup every 5 minutes to prevent memory leak
 setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of aiRequestCounts.entries()) {
-    if (now > entry.resetAt) aiRequestCounts.delete(key);
-  }
+  pruneExpiredEntries(aiRequestCounts, Date.now());
 }, 5 * 60 * 1000);
 
 async function buildServer() {
@@ -197,38 +202,30 @@ async function buildServer() {
   });
 
   // AI-specific rate limit: 30 requests per minute per USER (in-memory).
-  // Antes era por tenant: en un estudio de N personas, una sola podía
-  // copar la cuota y bloquear a los demás.
+  // Hook decodifica el JWT acá: las rutas individuales hacen su propia
+  // verificación con getUserFromRequest, pero no decoran request.user, así
+  // que no podemos depender de eso. Sin token válido, dejamos pasar — la
+  // ruta de destino devolverá 401 por su cuenta.
   app.addHook('preHandler', async (request, reply) => {
     const aiPaths = ['/documents/generate', '/chat', '/analysis', '/estrategia', '/juris'];
-    const isAiPath = aiPaths.some(p => request.url.includes(p));
-    if (!isAiPath) return;
+    if (!aiPaths.some(p => request.url.includes(p))) return;
 
-    const user = (request as any).user;
-    if (!user?.id) return; // unauthenticated — other middleware handles it
+    const user = getUserFromRequest(request);
+    if (!user?.userId) return;
 
-    const key = `ai:${user.id}`;
-    const now = Date.now();
-    const window = 60 * 1000; // 1 minute
+    const result = consumeAiRateLimit({
+      userId: user.userId,
+      store: aiRequestCounts,
+      now: Date.now(),
+      max: AI_RATE_LIMIT_MAX,
+      windowMs: AI_RATE_LIMIT_WINDOW_MS,
+    });
 
-    if (!aiRequestCounts.has(key)) {
-      aiRequestCounts.set(key, { count: 1, resetAt: now + window });
-      return;
-    }
-
-    const entry = aiRequestCounts.get(key)!;
-    if (now > entry.resetAt) {
-      entry.count = 1;
-      entry.resetAt = now + window;
-      return;
-    }
-
-    entry.count++;
-    if (entry.count > 30) {
+    if (!result.allowed) {
       return reply.code(429).send({
         ok: false,
         error: 'Demasiadas solicitudes al asistente IA. Esperá un momento.',
-        retryAfter: Math.ceil((entry.resetAt - now) / 1000),
+        retryAfter: result.retryAfterSeconds,
       });
     }
   });
