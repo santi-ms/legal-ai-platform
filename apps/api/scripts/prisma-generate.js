@@ -14,16 +14,11 @@ const here = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
 // 1) Env override explícito
 const envSchema = process.env.PRISMA_SCHEMA_PATH;
 
-// 2) Candidatos habituales (local primero, luego monorepo como fallback)
+// 2) Candidatos: override + schema local del API.
 const candidates = [
   envSchema,
-  // Schema local (service-only deploy - Railway)
   p(here, "..", "prisma/schema.prisma"),
   p(cwd, "prisma/schema.prisma"),
-  // Schema central (monorepo - desarrollo local)
-  p(here, "../..", "packages/db/prisma/schema.prisma"),
-  p(here, "../../..", "packages/db/prisma/schema.prisma"),
-  process.env.INIT_CWD && p(process.env.INIT_CWD, "packages/db/prisma/schema.prisma"),
 ].filter(Boolean);
 
 const found = candidates.find((f) => existsSync(f));
