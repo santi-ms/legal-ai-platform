@@ -1306,18 +1306,18 @@ no que dice.
 - Fondo: `#FAFAFA`. Texto: `#0E1A2B` navy.
 - Acento violeta: `#5B45D9`.
 - Acento verde: `#0D9488` (solo para el estado "completado").
-- **Logo completo (icono + wordmark `Docu` regular + `Lex` bold)** arriba
-  a la izquierda, **64 px de alto**, en navy. Persistente los 12 s.
-- **Anclajes visuales** (todos persistentes, nunca desaparecen):
-  - Marco interior 2 px `#E5E7EB` a 48 px de cada borde.
-  - Cuadrado 96 × 96 px violeta al 6 % de opacidad en esquina superior
-    derecha.
-  - Numeración `REEL · 02` en monoespaciada chica, gris `#5A6678`,
-    esquina inferior derecha.
-  - Hairline horizontal `#E5E7EB` a 80 px del top, alineada al baseline
-    del logo.
+- **Logo: solo el ícono monogramático del design system** (sin wordmark
+  "DocuLex"), arriba a la izquierda, **80 px de alto**, en navy.
+  Persistente los 12 s, nunca cambia de tamaño ni desaparece. **No
+  agregues el wordmark "DocuLex" como texto** — el sistema lo renderiza
+  con una tipografía que no es la de marca y queda mal. Solo ícono.
+- **Composición limpia**: nada de marco interior, anclajes en esquinas,
+  numeraciones de Reel ni elementos decorativos extra. El editor
+  mockup ocupa el centro y eso ya llena el canvas — no hace falta
+  rellenar con elementos auxiliares.
 - Barra de progreso: 4 px de alto, ancho completo del canvas, fill
-  violeta, track `#E5E7EB`, pegada al borde inferior.
+  violeta, track `#E5E7EB`, pegada al borde inferior. Único elemento
+  permanente además del logo.
 
 #### Storyboard segundo a segundo
 
@@ -1338,8 +1338,8 @@ no que dice.
 - El bloque de hook se reduce al 55 % y se desliza al borde superior
   (centro vertical 16 %).
 - El badge timer `0:40` se separa del título: se mueve a la **esquina
-  superior derecha del marco interior**, se agranda a 64 px de alto y
-  se queda fijo ahí los próximos 8 s.
+  superior derecha del canvas** (con margen de 80 px del borde), se
+  agranda a 64 px de alto y se queda fijo ahí los próximos 8 s.
 - En el centro vertical (48 %) aparece una **mockup del editor de
   DocuLex** con fade + scale-up 95 → 100 % en 0.4 s:
   - Header del editor estilo navegador: pestaña *"Doku Genera · Nueva
