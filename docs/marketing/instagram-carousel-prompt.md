@@ -1635,3 +1635,133 @@ queman el CTA en 1.5 s y nadie lo absorbe.
 - **Last frame como PNG estático** (1080 × 1920) con la composición
   final completa: editor reducido arriba, "Tu turno.", botón,
   garantías y cierre regional.
+
+---
+
+## v8 — Bumper de marca al final: extender de 20 s a 22 s
+
+Edición sobre el Reel ya extendido a 20 s. Suma **2 segundos finales**
+de bumper de marca: todo se retira, queda el ícono centrado, abajo se
+revela el wordmark "DocuLex" con la tipografía real del brand, y el
+conjunto se desvanece.
+
+**Importante sobre el wordmark**: cuando Claude Design escribe "DocuLex"
+como texto plano (carácter por carácter), usa una tipografía
+genérica del sistema que no es la del wordmark real y queda mal — ya
+nos pasó. Para conseguir el efecto de "letra por letra" **usando la
+tipografía correcta del brand**, hay que tomar el **componente
+`Wordmark` del design system** (que ya está hecho con la tipografía de
+marca) y revelarlo con una **máscara horizontal** que se barre de
+izquierda a derecha. El resultado visual es indistinguible de un tipeo
+letra por letra, pero el wordmark conserva la tipografía correcta.
+
+### Prompt (copiar y pegar en el mismo proyecto Animation)
+
+Sumá **2 segundos finales** al Reel. Total pasa de 20 a 22 segundos.
+**No tocar nada de los primeros 20 segundos** — todo el contenido
+existente se mantiene exactamente igual. Solo se agrega un bumper de
+marca al final.
+
+#### Bumper de marca (segundos 20.0 – 22.0)
+
+**20.0 – 20.4 s · Salida de la composición.**
+
+Todo el contenido del CTA se desvanece simultáneamente con un fade-out
+limpio de 0.4 s:
+
+- "Tu turno." → fade.
+- Botón "doculex.com.ar →" → fade.
+- Línea "14 días gratis · sin tarjeta · sin instalación." → fade.
+- Línea "Hecho por abogados, para abogados argentinos." → fade.
+- Editor reducido + panel de validación + badges en el borde superior
+  → fade.
+- **Logo arriba a la izquierda también se desvanece** (sale del rol de
+  "watermark" para reaparecer centrado).
+
+A los 20.4 s, el canvas queda completamente vacío, fondo `#FAFAFA`
+limpio. La barra de progreso sigue avanzando hacia el 100 %.
+
+**20.4 – 20.7 s · Aparece el ícono centrado.**
+
+- En el **centro absoluto del canvas** (50 % vertical, 50 %
+  horizontal) aparece el **ícono monogramático del design system**
+  (el mismo que estuvo arriba a la izquierda los 20 s previos).
+- **Tamaño**: 200 px de alto (mucho más grande que cuando estaba
+  arriba a la izquierda — acá es protagonista).
+- **Color**: `#0E1A2B` navy.
+- **Animación de entrada**: scale-up del 80 % al 100 % + fade in 0
+  → 100 % de opacidad, en 0.3 s, easing ease-out.
+
+**20.7 – 21.5 s · Reveal del wordmark "DocuLex".**
+
+- **Importante**: NO escribir "DocuLex" como texto carácter por
+  carácter — Claude Design lo renderiza con una tipografía que no es
+  la del brand. En su lugar:
+- Tomá el **componente `Wordmark`** del Doculex Design System (la
+  pieza pre-diseñada con la tipografía correcta del brand,
+  `Docu` regular + `Lex` bold).
+- Posicionalo **debajo del ícono**, centrado horizontalmente, con un
+  gap de 32 px entre la base del ícono y el top del wordmark.
+- **Tamaño del wordmark**: 96 px de alto.
+- **Color**: `#0E1A2B` navy.
+- **Animación de entrada**: el wordmark aparece **revelado por una
+  máscara horizontal** que se barre de izquierda a derecha en 0.8 s,
+  easing linear. Arranca a los 20.7 s y termina exactamente a los
+  21.5 s. Visualmente da la sensación de que se está "escribiendo
+  letra por letra", pero como el asset es el wordmark del brand, la
+  tipografía sale correcta sí o sí.
+- Si Claude Design no soporta máscaras horizontales sobre componentes,
+  alternativa: dividir el wordmark en 8 sub-componentes (uno por
+  letra: `D`, `o`, `c`, `u`, `L`, `e`, `x`) y hacerlos aparecer
+  secuencialmente con fade-in de 0.1 s cada uno, espaciados 0.1 s
+  entre sí (total 0.8 s). Esto solo funciona si las letras del
+  wordmark se pueden separar manteniendo la tipografía del brand.
+- **No usar tipeo de texto plano** bajo ninguna circunstancia.
+
+**21.5 – 21.7 s · Hold.**
+
+- Composición final: ícono grande centrado vertical, wordmark debajo,
+  ambos en navy sobre `#FAFAFA`. Hold estático de 0.2 s para que se
+  lea y se memorice.
+
+**21.7 – 22.0 s · Fade-out final.**
+
+- Ícono + wordmark se desvanecen juntos en un fade-out de 0.3 s, fin
+  de pieza.
+- Frame final (segundo 22.0): canvas completamente vacío, blanco
+  hueso `#FAFAFA`, barra de progreso al 100 %.
+
+#### Ajustes globales
+
+- **Duración total**: 20 s → **22 s**.
+- **Barra de progreso**: recalibrá el fill violeta para que llegue al
+  100 % exactamente en el segundo 22.0.
+- **Loop de Instagram**: el último frame es completamente blanco. Eso
+  conecta limpio con el frame 0 del Reel cuando hace loop (el frame 0
+  también arranca en blanco antes de aparecer el hook). El bumper
+  funciona también como transición visual al loop.
+
+#### Lo que NO hay que cambiar
+
+- Todo el contenido entre 0:00 y 20:00.
+- Hook, demo, panel de validación, estado completado, CTA — sin
+  modificaciones.
+- Posición original del logo arriba a la izquierda durante los 20 s
+  previos al bumper.
+
+#### Audio (si aplica)
+
+- Sin cambios entre 0:00 y 20:00.
+- **NUEVO**: *swoosh suave* cuando aparece el ícono centrado
+  (segundo 20.4), volumen bajo.
+- **NUEVO**: tick muy sutil cuando completa el reveal del wordmark
+  (segundo 21.5).
+- Silencio en el fade-out final.
+
+#### Entregables
+
+- **MP4 H.264**, 1080 × 1920, 30 fps, **22 segundos exactos**.
+- **GIF** liviano (< 14 MB).
+- **Last frame PNG estático**: el del segundo 21.5 (ícono + wordmark
+  centrados, antes del fade-out) — ese es mejor cover que el frame
+  blanco final.
