@@ -624,3 +624,179 @@ contadores `01 / 06` … `06 / 06`— **excepto la paleta**, que se invierte.
 - Mismos nombres de slides para que sea fácil cruzar con el original.
 - Paleta light exportada como swatches al lado de la dark, para futuras
   piezas de marca.
+
+---
+
+## v6 — Deck nuevo, lenguaje visual del v1, paleta light
+
+Carrusel **con contenido nuevo** (ChatGPT vs DocuLex), pero manteniendo el
+**lenguaje visual del deck dark original**: misma tipografía sans bold,
+mismos cards / pills / mockups, misma cadencia. Aplicado sobre **paleta
+light** (la del v5).
+
+Pegar este prompt en el **mismo chat de Claude Design** que ya tiene el
+deck v1 + la variante light v5 — así hereda fuentes, componentes, logo y
+mapa de colores light sin repetir.
+
+### Prompt (copiar y pegar en el mismo chat de Claude Design)
+
+Armemos un **carrusel nuevo de 6 slides** para DocuLex. **Distinto** al deck
+original (que cubría problema → soluciones generales) y a la variante light
+(que era espejo del original). Este es un **deck hermano**: contenido
+nuevo, estructura nueva, **mismo lenguaje visual** del deck original
+**en paleta light**.
+
+---
+
+#### Sistema visual a heredar (no inventar de cero)
+
+Tomá del deck dark original ya generado en este proyecto:
+
+- Tipografía: **misma sans bold display** para titulares, mismo cuerpo,
+  misma jerarquía de tamaños.
+- **Mismos cards** con `border-radius` redondeado y borde fino.
+- **Mismas pills** (capsulitas con número o tag arriba del card).
+- **Mismo logo** (icono + wordmark `Docu` regular + `Lex` bold) arriba a
+  la izquierda.
+- **Mismo contador** `01 / 06 … 06 / 06` abajo a la derecha y barra de
+  progreso de slides abajo a la izquierda.
+- **Mismas mockups de UI** (estilo chat de Doku Genera, cards apiladas,
+  panel de control) cuando hagan falta.
+
+**Aplicalo en paleta light** según el mapa que ya definimos para el v5:
+fondo `#FAFAFA`, texto principal `#0E1A2B` navy, secundario `#5A6678`,
+acento violeta `#5B45D9`, cards `#F1F3F6` con borde `#E5E7EB`, sombra
+sutil `0 1px 2px rgba(14, 26, 43, 0.04)`. Tags por sección: rojo carmín
+`#E11D48`, teal medio `#0D9488`, azul medio `#1D4ED8`, mostaza
+`#C9923B`.
+
+---
+
+#### Concepto del deck
+
+**"ChatGPT vs DocuLex: para qué sirve cada uno en un estudio jurídico
+argentino."**
+
+Es la objeción más frecuente que recibe cualquier legaltech: *"¿no me
+alcanza con ChatGPT?"*. Este deck no la esquiva, la responde de frente
+con tres diferencias concretas. **No es ataque** a ChatGPT — es
+clarificación. ChatGPT es excelente como herramienta general; DocuLex
+está construida para un trabajo profesional argentino específico.
+
+---
+
+#### Estructura slide por slide (6 slides)
+
+1. **Cover — hook + comparación.**
+   - Pill arriba a la derecha: `Comparativa · LegalTech AR`.
+   - Kicker arriba: `— PARA ABOGADOS QUE YA PROBARON IA GENÉRICA`.
+   - Titular grande:
+     **"ChatGPT redacta.
+     DocuLex redacta `con validez jurídica` argentina."**
+     ("con validez jurídica" en violeta `#5B45D9`).
+   - Bajada en gris medio: *"Tres diferencias que importan cuando lo
+     que firmás lleva tu matrícula."*
+   - **Slide tipográfico, sin mockups.** Como el cover del deck
+     original.
+
+2. **Problema — "ChatGPT no sabe Argentina".**
+   - Pill carmín `Problema · Lo que pasa cuando usás IA genérica`.
+   - Titular: **"La IA genérica no fue entrenada para tu trabajo."**
+   - Tres cards apiladas (mismo componente que el deck original tenía
+     con `01`, `02`, `03`):
+     - `01` — *"Cita fallos que no existen. La objeción más repetida
+       en grupos de abogados."*
+     - `02` — *"No conoce reformas argentinas recientes (Ley 27.551,
+       reformas al CCyC, jurisprudencia 2024–2026)."*
+     - `03` — *"Tus prompts pueden alimentar modelos generales. La Ley
+       25.326 te exige otra cosa."*
+   - Card destacada abajo, mismo estilo que la `+12 h` del deck
+     original, ahora en violeta:
+     **`1 sola`** *"alucinación en un escrito presentado puede ser
+     motivo de sanción del colegio. No es un riesgo teórico."*
+
+3. **Diferencia 01 — Entrenamiento.**
+   - Pill teal `Diferencia · 01 · Entrenamiento argentino`.
+   - Titular: **"Entrenada con normativa `argentina vigente`."**
+     ("argentina vigente" en violeta).
+   - Bajada: *"Código Civil y Comercial, leyes especiales y
+     jurisprudencia de cámaras locales, actualizadas mensualmente."*
+   - **Mockup tipo chat (mismo componente del deck original con
+     Doku Genera)**: el usuario escribe *"redactá una intimación por
+     incumplimiento contractual con cita de doctrina aplicable"* y
+     DocuLex responde citando art. 1.197 CCyC + un fallo de Cámara
+     Civil con link.
+   - Pequeña marca abajo del mockup: `Cita verificada · Cám. Civ.
+     Sala D · 12/03/2024`.
+
+4. **Diferencia 02 — Tus documentos como referencia.**
+   - Pill azul `Diferencia · 02 · Tu estilo, no el de internet`.
+   - Titular: **"Subís tus modelos. Aprende tu redacción."**
+   - Bajada: *"DocuLex genera con el formato y el tono de tu estudio,
+     no con plantillas de blogs estadounidenses traducidos."*
+   - **Mockup en dos columnas**: izquierda, ícono de PDF subido
+     ("Modelo de carta documento · Estudio Méndez · 2024"). Derecha,
+     fragmento de output con el membrete del estudio y la redacción
+     en el mismo tono.
+   - Card chica abajo: *"Hasta 50 documentos de referencia por estudio.
+     La IA elige el modelo más cercano antes de redactar."*
+
+5. **Diferencia 03 — Datos y soberanía.**
+   - Pill mostaza `Diferencia · 03 · Tus datos, tu estudio`.
+   - Titular: **"Tus datos no entrenan modelos genéricos."**
+   - Bajada: *"Arquitectura aislada por estudio, cifrado AES-256,
+     cumplimiento de Ley 25.326 de Protección de Datos Personales."*
+   - **Mockup tipo ficha técnica** (similar a las cards del slide de
+     portales del deck original, pero con íconos de seguridad en vez
+     de logos de portales):
+     - `AES-256` · cifrado en tránsito y en reposo
+     - `Multi-tenant` · sin acceso cruzado entre estudios
+     - `Ley 25.326` · cumplimiento documentado
+     - `Borrado` · a pedido del titular, con constancia
+   - Cada card con un dot verde arriba a la derecha (estado "activo"),
+     igual al deck original.
+
+6. **Cierre / CTA.**
+   - Pill arriba a la derecha: `06 / 06`.
+   - Titular grande, con la misma estructura del cover (espejo de
+     cierre):
+     **"ChatGPT es `general`.
+     DocuLex es `tuyo`."**
+     ("general" tachado con línea carmín, igual que el "MEV" del deck
+     original; "tuyo" en violeta sólido).
+   - Bajada: *"Probalo 14 días gratis. Sin tarjeta. Sin instalación.
+     En español argentino."*
+   - Botón / pill grande abajo: `doculex.com.ar →`.
+   - **Slide tipográfico, sin mockups**, como el cierre del deck
+     original.
+
+---
+
+#### Tono y restricciones
+
+- **Tono**: castellano rioplatense (vos), declarativo pero respetuoso.
+  No atacar a ChatGPT — clarificar para qué sirve cada herramienta.
+  ChatGPT es una herramienta general útil; DocuLex es vertical.
+- **No** uses la palabra "competencia". Usá "herramienta general" o
+  "IA genérica" cuando te refieras a ChatGPT.
+- **No** repitas el copy de los decks anteriores (problema → soluciones
+  generales del v1, mitos del v4, caso narrativo del v3). Este deck es
+  pura comparación funcional.
+- **No** menciones otras IA por nombre además de ChatGPT (no Gemini, no
+  Claude, no Copilot). Mantenelo simple.
+- **No** uses el lenguaje del informe periodístico del v4 (`MITO`,
+  `REALIDAD`, masthead). Esto es UI editorial digital, no diario.
+- **No** prometas datos específicos sobre ChatGPT (volumen de
+  alucinaciones, etc.) que no podés sostener — hablá en términos
+  cualitativos.
+
+---
+
+#### Entregables
+
+- 6 artboards 1080 × 1350 px en paleta light.
+- Logo DocuLex (icono + wordmark) presente en los 6 slides.
+- Mismo sistema de pills, cards, contadores y mockups que el deck
+  original dark.
+- Versión alternativa del cover con titular más cortante:
+  **"`ChatGPT` no firma tus escritos. `Vos` sí."**
