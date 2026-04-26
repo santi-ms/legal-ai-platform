@@ -800,3 +800,128 @@ está construida para un trabajo profesional argentino específico.
   original dark.
 - Versión alternativa del cover con titular más cortante:
   **"`ChatGPT` no firma tus escritos. `Vos` sí."**
+
+---
+
+## v6 — Revisión / fix pass
+
+Revisión a aplicar **sobre el output ya generado** del v6 (no rehacer desde
+cero). Corrige siete problemas de composición y tratamiento detectados en
+la primera pasada de Claude Design: aire muerto vertical en todos los
+slides, cover sin anclaje visual, stat card del slide 2 sin peso, grid
+inconsistente en slide 5, corte de línea del cover, jerarquía interna del
+chat en slide 3, y exceso de mostaza en slide 5.
+
+### Prompt (copiar y pegar en el mismo chat de Claude Design)
+
+Revisá el carrusel **"ChatGPT vs DocuLex"** sin tocar la paleta light, los
+componentes ni el copy. **Aplicá solo las siguientes correcciones
+puntuales.** El slide 6 (CTA) está OK; los ajustes de composición de
+abajo sí aplican también a ese slide.
+
+---
+
+#### 1. Aire muerto arriba en todos los slides
+
+En los 6 slides el contenido principal arranca alrededor del 35-40 % de
+la altura del canvas. La mitad superior queda vacía. **Subí todo el
+bloque de contenido**: que el kicker / pill de sección arranque entre el
+18 % y el 22 % de la altura, y que el titular grande comience entre el
+22 % y el 28 %. El espacio que sobre, repartilo abajo después del último
+elemento (o usalo para que el mockup respire). Aplicá el mismo criterio
+en los 6 slides para que la cadencia vertical sea uniforme.
+
+#### 2. Slide 1 (cover) — falta ancla visual arriba
+
+El cover en light se ve flotando. Agregá un anclaje sutil en el tercio
+superior:
+
+- Una **hairline horizontal** (línea fina `#E5E7EB`) que cruce el slide
+  a la altura de un 12 % desde arriba, alineada con el masthead del logo
+  y la pill.
+- O bien, una **mancha gradient muy sutil** (radial, violeta al 4 % de
+  opacidad) en la esquina superior derecha, como echo del icono.
+- Elegí una de las dos, no ambas.
+
+#### 3. Slide 2 — la stat card "1 sola alucinación" perdió peso
+
+Actualmente es una card blanca con borde violeta a la izquierda. Esa
+treatment no replica la fuerza de la card `+12 h` del deck dark original.
+Hacé:
+
+- **Fondo violeta** `#5B45D9` lleno (no solo borde).
+- **Texto blanco** sobre el violeta.
+- El **`1` gigante** en blanco, peso display más alto, alineado a la
+  izquierda como en `+12 h`.
+- La frase de apoyo en blanco al 85 % de opacidad para crear jerarquía.
+- Mantenela como card de cierre del slide, ancho completo del bloque de
+  contenido, igual que el original dark.
+
+#### 4. Slide 5 — equalizar el grid 2×2
+
+Las cards de la fila superior (`CIFRADO`, `AISLAMIENTO`) parecen más
+altas que las de abajo (`CUMPLIMIENTO`, `BORRADO`). Forzá:
+
+- **Misma altura mínima** para las 4 cards (`min-height` igualado).
+- Mismo padding interno (top, bottom, izquierda, derecha) en las 4.
+- Mismo espacio entre el ícono y el label, y entre el valor y la
+  descripción.
+
+#### 5. Slide 1 — corte de línea del titular
+
+La frase actualmente queda:
+*"ChatGPT redacta. / DocuLex redacta / con validez / jurídica argentina."*
+
+La palabra **"argentina"** queda colgada en la misma línea que "jurídica"
+pero en color distinto, se lee cortado.
+
+Reformateá los saltos de línea así:
+*"ChatGPT redacta. /
+DocuLex redacta /
+con validez jurídica /
+argentina."*
+
+Y resaltá en violeta `#5B45D9` el bloque completo **"con validez jurídica
+argentina."** (las tres últimas líneas), no solo dos palabras sueltas.
+
+#### 6. Slide 3 — jerarquía interna del chat
+
+En el mockup del chat, la **card de respuesta de Doku Genera** y la
+**card anidada `NORMA APLICABLE`** tienen tratamientos casi iguales
+(ambas blancas con borde fino). Diferencialas:
+
+- Card de respuesta exterior: fondo `#FAFAFA` (mismo que el canvas), sin
+  borde.
+- Card anidada `NORMA APLICABLE`: fondo blanco puro `#FFFFFF`, borde
+  izquierdo violeta de 3 px (igual que el deck dark original), padding
+  interno generoso.
+
+Así la cita destacada se lee como un objeto distinto adentro de la
+respuesta, no como otra card más.
+
+#### 7. Slide 5 — exceso de mostaza
+
+Pill arriba a la derecha en mostaza + labels de las 4 cards
+(`CIFRADO`, `AISLAMIENTO`, `CUMPLIMIENTO`, `BORRADO`) también en mostaza.
+Queda monocromático.
+
+- Mantené **la pill superior en mostaza** `#C9923B`.
+- **Los labels de las cards pásalos a navy** `#0E1A2B` con peso bold y
+  letter-spacing levemente expandido (tipo SECTION HEADER).
+- El valor principal de cada card (`AES-256`, `Multi-tenant`,
+  `Ley 25.326`, `A pedido del titular`) se mantiene en navy bold como
+  está.
+- El ícono de cada card puede mantenerse en mostaza para conservar el
+  acento de sección, pero solo el ícono.
+
+---
+
+#### Lo que **no** hay que cambiar
+
+- Paleta light (`#FAFAFA`, `#0E1A2B`, `#5A6678`, `#5B45D9`, `#E11D48`,
+  `#0D9488`, `#1D4ED8`, `#C9923B`).
+- Tipografía y jerarquía general.
+- Copy de los slides 1–5.
+- Logo, pills de sección, contadores, barra de progreso.
+- Mockups internos (chat, dos columnas modelo/output, grid de
+  seguridad).
