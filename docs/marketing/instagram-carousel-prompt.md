@@ -1503,29 +1503,40 @@ automático.
 
 ---
 
-## v8 — Revisión: extender de 15 s a 20 s
+## v8 — Revisión: extender de 15 s a 22 s (unificado)
 
-Edición sobre el Reel ya generado. **No tocar nada de los primeros
-11.5 segundos** (hook, setup, prompt + timer, demo con panel de
-validación). Solo extender:
+Edición unificada sobre el Reel ya generado. **No tocar nada de los
+primeros 11.5 segundos** (hook, setup, prompt + timer, demo con panel
+de validación). Tres modificaciones en una sola pasada:
 
 - El **estado "completado"** (era 11.5 – 12.5, 1 s) → pasa a ser
   11.5 – 14.5, **3 s totales** (+2 s).
 - El **CTA** (era 12.5 – 15.0, 2.5 s) → pasa a ser 14.5 – 20.0,
   **5.5 s totales** (+3 s).
+- **NUEVO bumper de marca al final** (20.0 – 22.0, 2 s totales).
 
-Los 5 segundos extra se usan para: (a) dejar que el espectador absorba
-el resultado del documento + ver el ahorro de tiempo concreto en pantalla;
+Los 7 segundos extra se usan para: (a) que el espectador absorba el
+resultado del documento + vea el ahorro de tiempo en pantalla;
 (b) que el CTA respire — botón visible más tiempo, garantías legibles,
-cierre con identidad regional.
+cierre con identidad regional; (c) cierre con bumper de marca (ícono
+grande centrado + reveal del wordmark con máscara horizontal).
+
+**Importante sobre el wordmark del bumper**: cuando Claude Design
+escribe "DocuLex" como texto plano, usa una tipografía genérica del
+sistema que no es la del wordmark del brand. Por eso el bumper revela
+el wordmark con una **máscara horizontal de izquierda a derecha**
+sobre el componente `Wordmark` del design system (que ya está hecho con
+la tipografía correcta). Visualmente da el efecto de "letra por
+letra", pero el wordmark conserva la tipografía de marca.
 
 ### Prompt (copiar y pegar en el mismo proyecto Animation)
 
-Extendé el Reel de **15 a 20 segundos** sin tocar los primeros 11.5
+Extendé el Reel de **15 a 22 segundos** sin tocar los primeros 11.5
 segundos. Toda la parte del hook, el setup del editor, el prompt
 tipeándose, el timer corriendo y la demo con el panel lateral de
 validación queda **exactamente igual**, mismos timings, misma
-animación, misma posición. Solo se modifican los dos tramos finales.
+animación, misma posición. Solo se modifican los tramos finales y se
+agrega un bumper de marca de cierre.
 
 ---
 
@@ -1591,78 +1602,9 @@ queman el CTA en 1.5 s y nadie lo absorbe.
   Sirve como cierre con identidad y como social signal sin caer en
   testimonio.
 - **19.5 – 20.0 s**: todo se queda estático, el botón sigue con su
-  bounce-loop sutil, la barra de progreso completa el 100 %.
+  bounce-loop sutil.
 
-#### 3. Ajustes globales
-
-- **Duración total**: 15 s → **20 s**.
-- **Barra de progreso**: el fill violeta debe ahora llegar al 100 %
-  exactamente en el segundo 20.0, no en el 15.0. Recalibrá la
-  velocidad del fill.
-- **Logo**: sigue siendo solo el ícono monogramático, 80 px de alto,
-  arriba a la izquierda, persistente los 20 s. **No agregar wordmark.**
-- **Loop**: cuando Instagram repite el Reel, debe hacerlo desde el
-  frame 0 limpio. Asegurate de que el último frame (segundo 20.0) sea
-  estático y se conecte visualmente bien con el frame 0.
-
-#### 4. Lo que **no** hay que cambiar
-
-- Hook (0 – 1.5 s).
-- Setup del editor (1.5 – 2.0 s).
-- Prompt tipeándose y arranque del timer (2.0 – 3.5 s).
-- Demo con los 8 segundos de documento generándose (3.5 – 11.5 s).
-- Panel lateral de validación con sus 3 checks (apariciones a los
-  06.0, 07.0, 08.5, 10.0 s).
-- Posición y tamaño del logo, del badge timer, del editor.
-- Paleta, tipografía, jerarquía.
-- Movimientos y easings de los elementos existentes.
-
-#### 5. Audio (si aplica)
-
-- *Tick* del timer cada 0.24 s entre 03.0 y 11.5 s — sin cambios.
-- *Tap* al submit del prompt — sin cambios.
-- *Tick* corto en cada check del panel — sin cambios.
-- *Chime* corto al aparecer "LISTO" — sin cambios (segundo 11.5).
-- **NUEVO**: *suave whoosh* cuando aparece el badge "Tiempo ahorrado:
-  38 min" (segundo 12.5), volumen muy bajo.
-- Resto: silencio. **Nada de voz en off.**
-
-#### 6. Entregables
-
-- **MP4 H.264**, 1080 × 1920, 30 fps, **20 segundos exactos**.
-- **GIF** liviano (< 12 MB) ahora puede ser un poco más grande por
-  la duración extra.
-- **Last frame como PNG estático** (1080 × 1920) con la composición
-  final completa: editor reducido arriba, "Tu turno.", botón,
-  garantías y cierre regional.
-
----
-
-## v8 — Bumper de marca al final: extender de 20 s a 22 s
-
-Edición sobre el Reel ya extendido a 20 s. Suma **2 segundos finales**
-de bumper de marca: todo se retira, queda el ícono centrado, abajo se
-revela el wordmark "DocuLex" con la tipografía real del brand, y el
-conjunto se desvanece.
-
-**Importante sobre el wordmark**: cuando Claude Design escribe "DocuLex"
-como texto plano (carácter por carácter), usa una tipografía
-genérica del sistema que no es la del wordmark real y queda mal — ya
-nos pasó. Para conseguir el efecto de "letra por letra" **usando la
-tipografía correcta del brand**, hay que tomar el **componente
-`Wordmark` del design system** (que ya está hecho con la tipografía de
-marca) y revelarlo con una **máscara horizontal** que se barre de
-izquierda a derecha. El resultado visual es indistinguible de un tipeo
-letra por letra, pero el wordmark conserva la tipografía correcta.
-
-### Prompt (copiar y pegar en el mismo proyecto Animation)
-
-Sumá **2 segundos finales** al Reel. Total pasa de 20 a 22 segundos.
-**No tocar nada de los primeros 20 segundos** — todo el contenido
-existente se mantiene exactamente igual. Solo se agrega un bumper de
-marca al final.
-
-#### Bumper de marca (segundos 20.0 – 22.0)
+#### 3. Bumper de marca al final — 20.0 – 22.0 (2 s nuevos)
 
 **20.0 – 20.4 s · Salida de la composición.**
 
@@ -1676,47 +1618,42 @@ limpio de 0.4 s:
 - Editor reducido + panel de validación + badges en el borde superior
   → fade.
 - **Logo arriba a la izquierda también se desvanece** (sale del rol de
-  "watermark" para reaparecer centrado).
+  watermark para reaparecer centrado en grande).
 
-A los 20.4 s, el canvas queda completamente vacío, fondo `#FAFAFA`
-limpio. La barra de progreso sigue avanzando hacia el 100 %.
+A los 20.4 s, el canvas queda completamente vacío sobre `#FAFAFA`.
 
 **20.4 – 20.7 s · Aparece el ícono centrado.**
 
 - En el **centro absoluto del canvas** (50 % vertical, 50 %
-  horizontal) aparece el **ícono monogramático del design system**
-  (el mismo que estuvo arriba a la izquierda los 20 s previos).
-- **Tamaño**: 200 px de alto (mucho más grande que cuando estaba
-  arriba a la izquierda — acá es protagonista).
+  horizontal) aparece el **ícono monogramático del design system**.
+- **Tamaño**: 200 px de alto (mucho más grande — acá es protagonista).
 - **Color**: `#0E1A2B` navy.
-- **Animación de entrada**: scale-up del 80 % al 100 % + fade in 0
-  → 100 % de opacidad, en 0.3 s, easing ease-out.
+- **Animación**: scale-up del 80 % al 100 % + fade in 0 → 100 % de
+  opacidad, en 0.3 s, easing ease-out.
 
 **20.7 – 21.5 s · Reveal del wordmark "DocuLex".**
 
-- **Importante**: NO escribir "DocuLex" como texto carácter por
-  carácter — Claude Design lo renderiza con una tipografía que no es
-  la del brand. En su lugar:
 - Tomá el **componente `Wordmark`** del Doculex Design System (la
-  pieza pre-diseñada con la tipografía correcta del brand,
-  `Docu` regular + `Lex` bold).
+  pieza pre-diseñada con la tipografía del brand, `Docu` regular +
+  `Lex` bold).
 - Posicionalo **debajo del ícono**, centrado horizontalmente, con un
   gap de 32 px entre la base del ícono y el top del wordmark.
 - **Tamaño del wordmark**: 96 px de alto.
 - **Color**: `#0E1A2B` navy.
-- **Animación de entrada**: el wordmark aparece **revelado por una
-  máscara horizontal** que se barre de izquierda a derecha en 0.8 s,
-  easing linear. Arranca a los 20.7 s y termina exactamente a los
-  21.5 s. Visualmente da la sensación de que se está "escribiendo
-  letra por letra", pero como el asset es el wordmark del brand, la
-  tipografía sale correcta sí o sí.
+- **Animación**: el wordmark aparece **revelado por una máscara
+  horizontal** que se barre de izquierda a derecha en 0.8 s, easing
+  linear. Arranca a los 20.7 s y termina exactamente a los 21.5 s.
+  Visualmente da la sensación de que se está "escribiendo letra por
+  letra", pero como el asset es el wordmark del brand, la tipografía
+  sale correcta.
 - Si Claude Design no soporta máscaras horizontales sobre componentes,
-  alternativa: dividir el wordmark en 8 sub-componentes (uno por
-  letra: `D`, `o`, `c`, `u`, `L`, `e`, `x`) y hacerlos aparecer
-  secuencialmente con fade-in de 0.1 s cada uno, espaciados 0.1 s
-  entre sí (total 0.8 s). Esto solo funciona si las letras del
-  wordmark se pueden separar manteniendo la tipografía del brand.
-- **No usar tipeo de texto plano** bajo ninguna circunstancia.
+  alternativa: dividir el wordmark en 8 sub-componentes (`D`, `o`,
+  `c`, `u`, `L`, `e`, `x`) y hacerlos aparecer secuencialmente con
+  fade-in de 0.1 s cada uno, espaciados 0.1 s entre sí. Esto solo
+  funciona si las letras del wordmark se pueden separar manteniendo la
+  tipografía del brand.
+- **No usar tipeo de texto plano** bajo ninguna circunstancia — la
+  tipografía de fallback del sistema no es la del brand.
 
 **21.5 – 21.7 s · Hold.**
 
@@ -1731,37 +1668,51 @@ limpio. La barra de progreso sigue avanzando hacia el 100 %.
 - Frame final (segundo 22.0): canvas completamente vacío, blanco
   hueso `#FAFAFA`, barra de progreso al 100 %.
 
-#### Ajustes globales
+#### 4. Ajustes globales
 
-- **Duración total**: 20 s → **22 s**.
-- **Barra de progreso**: recalibrá el fill violeta para que llegue al
-  100 % exactamente en el segundo 22.0.
+- **Duración total**: 15 s → **22 s**.
+- **Barra de progreso**: el fill violeta debe ahora llegar al 100 %
+  exactamente en el segundo 22.0. Recalibrá la velocidad del fill.
+- **Logo durante 0:00 – 20:00**: sigue siendo solo el ícono
+  monogramático, 80 px de alto, arriba a la izquierda. **No agregar
+  wordmark mientras dura el contenido principal.** El wordmark solo
+  aparece en el bumper final junto al ícono grande centrado.
 - **Loop de Instagram**: el último frame es completamente blanco. Eso
   conecta limpio con el frame 0 del Reel cuando hace loop (el frame 0
   también arranca en blanco antes de aparecer el hook). El bumper
   funciona también como transición visual al loop.
 
-#### Lo que NO hay que cambiar
+#### 5. Lo que **no** hay que cambiar
 
-- Todo el contenido entre 0:00 y 20:00.
-- Hook, demo, panel de validación, estado completado, CTA — sin
-  modificaciones.
-- Posición original del logo arriba a la izquierda durante los 20 s
-  previos al bumper.
+- Hook (0 – 1.5 s).
+- Setup del editor (1.5 – 2.0 s).
+- Prompt tipeándose y arranque del timer (2.0 – 3.5 s).
+- Demo con los 8 segundos de documento generándose (3.5 – 11.5 s).
+- Panel lateral de validación con sus 3 checks (apariciones a los
+  06.0, 07.0, 08.5, 10.0 s).
+- Posición y tamaño del logo, del badge timer, del editor.
+- Paleta, tipografía, jerarquía.
+- Movimientos y easings de los elementos existentes.
 
-#### Audio (si aplica)
+#### 6. Audio (si aplica)
 
-- Sin cambios entre 0:00 y 20:00.
-- **NUEVO**: *swoosh suave* cuando aparece el ícono centrado
-  (segundo 20.4), volumen bajo.
+- *Tick* del timer cada 0.24 s entre 03.0 y 11.5 s — sin cambios.
+- *Tap* al submit del prompt — sin cambios.
+- *Tick* corto en cada check del panel — sin cambios.
+- *Chime* corto al aparecer "LISTO" — sin cambios (segundo 11.5).
+- **NUEVO**: *suave whoosh* cuando aparece el badge "Tiempo ahorrado:
+  38 min" (segundo 12.5), volumen muy bajo.
+- **NUEVO**: *swoosh* corto cuando aparece el ícono centrado en el
+  bumper (segundo 20.4), volumen bajo.
 - **NUEVO**: tick muy sutil cuando completa el reveal del wordmark
   (segundo 21.5).
-- Silencio en el fade-out final.
+- Silencio en el fade-out final (21.7 – 22.0).
+- Resto: **nada de voz en off.**
 
-#### Entregables
+#### 7. Entregables
 
 - **MP4 H.264**, 1080 × 1920, 30 fps, **22 segundos exactos**.
 - **GIF** liviano (< 14 MB).
-- **Last frame PNG estático**: el del segundo 21.5 (ícono + wordmark
-  centrados, antes del fade-out) — ese es mejor cover que el frame
-  blanco final.
+- **Last frame PNG estático**: el del **segundo 21.5** (ícono +
+  wordmark centrados, antes del fade-out) — ese es mejor cover que el
+  frame blanco final, porque deja ver la marca completa.
