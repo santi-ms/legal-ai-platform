@@ -128,6 +128,19 @@ export default function RootLayout({
   return (
     <html lang="es" className={`h-full ${inter.variable}`} suppressHydrationWarning>
       <head>
+        {/*
+          Resolver el theme antes de la hidratación para evitar flash:
+          - Rutas fuera del dashboard interno (landing, auth, onboarding, portal
+            cliente, etc.) → siempre dark.
+          - Rutas del dashboard interno → respetan localStorage.theme.
+          La lista debe mantenerse en sync con APP_ROUTE_PREFIXES en
+          apps/web/app/lib/theme-routes.ts.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var p=window.location.pathname;var APP=["/dashboard","/documents","/clients","/expedientes","/vencimientos","/calendario","/finanzas","/importar","/analytics","/settings","/admin","/analysis","/estrategia","/juris"];var isApp=APP.some(function(x){return p===x||p.indexOf(x+"/")===0;});var d;if(!isApp){d=true;}else{var s=localStorage.getItem("theme");if(s==="dark")d=true;else if(s==="light")d=false;else d=window.matchMedia("(prefers-color-scheme: dark)").matches;}document.documentElement.classList.toggle("dark",d);}catch(e){document.documentElement.classList.add("dark");}})();`,
+          }}
+        />
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&display=swap"
           rel="stylesheet"
