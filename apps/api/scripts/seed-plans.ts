@@ -52,7 +52,7 @@ const PLANS = [
       maxStorageMb: 100,
       analysesPerMonth: 15,
       strategiesPerMonth: 15,
-      jurisMessagesPerMonth: 100,
+      jurisMessagesPerMonth: 50,
     },
     features: {
       chatIA: true,
@@ -79,7 +79,7 @@ const PLANS = [
       maxStorageMb: 250,
       analysesPerMonth: 30,
       strategiesPerMonth: 30,
-      jurisMessagesPerMonth: 250,
+      jurisMessagesPerMonth: 100,
     },
     features: {
       chatIA: true,
