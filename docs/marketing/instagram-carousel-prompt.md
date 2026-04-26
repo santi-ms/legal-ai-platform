@@ -930,18 +930,16 @@ Queda monocromático.
 
 ---
 
-## v7 — Reel animado para Instagram (a partir del cover del v6)
+## v7 — Reel animado para Instagram (hook frío)
 
 Animación vertical de 12 segundos pensada como **Reel de Instagram /
-Stories / TikTok**. Reusa el concepto y el lenguaje visual del v6
-(ChatGPT vs DocuLex, paleta light) y lo lleva a movimiento. Pensada
-para funcionar **muteada** (mayor parte de Reels se ven sin sonido) —
-toda la información va por tipografía animada.
+Stories / TikTok**. Reusa el lenguaje visual del v6 (paleta light) pero
+arranca con un **hook de riesgo concreto** ("1 alucinación = sanción
+del Colegio") en vez de la comparación de marcas. Pensada para
+funcionar **muteada**.
 
 **Setup en Claude Design**: proyecto nuevo desde `From template →
-Animation`, con `Doculex Design System` como default. NO heredar el
-canvas del proyecto del v6 porque cambia el ratio (9:16 vs 4:5) y el
-modo de proyecto.
+Animation`, con `Doculex Design System` como default.
 
 ### Prompt (copiar y pegar en el proyecto Animation)
 
@@ -953,114 +951,133 @@ que el mensaje va 100 % por tipografía animada.
 
 #### Concepto
 
-**"ChatGPT redacta. DocuLex redacta con validez jurídica argentina."**
+**"1 alucinación de IA en un escrito = sanción del Colegio.
+DocuLex no inventa: cita con fuente verificable."**
 
-El Reel construye la frase en tiempo real: primero aparece la
-afirmación, después la rebate, suma una prueba mínima (cita
-verificada), y cierra con CTA. Tono declarativo, seco, confiado.
-**No** humorístico, **no** agresivo con ChatGPT — es comparación, no
-ataque.
+El Reel arranca con un hook frío de riesgo concreto, demuestra la
+amenaza (una "respuesta de IA genérica" con un fallo inexistente),
+pivota a la solución (cita verificada con artículo del CCyC y
+sentencia real), y cierra con CTA.
+
+**Tono**: frío, específico, declarativo. **No** alarmismo barato,
+**no** humor, **no** ataque directo a ChatGPT (decimos "IA genérica").
 
 #### Sistema visual (heredar del Doculex Design System)
 
-- Fondo: `#FAFAFA` (papel claro), mismo del v6.
+- Fondo: `#FAFAFA` (papel claro).
 - Texto principal: `#0E1A2B` navy.
 - Acento violeta: `#5B45D9`.
-- Acento carmín (para tachado): `#E11D48`.
-- Logo DocuLex (icono + wordmark) presente en una esquina durante todo
-  el Reel, en `#0E1A2B`, tamaño chico (~40 px de alto), arriba a la
-  izquierda. **Nunca debe desaparecer.**
+- Acento carmín: `#E11D48` (usado para la palabra "sanción", el sello
+  "FALLO INEXISTENTE" y la línea de tachado).
+- Acento verde: `#0D9488` (usado solo para el check de cita
+  verificada).
+- Logo DocuLex (icono + wordmark) presente arriba a la izquierda
+  durante todo el Reel, en navy, ~40 px de alto. **Nunca desaparece.**
 - Barra de progreso fina abajo del canvas que avanza linealmente del
-  segundo 0 al 12, en violeta `#5B45D9`.
+  segundo 0 al 12, en violeta.
 - Tipografía y jerarquía: la del design system (no la nombres).
 
 #### Storyboard segundo a segundo
 
-**00:00 – 00:01 · Hook silencioso.**
-Canvas vacío sobre fondo claro. En el centro parpadea una vez un
-cursor de texto vertical (`|`) en violeta. Logo y barra de progreso
-aparecen al frame 1.
+**00:00 – 00:02.5 · Hook frío. Pattern interrupt.**
 
-**00:01 – 00:03 · Aparece la afirmación.**
-El cursor empieza a tipear en navy bold:
-**"ChatGPT redacta."**
-Aparece carácter por carácter como si lo escribiera, completándose
-exactamente al segundo 03.
+- Frame 0: canvas vacío. Logo arriba a la izquierda, barra de progreso
+  al 0 %.
+- 0.3 s: aparece centrado un **"1" gigante en violeta** `#5B45D9`,
+  scale-up 80 % → 100 %, ease-out 0.3 s. Es el scroll-stopper.
+- 0.8 s: a la derecha del "1", tipea carácter por carácter en navy
+  bold:
+  *"alucinación de IA"*
+- 1.5 s: debajo de toda la línea anterior, aparece más grande:
+  *"= sanción del Colegio."*
+  La palabra **"sanción"** entra en carmín `#E11D48`, peso display.
+- 2.0 – 2.5 s: hold. Que se lea bien.
 
-**00:03 – 00:04 · Tachado.**
-Una línea carmín cruza la palabra "ChatGPT" (no toda la frase, solo
-el sustantivo) de izquierda a derecha en 0.4 s, easing rápido al
-inicio y suave al final. Mismo estilo de tachado que el "MEV" del
-deck dark original.
+**00:02.5 – 00:05 · La amenaza es real.**
 
-**00:04 – 00:06 · Salto de línea, aparece el contrapunto.**
-La frase tachada se desliza hacia arriba 80 px y queda como referencia
-gris al 50 % de opacidad. Debajo, aparece tipeada en navy bold:
-**"DocuLex redacta"**.
-La palabra "DocuLex" debe usar el lockup `Docu` regular + `Lex` bold
-del design system, no texto plano.
+- El bloque del hook se reduce al 65 % y se desliza al borde superior
+  (slide-up 0.4 s). Queda como contexto fijo arriba.
+- Aparece centrada una **card blanca** con borde fino `#E5E7EB`,
+  header chico en monoespaciada gris: `Respuesta de IA genérica`.
+  Adentro, en navy:
 
-**00:06 – 00:08.5 · Build del concepto clave.**
-Debajo de "DocuLex redacta", aparece línea por línea:
+  *"Cám. Civ. Sala D · 'Pérez c/ González' · 12/03/2024 fundamenta
+  lo solicitado…"*
 
-- *"con validez"* (navy, 0.4 s)
-- *"jurídica"* (navy, 0.4 s)
-- *"argentina."* (violeta `#5B45D9`, sólida, 0.6 s con un leve
-  *scale-up* del 90 % al 100 %)
+  Entra con fade + scale-up 95 → 100 % en 0.4 s.
+- A los **04.0 s**, sobre la cita aparece un **sello rojo rotado 6°**,
+  fondo carmín `#E11D48`, texto blanco bold:
+  **"FALLO INEXISTENTE"**.
+  Entra con un *stamp-down* (escala 130 % → 100 %, rotación
+  +12° → +6°, opacidad 0 → 100 % en 0.25 s). Sensación de "sello de
+  goma" cayendo.
+- 4.3 – 5.0 s: hold breve.
 
-Cada línea entra desde abajo con un fade + slide de 12 px. La palabra
-"argentina." es la única en violeta y la más grande — remate visual.
+**00:05 – 00:08 · DocuLex no inventa.**
 
-**00:08.5 – 00:10.5 · Prueba mínima.**
-Toda la composición tipográfica se reduce y sale por arriba (escala
-al 65 %, slide-up 0.5 s). Aparece centrada una **card chica blanca**
-con borde fino `#E5E7EB` y borde izquierdo violeta de 3 px. Adentro,
-en monoespaciada:
+- La card "FALLO INEXISTENTE" se desvanece (fade-out 0.3 s, junto
+  con la cita falsa).
+- Aparece centrada una **card chica blanca** con borde fino
+  `#E5E7EB` y **borde izquierdo violeta de 3 px**. Adentro, en
+  monoespaciada:
 
-```
-✦ CITA VERIFICADA
-Art. 1.197 — Código Civil y Comercial
-Cám. Civ. Sala D · 12/03/2024
-```
+  ```
+  ✦ CITA VERIFICADA
+  Art. 1.197 — Código Civil y Comercial
+  Cám. Civ. Sala D · 12/03/2024
+  → ver fallo original
+  ```
 
-Entra con fade + scale-up del 95 % al 100 % en 0.4 s. A los 9.5 s
-pulsa el ícono ✦ una vez en violeta.
+  Entra con fade + scale-up 95 → 100 % en 0.4 s.
+- A los **06.5 s**, el ícono ✦ pulsa una vez en violeta.
+- A los **07.0 s**, aparece **chico al lado de la card** un círculo
+  verde `#0D9488` con un check blanco adentro, y al lado en gris:
+  *"Verificada en fuente oficial"*.
+
+**00:08 – 00:10.5 · Mensaje clave.**
+
+- La card se reduce al 70 % y se desliza al borde superior (queda
+  visible como prueba persistente).
+- Aparece centrado, en navy bold:
+  **"DocuLex redacta `con fuente`."**
+  ("con fuente" en violeta `#5B45D9`).
+- Cada línea entra con un fade + slide vertical de 12 px,
+  espaciadas 0.4 s entre sí.
 
 **00:10.5 – 00:12 · CTA.**
-La card se desvanece (fade-out 0.3 s). Queda centrado, en navy bold:
-**"Probalo gratis 14 días."**
-Debajo, un botón pill violeta sólido `#5B45D9` con texto blanco:
-**"doculex.com.ar →"**. La flecha tiene un *bounce-loop* sutil
-(5 px hacia la derecha cada segundo, easing in-out).
 
-A los 11.8 s aparece debajo del botón un texto chico en gris
-(`#5A6678`): *"Sin tarjeta · Sin instalación · En español argentino."*
+- El bloque "DocuLex redacta con fuente." se reduce al 60 % y se
+  ancla arriba (no sale del cuadro, queda como remate).
+- Aparece centrado, en navy bold: **"Probalo gratis 14 días."**.
+- Debajo, **botón pill violeta sólido** `#5B45D9` con texto blanco:
+  **"doculex.com.ar →"**.
+  La flecha tiene un *bounce-loop* sutil (5 px hacia la derecha cada
+  segundo, easing in-out).
+- A los **11.8 s**, debajo del botón, en gris `#5A6678`:
+  *"Sin tarjeta · Sin instalación · En español argentino."*
 
 **00:12 · Frame final.**
-La barra de progreso llega al 100 %. Termina con esa composición
-estática — el Reel hace loop automático en Instagram, así que el
-espectador puede leer el CTA durante el loop.
+Barra de progreso al 100 %. Composición estática. Instagram hace loop
+automático: cuando vuelve al frame 0, el espectador ya leyó el CTA y
+puede arrancar de nuevo más predispuesto.
 
 #### Tipos de movimiento permitidos
 
 - **Tipeo** carácter por carácter, cursor visible.
 - **Fade + slide vertical** corto (8–16 px).
-- **Tachado lineal** (line drawing, izquierda a derecha).
-- **Scale sutil** (90 %–100 % o 95 %–100 %, no más exagerado).
-- **Pulse** (un ícono que parpadea una vez).
-- **Bounce-loop** (la flecha del CTA).
+- **Scale sutil** (80 → 100 %, 95 → 100 %, 130 → 100 % para el sello).
+- **Stamp con rotación** (sello rojo, una sola vez).
+- **Pulse** (ícono ✦, una sola vez).
+- **Bounce-loop** (flecha del CTA).
 
-#### Tipos de movimiento **prohibidos**
+#### Tipos de movimiento prohibidos
 
 - Rebotes excesivos, *spring* exagerado.
 - Cámara en movimiento (zoom, pan, parallax).
-- Glitch, distorsión, transiciones tipo TV vieja.
+- Glitch, distorsión, efectos tipo TV vieja.
 - Confetti, partículas, glow excesivo.
 - Tipografías "artísticas" o efectos manuscritos.
-
-El movimiento **sirve al texto**, no al revés. La pieza tiene que
-sentirse como un **documento legal que se autoescribe**, no como un
-anuncio de FinTech.
+- Múltiples sellos rotando (solo uno: el "FALLO INEXISTENTE").
 
 #### Captions / accesibilidad
 
@@ -1068,24 +1085,26 @@ anuncio de FinTech.
   YA es la caption.
 - Contraste navy sobre `#FAFAFA` debe cumplir AAA en todos los frames
   (ratio ≥ 7:1).
-- Texto chico del CTA puede ser ~32 px porque queda estático.
+- El texto del CTA puede ser ~32 px porque queda estático.
+- El sello "FALLO INEXISTENTE" tiene que ser legible en mobile a 60 %
+  de zoom.
 
-#### Audio (opcional, no obligatorio)
+#### Audio (opcional)
 
 Si se le suma sonido más adelante:
 
-- **Una sola vez** un click sutil de tecla cuando termina de tipearse
-  "ChatGPT redacta." (segundo 03).
-- Un *swoosh* corto cuando entra el tachado (segundo 03.5).
-- Resto: silencio o música de fondo al 30 % de volumen.
-- **Nada de voz en off.**
+- *Click* de tecla cuando termina de tipearse el hook (segundo 02.5).
+- *Stamp-down* (impacto de sello de goma) cuando aparece "FALLO
+  INEXISTENTE" (segundo 04.0). El golpe más fuerte del Reel.
+- *Chime* corto cuando aparece el check verde de cita verificada
+  (segundo 07.0).
+- Resto: silencio. **Nada de voz en off.**
 
 #### Entregables
 
 - **MP4 H.264**, 1080 × 1920, 30 fps, 12 segundos exactos.
-- **GIF** liviano (< 8 MB) del mismo Reel, para previews en
-  WhatsApp / Slack.
-- **Last frame como PNG estático** (1080 × 1920) para usar como
-  thumbnail si Instagram pide cover personalizada.
-- Versión alternativa de **9 segundos** (sacando los segundos
-  08.5–10.5 de la card de cita) para Stories.
+- **GIF** liviano (< 8 MB) del mismo Reel para previews.
+- **Last frame como PNG estático** (1080 × 1920) como thumbnail.
+- Versión alternativa de **9 segundos** comprimida para Stories
+  (recortar segundos 08.0–10.5: pasar directo de "DocuLex redacta con
+  fuente." al CTA).
