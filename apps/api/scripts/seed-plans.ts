@@ -20,12 +20,12 @@ const PLANS = [
     limits: {
       docsPerMonth: 5,
       maxUsers: 1,
-      maxClients: 3,
-      maxExpedientes: 2,
+      maxClients: 5,
+      maxExpedientes: 5,
       maxReferenceFiles: 0,
       analysesPerMonth: 2,
       strategiesPerMonth: 2,
-      jurisMessagesPerMonth: 10,
+      jurisMessagesPerMonth: 5,
     },
     features: {
       chatIA: false,
@@ -70,7 +70,7 @@ const PLANS = [
     name: "Pro+",
     description: "Para abogados con mayor volumen",
     priceArs: 35000,
-    trialDays: 0,
+    trialDays: 7,
     limits: {
       docsPerMonth: 100,
       maxUsers: 1,
@@ -88,7 +88,34 @@ const PLANS = [
       analytics: true,
       exportarReportes: true,
       referenciaDocs: true,
-      logoEstudio: false,
+      logoEstudio: true,
+      soporte: "email_prioritario",
+    },
+  },
+  {
+    code: "equipo",
+    name: "Equipo",
+    description: "Para estudios de 2 a 3 abogados",
+    priceArs: 60000,
+    trialDays: 7,
+    limits: {
+      docsPerMonth: 150,
+      maxUsers: 3,
+      maxClients: -1,
+      maxExpedientes: -1,
+      maxReferenceFiles: 30,
+      analysesPerMonth: 50,
+      strategiesPerMonth: 50,
+      jurisMessagesPerMonth: 400,
+    },
+    features: {
+      chatIA: true,
+      edicion: true,
+      anotaciones: true,
+      analytics: true,
+      exportarReportes: true,
+      referenciaDocs: true,
+      logoEstudio: true,
       soporte: "email_prioritario",
     },
   },
@@ -97,7 +124,7 @@ const PLANS = [
     name: "Estudio",
     description: "Para estudios jurídicos — precio por usuario",
     priceArs: 45000,
-    trialDays: 0,
+    trialDays: 14,
     limits: {
       docsPerMonth: -1,
       maxUsers: -1,
@@ -149,8 +176,9 @@ async function main() {
   console.log("\n✅ Planes seeded correctamente!");
   console.log("   Free: $0/mes · 5 docs/mes · 1 usuario");
   console.log("   Pro: $24.999/mes · 50 docs/mes · 1 usuario · 7 días gratis");
-  console.log("   Pro+: $35.000/mes · 100 docs/mes · 1 usuario");
-  console.log("   Estudio: $45.000/usuario/mes · ilimitado · mín. 3 usuarios");
+  console.log("   Pro+: $35.000/mes · 100 docs/mes · 1 usuario · 7 días gratis");
+  console.log("   Equipo: $60.000/mes · 150 docs/mes · hasta 3 usuarios · 7 días gratis");
+  console.log("   Estudio: $45.000/usuario/mes · ilimitado · mín. 3 usuarios · 14 días gratis");
 }
 
 main()

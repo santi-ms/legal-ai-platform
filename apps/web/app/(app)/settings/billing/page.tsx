@@ -58,6 +58,7 @@ function getPlanIcon(code: string) {
   if (code === "free") return Shield;
   if (code === "pro") return Zap;
   if (code === "proplus") return Crown;
+  if (code === "equipo") return Users;
   return Building2;
 }
 
@@ -65,6 +66,7 @@ function getPlanColor(code: string, isCurrent: boolean) {
   if (isCurrent) return "border-primary ring-2 ring-primary/20";
   if (code === "pro") return "border-primary/40 dark:border-primary/30";
   if (code === "proplus") return "border-purple-400/40 dark:border-purple-500/30";
+  if (code === "equipo") return "border-emerald-400/60 dark:border-emerald-500/40";
   if (code === "estudio") return "border-slate-700 dark:border-slate-600";
   return "border-slate-200 dark:border-slate-700";
 }
@@ -94,6 +96,9 @@ function getPlanFeatureList(plan: BillingPlan): string[] {
     list.push("Múltiples usuarios (mín. 3)");
     list.push("Soporte prioritario + onboarding");
     list.push("Account manager dedicado");
+  } else if (plan.code === "equipo") {
+    list.push("Hasta 3 usuarios");
+    list.push("Soporte prioritario por email");
   } else if (plan.code !== "free") {
     list.push("1 usuario");
     list.push("Soporte prioritario por email");
@@ -185,8 +190,8 @@ function PlanCard({
         getPlanColor(plan.code, isCurrent)
       )}
     >
-      {plan.code === "pro" && !isCurrent && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold bg-primary text-white shadow">
+      {plan.code === "proplus" && !isCurrent && (
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold bg-purple-600 text-white shadow">
           Recomendado
         </span>
       )}
@@ -201,6 +206,7 @@ function PlanCard({
           "w-9 h-9 rounded-xl flex items-center justify-center",
           isCurrent ? "bg-primary/10 text-primary" :
           plan.code === "proplus" ? "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" :
+          plan.code === "equipo" ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" :
           plan.code === "estudio" ? "bg-slate-900 text-white dark:bg-slate-700" :
           "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
         )}>
@@ -292,6 +298,7 @@ function PlanCard({
             "w-full py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-default",
             plan.code === "pro" ? "bg-primary text-white hover:bg-primary/90" :
             plan.code === "proplus" ? "bg-purple-600 text-white hover:bg-purple-700" :
+            plan.code === "equipo" ? "bg-emerald-600 text-white hover:bg-emerald-700" :
             plan.code === "estudio" ? "bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600" :
             "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
           )}

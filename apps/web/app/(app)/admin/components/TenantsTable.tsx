@@ -56,6 +56,7 @@ export function TenantsTable({
           <option value="free">Free</option>
           <option value="pro">Pro</option>
           <option value="proplus">Pro+</option>
+          <option value="equipo">Equipo</option>
           <option value="estudio">Estudio</option>
         </select>
         <Button size="sm" variant="outline" onClick={onSearch} className="gap-2">

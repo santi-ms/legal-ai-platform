@@ -481,7 +481,7 @@ export async function registerSuperAdminRoutes(app: FastifyInstance) {
 
     const BodySchema = z.object({
       code:      z.string().min(3).max(40).transform((s) => s.trim().toUpperCase()),
-      planCode:  z.enum(["pro", "proplus", "estudio"]).default("pro"),
+      planCode:  z.enum(["pro", "proplus", "equipo", "estudio"]).default("pro"),
       trialDays: z.number().int().positive().default(14),
       maxUses:   z.number().int().default(-1),   // -1 = ilimitado
       expiresAt: z.string().datetime().optional().nullable(),

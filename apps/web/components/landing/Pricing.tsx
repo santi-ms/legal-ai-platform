@@ -15,8 +15,8 @@ const PLANS = [
     cta: "Empezar gratis",
     features: [
       "5 documentos por mes",
-      "3 clientes",
-      "2 expedientes",
+      "5 clientes",
+      "5 expedientes",
       "2 análisis de contratos/mes",
       "Flujo guiado de generación",
     ],
@@ -32,8 +32,8 @@ const PLANS = [
     price: "$24.999",
     period: "/mes",
     description: "Para abogados independientes",
-    highlight: true,
-    badge: "Más popular",
+    highlight: false,
+    badge: null,
     cta: "Probar 7 días gratis",
     features: [
       "50 documentos por mes",
@@ -53,9 +53,9 @@ const PLANS = [
     price: "$35.000",
     period: "/mes",
     description: "Para mayor volumen",
-    highlight: false,
-    badge: null,
-    cta: "Comenzar ahora",
+    highlight: true,
+    badge: "Más popular",
+    cta: "Probar 7 días gratis",
     features: [
       "100 documentos por mes",
       "Clientes ilimitados",
@@ -64,6 +64,29 @@ const PLANS = [
       "Chat con IA",
       "Edición de documentos",
       "20 documentos de referencia",
+      "Logo del estudio en PDFs",
+      "Analytics + exportar reportes",
+      "Soporte por email prioritario",
+    ],
+    missing: [],
+  },
+  {
+    name: "Equipo",
+    price: "$60.000",
+    period: "/mes",
+    description: "Para estudios de 2 a 3 abogados",
+    highlight: false,
+    badge: "Equipos chicos",
+    cta: "Probar 7 días gratis",
+    features: [
+      "150 documentos por mes",
+      "Hasta 3 usuarios",
+      "Clientes y expedientes ilimitados",
+      "50 análisis de contratos/mes",
+      "Chat con IA",
+      "Edición de documentos",
+      "30 documentos de referencia",
+      "Logo del estudio en PDFs",
       "Analytics + exportar reportes",
       "Soporte por email prioritario",
     ],
@@ -73,13 +96,13 @@ const PLANS = [
     name: "Estudio",
     price: "$45.000",
     period: "/usuario/mes",
-    description: "Para estudios jurídicos",
+    description: "Para estudios jurídicos grandes",
     highlight: false,
-    badge: "Equipos",
+    badge: "14 días gratis",
     cta: "Contactar ventas",
     features: [
       "Documentos ilimitados",
-      "Usuarios ilimitados",
+      "Usuarios ilimitados (mín. 3)",
       "Clientes y expedientes ilimitados",
       "Análisis ilimitados",
       "Chat con IA",
@@ -116,7 +139,7 @@ export function Pricing() {
         </Reveal>
 
         {/* Plans grid con stagger */}
-        <RevealStagger className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 xl:gap-5 items-stretch" stagger={0.08}>
+        <RevealStagger className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-6 xl:gap-4 items-stretch" stagger={0.08}>
           {PLANS.map((plan) => (
             <StaggerItem
               key={plan.name}

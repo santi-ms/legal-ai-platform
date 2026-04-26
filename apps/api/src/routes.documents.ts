@@ -649,7 +649,9 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
             tono: oldTone, // Mantener formato antiguo en DB por compatibilidad
             estado: "generated_text",
             costUsd: generationResult.metadata.aiTokens
-              ? (generationResult.metadata.aiTokens.prompt + generationResult.metadata.aiTokens.completion) * 0.000001
+              // Claude Sonnet 4.x: ~$3 / 1M input, ~$15 / 1M output (USD)
+              ? generationResult.metadata.aiTokens.prompt * 0.000003 +
+                generationResult.metadata.aiTokens.completion * 0.000015
               : 0,
             ...(resolvedReferenceDocumentId ? { referenceDocumentId: resolvedReferenceDocumentId } : {}),
             ...(resolvedExpedienteId ? { expedienteId: resolvedExpedienteId } : {}),

@@ -40,6 +40,7 @@ function getPlanFeatureList(plan: BillingPlan): string[] {
   if (features.anotaciones) list.push("Anotaciones");
   if (features.analytics) list.push("Analytics");
   if (features.logoEstudio) list.push("Logo del estudio en PDFs");
+  if (plan.code === "equipo") list.push("Hasta 3 usuarios");
   if (plan.code === "estudio") list.push("Múltiples usuarios (mín. 3)");
 
   return list;
@@ -110,14 +111,15 @@ export default function OnboardingPlanPage() {
                   key={plan.code}
                   className={cn(
                     "relative flex flex-col rounded-2xl border-2 bg-white dark:bg-slate-900 p-6 shadow-sm transition-all hover:shadow-md cursor-pointer",
-                    plan.code === "pro" ? "border-primary ring-2 ring-primary/20" :
-                    plan.code === "proplus" ? "border-purple-400/40 dark:border-purple-500/30" :
+                    plan.code === "proplus" ? "border-purple-500 ring-2 ring-purple-500/20" :
+                    plan.code === "pro" ? "border-primary/40 dark:border-primary/30" :
+                    plan.code === "equipo" ? "border-emerald-400/60 dark:border-emerald-500/40" :
                     plan.code === "estudio" ? "border-slate-700 dark:border-slate-600" :
                     "border-slate-200 dark:border-slate-700"
                   )}
                 >
-                  {plan.code === "pro" && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold bg-primary text-white shadow">
+                  {plan.code === "proplus" && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold bg-purple-600 text-white shadow">
                       Recomendado
                     </span>
                   )}
@@ -127,6 +129,7 @@ export default function OnboardingPlanPage() {
                       "w-9 h-9 rounded-xl flex items-center justify-center",
                       plan.code === "pro" ? "bg-primary/10 text-primary" :
                       plan.code === "proplus" ? "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" :
+                      plan.code === "equipo" ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" :
                       plan.code === "estudio" ? "bg-slate-900 text-white dark:bg-slate-700" :
                       "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
                     )}>

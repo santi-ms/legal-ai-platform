@@ -146,6 +146,7 @@ export function PromoCodesManager() {
               >
                 <option value="pro">Pro</option>
                 <option value="proplus">Pro+</option>
+                <option value="equipo">Equipo</option>
                 <option value="estudio">Estudio</option>
               </select>
             </div>
