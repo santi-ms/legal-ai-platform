@@ -49,26 +49,6 @@ export async function registerReferenceRoutes(app: FastifyInstance) {
         });
       }
 
-      // Verificar límite de plan: maxReferenceFiles
-      const { getPlanForTenant } = await import("./routes.billing.js");
-      const { plan } = await getPlanForTenant(user.tenantId);
-      const limits = (plan?.limits ?? {}) as Record<string, unknown>;
-      const maxReferenceFiles = typeof limits.maxReferenceFiles === "number" ? limits.maxReferenceFiles : -1;
-      if (maxReferenceFiles !== -1) {
-        const existingCount = await prisma.referenceDocument.count({
-          where: { tenantId: user.tenantId, deletedAt: null },
-        });
-        if (existingCount >= maxReferenceFiles) {
-          return reply.status(429).send({
-            ok: false,
-            error: "PLAN_LIMIT_EXCEEDED",
-            message: `Tu plan permite un máximo de ${maxReferenceFiles} documento${maxReferenceFiles === 1 ? "" : "s"} de referencia. Eliminá alguno para subir uno nuevo.`,
-            limit: maxReferenceFiles,
-            used: existingCount,
-          });
-        }
-      }
-
       // Leer el buffer del archivo
       const buffer = await data.toBuffer();
       const fileSize = buffer.length;
@@ -77,6 +57,13 @@ export async function registerReferenceRoutes(app: FastifyInstance) {
       const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
       if (fileSize > MAX_FILE_SIZE) {
         return reply.status(400).send({ ok: false, error: "FILE_TOO_LARGE", message: "El archivo supera el límite de 10 MB" });
+      }
+
+      // Verificar límite de almacenamiento del plan (suma de fileSize de referenceDocuments)
+      const { checkStorageLimit, storageLimitExceededResponse } = await import("./services/plan-limits.js");
+      const storage = await checkStorageLimit({ tenantId: user.tenantId, incomingBytes: fileSize });
+      if (!storage.ok) {
+        return reply.status(429).send(storageLimitExceededResponse(storage));
       }
 
       // Generar nombre único para el archivo

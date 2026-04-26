@@ -87,8 +87,8 @@ function getPlanFeatureList(plan: BillingPlan): string[] {
   if (features.analytics) list.push("Analytics");
   if (features.exportarReportes) list.push("Exportar reportes");
   if (features.referenciaDocs) {
-    if (limits.maxReferenceFiles === -1) list.push("Referencias IA ilimitadas");
-    else list.push(`Referencias IA (${limits.maxReferenceFiles} archivos)`);
+    if (limits.maxStorageMb === -1) list.push("Referencias IA ilimitadas");
+    else list.push(`Referencias IA (${limits.maxStorageMb} MB)`);
   }
   if (features.logoEstudio) list.push("Logo del estudio en PDFs");
 
@@ -768,7 +768,7 @@ function BillingPageContent() {
   const jurisLimit         = planLimits.jurisMessagesPerMonth ?? 10;
   const clientsLimit       = planLimits.maxClients            ?? 3;
   const expedientesLimit   = planLimits.maxExpedientes        ?? 2;
-  const referencesLimit    = planLimits.maxReferenceFiles     ?? 0;
+  const storageLimit       = planLimits.maxStorageMb          ?? 0;
   const estudioPlan = plans.find((p) => p.code === "estudio");
   const estudioTotal = (estudioPlan?.priceArs ?? 45000) * estudioUsers;
 
@@ -1084,11 +1084,11 @@ function BillingPageContent() {
                     limit={expedientesLimit === -1 ? null : expedientesLimit}
                     icon={Briefcase}
                   />
-                  {referencesLimit !== 0 && (
+                  {storageLimit !== 0 && (
                     <UsageBar
-                      label="Documentos de referencia"
-                      used={billing.usage.referenceFilesTotal ?? 0}
-                      limit={referencesLimit === -1 ? null : referencesLimit}
+                      label="Almacenamiento referencias (MB)"
+                      used={billing.usage.referenceStorageMb ?? 0}
+                      limit={storageLimit === -1 ? null : storageLimit}
                       icon={BookOpen}
                     />
                   )}

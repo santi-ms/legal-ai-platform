@@ -17,7 +17,7 @@ export type PlanLimitKey =
   | "jurisMessagesPerMonth"
   | "maxClients"
   | "maxExpedientes"
-  | "maxReferenceFiles"
+  | "maxStorageMb"
   | "maxUsers";
 
 export type LimitCountQuery = (startOfMonth: Date, endOfMonth: Date) => Promise<number>;
@@ -112,5 +112,68 @@ export function planLimitExceededResponse(result: PlanLimitResult) {
     message: `Alcanzaste el límite de ${result.limit} ${result.resource} este mes. Actualizá tu plan para continuar.`,
     limit: result.limit,
     used: result.used,
+  };
+}
+
+/**
+ * Chequea si subir `incomingBytes` adicionales mantiene al tenant bajo
+ * `maxStorageMb`. Suma los `fileSize` actuales de referenceDocuments
+ * (los análisis de contratos no cuentan: tienen su propia cuota mensual).
+ *
+ * Retorna ok=false si la suma proyectada supera el límite.
+ */
+export interface StorageCheckResult {
+  ok: boolean;
+  /** Límite en bytes (-1 = ilimitado) */
+  limitBytes: number;
+  /** Bytes ya usados */
+  usedBytes: number;
+  /** Bytes que se intentan agregar */
+  incomingBytes: number;
+}
+
+export async function checkStorageLimit(params: {
+  tenantId: string;
+  incomingBytes: number;
+}): Promise<StorageCheckResult> {
+  const { getPlanForTenant } = await import("../routes.billing.js");
+  const { plan } = await getPlanForTenant(params.tenantId);
+  const limits = (plan as { limits?: Record<string, unknown> } | null)?.limits ?? {};
+  const raw = limits.maxStorageMb;
+  const limitMb: number = typeof raw === "number" ? raw : 0;
+
+  if (limitMb === -1) {
+    return { ok: true, limitBytes: -1, usedBytes: 0, incomingBytes: params.incomingBytes };
+  }
+
+  const limitBytes = limitMb * 1024 * 1024;
+  const { prisma } = await import("../db.js");
+  const agg = await prisma.referenceDocument.aggregate({
+    where: { tenantId: params.tenantId, deletedAt: null },
+    _sum: { fileSize: true },
+  });
+  const usedBytes = agg._sum.fileSize ?? 0;
+
+  return {
+    ok: usedBytes + params.incomingBytes <= limitBytes,
+    limitBytes,
+    usedBytes,
+    incomingBytes: params.incomingBytes,
+  };
+}
+
+export function storageLimitExceededResponse(result: StorageCheckResult) {
+  const limitMb = Math.floor(result.limitBytes / 1024 / 1024);
+  const usedMb = Math.floor(result.usedBytes / 1024 / 1024);
+  const incomingMb = Math.ceil(result.incomingBytes / 1024 / 1024);
+  return {
+    ok: false as const,
+    error: "PLAN_LIMIT_EXCEEDED" as const,
+    message:
+      limitMb === 0
+        ? "Tu plan no incluye documentos de referencia. Actualizá tu plan para subir archivos."
+        : `Tu plan permite hasta ${limitMb} MB de documentos de referencia. Tenés ${usedMb} MB usados y este archivo agrega ${incomingMb} MB. Eliminá alguno o subí de plan.`,
+    limit: result.limitBytes,
+    used: result.usedBytes,
   };
 }

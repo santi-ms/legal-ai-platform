@@ -1572,7 +1572,7 @@ export interface BillingPlan {
     maxUsers: number;
     maxClients: number;
     maxExpedientes: number;
-    maxReferenceFiles: number;
+    maxStorageMb: number;
   };
   features: {
     chatIA: boolean;
@@ -1601,7 +1601,7 @@ export interface BillingUsage {
   jurisMessagesThisMonth: number;
   clientsTotal: number;
   expedientesTotal: number;
-  referenceFilesTotal: number;
+  referenceStorageMb: number;
 }
 
 export interface BillingData {

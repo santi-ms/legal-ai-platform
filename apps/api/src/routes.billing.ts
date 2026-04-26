@@ -157,6 +157,10 @@ export async function getPlanForTenant(tenantId: string) {
   return { subscription, plan: subscription.plan };
 }
 
+// Dedup en memoria de webhooks de MP. Clave: x-request-id; valor: timestamp.
+// Se limpia entradas viejas en cada hit del webhook (no necesita cron).
+const mpWebhookSeen = new Map<string, number>();
+
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
 export async function registerBillingRoutes(app: FastifyInstance) {
@@ -182,7 +186,7 @@ export async function registerBillingRoutes(app: FastifyInstance) {
       jurisMessagesThisMonth,
       clientsTotal,
       expedientesTotal,
-      referenceFilesTotal,
+      referenceStorageAgg,
     ] = await Promise.all([
       prisma.document.count({
         where: { tenantId: user.tenantId, createdAt: monthRange },
@@ -206,10 +210,15 @@ export async function registerBillingRoutes(app: FastifyInstance) {
       prisma.expediente.count({
         where: { tenantId: user.tenantId, status: { not: "archivado" } },
       }),
-      prisma.referenceDocument.count({
+      prisma.referenceDocument.aggregate({
         where: { tenantId: user.tenantId, deletedAt: null },
+        _sum: { fileSize: true },
       }),
     ]);
+
+    const referenceStorageMb = Math.round(
+      ((referenceStorageAgg._sum.fileSize ?? 0) / (1024 * 1024)) * 10,
+    ) / 10;
 
     return reply.send({
       ok: true,
@@ -240,7 +249,7 @@ export async function registerBillingRoutes(app: FastifyInstance) {
         jurisMessagesThisMonth,
         clientsTotal,
         expedientesTotal,
-        referenceFilesTotal,
+        referenceStorageMb,
       },
     });
   });
@@ -946,6 +955,22 @@ export async function registerBillingRoutes(app: FastifyInstance) {
       console.warn(`[webhook/mp] Firma inválida — evento descartado (tipo=${type} id=${dataId})`);
       return reply.code(401).send({ ok: false, error: "Invalid signature" });
     }
+
+    // Idempotencia: MP reintenta el mismo evento si no respondemos 200 a tiempo.
+    // Sin dedup, cada retry vuelve a procesar el cambio (posible doble cobro lógico,
+    // doble facturación, doble cambio de estado). Usamos x-request-id (único por
+    // delivery según MP) como clave + ventana de 10 min en memoria.
+    const requestId = (request.headers["x-request-id"] as string | undefined) ?? `${type}:${dataId}`;
+    const now = Date.now();
+    const TEN_MIN = 10 * 60 * 1000;
+    for (const [k, ts] of mpWebhookSeen.entries()) {
+      if (now - ts > TEN_MIN) mpWebhookSeen.delete(k);
+    }
+    if (mpWebhookSeen.has(requestId)) {
+      console.log(`[webhook/mp] retry duplicado descartado (request-id=${requestId})`);
+      return reply.send({ ok: true, deduped: true });
+    }
+    mpWebhookSeen.set(requestId, now);
 
     // Responder 200 para que MP no reintente indefinidamente
     reply.send({ ok: true });

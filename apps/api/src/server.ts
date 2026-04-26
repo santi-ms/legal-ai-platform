@@ -196,16 +196,18 @@ async function buildServer() {
     });
   });
 
-  // AI-specific rate limit: 30 requests per minute per tenant (in-memory)
+  // AI-specific rate limit: 30 requests per minute per USER (in-memory).
+  // Antes era por tenant: en un estudio de N personas, una sola podía
+  // copar la cuota y bloquear a los demás.
   app.addHook('preHandler', async (request, reply) => {
-    const aiPaths = ['/documents/generate', '/chat', '/analysis', '/estrategia'];
+    const aiPaths = ['/documents/generate', '/chat', '/analysis', '/estrategia', '/juris'];
     const isAiPath = aiPaths.some(p => request.url.includes(p));
     if (!isAiPath) return;
 
     const user = (request as any).user;
-    if (!user?.tenantId) return; // unauthenticated — other middleware handles it
+    if (!user?.id) return; // unauthenticated — other middleware handles it
 
-    const key = `ai:${user.tenantId}`;
+    const key = `ai:${user.id}`;
     const now = Date.now();
     const window = 60 * 1000; // 1 minute
 

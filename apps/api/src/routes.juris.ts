@@ -238,8 +238,11 @@ export async function registerJurisRoutes(app: FastifyInstance) {
       logger.debug(`[juris] RAG: ${ragResults.length} artículos encontrados para "${mensaje.substring(0, 60)}"`);
     }
 
-    // Preparar mensaje con todos los contextos enriquecidos
-    const enrichedMessage = `${mensaje}${expedienteContext}${ragContext}${webContext}`;
+    // Preparar mensaje con todos los contextos enriquecidos.
+    // Cap duro de 30k chars (~7.5k tokens) para que un RAG/web inflado no
+    // dispare el costo de la llamada a Claude. El mensaje del usuario ya
+    // está acotado a 4k por el schema; lo que se trunca es el contexto.
+    const enrichedMessage = `${mensaje}${expedienteContext}${ragContext}${webContext}`.substring(0, 30000);
 
     // Construir system prompt con contexto de provincia
     const systemWithContext = provincia
@@ -387,7 +390,8 @@ export async function registerJurisRoutes(app: FastifyInstance) {
       : "";
     const ragContext2 = formatRagContext(ragResults2);
 
-    const enrichedMessage = `${mensaje}${ragContext2}${webContext}`;
+    // Cap de contexto enriquecido (mismo cap que el endpoint de consulta inicial).
+    const enrichedMessage = `${mensaje}${ragContext2}${webContext}`.substring(0, 30000);
 
     // Construir historial de mensajes para Claude
     const historial: { role: "user" | "assistant"; content: string }[] =
