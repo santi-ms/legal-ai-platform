@@ -1,5 +1,5 @@
 /**
- * Team Routes — Gestión de miembros del equipo (plan Estudio)
+ * Team Routes — Gestión de miembros del equipo (planes Equipo y Estudio)
  *
  * GET    /team/members           — Listar miembros del tenant
  * POST   /team/invite            — Invitar a un nuevo miembro por email
@@ -101,7 +101,7 @@ export async function registerTeamRoutes(app: FastifyInstance) {
       return reply.status(403).send({
         ok: false,
         error: "PLAN_NO_TEAM",
-        message: "Tu plan actual no permite agregar miembros. Actualizá al plan Estudio.",
+        message: "Tu plan actual no permite agregar miembros. Actualizá al plan Equipo o Estudio.",
       });
     }
 

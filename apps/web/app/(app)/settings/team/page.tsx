@@ -275,7 +275,7 @@ export default function TeamSettingsPage() {
                     Tu plan actual no soporta múltiples usuarios
                   </p>
                   <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-                    Para invitar miembros a tu equipo necesitás el plan <strong>Estudio</strong>.
+                    Para invitar miembros a tu equipo necesitás el plan <strong>Equipo</strong> o <strong>Estudio</strong>.
                   </p>
                   <a
                     href="/settings/billing"
