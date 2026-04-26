@@ -537,11 +537,11 @@ Genemos una **variante light** del carrusel original de DocuLex (el dark
 navy + violeta de 6 slides que ya armamos en este proyecto).
 
 **Mantené todo igual** —misma estructura de 6 slides, misma jerarquía,
-misma tipografía sans bold display, mismos mockups (chat de Doku Genera,
-cards de portales, panel con calendario, bar chart), mismos textos
-exactos, misma posición del logo (icono + wordmark `Docu` regular + `Lex`
-bold) arriba a la izquierda, mismas pills arriba a la derecha, mismos
-contadores `01 / 06` … `06 / 06`— **excepto la paleta**, que se invierte.
+**misma tipografía del deck original**, mismos mockups (chat de Doku
+Genera, cards de portales, panel con calendario, bar chart), mismos textos
+exactos, misma posición del logo (icono + wordmark) arriba a la izquierda,
+mismas pills arriba a la derecha, mismos contadores `01 / 06` …
+`06 / 06`— **excepto la paleta**, que se invierte.
 
 ---
 
@@ -652,16 +652,16 @@ nuevo, estructura nueva, **mismo lenguaje visual** del deck original
 
 Tomá del deck dark original ya generado en este proyecto:
 
-- Tipografía: **misma sans bold display** para titulares, mismo cuerpo,
-  misma jerarquía de tamaños.
-- **Mismos cards** con `border-radius` redondeado y borde fino.
-- **Mismas pills** (capsulitas con número o tag arriba del card).
-- **Mismo logo** (icono + wordmark `Docu` regular + `Lex` bold) arriba a
-  la izquierda.
-- **Mismo contador** `01 / 06 … 06 / 06` abajo a la derecha y barra de
+- **La misma tipografía** del deck original (display para titulares y
+  cuerpo más chico para bajadas), con la misma jerarquía de tamaños.
+  No la cambies ni la nombres explícitamente.
+- **Los mismos cards** con border-radius redondeado y borde fino.
+- **Las mismas pills** (capsulitas con número o tag arriba del card).
+- **El mismo logo** (icono + wordmark) arriba a la izquierda.
+- **El mismo contador** `01 / 06 … 06 / 06` abajo a la derecha y barra de
   progreso de slides abajo a la izquierda.
-- **Mismas mockups de UI** (estilo chat de Doku Genera, cards apiladas,
-  panel de control) cuando hagan falta.
+- **Las mismas mockups de UI** (estilo chat de Doku Genera, cards
+  apiladas, panel de control) cuando hagan falta.
 
 **Aplicalo en paleta light** según el mapa que ya definimos para el v5:
 fondo `#FAFAFA`, texto principal `#0E1A2B` navy, secundario `#5A6678`,
