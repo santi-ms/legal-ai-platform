@@ -1500,3 +1500,138 @@ automático.
 - **Last frame como PNG estático** (1080 × 1920) como thumbnail.
 - Versión alternativa de **9 segundos** (cortar el panel lateral y
   comprimir la demo) para Stories.
+
+---
+
+## v8 — Revisión: extender de 15 s a 20 s
+
+Edición sobre el Reel ya generado. **No tocar nada de los primeros
+11.5 segundos** (hook, setup, prompt + timer, demo con panel de
+validación). Solo extender:
+
+- El **estado "completado"** (era 11.5 – 12.5, 1 s) → pasa a ser
+  11.5 – 14.5, **3 s totales** (+2 s).
+- El **CTA** (era 12.5 – 15.0, 2.5 s) → pasa a ser 14.5 – 20.0,
+  **5.5 s totales** (+3 s).
+
+Los 5 segundos extra se usan para: (a) dejar que el espectador absorba
+el resultado del documento + ver el ahorro de tiempo concreto en pantalla;
+(b) que el CTA respire — botón visible más tiempo, garantías legibles,
+cierre con identidad regional.
+
+### Prompt (copiar y pegar en el mismo proyecto Animation)
+
+Extendé el Reel de **15 a 20 segundos** sin tocar los primeros 11.5
+segundos. Toda la parte del hook, el setup del editor, el prompt
+tipeándose, el timer corriendo y la demo con el panel lateral de
+validación queda **exactamente igual**, mismos timings, misma
+animación, misma posición. Solo se modifican los dos tramos finales.
+
+---
+
+#### 1. Extender el estado "completado" — de 1 s a 3 s
+
+**Era:** 11.5 – 12.5 (1 s).
+**Ahora:** 11.5 – 14.5 (3 s).
+
+- **11.5 – 12.0 s** *(igual al render actual)*: el timer llega a `0:00`
+  con un pulse final (scale 100 → 115 → 100 %) y cambia de violeta a
+  verde `#0D9488`.
+- **12.0 – 12.5 s** *(igual al render actual)*: aparece el badge verde
+  con check blanco: `✓ LISTO EN 0:40`. Slide-up + fade. Centrado arriba
+  del editor. El cursor se apaga. Los 3 checks del panel lateral
+  quedan completos.
+- **12.5 – 13.5 s** *(NUEVO)*: debajo del badge `✓ LISTO EN 0:40`,
+  aparece un **segundo badge** más chico, en navy sobre fondo blanco
+  con borde fino `#E5E7EB`:
+  *"Tiempo ahorrado: 38 min vs. redacción manual"*
+  Entra con fade + slide-up de 8 px en 0.4 s. Tipografía mismo cuerpo
+  que los checks del panel lateral. La frase "38 min" en peso bold y
+  color violeta.
+- **13.5 – 14.5 s** *(NUEVO)*: hold del estado completado. **Sutil
+  pulse del documento entero** una sola vez (scale 100 → 101 → 100 %
+  en 0.6 s, easing in-out) — como si "respirara" un instante para
+  marcar que terminó. Nada más se mueve. Esta pausa le da al
+  espectador 1 s para absorber el resultado completo: documento
+  finalizado + 3 checks de validación + tiempo ahorrado.
+
+#### 2. Extender el CTA — de 2.5 s a 5.5 s
+
+**Era:** 12.5 – 15.0 (2.5 s).
+**Ahora:** 14.5 – 20.0 (5.5 s).
+
+La idea no es agregar contenido nuevo de marketing — es darle al CTA
+**tiempo real para que se lea y se decida**. La mayoría de Reels
+queman el CTA en 1.5 s y nadie lo absorbe.
+
+- **14.5 – 15.5 s**: el editor + el panel de validación se reducen al
+  55 % y suben al borde superior (centro vertical 22 %). El badge
+  timer, el badge "LISTO" y el badge de "tiempo ahorrado" suben con
+  ellos manteniendo proporción.
+- **15.5 – 16.0 s**: en el centro vertical (44 %) aparece, en navy
+  bold, con un *scale-up* sutil de 95 → 100 % + fade en 0.4 s:
+  **"Tu turno."**
+- **16.0 – 16.5 s**: debajo, **botón pill violeta sólido** `#5B45D9`
+  con texto blanco: **"doculex.com.ar →"**. Entra con scale-up
+  95 → 100 % en 0.3 s. La flecha del botón empieza un *bounce-loop*
+  sutil (5 px hacia la derecha cada segundo, easing in-out) que
+  mantiene los siguientes 3.5 s.
+- **16.5 – 17.5 s** *(hold extendido)*: la composición se queda
+  estática 1 s entera. **Esto es deliberado.** El espectador necesita
+  ese segundo para registrar el botón sin distracciones.
+- **17.5 – 18.5 s**: debajo del botón, fade-in del bloque de
+  garantías en gris `#5A6678`, en una línea:
+  *"14 días gratis  ·  sin tarjeta  ·  sin instalación."*
+  Cada separador `·` con un poco más de espacio que en la versión
+  anterior, para que la frase respire.
+- **18.5 – 19.5 s** *(NUEVO)*: aparece debajo, en monoespaciada chica
+  gris al pie del CTA (todavía por encima de la barra de progreso),
+  fade-in de 0.4 s:
+  *"Hecho por abogados, para abogados argentinos."*
+  Sirve como cierre con identidad y como social signal sin caer en
+  testimonio.
+- **19.5 – 20.0 s**: todo se queda estático, el botón sigue con su
+  bounce-loop sutil, la barra de progreso completa el 100 %.
+
+#### 3. Ajustes globales
+
+- **Duración total**: 15 s → **20 s**.
+- **Barra de progreso**: el fill violeta debe ahora llegar al 100 %
+  exactamente en el segundo 20.0, no en el 15.0. Recalibrá la
+  velocidad del fill.
+- **Logo**: sigue siendo solo el ícono monogramático, 80 px de alto,
+  arriba a la izquierda, persistente los 20 s. **No agregar wordmark.**
+- **Loop**: cuando Instagram repite el Reel, debe hacerlo desde el
+  frame 0 limpio. Asegurate de que el último frame (segundo 20.0) sea
+  estático y se conecte visualmente bien con el frame 0.
+
+#### 4. Lo que **no** hay que cambiar
+
+- Hook (0 – 1.5 s).
+- Setup del editor (1.5 – 2.0 s).
+- Prompt tipeándose y arranque del timer (2.0 – 3.5 s).
+- Demo con los 8 segundos de documento generándose (3.5 – 11.5 s).
+- Panel lateral de validación con sus 3 checks (apariciones a los
+  06.0, 07.0, 08.5, 10.0 s).
+- Posición y tamaño del logo, del badge timer, del editor.
+- Paleta, tipografía, jerarquía.
+- Movimientos y easings de los elementos existentes.
+
+#### 5. Audio (si aplica)
+
+- *Tick* del timer cada 0.24 s entre 03.0 y 11.5 s — sin cambios.
+- *Tap* al submit del prompt — sin cambios.
+- *Tick* corto en cada check del panel — sin cambios.
+- *Chime* corto al aparecer "LISTO" — sin cambios (segundo 11.5).
+- **NUEVO**: *suave whoosh* cuando aparece el badge "Tiempo ahorrado:
+  38 min" (segundo 12.5), volumen muy bajo.
+- Resto: silencio. **Nada de voz en off.**
+
+#### 6. Entregables
+
+- **MP4 H.264**, 1080 × 1920, 30 fps, **20 segundos exactos**.
+- **GIF** liviano (< 12 MB) ahora puede ser un poco más grande por
+  la duración extra.
+- **Last frame como PNG estático** (1080 × 1920) con la composición
+  final completa: editor reducido arriba, "Tu turno.", botón,
+  garantías y cierre regional.
