@@ -52,3 +52,27 @@ export function pruneExpiredEntries(store: Map<string, AiRateLimitEntry>, now: n
     if (now > entry.resetAt) store.delete(key);
   }
 }
+
+export interface AiRateLimitStatus {
+  used: number;
+  remaining: number;
+  resetInSeconds: number;
+}
+
+export function peekAiRateLimit(opts: {
+  userId: string;
+  store: Map<string, AiRateLimitEntry>;
+  now: number;
+  max: number;
+}): AiRateLimitStatus {
+  const { userId, store, now, max } = opts;
+  const entry = store.get(`ai:${userId}`);
+  if (!entry || now > entry.resetAt) {
+    return { used: 0, remaining: max, resetInSeconds: 0 };
+  }
+  return {
+    used: entry.count,
+    remaining: Math.max(0, max - entry.count),
+    resetInSeconds: Math.max(0, Math.ceil((entry.resetAt - now) / 1000)),
+  };
+}
