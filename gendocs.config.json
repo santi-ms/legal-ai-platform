@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "output": {
+    "dir": "docs",
+    "style": "detailed"
+  },
+  "include": [
+    "apps/api/src/**",
+    "apps/docs/app/**",
+    "apps/pdf/src/**",
+    "apps/web/app/**",
+    "apps/web/lib/**",
+    "apps/web/src/**",
+    "packages/db/**",
+    "packages/eslint-config/**",
+    "packages/typescript-config/**",
+    "packages/ui/src/**"
+  ],
+  "exclude": [
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/dist/**"
+  ],
+  "language": "es",
+  "pr": {
+    "strategy": "rolling",
+    "branchName": "gendocs/auto-update",
+    "targetBranch": "main"
+  },
+  "model": {
+    "provider": "anthropic",
+    "name": "claude-sonnet-4-6"
+  }
+}
